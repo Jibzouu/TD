@@ -132,20 +132,20 @@ function renderYearProgress() {
   const curDD = last ? (E.useEur ? last.ddPct : last.ddAbs) : null;
 
   // Bandeau de chiffres (et résumé dans le hero)
-  const stat = (l, v, c) => `<div class="es-item"><span class="es-label">${l}</span><span class="es-val"${c ? ` style="color:${c}"` : ''}>${v}</span></div>`;
+  const stat = esItem;
   const statsEl = document.getElementById('equity-stats');
   const sub = document.getElementById('year-progress-sub');
   if (!P.length) {
-    if (statsEl) statsEl.innerHTML = '';
+    if (statsEl) mount(statsEl, '');
     if (sub) sub.textContent = 'Renseigne un P&L (€ ou R) sur tes trades pour voir ta courbe';
   } else {
     if (sub) sub.textContent = (E.useEur ? (filterDateRange().from ? 'Solde en €, depuis le début de la période' : 'Solde en €, depuis le solde de départ') : 'R cumulé (aucun montant en € saisi)') + (filterActive() ? ' · filtre actif' : '') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
-    if (statsEl) statsEl.innerHTML =
-      stat(E.useEur ? 'Solde actuel' : 'R cumulé', E.fmt(endBal)) +
-      (perf !== null ? stat('Performance', fmtPct(perf), perf >= 0 ? t.green : t.red) : '') +
-      stat('Plus haut', E.fmt(Math.max(E.start, ...P.map(p => p.bal)))) +
-      stat('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0', E.maxDD ? t.red : null) +
-      stat('Drawdown actuel', curDD ? (E.useEur ? fmtPct(curDD) : curDD.toFixed(2) + 'R') : 'aucun');
+    if (statsEl) mount(statsEl, html`${[
+      stat(E.useEur ? 'Solde actuel' : 'R cumulé', E.fmt(endBal)),
+      perf !== null ? stat('Performance', fmtPct(perf), perf >= 0 ? 'green' : 'red') : '',
+      stat('Plus haut', E.fmt(Math.max(E.start, ...P.map(p => p.bal)))),
+      stat('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0', E.maxDD ? 'red' : null),
+      stat('Drawdown actuel', curDD ? (E.useEur ? fmtPct(curDD) : curDD.toFixed(2) + 'R') : 'aucun')]}`);
   }
   renderHeroSide(E, endBal, perf);
 
@@ -221,21 +221,15 @@ function renderUnderwater(E, daily) {
 function renderHeroSide(E, endBal, perf) {
   const side = document.getElementById('hero-side'), spark = document.getElementById('hero-spark');
   if (!side || !spark) return;
-  if (!E.pts.length) { side.innerHTML = ''; spark.innerHTML = ''; return; }
-  const t = chartTokens();
-  const it = (l, v, c) => `<div class="hs-item"><span class="hs-label">${l}</span><span class="hs-val"${c ? ` style="color:${c}"` : ''}>${v}</span></div>`;
-  side.innerHTML = it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal)) +
-    (perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? t.green : t.red) : '') +
-    it('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0 %') +
-    it('Jours tradés', String(E.pts.length));
+  if (!E.pts.length) { mount(side, ''); mount(spark, ''); return; }
+  const it = (l, v, tone) => html`<div class="hs-item"><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
+  mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0 %')}${it('Jours tradés', String(E.pts.length))}`);
   const vals = [E.start, ...E.pts.map(p => p.bal)];
   const { path, lastX, lastY } = buildSparklinePath(vals, 240, 64, 4);
   const min = Math.min(...vals), max = Math.max(...vals), range = (max - min) || 1;
   const baseY = 64 - 4 - ((E.start - min) / range) * 56;
-  spark.innerHTML = `<line x1="0" x2="240" y1="${baseY.toFixed(1)}" y2="${baseY.toFixed(1)}" style="stroke:var(--txt3)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>` +
-    `<path d="${path} L${lastX.toFixed(1)},64 L4,64 Z" style="fill:var(--accent);opacity:.1"/>` +
-    `<path d="${path}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` +
-    `<path d="M${lastX.toFixed(1)},${lastY.toFixed(1)} h0" style="stroke:var(--accent)" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  const y0 = baseY.toFixed(1), lx = lastX.toFixed(1), ly = lastY.toFixed(1);
+  mount(spark, html`<line class="sp-base" x1="0" x2="240" y1="${y0}" y2="${y0}" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><path class="sp-area" d="${path} L${lx},64 L4,64 Z"/><path class="sp-line" d="${path}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path class="sp-line" d="M${lx},${ly} h0" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`);
 }
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────
@@ -248,27 +242,24 @@ function renderWinRateMeters() {
   const dW = days.filter(v => v > 1e-6).length, dL = days.filter(v => v < -1e-6).length, dN = days.length;
   const dCI = dN ? wilsonCI(dW, dN) : [0, 0];
   const be = breakevenWinRate();
-  const t = chartTokens();
-  if (!W.n) { el.innerHTML = '<p class="empty-note">Apparaîtra dès ton premier trade clôturé.</p>'; return; }
+  if (!W.n) { mount(el, html`<p class="empty-note">Apparaîtra dès ton premier trade clôturé.</p>`); return; }
   const row = (name, k, n, lo, hi, thr, thrLbl, foot) => {
     const rate = n ? k / n : 0, low = n < 10;
     const ok = thr === null ? null : rate >= thr;
-    const col = ok === null ? t.accent : (ok ? t.green : t.red);
-    const status = low ? `<span class="wr-status" style="color:var(--txt3)">● échantillon faible (n=${n})</span>`
-      : ok === null ? '' : `<span class="wr-status" style="color:${col}">${ok ? '▲ au-dessus' : '▼ en dessous'} du seuil</span>`;
-    return `<div class="wr-row">
+    const tone = ok === null ? 'accent' : (ok ? 'green' : 'red');
+    const status = low ? html`<span class="wr-status tone-muted">● échantillon faible (n=${n})</span>`
+      : ok === null ? '' : html`<span class="wr-status tone-${raw(tone)}">${ok ? '▲ au-dessus' : '▼ en dessous'} du seuil</span>`;
+    return html`<div class="wr-row">
       <div class="wr-top"><span><span class="wr-name">${name}</span><br><span class="wr-val">${(rate * 100).toFixed(1).replace('.', ',')} %</span></span>${status}</div>
       <div class="meter" title="Intervalle de confiance 95 % : ${Math.round(lo * 100)}–${Math.round(hi * 100)} %">
-        <div class="meter-ci" style="left:${lo * 100}%;width:${Math.max(0, (hi - lo) * 100)}%"></div>
-        <div class="meter-fill" style="width:${rate * 100}%;background:${col};${low ? 'opacity:.55' : ''}"></div>
-        ${thr !== null ? `<div class="meter-tick" style="left:calc(${thr * 100}% - 1px)"></div><div class="meter-tick-lbl" style="left:${Math.min(88, Math.max(12, thr * 100))}%">${thrLbl}</div>` : ''}
+        <div class="meter-ci" style="${raw(`left:${lo * 100}%;width:${Math.max(0, (hi - lo) * 100)}%`)}"></div>
+        <div class="meter-fill fill-${raw(tone)}${raw(low ? ' dim' : '')}" style="${raw(`width:${rate * 100}%`)}"></div>
+        ${thr !== null ? html`<div class="meter-tick" style="${raw(`left:calc(${thr * 100}% - 1px)`)}"></div><div class="meter-tick-lbl" style="${raw(`left:${Math.min(88, Math.max(12, thr * 100))}%`)}">${thrLbl}</div>` : ''}
       </div>
       <div class="wr-foot"><span>${foot}</span><span>IC 95 % : ${Math.round(lo * 100)}–${Math.round(hi * 100)} %</span></div>
     </div>`;
   };
-  el.innerHTML =
-    row('Par trade', W.wins, W.n, W.lo, W.hi, be, be !== null ? 'seuil ' + Math.round(be * 100) + ' %' : '', fmtWinLine(W) + (be !== null ? ' · seuil = perte moy. ÷ (gain moy. + perte moy.)' : '')) +
-    (dN ? row('Par journée', dW, dN, dCI[0], dCI[1], .5, '50 %', dW + ' jour(s) + · ' + dL + ' jour(s) −' + (dN - dW - dL ? ' · ' + (dN - dW - dL) + ' neutre(s)' : '')) : '');
+  mount(el, html`${row('Par trade', W.wins, W.n, W.lo, W.hi, be, be !== null ? 'seuil ' + Math.round(be * 100) + ' %' : '', fmtWinLine(W) + (be !== null ? ' · seuil = perte moy. ÷ (gain moy. + perte moy.)' : ''))}${dN ? row('Par journée', dW, dN, dCI[0], dCI[1], .5, '50 %', dW + ' jour(s) + · ' + dL + ' jour(s) −' + (dN - dW - dL ? ' · ' + (dN - dW - dL) + ' neutre(s)' : '')) : ''}`);
 }
 
 // ── DISTRIBUTION DES R ────────────────────────────────────────────────
@@ -280,7 +271,7 @@ function renderRDistribution() {
   if (rDistChartInst) { rDistChartInst.destroy(); rDistChartInst = null; }
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res) && t.pnl != null);
   if (closed.length < 5) {
-    if (statsEl) statsEl.innerHTML = '<p class="empty-note">Il faut au moins 5 trades clos avec un R pour tracer la distribution.</p>';
+    if (statsEl) mount(statsEl, html`<p class="empty-note">Il faut au moins 5 trades clos avec un R pour tracer la distribution.</p>`);
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     return;
   }
@@ -298,8 +289,7 @@ function renderRDistribution() {
   const avgW = wins.length ? wins.reduce((a, b) => a + b, 0) / wins.length : null;
   const avgL = losses.length ? losses.reduce((a, b) => a + b, 0) / losses.length : null;
   const exp = rValues.reduce((a, b) => a + b, 0) / rValues.length;
-  const stat = (l, v, c) => `<div class="es-item"><span class="es-label">${l}</span><span class="es-val"${c ? ` style="color:${c}"` : ''}>${v}</span></div>`;
-  if (statsEl) statsEl.innerHTML = stat('Espérance', fmtR(exp) + 'R / trade', exp >= 0 ? t.green : t.red) + stat('Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—') + stat('Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—') + stat('Trades', String(closed.length));
+  if (statsEl) mount(statsEl, html`${esItem('Espérance', fmtR(exp) + 'R / trade', exp >= 0 ? 'green' : 'red')}${esItem('Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${esItem('Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
   if (!chartsAvailable('rDistChart')) return;
   const idxOf = v => Math.max(0, Math.min(nb - 1, (v - b0) / bw - .5));   // position continue (au centre des classes)
   rDistChartInst = new Chart(canvas.getContext('2d'), {
@@ -337,7 +327,7 @@ function renderMonthlyReturnsTable() {
   const byMonth = {};
   trades.forEach(t => { if (!/^\d{4}-\d{2}/.test(t.date || '') || t.pnlEur == null) return; const k = t.date.slice(0, 7); byMonth[k] = (byMonth[k] || 0) + t.pnlEur; });
   const keys = Object.keys(byMonth).sort();
-  if (!keys.length) { cont.innerHTML = '<p class="empty-note">Pas encore de données mensuelles (il faut des P&amp;L en €).</p>'; return; }
+  if (!keys.length) { mount(cont, html`<p class="empty-note">Pas encore de données mensuelles (il faut des P&amp;L en €).</p>`); return; }
   // Solde au début de chaque mois = solde de départ + P&L des mois précédents.
   const startBal = {}; let bal = accountSize || 0;
   keys.forEach(k => { startBal[k] = bal; bal += byMonth[k]; });
@@ -346,20 +336,18 @@ function renderMonthlyReturnsTable() {
   const maxAbs = Math.max(...Object.values(byMonth).map(Math.abs), 1);
   const M = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
   const pctTxt = (v, base) => base > 0 ? fmtPct(v / base * 100) : '';
-  let html = '<div style="overflow-x:auto"><table style="min-width:760px"><thead><tr><th>Année</th>' + M.map(m => `<th style="text-align:center">${m}</th>`).join('') + '<th style="text-align:right">Année</th></tr></thead><tbody>';
-  years.slice().reverse().forEach(y => {
+  const yearRow = y => {
     let tot = 0;
-    html += `<tr><td style="font-family:var(--mono);font-weight:600">${y}</td>`;
-    for (let m = 1; m <= 12; m++) {
-      const k = y + '-' + String(m).padStart(2, '0'), v = byMonth[k];
-      if (v === undefined) { html += '<td style="text-align:center;color:var(--txt3)">—</td>'; continue; }
+    const cells = M.map((_, i) => {
+      const k = y + '-' + String(i + 1).padStart(2, '0'), v = byMonth[k];
+      if (v === undefined) return html`<td class="mr-empty">—</td>`;
       tot += v;
-      const hc = heatColors(v, maxAbs);
-      html += `<td style="padding:5px 3px"><div class="mr-cell" style="background:${hc.bg};color:${hc.strong ? hc.onFill : 'var(--txt)'}" title="${esc(M[m - 1] + ' ' + y)} : ${fmtEUR(v, true, 2)}"><b>${fmtEURCompact(v).replace(/^(?!-)/, v > 0 ? '+' : '')}</b><span>${pctTxt(v, startBal[k])}</span></div></td>`;
-    }
-    html += `<td style="text-align:right;font-family:var(--mono);font-weight:600;color:${tot >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtEUR(tot, true)}<div style="font-size:11px;font-weight:400;color:var(--txt3)">${pctTxt(tot, yearStart[y])}</div></td></tr>`;
-  });
-  cont.innerHTML = html + '</tbody></table></div>';
+      const hc = heatColors(v, maxAbs);   // couleur continue selon le montant : seule valeur calculée laissée en ligne
+      return html`<td class="mr-td"><div class="mr-cell" style="${raw(`background:${hc.bg};color:${hc.strong ? hc.onFill : 'var(--txt)'}`)}" title="${M[i] + ' ' + y} : ${fmtEUR(v, true, 2)}"><b>${fmtEURCompact(v).replace(/^(?!-)/, v > 0 ? '+' : '')}</b><span>${pctTxt(v, startBal[k])}</span></div></td>`;
+    });
+    return html`<tr><td class="mr-year">${y}</td>${cells}<td class="mr-total tone-${raw(tot >= 0 ? 'green' : 'red')}">${fmtEUR(tot, true)}<div class="mr-total-pct">${pctTxt(tot, yearStart[y])}</div></td></tr>`;
+  };
+  mount(cont, html`<div class="scroll-x"><table class="mr-table"><thead><tr><th>Année</th>${M.map(m => html`<th class="c">${m}</th>`)}<th class="r">Année</th></tr></thead><tbody>${years.slice().reverse().map(yearRow)}</tbody></table></div>`);
 }
 
 // ── HEATMAP JOUR × HEURE D'ENTRÉE ────────────────────────────────────
@@ -378,27 +366,27 @@ function renderHeatmapDH() {
     g.n++; g.net += val(t); if (t.res === 'TP') g.w++;
     minH = Math.min(minH, h); maxH = Math.max(maxH, h); dows.add(dow);
   });
-  if (maxH < 0) { cont.innerHTML = '<p class="empty-note">Renseigne l\'heure d\'entrée de tes trades pour voir tes meilleurs créneaux.</p>'; if (sub) sub.textContent = ''; return; }
+  if (maxH < 0) { mount(cont, html`<p class="empty-note">Renseigne l'heure d'entrée de tes trades pour voir tes meilleurs créneaux.</p>`); if (sub) sub.textContent = ''; return; }
   const days = [0, 1, 2, 3, 4].concat([5, 6].filter(d => dows.has(d)));
   const DN = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], DL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
   const hours = []; for (let h = minH; h <= maxH; h++) hours.push(h);
   const maxAbs = Math.max(...Object.values(grid).map(g => Math.abs(g.net)), 1e-9);
   const fmtV = v => useEur ? fmtEUR(v, true, 0) : (v >= 0 ? '+' : '') + v.toFixed(2) + 'R';
   heatDHCells = [];
-  let html = `<div class="hm-grid" style="grid-template-columns:40px repeat(${hours.length},minmax(26px,1fr))"><div></div>` + hours.map(h => `<div class="hm-collbl">${String(h).padStart(2, '0')}h</div>`).join('');
+  const cells = [];
   days.forEach(d => {
-    html += `<div class="hm-rowlbl">${DN[d]}</div>`;
+    cells.push(html`<div class="hm-rowlbl">${DN[d]}</div>`);
     hours.forEach(h => {
       const g = grid[d + '-' + h];
-      if (!g) { html += '<div class="hm-cell"></div>'; return; }
+      if (!g) { cells.push(html`<div class="hm-cell"></div>`); return; }
       const hc = heatColors(g.net, maxAbs), i = heatDHCells.length;
       heatDHCells.push({ title: DL[d] + ' · ' + String(h).padStart(2, '0') + 'h – ' + String((h + 1) % 24).padStart(2, '0') + 'h', g });
-      html += `<div class="hm-cell has" tabindex="0" data-i="${i}" style="background:${hc.bg}${g.n < 3 ? ';opacity:.6' : ''}" aria-label="${esc(heatDHCells[i].title)} : ${esc(fmtV(g.net))}, ${g.n} trade(s)"></div>`;
+      cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw('background:' + hc.bg)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)"></div>`);
     });
   });
-  const t = chartTokens(), scale = [-1, -.6, -.25, .25, .6, 1].map(r => `<span style="background:${heatColors(r * maxAbs, maxAbs).bg}"></span>`).join('');
-  html += `</div><div class="hm-legend"><span>Perte</span><span class="hm-scale">${scale}</span><span>Gain</span><span style="margin-left:12px">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`;
-  cont.innerHTML = html;
+  const t = chartTokens();
+  mount(cont, html`<div class="hm-grid" style="${raw('--cols:' + hours.length)}"><div></div>${hours.map(h => html`<div class="hm-collbl">${String(h).padStart(2, '0')}h</div>`)}${cells}</div>
+    <div class="hm-legend"><span>Perte</span><span class="hm-scale">${[-1, -.6, -.25, .25, .6, 1].map(r => html`<span style="${raw('background:' + heatColors(r * maxAbs, maxAbs).bg)}"></span>`)}</span><span>Gain</span><span class="hm-legend-note">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`);
   const ranked = heatDHCells.filter(c => c.g.n >= 3).sort((a, b) => b.g.net - a.g.net);
   if (sub) sub.textContent = ranked.length ? 'Meilleur créneau : ' + ranked[0].title + ' (' + fmtV(ranked[0].g.net) + ', ' + ranked[0].g.n + ' trades)' + (ranked.length > 1 && ranked[ranked.length - 1].g.net < 0 ? ' · le plus coûteux : ' + ranked[ranked.length - 1].title + ' (' + fmtV(ranked[ranked.length - 1].g.net) + ')' : '') : (useEur ? 'Résultat net en € par créneau' : 'R cumulé par créneau');
   const show = (e, el) => {
@@ -449,13 +437,13 @@ function computeDiscipline() {
 function renderRadar() {
   const d = computeDiscipline();
   const list = document.getElementById('discipline-list');
-  const sevCol = p => p === null ? 'var(--txt3)' : (p >= 85 ? 'var(--green)' : p >= 60 ? 'var(--amber)' : 'var(--red)');
-  if (list) list.innerHTML = d.items.map(i => `<div title="${esc(i.hint)}" style="margin-bottom:11px;${i.pct === null ? 'opacity:.6' : ''}">
-      <div style="display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:5px"><span style="color:var(--txt2)">${esc(i.label)}</span><span style="font-family:var(--mono);color:var(--txt)">${i.pct === null ? '<span style="color:var(--txt3)">non suivi</span>' : Math.round(i.pct) + ' %'}${i.n ? ' <span style="color:var(--txt3)">· n=' + i.n + '</span>' : ''}</span></div>
-      <div class="meter" style="height:5px"><div class="meter-fill" style="width:${i.pct === null ? 0 : Math.round(i.pct)}%;background:${sevCol(i.pct)}"></div></div></div>`).join('');
+  const sev = p => p === null ? 'muted' : (p >= 85 ? 'green' : p >= 60 ? 'amber' : 'red');
+  if (list) mount(list, html`${d.items.map(i => html`<div class="dc-item${raw(i.pct === null ? ' off' : '')}" title="${i.hint}">
+      <div class="dc-top"><span class="dc-label">${i.label}</span><span class="dc-val">${i.pct === null ? html`<span class="tone-muted">non suivi</span>` : Math.round(i.pct) + ' %'}${i.n ? html` <span class="tone-muted">· n=${i.n}</span>` : ''}</span></div>
+      <div class="meter thin"><div class="meter-fill fill-${raw(sev(i.pct))}" style="${raw('width:' + (i.pct === null ? 0 : Math.round(i.pct)) + '%')}"></div></div></div>`)}`);
   const scoreEl = document.getElementById('discipline-score-val'), bar = document.getElementById('discipline-score-marker'), note = document.getElementById('discipline-note');
-  if (scoreEl) { scoreEl.textContent = d.score === null ? '—' : d.score; scoreEl.style.color = d.score === null ? 'var(--txt3)' : 'var(--txt)'; }
-  if (bar) { bar.style.width = (d.score === null ? 0 : d.score) + '%'; bar.style.background = sevCol(d.score); }
+  if (scoreEl) { scoreEl.textContent = d.score === null ? '—' : d.score; scoreEl.classList.toggle('tone-muted', d.score === null); scoreEl.classList.toggle('tone-txt', d.score !== null); }
+  if (bar) { bar.style.width = (d.score === null ? 0 : d.score) + '%'; bar.className = bar.className.replace(/\s*fill-\w+/g, '') + ' fill-' + sev(d.score); }
   if (note) note.textContent = d.score === null ? 'Il faut au moins 2 critères suivis pour calculer un score sur 100.' : 'Score sur 100 · ' + d.tracked + ' critère(s) suivi(s) sur ' + d.total + '. Survole un critère pour sa définition.';
 }
 
@@ -464,29 +452,33 @@ function renderAssetBars() {
   const trades = viewTrades();   // vue filtrée (filtre global)
   const cont = document.getElementById('asset-bars');
   if (!cont) return;
-  if (!trades.length) { cont.innerHTML = '<p class="empty-note">Apparaîtra dès ton premier trade.</p>'; return; }
+  if (!trades.length) { mount(cont, html`<p class="empty-note">Apparaîtra dès ton premier trade.</p>`); return; }
   const groups = {};
   trades.forEach(t => { const k = t.asset || '—'; (groups[k] = groups[k] || []).push(t); });
   const rows = Object.entries(groups).map(([asset, list]) => {
     const e = list.filter(t => t.pnlEur != null), r = analysisTrades().filter(t => (t.asset || '—') === asset && t.pnl != null);
     return { asset, w: winStats(list), eur: e.length ? e.reduce((a, t) => a + t.pnlEur, 0) : null, r: r.reduce((a, t) => a + t.pnl, 0) };
   }).filter(r => r.w.n > 0).sort((a, b) => b.w.n - a.w.n || a.asset.localeCompare(b.asset));
-  if (!rows.length) { cont.innerHTML = '<p class="empty-note">Aucun trade clôturé.</p>'; return; }
+  if (!rows.length) { mount(cont, html`<p class="empty-note">Aucun trade clôturé.</p>`); return; }
   const be = breakevenWinRate();
   const MAX = 8, shown = rows.slice(0, MAX), rest = rows.slice(MAX);
-  const t = chartTokens();
-  cont.innerHTML = `<div class="asset-row head"><span>Actif</span><span>Win rate${be !== null ? ' (repère : seuil ' + Math.round(be * 100) + ' %)' : ''}</span><span>Win</span><span>n</span><span>P&amp;L</span></div>` +
-    shown.map(({ asset, w, eur, r }) => {
+  mount(cont, html`<div class="asset-row head"><span>Actif</span><span>Win rate${be !== null ? ' (repère : seuil ' + Math.round(be * 100) + ' %)' : ''}</span><span>Win</span><span>n</span><span>P&amp;L</span></div>
+    ${shown.map(({ asset, w, eur, r }) => {
       const low = w.n < 10, pnl = eur !== null ? eur : r;
-      const tip = esc(asset) + ' : ' + w.wins + ' G / ' + w.losses + ' P' + (w.be ? ' / ' + w.be + ' BE' : '') + ' · ' + fmtCI(w) + (low ? ' · échantillon trop faible pour conclure (n < 10)' : '');
-      return `<div class="asset-row" title="${tip}" style="${low ? 'opacity:.6' : ''}">
-        <span class="asset-name">${esc(asset.length > 12 ? asset.slice(0, 11) + '…' : asset)}</span>
-        <div class="meter"><div class="meter-fill" style="width:${w.rate * 100}%;background:${t.accent}"></div>${be !== null ? `<div class="meter-tick" style="left:calc(${be * 100}% - 1px)"></div>` : ''}</div>
+      const tip = asset + ' : ' + w.wins + ' G / ' + w.losses + ' P' + (w.be ? ' / ' + w.be + ' BE' : '') + ' · ' + fmtCI(w) + (low ? ' · échantillon trop faible pour conclure (n < 10)' : '');
+      return html`<div class="asset-row${raw(low ? ' low' : '')}" title="${tip}">
+        <span class="asset-name">${asset.length > 12 ? asset.slice(0, 11) + '…' : asset}</span>
+        ${UI.meter(w.rate * 100, 'var(--accent)', { tick: be !== null ? be * 100 : null })}
         <span class="asset-num">${Math.round(w.rate * 100)} %</span>
         <span class="asset-num muted">${w.n}${low ? ' ⚠' : ''}</span>
-        <span class="asset-num" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${eur !== null ? fmtEUR(eur, true) : (r >= 0 ? '+' : '') + r.toFixed(1) + 'R'}</span>
+        <span class="asset-num tone-${raw(pnl >= 0 ? 'green' : 'red')}">${eur !== null ? fmtEUR(eur, true) : (r >= 0 ? '+' : '') + r.toFixed(1) + 'R'}</span>
       </div>`;
-    }).join('') +
-    (rest.length ? `<p class="empty-note" style="margin-top:8px">+ ${rest.length} autre(s) actif(s) — détail dans Statistiques › Performance par asset</p>` : '');
+    })}
+    ${rest.length ? html`<p class="empty-note mt-8">+ ${rest.length} autre(s) actif(s) — détail dans Statistiques › Performance par asset</p>` : ''}`);
 }
 
+
+// Chiffre du bandeau sous un graphique (libellé + valeur, ton optionnel : green / red…).
+function esItem(label, value, tone) {
+  return html`<div class="es-item"><span class="es-label">${label}</span><span class="es-val${raw(tone ? ' tone-' + tone : '')}">${value}</span></div>`;
+}

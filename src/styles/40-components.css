@@ -1,0 +1,54 @@
+/* ═══ Classes issues de la conversion en composants : remplacent les styles écrits en ligne ═══ */
+.tone-txt{color:var(--txt)!important}.tone-txt2{color:var(--txt2)!important}
+.h-220{height:220px}
+
+/* Bilan journalier */
+.bl-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.bl-kpis .kpi{padding:14px 16px}
+.bl-kpi-val{font-size:22px}
+.bl-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow-x:auto}
+.bl-card-title{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--txt)}
+.bl-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)}
+.bl-table thead tr{background:var(--bg3)}
+.bl-table th{padding:8px 12px;text-align:left;color:var(--txt3)}
+.bl-table td{padding:8px 12px}
+.bl-table tbody tr{border-top:1px solid var(--border)}
+.bl-table tbody tr:nth-child(even){background:var(--bg3)}
+.bl-table td.strong{font-weight:500;color:var(--txt)}
+.bl-table td.c2{color:var(--txt2)}
+.bl-table td.c3{color:var(--txt3)}
+.bl-res{padding:2px 8px;border-radius:calc(var(--r) * .4);font-weight:500;--c:var(--blue);color:var(--c);background:color-mix(in srgb,var(--c) 13.3%,transparent)}
+.bl-res.res-TP{--c:var(--green)}.bl-res.res-SL{--c:var(--red)}.bl-res.res-BE{--c:var(--amber)}
+.bl-cap{width:48px;height:36px;object-fit:cover;border-radius:calc(var(--r) * .4);cursor:pointer;vertical-align:middle}
+.asset-row.low{opacity:.6}
+.asset-name.sans{font-family:var(--sans)}
+
+/* Remplissages de jauge par ton (priment sur les couleurs par défaut) */
+.fill-green{background:var(--green)!important}.fill-red{background:var(--red)!important}.fill-amber{background:var(--amber)!important}
+.fill-accent{background:var(--accent)!important}.fill-muted{background:var(--txt3)!important}
+.meter-fill.dim{opacity:.55}
+.meter.thin{height:5px}
+.scroll-x{overflow-x:auto}
+.mt-8{margin-top:8px}
+
+/* Dashboard */
+.sp-base{stroke:var(--txt3)}
+.sp-area{fill:var(--accent);opacity:.1}
+.sp-line{stroke:var(--accent)}
+.mr-table{min-width:760px}
+.mr-table th.c{text-align:center}
+.mr-table th.r{text-align:right}
+.mr-year{font-family:var(--mono);font-weight:600}
+.mr-empty{text-align:center;color:var(--txt3)}
+.mr-table td.mr-td{padding:5px 3px}
+.mr-total{text-align:right;font-family:var(--mono);font-weight:600}
+.mr-total-pct{font-size:11px;font-weight:400;color:var(--txt3)}
+.hm-grid{grid-template-columns:40px repeat(var(--cols,12),minmax(26px,1fr))}
+.hm-cell.dim{opacity:.6}
+.hm-legend-note{margin-left:12px}
+.dc-item{margin-bottom:11px}
+.dc-item.off{opacity:.6}
+.dc-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:5px}
+.dc-label{color:var(--txt2)}
+.dc-val{font-family:var(--mono);color:var(--txt)}
+.bl-empty{color:var(--txt3);font-size:13px}

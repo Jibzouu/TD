@@ -9,13 +9,14 @@ function renderBilan() {
   // on retombe sur la plus récente au lieu de garder une sélection fantôme.
   const dates = [...new Set(trades.map(t=>t.date))].sort().reverse();
   const curVal = (sel.value && dates.includes(sel.value)) ? sel.value : (dates[0]||'');
-  sel.innerHTML = dates.map(d=>`<option value="${esc(d)}" ${d===curVal?'selected':''}>${esc(d)}</option>`).join('');
+  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${d}</option>`)}`);
 
   const dayTrades = curVal ? trades.filter(t => t.date === curVal) : [];
+  const content = document.getElementById('bilan-content');
   if (!curVal) {
-    document.getElementById('bilan-content').innerHTML = '<p style="color:var(--txt3);font-size:13px">Aucun trade enregistré.</p>';
+    mount(content, html`<p class="bl-empty">Aucun trade enregistré.</p>`);
   } else if (!dayTrades.length) {
-    document.getElementById('bilan-content').innerHTML = '<p style="color:var(--txt3);font-size:13px">Aucun trade ce jour.</p>';
+    mount(content, html`<p class="bl-empty">Aucun trade ce jour.</p>`);
   } else {
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;
@@ -24,63 +25,36 @@ function renderBilan() {
   const eurDay = dayTrades.filter(t=>t.pnlEur!=null);
   const pnlEur = eurDay.reduce((s,t)=>s+t.pnlEur,0);
   const wr = (tp+sl+be)>0 ? (tp/(tp+sl+be)*100).toFixed(0)+'%' : '—';
-  const avgEmotion = dayTrades.filter(t=>t.emotion).length>0 ? (dayTrades.filter(t=>t.emotion).reduce((s,t)=>s+t.emotion,0)/dayTrades.filter(t=>t.emotion).length).toFixed(1) : '—';
-  const emotionColor = avgEmotion!=='—' ? (avgEmotion>=4?'var(--green)':avgEmotion>=3?'var(--amber)':'var(--red)') : 'var(--txt3)';
-
-  document.getElementById('bilan-content').innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">
-      ${[
-        ['Trades',''+dayTrades.length,'var(--txt)'],
-        ['TP',''+tp,'var(--green)'],
-        ['SL',''+sl,'var(--red)'],
-        ['Win Rate',wr,tp/(tp+sl+be||1)>=.5?'var(--green)':'var(--red)'],
-        ['P&L (€)',eurDay.length?fmtEUR(pnlEur,true):'—',!eurDay.length?'var(--txt3)':pnlEur>=0?'var(--green)':'var(--red)'],
-        ['P&L (R)',(pnlR>=0?'+':'')+pnlR.toFixed(2)+'R',pnlR>=0?'var(--green)':'var(--red)'],
-        ['Humeur moy.',avgEmotion+'/5',emotionColor],
-      ].map(([l,v,c])=>`<div class="kpi" style="padding:14px 16px">
-        <div class="kpi-label">${l}</div>
-        <div class="kpi-val" style="font-size:22px;color:${c}">${v}</div>
-      </div>`).join('')}
-    </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow-x:auto">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--txt)">Trades du jour</div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)">
-        <thead><tr style="background:var(--bg3)">
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Asset</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">TF</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Session</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Entrée</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Sortie</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Dir.</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Résultat</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">RR</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">P&L</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Humeur</th>
-          <th style="padding:8px 12px;text-align:left;color:var(--txt3)">Capture</th>
-        </tr></thead>
-        <tbody>${dayTrades.map((t,i)=>{
-          const bc=t.res==='TP'?cssVar('--green','#22c55e'):t.res==='SL'?cssVar('--red','#ef4444'):t.res==='BE'?cssVar('--amber','#f59e0b'):cssVar('--blue','#60a5fa');
-          const emotionStars=t.emotion?'★'.repeat(t.emotion)+'☆'.repeat(5-t.emotion):'—';
-          const emC=t.emotion>=4?'var(--green)':t.emotion>=3?'var(--amber)':'var(--red)';
-          const capCell=safeImgSrc(t.cap)
-            ?`<img src="${safeImgSrc(t.cap)}" onclick="openLightboxById(${t.id})" style="width:48px;height:36px;object-fit:cover;border-radius:calc(var(--r) * .4);cursor:pointer;vertical-align:middle">`
-            :'—';
-          return `<tr style="border-top:1px solid var(--border);${i%2?'background:var(--bg3)':''}">
-            <td style="padding:8px 12px;font-weight:500;color:var(--txt)">${esc(t.asset)}</td>
-            <td style="padding:8px 12px;color:var(--txt2)">${esc(t.tf)}</td>
-            <td style="padding:8px 12px;color:var(--txt3)">${esc(t.session||'—')}</td>
-            <td style="padding:8px 12px;color:var(--txt2)">${esc(t.entry||'—')}</td>
-            <td style="padding:8px 12px;color:var(--txt2)">${esc(t.exit||'—')}</td>
-            <td style="padding:8px 12px">${esc(t.dir||'—')}</td>
-            <td style="padding:8px 12px"><span style="background:${bc}22;color:${bc};padding:2px 8px;border-radius:calc(var(--r) * .4);font-weight:500">${esc(t.res)}</span></td>
-            <td style="padding:8px 12px;color:var(--txt2)">${t.rr?esc(t.rr)+'R':'—'}</td>
-            <td style="padding:8px 12px;color:${t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--txt3)'};font-weight:500">${t.pnl != null?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':'—'}</td>
-            <td style="padding:8px 12px;color:${t.emotion?emC:'var(--txt3)'}">${emotionStars}</td>
-            <td style="padding:8px 12px">${capCell}</td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>`;
+  const withEmo = dayTrades.filter(t=>t.emotion);
+  const avgEmotion = withEmo.length ? (withEmo.reduce((s,t)=>s+t.emotion,0)/withEmo.length).toFixed(1) : '—';
+  const emoTone = e => e >= 4 ? 'green' : e >= 3 ? 'amber' : 'red';
+  const kpis = [
+    ['Trades', dayTrades.length, ''],
+    ['TP', tp, 'green'],
+    ['SL', sl, 'red'],
+    ['Win Rate', wr, tp/(tp+sl+be||1) >= .5 ? 'green' : 'red'],
+    ['P&L (€)', eurDay.length ? fmtEUR(pnlEur,true) : '—', !eurDay.length ? 'muted' : pnlEur >= 0 ? 'green' : 'red'],
+    ['P&L (R)', (pnlR>=0?'+':'')+pnlR.toFixed(2)+'R', pnlR >= 0 ? 'green' : 'red'],
+    ['Humeur moy.', avgEmotion+'/5', avgEmotion !== '—' ? emoTone(avgEmotion) : 'muted'],
+  ];
+  const HEAD = ['Asset', 'TF', 'Session', 'Entrée', 'Sortie', 'Dir.', 'Résultat', 'RR', 'P&L', 'Humeur', 'Capture'];
+  const row = t => {
+    const src = safeImgSrc(t.cap);
+    return html`<tr>
+      <td class="strong">${t.asset}</td><td class="c2">${t.tf}</td><td class="c3">${t.session || '—'}</td>
+      <td class="c2">${t.entry || '—'}</td><td class="c2">${t.exit || '—'}</td><td>${t.dir || '—'}</td>
+      <td><span class="bl-res res-${raw(['TP','SL','BE'].includes(t.res) ? t.res : 'OPEN')}">${t.res}</span></td>
+      <td class="c2">${t.rr ? t.rr + 'R' : '—'}</td>
+      <td class="strong tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : '—'}</td>
+      <td class="tone-${raw(t.emotion ? emoTone(t.emotion) : 'muted')}">${t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—'}</td>
+      <td>${src ? html`<img class="bl-cap" src="${src}" alt="Capture" onclick="openLightboxById(${raw(t.id)})">` : '—'}</td>
+    </tr>`;
+  };
+  mount(content, html`
+    <div class="bl-kpis">${kpis.map(([l, v, tone]) => html`<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-val bl-kpi-val${raw(tone ? ' tone-' + tone : '')}">${v}</div></div>`)}</div>
+    <div class="bl-card"><div class="bl-card-title">Trades du jour</div>
+      <table class="bl-table"><thead><tr>${HEAD.map(h => html`<th>${h}</th>`)}</tr></thead><tbody>${dayTrades.map(row)}</tbody></table>
+    </div>`);
   }
 
   // Heatmap et barres agrégées : toujours à jour, indépendamment du jour sélectionné
@@ -102,8 +76,8 @@ function renderHeatmap() {
   list.forEach(t => { const h = parseInt(t.entry, 10); if (isNaN(h)) return; const g = hMap[h] = hMap[h] || { n: 0, w: 0, net: 0 }; g.n++; g.net += val(t); if (t.res === 'TP') g.w++; });
   const hs = Object.keys(hMap).map(Number).sort((a, b) => a - b);
   if (bilanHourChartInst) { bilanHourChartInst.destroy(); bilanHourChartInst = null; }
-  if (!hs.length) { wrap.innerHTML = '<p class="empty-note">Renseigne l\'heure d\'entrée de tes trades pour voir tes meilleures heures.</p>'; return; }
-  if (!document.getElementById('bilanHourChart')) wrap.innerHTML = '<div class="chart-wrap" style="height:220px"><canvas id="bilanHourChart"></canvas></div>';
+  if (!hs.length) { mount(wrap, html`<p class="empty-note">Renseigne l'heure d'entrée de tes trades pour voir tes meilleures heures.</p>`); return; }
+  if (!document.getElementById('bilanHourChart')) mount(wrap, html`<div class="chart-wrap h-220"><canvas id="bilanHourChart"></canvas></div>`);
   if (!chartsAvailable('bilanHourChart')) return;
   const hours = []; for (let h = hs[0]; h <= hs[hs.length - 1]; h++) hours.push(h);
   const t = chartTokens(), data = hours.map(h => hMap[h] ? +hMap[h].net.toFixed(2) : 0);
@@ -130,14 +104,16 @@ function renderHeatmap() {
 // Ligne « nom · jauge win rate · WR · n · net » commune aux sessions et aux jours.
 function perfRowHtml(name, v, useEur, tag) {
   const total = v.tp + v.sl + v.be, rate = total ? v.tp / total : 0, low = v.n < 10, be = breakevenWinRate();
-  return `<div class="asset-row" style="${low ? 'opacity:.6' : ''}" title="${low ? 'Échantillon trop faible pour conclure (n < 10)' : ''}">
-    <span class="asset-name" style="font-family:var(--sans)">${esc(name)}${tag || ''}</span>
-    <div class="meter"><div class="meter-fill" style="width:${rate * 100}%;background:var(--accent)"></div>${be !== null ? `<div class="meter-tick" style="left:calc(${be * 100}% - 1px)"></div>` : ''}</div>
+  return html`<div class="asset-row${raw(low ? ' low' : '')}" title="${low ? 'Échantillon trop faible pour conclure (n < 10)' : ''}">
+    <span class="asset-name sans">${name}${tag || ''}</span>
+    ${UI.meter(rate * 100, 'var(--accent)', { tick: be !== null ? be * 100 : null })}
     <span class="asset-num">${Math.round(rate * 100)} %</span>
     <span class="asset-num muted">${v.n}${low ? ' ⚠' : ''}</span>
-    <span class="asset-num" style="color:${v.net >= 0 ? 'var(--green)' : 'var(--red)'}">${useEur ? fmtEUR(v.net, true, 0) : (v.net >= 0 ? '+' : '') + v.net.toFixed(1) + 'R'}</span>
+    <span class="asset-num tone-${raw(v.net >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(v.net, true, 0) : (v.net >= 0 ? '+' : '') + v.net.toFixed(1) + 'R'}</span>
   </div>`;
 }
+
+const perfHead = first => html`<div class="asset-row head"><span>${first}</span><span>Win rate</span><span>Win</span><span>n</span><span>Net</span></div>`;
 
 // ── SESSION BARS ─────────────────────────────────────────────────────
 function renderSessionBars() {
@@ -157,8 +133,8 @@ function renderSessionBars() {
     sMap[t.session].net += val(t);
   });
   const hasSessions = sessions.some(s=>sMap[s]);
-  if (!hasSessions) { cont.innerHTML = '<p style="font-size:12px;color:var(--txt3)">Renseigne les sessions pour voir les stats par session.</p>'; return; }
-  cont.innerHTML = `<div class="asset-row head"><span>Session</span><span>Win rate</span><span>Win</span><span>n</span><span>Net</span></div>` + sessions.filter(x => sMap[x]).map(x => perfRowHtml(x, sMap[x], useEur)).join('');
+  if (!hasSessions) { mount(cont, html`<p class="empty-note">Renseigne les sessions pour voir les stats par session.</p>`); return; }
+  mount(cont, html`${perfHead('Session')}${sessions.filter(x => sMap[x]).map(x => perfRowHtml(x, sMap[x], useEur))}`);
 }
 
 function renderWeekdayBars() {
@@ -183,13 +159,13 @@ function renderWeekdayBars() {
     map[dow].net += val(t);
   });
   const active = order.filter(d => map[d]);
-  if (!active.length) { cont.innerHTML = '<p style="font-size:12px;color:var(--txt3)">Pas encore assez de trades datés pour ce classement.</p>'; return; }
+  if (!active.length) { mount(cont, html`<p class="empty-note">Pas encore assez de trades datés pour ce classement.</p>`); return; }
   let bestDay = null, worstDay = null;
   active.forEach(d => {
     if (bestDay === null || map[d].net > map[bestDay].net) bestDay = d;
     if (worstDay === null || map[d].net < map[worstDay].net) worstDay = d;
   });
-  cont.innerHTML = `<div class="asset-row head"><span>Jour</span><span>Win rate</span><span>Win</span><span>n</span><span>Net</span></div>` + active.map(d => perfRowHtml(names[d], map[d], useEur,
-    d === bestDay ? '<span class="tag-chip" style="color:var(--green)">meilleur</span>' : (d === worstDay && active.length > 1 ? '<span class="tag-chip" style="color:var(--red)">pire</span>' : ''))).join('');
+  mount(cont, html`${perfHead('Jour')}${active.map(d => perfRowHtml(names[d], map[d], useEur,
+    d === bestDay ? html`<span class="tag-chip tone-green">meilleur</span>` : (d === worstDay && active.length > 1 ? html`<span class="tag-chip tone-red">pire</span>` : '')))}`);
 }
 
