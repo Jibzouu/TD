@@ -213,3 +213,19 @@ test('dashboard v3 : barre Aujourd’hui, réglages dans Paramètres, sections, 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('constat « meilleur jour » : pertes soustraites, cumul de tous les mardis explicite', async () => {
+  const mk = (id, date, res, pnl) => T({ id, date, res, pnl, rr: Math.abs(pnl), pnlEur: pnl * 50, rSrc: 'prix' });
+  const { page, ctx } = await openJournal({ seed: { tj_trades: [
+    mk(1, '2026-06-16', 'TP', 5.09), mk(2, '2026-06-16', 'SL', -1), mk(3, '2026-06-16', 'SL', -1),   // mardi : +3,09R
+    mk(4, '2026-06-09', 'TP', 4), mk(5, '2026-06-09', 'SL', -1),                                         // mardi : +3R
+    mk(6, '2026-06-15', 'TP', 2), mk(7, '2026-06-12', 'SL', -1),
+  ] } });
+  const chip = page.locator('#summary-banner .insight').first();
+  const text = await chip.innerText();
+  assert.match(text, /mardi/);
+  assert.match(text, /\+6,1R/, 'somme signée des deux mardis (5,09 − 1 − 1 + 4 − 1), pas la somme des RR (12,09)');
+  assert.match(text, /cumul de 2 mardis/);
+  assert.match(await chip.getAttribute('title'), /\+9,1R de gains -3,0R de pertes = \+6,1R · 5 trades/);
+  await ctx.close();
+});

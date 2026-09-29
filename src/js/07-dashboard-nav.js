@@ -5,27 +5,37 @@ function renderSummaryBanner() {
   if (!box) return;
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
   const WD_NAMES = { 0: 'dimanche', 1: 'lundi', 2: 'mardi', 3: 'mercredi', 4: 'jeudi', 5: 'vendredi', 6: 'samedi' };
-  const best = map => Object.entries(map).reduce((b, [k, v]) => (b === null || v > b[1]) ? [k, v] : b, null);
+  // Cumul sur TOUT l'historique filtré (tous les mardis, toutes les entrées à 13h…) : gains ET pertes, en R signé.
+  const agg = () => ({ net: 0, win: 0, loss: 0, n: 0, days: new Set() });
   const wdMap = {}, hMap = {};
   trades.forEach(t => {
-    if (t.pnl === null || t.pnl === undefined) return;
+    if (t.pnl === null || t.pnl === undefined || !['TP', 'SL', 'BE'].includes(t.res)) return;
+    const add = (map, k) => { const g = map[k] = map[k] || agg(); g.net += t.pnl; g.n++; g.days.add(t.date); if (t.pnl > 0) g.win += t.pnl; else g.loss += t.pnl; };
     const d = t.date ? new Date(t.date + 'T00:00:00') : null;
-    if (d && !isNaN(d)) wdMap[d.getDay()] = (wdMap[d.getDay()] || 0) + t.pnl;
+    if (d && !isNaN(d)) add(wdMap, d.getDay());
     const h = t.entry ? parseInt(t.entry.split(':')[0], 10) : NaN;
-    if (!isNaN(h)) hMap[h] = (hMap[h] || 0) + t.pnl;
+    if (!isNaN(h)) add(hMap, h);
   });
+  const best = map => Object.entries(map).reduce((b, e) => (b === null || e[1].net > b[1].net) ? e : b, null);
   const bDow = best(wdMap), bHour = best(hMap);
   const tilt = typeof computeTiltTrades === 'function' ? computeTiltTrades().flagged : [];
   const tiltCost = tilt.reduce((s, f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
   const fmtR = v => (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + 'R';
+  const detail = g => fmtR(g.win) + ' de gains ' + fmtR(g.loss).replace('+', '') + ' de pertes = ' + fmtR(g.net) + ' · ' + g.n + ' trade' + (g.n > 1 ? 's' : '');
   const goBilan = "showPage('bilan', document.querySelector('.nav-item[data-page=bilan]'))";
   const goTilt = "showPage('stats', document.querySelector('.nav-item[data-page=stats]'));showStatsSubtab('behavior')";
-  const chip = (icon, key, val, extra, tone, go) => html`<button class="insight" onclick="${raw(go)}"><span class="insight-ic" aria-hidden="true">${icon}</span><span class="insight-txt"><span class="insight-k">${key}</span><b>${val}</b>${extra ? html` <span class="tone-${raw(tone)}">${extra}</span>` : ''}</span></button>`;
+  const chip = (icon, key, val, extra, tone, go, note, title) => html`<button class="insight" onclick="${raw(go)}"${raw(title ? ` title="${esc(title)}"` : '')}><span class="insight-ic" aria-hidden="true">${icon}</span><span class="insight-txt"><span class="insight-k">${key}</span><b>${val}</b>${extra ? html` <span class="tone-${raw(tone)}">${extra}</span>` : ''}${note ? html` <span class="insight-note">${note}</span>` : ''}</span></button>`;
   const chips = [];
   if (closed.length >= 5) {
-    if (bDow && bDow[1] > 0) chips.push(chip('📅', 'Meilleur jour', WD_NAMES[bDow[0]], fmtR(bDow[1]), 'green', goBilan));
-    if (bHour && bHour[1] > 0) chips.push(chip('🕐', "Meilleure heure d'entrée", String(bHour[0]).padStart(2, '0') + 'h', fmtR(bHour[1]), 'green', goBilan));
-    if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt));
+    if (bDow && bDow[1].net > 0) {
+      const g = bDow[1], nd = g.days.size, day = WD_NAMES[bDow[0]];
+      chips.push(chip('📅', 'Meilleur jour', day, fmtR(g.net), 'green', goBilan, 'cumul de ' + nd + ' ' + day + (nd > 1 ? 's' : ''), 'Tous tes ' + day + 's réunis (' + nd + ' journée' + (nd > 1 ? 's' : '') + ') : ' + detail(g)));
+    }
+    if (bHour && bHour[1].net > 0) {
+      const g = bHour[1], hh = String(bHour[0]).padStart(2, '0') + 'h';
+      chips.push(chip('🕐', "Meilleure heure d'entrée", hh, fmtR(g.net), 'green', goBilan, 'sur ' + g.n + ' trade' + (g.n > 1 ? 's' : ''), 'Trades entrés entre ' + hh + ' et ' + String((+bHour[0] + 1) % 24).padStart(2, '0') + 'h : ' + detail(g)));
+    }
+    if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt, '', 'Ré-entrées rapides ou taille augmentée juste après une perte'));
   }
   mount(box, html`${chips}`);
   if (strip) strip.classList.toggle('no-insights', !chips.length);
