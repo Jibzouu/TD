@@ -45,18 +45,18 @@ function computeDayData(dateStr, dayMap) {
   calDayDataCache[dateStr] = data;
   return data;
 }
-let CAL_HEAT_INTENSITY = parseFloat(localStorage.getItem((GP + 'cal_heat_intensity')) || '1');
+let CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
 function onHeatIntensityChange(val) {
   CAL_HEAT_INTENSITY = parseInt(val, 10) / 100;
-  localStorage.setItem((GP + 'cal_heat_intensity'), CAL_HEAT_INTENSITY);
+  DB.setItem((GP + 'cal_heat_intensity'), CAL_HEAT_INTENSITY);
   const label = document.getElementById('heat-intensity-val');
   if (label) label.textContent = val + '%';
   renderCalendrier();
 }
-let CHART_INTENSITY = parseFloat(localStorage.getItem((GP + 'chart_intensity')) || '2');
+let CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
 function onChartIntensityChange(val) {
   CHART_INTENSITY = parseInt(val, 10) / 100;
-  localStorage.setItem((GP + 'chart_intensity'), CHART_INTENSITY);
+  DB.setItem((GP + 'chart_intensity'), CHART_INTENSITY);
   const label = document.getElementById('chart-intensity-val');
   if (label) label.textContent = val + '%';
   renderAll();

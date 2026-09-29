@@ -63,11 +63,11 @@ function renderSummaryBanner() {
 function renderWelcomeCard() {
   const card = document.getElementById('welcome-card');
   if (!card) return;
-  const dismissed = localStorage.getItem((JP + 'welcome_dismissed')) === '1';
+  const dismissed = DB.getItem((JP + 'welcome_dismissed')) === '1';
   card.style.display = (!dismissed && trades.length === 0) ? 'block' : 'none';
 }
 function dismissWelcome() {
-  localStorage.setItem((JP + 'welcome_dismissed'), '1');
+  DB.setItem((JP + 'welcome_dismissed'), '1');
   const card = document.getElementById('welcome-card');
   if (card) card.style.display = 'none';
 }
@@ -130,10 +130,10 @@ function showPage(id, btn) {
 function showStatsSubtab(id) {
   document.querySelectorAll('.subtab-panel').forEach(p => p.classList.toggle('active', p.dataset.subtab === id));
   document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === id));
-  localStorage.setItem((JP + 'stats_subtab'), id);
+  DB.setItem((JP + 'stats_subtab'), id);
 }
 function restoreStatsSubtab() {
-  const saved = localStorage.getItem((JP + 'stats_subtab'));
+  const saved = DB.getItem((JP + 'stats_subtab'));
   if (saved && document.querySelector(`.subtab-panel[data-subtab="${saved}"]`)) showStatsSubtab(saved);
 }
 

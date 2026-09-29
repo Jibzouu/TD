@@ -1,10 +1,10 @@
 // ── PROP FIRM : réglages ─────────────────────────────────────────────
 function loadPfSetting(key, fallback) {
-  const v = localStorage.getItem((JP + 'pf_') + key);
+  const v = DB.getItem((JP + 'pf_') + key);
   return v === null ? fallback : v;
 }
 function savePfSetting(key, val) {
-  localStorage.setItem((JP + 'pf_') + key, val);
+  DB.setItem((JP + 'pf_') + key, val);
 }
 function initPropFirmSettings() {
   const enabled = loadPfSetting('enabled', JOURNAL_ID === 'pf' ? '1' : '0');

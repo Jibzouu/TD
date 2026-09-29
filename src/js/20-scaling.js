@@ -26,7 +26,7 @@ function scalingDefaults() {
 function loadScalingState() {
   const d = scalingDefaults();
   try {
-    const raw = JSON.parse(localStorage.getItem(SCALING_KEY) || 'null');
+    const raw = JSON.parse(DB.getItem(SCALING_KEY) || 'null');
     if (raw && typeof raw === 'object') {
       ['start', 'riskPct', 'goal', 'current'].forEach(k => { if (typeof raw[k] === 'number' && isFinite(raw[k])) d[k] = raw[k]; });
       if (SCALING_MODES[raw.mode]) d.mode = raw.mode;
@@ -52,7 +52,7 @@ function loadScalingState() {
   return d;
 }
 function getScalingState() { return scalingState || loadScalingState(); }
-function saveScalingState() { try { localStorage.setItem(SCALING_KEY, JSON.stringify(scalingState)); } catch (e) {} }
+function saveScalingState() { try { DB.setItem(SCALING_KEY, JSON.stringify(scalingState)); } catch (e) {} }
 
 function scalingJournalBalance() {
   const base = accountSize > 0 ? accountSize : 0;

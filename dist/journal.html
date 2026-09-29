@@ -1757,7 +1757,7 @@ tbody tr:hover td{background:color-mix(in srgb,var(--txt) 3%,transparent)}
         <div class="export-card" style="grid-column:span 2">
           <div class="export-icon">🗄️</div>
           <div class="export-title">Espace de stockage</div>
-          <div class="export-desc">Le navigateur limite l'espace disponible (≈ 5 Mo), partagé par Live, Backtest et PropFirm. Les captures d'écran sont réduites automatiquement à l'ajout ; tu peux aussi compresser celles déjà enregistrées.</div>
+          <div class="export-desc">Tes données sont stockées dans ton navigateur (IndexedDB) : plus de limite de 5 Mo, l'espace disponible se compte en centaines de Mo, partagé par Live, Backtest et PropFirm. Les captures sont réduites automatiquement à l'ajout ; tu peux aussi compresser celles déjà enregistrées.</div>
           <div id="storage-card-body"></div>
           <button class="btn-ghost" style="margin-top:8px" onclick="recompressStoredImages()">Compresser les captures existantes</button>
         </div>
@@ -1996,6 +1996,145 @@ tbody tr:hover td{background:color-mix(in srgb,var(--txt) 3%,transparent)}
 
 
 <script>
+/* ═══ boot/db.js ═══ */
+// ── STOCKAGE : IndexedDB avec cache mémoire ─────────────────────────
+// Le journal lit toutes ses données en mémoire au démarrage, puis chaque écriture est répercutée dans IndexedDB
+// en arrière-plan. L'API imite localStorage (getItem / setItem / removeItem / key / length) : le reste du code
+// reste synchrone et simple, mais n'est plus limité aux ≈ 5 Mo de localStorage (IndexedDB = des centaines de Mo).
+//   - Premier lancement : les données existantes de localStorage sont copiées dans IndexedDB (localStorage n'est
+//     pas effacé : il reste une copie de secours lisible par l'ancienne version du journal).
+//   - Si IndexedDB est indisponible (navigation privée de certains navigateurs…), repli transparent sur localStorage.
+const DB = (() => {
+  const NAME = 'journal-trading', STORE = 'kv', MIGRATED = '__migrated_from_localstorage';
+  const mem = new Map();
+  let idb = null, mode = 'memory', pending = new Map(), flushScheduled = false, lastError = null;
+  const listeners = [];
+
+  function openIDB() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject(new Error('IndexedDB indisponible'));
+      const req = indexedDB.open(NAME, 1);
+      req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error('IndexedDB bloqué par un autre onglet'));
+    });
+  }
+  function readAll(db) {
+    return new Promise((resolve, reject) => {
+      const out = new Map();
+      const tx = db.transaction(STORE, 'readonly'), st = tx.objectStore(STORE);
+      const req = st.openCursor();
+      req.onsuccess = () => { const c = req.result; if (c) { out.set(String(c.key), c.value); c.continue(); } else resolve(out); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function lsSafe(fn) { try { return fn(); } catch (e) { return null; } }
+
+  async function init() {
+    try {
+      idb = await openIDB();
+      const all = await readAll(idb);
+      if (!all.size && !all.has(MIGRATED)) {
+        // Migration unique depuis localStorage.
+        const n = lsSafe(() => localStorage.length) || 0;
+        for (let i = 0; i < n; i++) { const k = localStorage.key(i); all.set(k, localStorage.getItem(k)); }
+        all.set(MIGRATED, String(Date.now()));
+        await new Promise((resolve, reject) => {
+          const tx = idb.transaction(STORE, 'readwrite'), st = tx.objectStore(STORE);
+          all.forEach((v, k) => st.put(v, k));
+          tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+        });
+      }
+      all.forEach((v, k) => mem.set(k, v));
+      mode = 'indexeddb';
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    } catch (e) {
+      console.warn('IndexedDB indisponible, repli sur localStorage :', e);
+      idb = null; mode = 'localstorage';
+      const n = lsSafe(() => localStorage.length) || 0;
+      for (let i = 0; i < n; i++) { const k = localStorage.key(i); mem.set(k, localStorage.getItem(k)); }
+    }
+    await refreshEstimate();
+  }
+
+  function scheduleFlush() {
+    if (flushScheduled) return;
+    flushScheduled = true;
+    Promise.resolve().then(flush);
+  }
+  function flush() {
+    flushScheduled = false;
+    if (!idb || !pending.size) return Promise.resolve();
+    const batch = pending; pending = new Map();
+    return new Promise(resolve => {
+      let tx;
+      try { tx = idb.transaction(STORE, 'readwrite'); } catch (e) { onError(e); return resolve(); }
+      const st = tx.objectStore(STORE);
+      batch.forEach((v, k) => { if (v === null) st.delete(k); else st.put(v, k); });
+      tx.oncomplete = () => { lastError = null; resolve(); };
+      tx.onerror = tx.onabort = () => { onError(tx.error || new Error('Écriture IndexedDB refusée')); resolve(); };
+    });
+  }
+  function onError(e) {
+    lastError = e;
+    console.error('Écriture impossible dans IndexedDB :', e);
+    listeners.forEach(fn => { try { fn(e); } catch (x) {} });
+  }
+
+  // Place occupée / disponible (octets) : estimation du navigateur pour IndexedDB, ≈ 5 Mo de caractères sinon.
+  let usage = null, quota = null;
+  async function refreshEstimate() {
+    if (mode === 'indexeddb' && navigator.storage && navigator.storage.estimate) {
+      try { const e = await navigator.storage.estimate(); usage = e.usage || 0; quota = e.quota || null; } catch (e) {}
+    }
+  }
+
+  return {
+    init, flush, refreshEstimate,
+    get mode() { return mode; },
+    get usage() { return usage; },
+    get quota() { return quota; },
+    get lastError() { return lastError; },
+    onError(fn) { listeners.push(fn); },
+    getItem(k) { k = String(k); return mem.has(k) ? mem.get(k) : null; },
+    setItem(k, v) {
+      k = String(k); v = String(v);
+      if (mode === 'localstorage') localStorage.setItem(k, v);   // peut lever QuotaExceededError : l'appelant la gère
+      mem.set(k, v);
+      if (mode === 'indexeddb') { pending.set(k, v); scheduleFlush(); }
+    },
+    removeItem(k) {
+      k = String(k);
+      if (mode === 'localstorage') lsSafe(() => localStorage.removeItem(k));
+      mem.delete(k);
+      if (mode === 'indexeddb') { pending.set(k, null); scheduleFlush(); }
+    },
+    key(i) { return [...mem.keys()].filter(k => k !== MIGRATED)[i] ?? null; },
+    get length() { return mem.size - (mem.has(MIGRATED) ? 1 : 0); },
+    keys() { return [...mem.keys()].filter(k => k !== MIGRATED); }
+  };
+})();
+
+// Démarrage différé : le code du journal ne s'exécute qu'une fois les données chargées.
+// onReady() remplace DOMContentLoaded : les fonctions enregistrées sont appelées, dans l'ordre, juste après le chargement du code.
+const __readyQueue = [];
+function onReady(fn) { __readyQueue.push(fn); }
+async function __bootJournal() {
+  await DB.init();
+  const src = document.getElementById('app-src');
+  const s = document.createElement('script');
+  s.textContent = src.textContent;
+  document.body.appendChild(s);          // exécution synchrone du code du journal
+  __readyQueue.splice(0).forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
+  document.documentElement.classList.add('app-ready');
+}
+window.addEventListener('pagehide', () => { DB.flush(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') DB.flush(); });
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', __bootJournal); else __bootJournal();
+
+</script>
+<script type="text/plain" id="app-src">
 /* ═══ js/00-core.js ═══ */
 // ── JOURNAUX : Live · Backtest · PropFirm (un seul fichier, trois jeux de données isolés) ─────────
 const JOURNALS = {
@@ -2003,7 +2142,7 @@ const JOURNALS = {
   bt: { tab: 'Backtest', title: 'Journal de Backtest', sub: 'Stratégies · Historique testé',     slug: 'backtest' },
   pf: { tab: 'PropFirm', title: 'Journal PropFirm',    sub: 'Challenges · Comptes financés',     slug: 'propfirm' }
 };
-const JOURNAL_ID = (() => { try { const v = localStorage.getItem('journal_active'); return JOURNALS[v] ? v : 'tj'; } catch (e) { return 'tj'; } })();
+const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return JOURNALS[v] ? v : 'tj'; } catch (e) { return 'tj'; } })();
 const JP = JOURNAL_ID + '_';   // préfixe de stockage : tj_ (live) · bt_ (backtest) · pf_ (propfirm)
 document.title = JOURNALS[JOURNAL_ID].title;
 
@@ -2014,20 +2153,20 @@ const SHARED_SETTINGS = ['theme', 'custom_themes', 'theme_texture', 'theme_autos
 // (à défaut Backtest, puis PropFirm) et on fusionne les thèmes personnalisés enregistrés dans les journaux.
 (function migrateSharedAppearance() {
   try {
-    if (localStorage.getItem('g_appearance_migrated')) return;
+    if (DB.getItem('g_appearance_migrated')) return;
     const order = ['tj', 'bt', 'pf'];
     const nonEmpty = v => { if (v === null) return false; try { const o = JSON.parse(v); return o !== null && (typeof o !== 'object' || Object.keys(o).length > 0); } catch (e) { return v !== ''; } };
     SHARED_SETTINGS.forEach(k => {
-      if (localStorage.getItem(GP + k) !== null) return;
+      if (DB.getItem(GP + k) !== null) return;
       if (k === 'custom_themes') {
         const seen = new Set(), merged = [];
-        order.forEach(j => { try { (JSON.parse(localStorage.getItem(j + '_' + k) || '[]') || []).forEach(t => { if (t && !seen.has(t.id)) { seen.add(t.id); merged.push(t); } }); } catch (e) {} });
-        if (merged.length) localStorage.setItem(GP + k, JSON.stringify(merged));
+        order.forEach(j => { try { (JSON.parse(DB.getItem(j + '_' + k) || '[]') || []).forEach(t => { if (t && !seen.has(t.id)) { seen.add(t.id); merged.push(t); } }); } catch (e) {} });
+        if (merged.length) DB.setItem(GP + k, JSON.stringify(merged));
         return;
       }
-      for (const j of order) { const v = localStorage.getItem(j + '_' + k); if (nonEmpty(v)) { localStorage.setItem(GP + k, v); break; } }
+      for (const j of order) { const v = DB.getItem(j + '_' + k); if (nonEmpty(v)) { DB.setItem(GP + k, v); break; } }
     });
-    localStorage.setItem('g_appearance_migrated', '1');
+    DB.setItem('g_appearance_migrated', '1');
   } catch (e) {}
 })();
 
@@ -2040,12 +2179,12 @@ function localDateStr(d) {
 // Lecture JSON protégée : une donnée corrompue ne doit jamais empêcher le journal de démarrer.
 // La valeur illisible est mise de côté (clé *_corrupt_backup) au lieu d'être écrasée à la prochaine sauvegarde.
 function loadJSON(key, fallback) {
-  const raw = localStorage.getItem(key);
+  const raw = DB.getItem(key);
   if (raw === null || raw === '') return fallback;
   try { const v = JSON.parse(raw); return v === null || v === undefined ? fallback : v; }
   catch (e) {
     console.error('Donnée illisible dans « ' + key + ' » :', e);
-    try { localStorage.setItem(key + '_corrupt_backup', raw); } catch (e2) {}
+    try { DB.setItem(key + '_corrupt_backup', raw); } catch (e2) {}
     window._corruptKeys = (window._corruptKeys || []).concat(key);
     return fallback;
   }
@@ -2124,19 +2263,19 @@ let trades = sanitizeTrades(loadJSON(JP + 'trades', []));
 sortTradesChrono();
 let watchData = loadJSON(JP + 'watch', null);
 let planData = loadJSON(JP + 'plan', null);
-let accountSize = parseFloat(localStorage.getItem((JP + 'account')) || '10000');
+let accountSize = parseFloat(DB.getItem((JP + 'account')) || '10000');
 let currentImgBase64 = '';
 
 // Default R multiples applied to imported trades when the source file only
 // gives a €/$ P&L and no real R value (e.g. TradingView's "List of trades" export).
 // Adjustable from the Export / Import page.
-let DEFAULT_RR_WIN = parseFloat(localStorage.getItem((JP + 'default_rr_win')) || '2');
+let DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2');
 // Décalage (en heures) entre l'heure de tes exports et ton propre fuseau — sinon les sessions (Asie/Londres/NY) sont calculées sur la mauvaise heure.
-let TZ_OFFSET_HOURS = parseFloat(localStorage.getItem((JP + 'tz_offset_hours')) || '0');
+let TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0');
 function saveTZOffset() {
   const v = parseFloat(document.getElementById('tz-offset-hours').value);
   TZ_OFFSET_HOURS = isNaN(v) ? 0 : v;
-  localStorage.setItem((JP + 'tz_offset_hours'), TZ_OFFSET_HOURS);
+  DB.setItem((JP + 'tz_offset_hours'), TZ_OFFSET_HOURS);
 }
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
 function recalcSessions() {
@@ -2156,24 +2295,24 @@ function recalcSessions() {
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
-let DEFAULT_RR_LOSS = -Math.abs(parseFloat(localStorage.getItem((JP + 'default_rr_loss')) || '1'));
+let DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1'));
 function saveDefaultRR() {
   const w = parseFloat(document.getElementById('default-rr-win').value);
   const l = parseFloat(document.getElementById('default-rr-loss').value);
-  if (!isNaN(w) && w > 0) { DEFAULT_RR_WIN = w; localStorage.setItem((JP + 'default_rr_win'), w); }
-  if (!isNaN(l) && l > 0) { DEFAULT_RR_LOSS = -Math.abs(l); localStorage.setItem((JP + 'default_rr_loss'), l); }
+  if (!isNaN(w) && w > 0) { DEFAULT_RR_WIN = w; DB.setItem((JP + 'default_rr_win'), w); }
+  if (!isNaN(l) && l > 0) { DEFAULT_RR_LOSS = -Math.abs(l); DB.setItem((JP + 'default_rr_loss'), l); }
 }
 
 // Real risk per trade in €. When set, imported R multiples are computed as
 // (real €P&L ÷ risk€) instead of a flat default — a much truer picture than
 // assuming every winner is worth exactly the same R.
-let DEFAULT_RISK_EUR = parseFloat(localStorage.getItem((JP + 'default_risk_eur')) || '0');
+let DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0');
 // Taux appliqué aux montants importés dans une autre devise que l'euro (1 unité étrangère = IMPORT_FX_RATE €).
-let IMPORT_FX_RATE = parseFloat(localStorage.getItem((JP + 'import_fx_rate')) || '1') || 1;
+let IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
 function saveImportFxRate() {
   const v = parseFloat(document.getElementById('import-fx-rate').value);
   IMPORT_FX_RATE = (!isNaN(v) && v > 0) ? v : 1;
-  localStorage.setItem((JP + 'import_fx_rate'), IMPORT_FX_RATE);
+  DB.setItem((JP + 'import_fx_rate'), IMPORT_FX_RATE);
 }
 // Devise lue dans un nom de colonne (« P&L net USD », « Profit (EUR) »…). '' si aucune devise n'est indiquée.
 function detectCcyFromHeader(h) {
@@ -2210,7 +2349,7 @@ function reconvertImportedTrades() {
 function saveDefaultRiskEur() {
   const v = parseFloat(document.getElementById('default-risk-eur').value);
   DEFAULT_RISK_EUR = (!isNaN(v) && v > 0) ? v : 0;
-  localStorage.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
+  DB.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
 }
 // Central place all import paths use to get an R multiple for a trade.
 function computeDistanceR(entryPrice, slPrice, exitPrice, dir) {
@@ -2282,7 +2421,7 @@ function saveAccountSize() {
   const val = parseFloat(document.getElementById('account-size').value);
   if (!isNaN(val) && val > 0) {
     accountSize = val;
-    localStorage.setItem((JP + 'account'), val);
+    DB.setItem((JP + 'account'), val);
     renderKPIs();
     renderYearProgress();
   }
@@ -2304,9 +2443,9 @@ const DASH_WIDGET_DEFAULTS = {
 };
 
 function loadDashLayout() {
-  try { return JSON.parse(localStorage.getItem((JP + 'dash_layout_v2')) || 'null'); } catch (e) { return null; }
+  try { return JSON.parse(DB.getItem((JP + 'dash_layout_v2')) || 'null'); } catch (e) { return null; }
 }
-function saveDashLayout(layout) { localStorage.setItem((JP + 'dash_layout_v2'), JSON.stringify(layout)); }
+function saveDashLayout(layout) { DB.setItem((JP + 'dash_layout_v2'), JSON.stringify(layout)); }
 
 function getCurrentDashLayout() {
   const grid = document.getElementById('dash-grid');
@@ -2363,7 +2502,7 @@ function setWidgetWidth(widgetId, widthClass) {
   persistDashLayout();
 }
 function resetDashboardLayout() {
-  localStorage.removeItem((JP + 'dash_layout_v2'));
+  DB.removeItem((JP + 'dash_layout_v2'));
   const grid = document.getElementById('dash-grid');
   if (!grid) return;
   DASH_WIDGET_ORDER_DEFAULT.forEach(id => {
@@ -2502,23 +2641,27 @@ function sortTradesChrono() {
   });
 }
 
-// Le stockage du navigateur (≈ 5 M de caractères) est PARTAGÉ par les trois journaux.
+// Stockage : IndexedDB (place accordée par le navigateur, souvent plusieurs centaines de Mo) ; en repli localStorage ≈ 5 Mo.
+// La place est PARTAGÉE par les trois journaux.
 const STORAGE_LIMIT_CHARS = 5 * 1024 * 1024;
+function tradeImages(t) { return [t.cap].concat(Array.isArray(t.caps) ? t.caps : []).filter(Boolean); }
 function storageUsage() {
   let total = 0, mine = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i), n = k.length + (localStorage.getItem(k) || '').length;
-    total += n; if (k.indexOf(JP) === 0) mine += n;
-  }
+  DB.keys().forEach(k => { const n = k.length + (DB.getItem(k) || '').length; total += n; if (k.indexOf(JP) === 0) mine += n; });
   let images = 0, imgCount = 0;
-  trades.forEach(t => { if (t.cap) { images += t.cap.length; imgCount++; } });
-  return { total, mine, images, imgCount, limit: STORAGE_LIMIT_CHARS, pct: total / STORAGE_LIMIT_CHARS * 100 };
+  trades.forEach(t => tradeImages(t).forEach(c => { images += c.length; imgCount++; }));
+  const idb = DB.mode === 'indexeddb' && DB.quota;
+  // En IndexedDB : quota réel du navigateur (au plus 2 Go affichés, le reste n'a pas de sens pour un journal).
+  const limit = idb ? Math.min(DB.quota, 2 * 1024 * 1024 * 1024) : STORAGE_LIMIT_CHARS;
+  const used = idb ? Math.max(DB.usage || 0, total) : total;
+  return { total: used, mine, images, imgCount, limit, pct: used / limit * 100, mode: DB.mode };
 }
 function save() {
   _atCache = null;
-  try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); return true; }
+  try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); return true; }
   catch (e) { reportStorageError(e); return false; }
 }
+DB.onError(e => reportStorageError(e));
 function reportStorageError(e) {
   console.error('Écriture impossible dans le stockage :', e);
   let el = document.getElementById('storage-error');
@@ -2579,14 +2722,14 @@ async function recompressStoredImages() {
 function createSafetySnapshot(label) {
   try {
     const snap = { at: Date.now(), label, trades: trades.map(t => t.cap ? Object.assign({}, t, { cap: '' }) : t), planData, watchData, imagesDropped: trades.filter(t => t.cap).length };
-    localStorage.setItem((JP + 'safety_snapshot'), JSON.stringify(snap));
+    DB.setItem((JP + 'safety_snapshot'), JSON.stringify(snap));
     return true;
   } catch (e) {
     try { exportData(); } catch (e2) {}
     return false;
   }
 }
-function loadSafetySnapshot() { try { return JSON.parse(localStorage.getItem((JP + 'safety_snapshot')) || 'null'); } catch (e) { return null; } }
+function loadSafetySnapshot() { try { return JSON.parse(DB.getItem((JP + 'safety_snapshot')) || 'null'); } catch (e) { return null; } }
 function restoreSafetySnapshot() {
   const snap = loadSafetySnapshot();
   if (!snap || !Array.isArray(snap.trades)) return;
@@ -2594,21 +2737,21 @@ function restoreSafetySnapshot() {
     const prev = trades.slice();
     trades = sanitizeTrades(snap.trades); sortTradesChrono();
     if (!save()) { trades = prev; return; }
-    if (snap.planData) { planData = snap.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
-    if (snap.watchData) { watchData = snap.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-    localStorage.removeItem((JP + 'safety_snapshot'));
+    if (snap.planData) { planData = snap.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
+    if (snap.watchData) { watchData = snap.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
+    DB.removeItem((JP + 'safety_snapshot'));
     renderAll(); initPlan(); renderWatchlist(); renderTrashUI(); refreshAssetDropdowns();
     showToast('Importation annulée — ' + trades.length + ' trades restaurés', 'success');
   });
 }
-function dismissSafetySnapshot() { localStorage.removeItem((JP + 'safety_snapshot')); renderTrashUI(); }
+function dismissSafetySnapshot() { DB.removeItem((JP + 'safety_snapshot')); renderTrashUI(); }
 function renderStorageCard() {
   const el = document.getElementById('storage-card-body');
   if (!el) return;
   const u = storageUsage(), col = u.pct >= 92 ? 'var(--red)' : (u.pct >= 80 ? 'var(--amber)' : 'var(--green)');
   const kb = n => Math.round(n / 1024).toLocaleString('fr-FR') + ' Ko';
   el.innerHTML = '<div style="height:10px;background:var(--bg4);border-radius:99px;overflow:hidden;margin:10px 0 8px"><div style="height:100%;width:' + Math.min(100, u.pct).toFixed(1) + '%;background:' + col + '"></div></div>' +
-    '<div style="font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7"><b style="color:' + col + '">' + u.pct.toFixed(1) + ' %</b> utilisé · ' + kb(u.total) + ' sur ≈ ' + kb(u.limit) + ' (partagé par les 3 journaux)<br>Ce journal : ' + kb(u.mine) + ' · dont ' + u.imgCount + ' capture(s) = ' + kb(u.images) + '</div>';
+    '<div style="font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7"><b style="color:' + col + '">' + u.pct.toFixed(1) + ' %</b> utilisé · ' + kb(u.total) + ' sur ' + (u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit)) + ' disponibles · ' + (u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)') + ' · partagé par les 3 journaux<br>Ce journal : ' + kb(u.mine) + ' · dont ' + u.imgCount + ' capture(s) = ' + kb(u.images) + '</div>';
 }
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────
@@ -2641,7 +2784,7 @@ function dayNet(list) {
 // ── ORIGINE DU R ─────────────────────────────────────────────────────────────────────
 // prix = distance de prix (exact) · manuel = saisi · risque = P&L € ÷ risque configuré (estimé) · defaut = RR fixe sans base réelle (FICTIF)
 const R_SRC_LABELS = { prix: 'R exact (distance de prix)', manuel: 'R saisi', risque: 'R estimé (P&L € ÷ risque configuré)', defaut: 'R fictif (RR par défaut, aucune base réelle)', aucun: 'pas de R' };
-let R_MODE = localStorage.getItem((JP + 'r_mode')) || 'usable';
+let R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
 function computeRWithSource(pnlEur, res, priceCtx) {
   if (priceCtx) {
     const d = computeDistanceR(priceCtx.entryPrice, priceCtx.slPrice, priceCtx.exitPrice, priceCtx.dir);
@@ -2673,15 +2816,15 @@ function analysisTrades() {
   return _atCache;
 }
 function setRMode(m) {
-  R_MODE = m; localStorage.setItem((JP + 'r_mode'), m); _atCache = null;
+  R_MODE = m; DB.setItem((JP + 'r_mode'), m); _atCache = null;
   renderAll();
 }
 function migrateRSources() {
-  if (localStorage.getItem((JP + 'rsrc_v1'))) return;
+  if (DB.getItem((JP + 'rsrc_v1'))) return;
   let changed = false;
   trades.forEach(t => { if (!t.rSrc && t.pnl != null) { t.rSrc = rSource(t); changed = true; } });
-  if (changed) { try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
-  localStorage.setItem((JP + 'rsrc_v1'), '1');
+  if (changed) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
+  DB.setItem((JP + 'rsrc_v1'), '1');
 }
 function renderRCoverage() {
   const el = document.getElementById('r-coverage');
@@ -2711,7 +2854,7 @@ function estimateRFromLosses() {
   if (losses.length < 3) { showToast('Pas assez de pertes pour estimer un risque', 'error'); return; }
   const avg = Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length));
   openModal('Estimer le R avec ' + avg + ' € de risque ?', 'Le R des trades sans stop-loss sera calculé comme P&L € ÷ ' + avg + ' € (ta perte moyenne). Ces R sont marqués « estimés » et restent exclus si tu choisis « R exact seulement ».', () => {
-    DEFAULT_RISK_EUR = avg; localStorage.setItem((JP + 'default_risk_eur'), avg);
+    DEFAULT_RISK_EUR = avg; DB.setItem((JP + 'default_risk_eur'), avg);
     let k = 0;
     const before = JSON.stringify(trades);
     trades.forEach(t => { if (rSource(t) === 'defaut') { const cr = computeRWithSource(t.pnlEur, t.res); t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src; k++; } });
@@ -2737,7 +2880,7 @@ function tradeChecklistComplete(t) {
   return total > 0 && tradeChecklistLabels(t).length >= total;
 }
 function migrateChecklistLabels() {
-  if (localStorage.getItem((JP + 'checklist_v2'))) return;
+  if (DB.getItem((JP + 'checklist_v2'))) return;
   const items = getEntryItems();
   let changed = false;
   trades.forEach(t => {
@@ -2747,8 +2890,8 @@ function migrateChecklistLabels() {
       changed = true;
     }
   });
-  if (changed) { try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
-  localStorage.setItem((JP + 'checklist_v2'), '1');
+  if (changed) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
+  DB.setItem((JP + 'checklist_v2'), '1');
 }
 // Renommer un critère ou une erreur dans le Plan renomme aussi ce libellé dans les trades déjà saisis (sinon les stats se coupent en deux).
 function renameLabelInTrades(field, oldV, newV) {
@@ -2818,11 +2961,11 @@ const THEME_PRESETS = {
 // Un thème personnalisé (couleur modifiée à la main → plus de --preset-key) n'est jamais touché.
 (function migrateToTerminalCharter() {
   try {
-    if (localStorage.getItem('g_charter_v2')) return;
-    const th = JSON.parse(localStorage.getItem('g_theme') || '{}') || {};
+    if (DB.getItem('g_charter_v2')) return;
+    const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
     if (th['--preset-key'] === 'default' && th['--bg'] === '#0b0c10') {
       Object.keys(th).forEach(k => { if (/^--(bg|bg2|bg3|bg4|border|border2|txt|txt2|txt3|green|red|amber|blue|purple|accent)(-d|-dd)?$/.test(k)) delete th[k]; });
-      localStorage.setItem('g_theme', JSON.stringify(th));
+      DB.setItem('g_theme', JSON.stringify(th));
     }
     if (th['--preset-key'] === 'proclair' && th['--bg'] === '#f4f5fa') {
       Object.keys(th).forEach(k => { if (/^--(bg|bg2|bg3|bg4|border|border2|txt|txt2|txt3|green|red|amber|blue|purple|accent)(-d|-dd)?$/.test(k)) delete th[k]; });
@@ -2831,9 +2974,9 @@ const THEME_PRESETS = {
         if (['--green', '--red', '--amber', '--blue', '--purple', '--accent'].includes(k)) th[k + '-d'] = hexToRgba(v, .12);
         if (k === '--green' || k === '--red') th[k + '-dd'] = hexToRgba(v, .06);
       });
-      localStorage.setItem('g_theme', JSON.stringify(th));
+      DB.setItem('g_theme', JSON.stringify(th));
     }
-    localStorage.setItem('g_charter_v2', '1');
+    DB.setItem('g_charter_v2', '1');
   } catch (e) {}
 })();
 
@@ -2845,9 +2988,9 @@ function hexToRgba(hex, alpha) {
   return `rgba(${(num>>16)&255},${(num>>8)&255},${num&255},${alpha})`;
 }
 function loadThemeObj() {
-  try { const o = JSON.parse(localStorage.getItem((GP + 'theme')) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(e) { return {}; }
+  try { const o = JSON.parse(DB.getItem((GP + 'theme')) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(e) { return {}; }
 }
-function saveThemeObj(theme) { localStorage.setItem((GP + 'theme'), JSON.stringify(theme)); }
+function saveThemeObj(theme) { DB.setItem((GP + 'theme'), JSON.stringify(theme)); }
 
 function applyBodyStyleClasses(theme) {
   document.body.classList.remove('bgstyle-gradient','bgstyle-grid','cardstyle-glass','cardstyle-elevated','glow-on');
@@ -2970,7 +3113,7 @@ function onGlowChange(checked) {
   applyBodyStyleClasses(theme);
 }
 function onTextureChange(checked) {
-  localStorage.setItem((GP + 'theme_texture'), checked ? '1' : '0');
+  DB.setItem((GP + 'theme_texture'), checked ? '1' : '0');
   document.body.classList.toggle('texture-on', checked);
 }
 function applySystemTheme() {
@@ -2978,12 +3121,12 @@ function applySystemTheme() {
   applyPreset(prefersDark ? 'default' : 'proclair');
 }
 function onAutoThemeChange(checked) {
-  localStorage.setItem((GP + 'theme_autosystem'), checked ? '1' : '0');
+  DB.setItem((GP + 'theme_autosystem'), checked ? '1' : '0');
   if (checked) applySystemTheme();
 }
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (localStorage.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
+    if (DB.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
   });
 }
 
@@ -3015,7 +3158,7 @@ function applyPreset(key, silent) {
 }
 
 function resetTheme() {
-  localStorage.removeItem((GP + 'theme'));
+  DB.removeItem((GP + 'theme'));
   location.reload();
 }
 
@@ -3041,12 +3184,12 @@ function renderThemePresetGrid() {
 }
 
 function getCustomThemes() {
-  try { const l = JSON.parse(localStorage.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
+  try { const l = JSON.parse(DB.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
 }
 // Couleur acceptée seulement si c'est vraiment une couleur (#hex, rgb(a)) : un thème importé ne peut pas injecter de HTML via un attribut style.
 function safeColor(v, fallback) { return (typeof v === 'string' && /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%]+\))$/.test(v.trim())) ? v.trim() : fallback; }
 function saveCustomThemesList(list) {
-  localStorage.setItem((GP + 'custom_themes'), JSON.stringify(list));
+  DB.setItem((GP + 'custom_themes'), JSON.stringify(list));
 }
 function saveCurrentThemeAs() {
   const name = prompt('Nom de ce thème :', '');
@@ -3169,22 +3312,22 @@ function renderSettingsPage() {
   const glowToggle = document.getElementById('glow-toggle');
   if (glowToggle) glowToggle.checked = !!theme['--glow'];
   const textureToggle = document.getElementById('texture-toggle');
-  if (textureToggle) textureToggle.checked = localStorage.getItem((GP + 'theme_texture')) === '1';
+  if (textureToggle) textureToggle.checked = DB.getItem((GP + 'theme_texture')) === '1';
   const autoThemeToggle = document.getElementById('autotheme-toggle');
-  if (autoThemeToggle) autoThemeToggle.checked = localStorage.getItem((GP + 'theme_autosystem')) === '1';
+  if (autoThemeToggle) autoThemeToggle.checked = DB.getItem((GP + 'theme_autosystem')) === '1';
 }
 
 
 /* ═══ js/05-init-nav.js ═══ */
 // ── INIT ─────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+onReady(() => {
   safeRun(migrateChecklistLabels, 'migrateChecklistLabels');   // ici et pas plus haut : la checklist par défaut (const) n'est définie que plus bas dans le script
   initSidebarState();
   initDashboardLayout();
   initScalingDraw();
   applySavedTheme();
-  if (localStorage.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
-  if (localStorage.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
+  if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+  if (DB.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
   applyNavOrder();
   initNavDragDrop();
   document.getElementById('f-date').value = localDateStr();
@@ -3205,12 +3348,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── RÉORGANISATION DE LA SIDEBAR (glisser-déposer) ──────────────────
 function applyNavOrder() {
   try {
-    const order = JSON.parse(localStorage.getItem((JP + 'nav_order')) || 'null');
+    const order = JSON.parse(DB.getItem((JP + 'nav_order')) || 'null');
     if (!order) return;
     // Orders saved before separators were trackable don't include sep1/sep2 —
     // replaying those would push the separators to the top again. Discard them once.
     if (!order.includes('sep1') || !order.includes('sep2')) {
-      localStorage.removeItem((JP + 'nav_order'));
+      DB.removeItem((JP + 'nav_order'));
       return;
     }
     const nav = document.querySelector('.nav');
@@ -3234,7 +3377,7 @@ function applyNavOrder() {
 }
 function saveNavOrder() {
   const order = [...document.querySelectorAll('.nav > [data-navid]')].map(el => el.dataset.navid);
-  localStorage.setItem((JP + 'nav_order'), JSON.stringify(order));
+  DB.setItem((JP + 'nav_order'), JSON.stringify(order));
 }
 function getNavDragAfterElement(container, y) {
   const items = [...container.querySelectorAll('[data-navid]:not(.dragging)')];
@@ -3649,11 +3792,11 @@ function renderSummaryBanner() {
 function renderWelcomeCard() {
   const card = document.getElementById('welcome-card');
   if (!card) return;
-  const dismissed = localStorage.getItem((JP + 'welcome_dismissed')) === '1';
+  const dismissed = DB.getItem((JP + 'welcome_dismissed')) === '1';
   card.style.display = (!dismissed && trades.length === 0) ? 'block' : 'none';
 }
 function dismissWelcome() {
-  localStorage.setItem((JP + 'welcome_dismissed'), '1');
+  DB.setItem((JP + 'welcome_dismissed'), '1');
   const card = document.getElementById('welcome-card');
   if (card) card.style.display = 'none';
 }
@@ -3716,10 +3859,10 @@ function showPage(id, btn) {
 function showStatsSubtab(id) {
   document.querySelectorAll('.subtab-panel').forEach(p => p.classList.toggle('active', p.dataset.subtab === id));
   document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === id));
-  localStorage.setItem((JP + 'stats_subtab'), id);
+  DB.setItem((JP + 'stats_subtab'), id);
 }
 function restoreStatsSubtab() {
-  const saved = localStorage.getItem((JP + 'stats_subtab'));
+  const saved = DB.getItem((JP + 'stats_subtab'));
   if (saved && document.querySelector(`.subtab-panel[data-subtab="${saved}"]`)) showStatsSubtab(saved);
 }
 
@@ -3955,17 +4098,17 @@ function renderTradeChecklist() {
 
 // ── DD JOURNALIER (avec override manuel) ────────────────────────────
 function loadDDLimitPct() {
-  return parseFloat(localStorage.getItem((JP + 'dd_limit_pct')) || '1');
+  return parseFloat(DB.getItem((JP + 'dd_limit_pct')) || '1');
 }
 function saveDDLimitPct() {
   const v = parseFloat(document.getElementById('dd-limit-pct').value);
-  if (!isNaN(v) && v > 0) localStorage.setItem((JP + 'dd_limit_pct'), v);
+  if (!isNaN(v) && v > 0) DB.setItem((JP + 'dd_limit_pct'), v);
   renderDDBanner();
 }
 function loadDDManualMap() {
-  try { return JSON.parse(localStorage.getItem((JP + 'dd_manual')) || '{}'); } catch(e) { return {}; }
+  try { return JSON.parse(DB.getItem((JP + 'dd_manual')) || '{}'); } catch(e) { return {}; }
 }
-function saveDDManualMap(map) { localStorage.setItem((JP + 'dd_manual'), JSON.stringify(map)); }
+function saveDDManualMap(map) { DB.setItem((JP + 'dd_manual'), JSON.stringify(map)); }
 
 function toggleDDManualInput() {
   const row = document.getElementById('dd-manual-row');
@@ -5312,11 +5455,11 @@ function renderWhatIf() {
 /* ═══ js/12-propfirm.js ═══ */
 // ── PROP FIRM : réglages ─────────────────────────────────────────────
 function loadPfSetting(key, fallback) {
-  const v = localStorage.getItem((JP + 'pf_') + key);
+  const v = DB.getItem((JP + 'pf_') + key);
   return v === null ? fallback : v;
 }
 function savePfSetting(key, val) {
-  localStorage.setItem((JP + 'pf_') + key, val);
+  DB.setItem((JP + 'pf_') + key, val);
 }
 function initPropFirmSettings() {
   const enabled = loadPfSetting('enabled', JOURNAL_ID === 'pf' ? '1' : '0');
@@ -5724,18 +5867,18 @@ function renderMistakeTagsEditor() {
 }
 function updateMistakeTag(i, val) {
   planData.mistakeTags[i] = val;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderTradeMistakes();
 }
 function addMistakeTag() {
   planData.mistakeTags.push('Nouvelle erreur');
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderMistakeTagsEditor();
   renderTradeMistakes();
 }
 function removeMistakeTag(i) {
   planData.mistakeTags.splice(i, 1);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderMistakeTagsEditor();
   renderTradeMistakes();
 }
@@ -5768,12 +5911,12 @@ function renderChecklistGroup(key, groupKey) {
 
 function updateChecklistItem(key, idx, val) {
   planData[key][idx] = val;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   if (key === 'entryItems') renderTradeChecklist();
 }
 function addChecklistItem(key) {
   planData[key].push('Nouveau critère');
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderChecklistGroup(key, key === 'entryItems' ? 'ce' : 'cf');
   if (key === 'entryItems') renderTradeChecklist();
 }
@@ -5783,7 +5926,7 @@ function removeChecklistItem(key, idx, groupKey) {
   const pos = arr.indexOf(idx);
   if (pos > -1) arr.splice(pos, 1);
   for (let j = 0; j < arr.length; j++) { if (arr[j] > idx) arr[j]--; }
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderChecklistGroup(key, groupKey);
   if (key === 'entryItems') renderTradeChecklist();
 }
@@ -5802,16 +5945,16 @@ function renderRiskRules() {
 
 function updateRiskRule(i, col, val) {
   planData.risk[i][col] = val;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 function addRiskRule() {
   planData.risk.push(['Nouvelle règle', '—']);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderRiskRules();
 }
 function removeRiskRule(i) {
   planData.risk.splice(i, 1);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderRiskRules();
 }
 
@@ -5820,12 +5963,12 @@ function toggleCheck(group, idx, el) {
   const key = group === 'ce' ? planData.ce : planData.cf;
   const pos = key.indexOf(idx);
   if (pos >= 0) key.splice(pos, 1); else key.push(idx);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 
 function savePlanNotes() {
   planData.notes = document.getElementById('plan-notes').value;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 
 // ── WATCHLIST ────────────────────────────────────────────────────────
@@ -5877,7 +6020,7 @@ function renderWatchlist() {
 function saveWatch(asset, field, val) {
   if (!watchData[asset]) watchData[asset] = {};
   watchData[asset][field] = val;
-  localStorage.setItem((JP + 'watch'), JSON.stringify(watchData));
+  DB.setItem((JP + 'watch'), JSON.stringify(watchData));
 }
 
 
@@ -5893,7 +6036,7 @@ const BACKUP_SETTINGS_KEYS = [
 function collectAllSettings() {
   const out = {};
   BACKUP_SETTINGS_KEYS.forEach(k => {
-    const v = localStorage.getItem(k);
+    const v = DB.getItem(k);
     if (v !== null) out[k] = v;
   });
   return out;
@@ -5906,17 +6049,17 @@ function restoreAllSettings(settings) {
   Object.entries(settings).forEach(([k, v]) => {
     const m = /^(tj|bt|pf|g)_(.+)$/.exec(k);
     if (!m || typeof v !== 'string' || !allowed.has(m[2])) return;
-    localStorage.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
+    DB.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
   });
 }
 // Après restauration d'un backup : recharge en mémoire les réglages d'import/R (sinon l'ancien réglage restait actif jusqu'au rechargement de la page).
 function reloadImportSettings() {
-  DEFAULT_RR_WIN = parseFloat(localStorage.getItem((JP + 'default_rr_win')) || '2') || 2;
-  DEFAULT_RR_LOSS = -Math.abs(parseFloat(localStorage.getItem((JP + 'default_rr_loss')) || '1') || 1);
-  DEFAULT_RISK_EUR = parseFloat(localStorage.getItem((JP + 'default_risk_eur')) || '0') || 0;
-  TZ_OFFSET_HOURS = parseFloat(localStorage.getItem((JP + 'tz_offset_hours')) || '0') || 0;
-  IMPORT_FX_RATE = parseFloat(localStorage.getItem((JP + 'import_fx_rate')) || '1') || 1;
-  R_MODE = localStorage.getItem((JP + 'r_mode')) || 'usable';
+  DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2') || 2;
+  DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1') || 1);
+  DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0') || 0;
+  TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0') || 0;
+  IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
+  R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   set('account-size', accountSize); set('default-rr-win', DEFAULT_RR_WIN); set('default-rr-loss', Math.abs(DEFAULT_RR_LOSS));
   set('default-risk-eur', DEFAULT_RISK_EUR || ''); set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
@@ -5936,7 +6079,7 @@ function exportData() {
   a.download = 'journal-' + JOURNALS[JOURNAL_ID].slug + '-backup-' + localDateStr() + '.json';
   a.click();
   URL.revokeObjectURL(url);
-  localStorage.setItem((JP + 'last_export'), Date.now());
+  DB.setItem((JP + 'last_export'), Date.now());
   hideExportReminder();
   showToast('Backup complet téléchargé ✓ (trades + réglages + thèmes)', 'success');
 }
@@ -6009,7 +6152,7 @@ async function verifyBackupPermission(handle) {
 }
 function fullBackupPayload() {
   const out = {};
-  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); out[k] = localStorage.getItem(k); }
+  for (let i = 0; i < DB.length; i++) { const k = DB.key(i); out[k] = DB.getItem(k); }
   return { version: 'full-backup-v1', app: 'journal-de-trading', exportedAt: new Date().toISOString(), data: out };
 }
 async function writeBackupToSlot(slot) {
@@ -6031,23 +6174,23 @@ async function runBackupNow(silent) {
   const okCount = results.filter(r => r.ok).length;
   const anyConfigured = results.some(r => r.reason !== 'non configuré');
   // La date de dernière sauvegarde n'avance que si au moins un dossier a vraiment reçu le fichier : un échec sera retenté à la prochaine ouverture.
-  if (okCount > 0) localStorage.setItem((GP + 'last_backup_run'), Date.now());
-  localStorage.setItem((GP + 'last_backup_attempt'), Date.now());
-  localStorage.setItem((GP + 'last_backup_results'), JSON.stringify(results));
+  if (okCount > 0) DB.setItem((GP + 'last_backup_run'), Date.now());
+  DB.setItem((GP + 'last_backup_attempt'), Date.now());
+  DB.setItem((GP + 'last_backup_results'), JSON.stringify(results));
   if (okCount > 0) showToast('Sauvegarde effectuée : ' + okCount + '/' + BACKUP_SLOTS.length + ' dossier(s) ✓', 'success');
   else if (!silent && anyConfigured) showToast('Échec de la sauvegarde — vérifie l\'autorisation des dossiers ci-dessous.', 'error');
   else if (!silent) showToast('Choisis d\'abord au moins un dossier ci-dessous.', 'error');
   renderBackupSettings();
   return results;
 }
-function getBackupDay() { const v = parseInt(localStorage.getItem((GP + 'backup_weekday'))); return isNaN(v) ? 5 : v; } // vendredi par défaut
-function setBackupDay(v) { localStorage.setItem((GP + 'backup_weekday'), v); renderBackupSettings(); }
+function getBackupDay() { const v = parseInt(DB.getItem((GP + 'backup_weekday'))); return isNaN(v) ? 5 : v; } // vendredi par défaut
+function setBackupDay(v) { DB.setItem((GP + 'backup_weekday'), v); renderBackupSettings(); }
 async function checkAutoBackupDue() {
   if (!FS_ACCESS_SUPPORTED) return;
   const handles = await Promise.all(BACKUP_SLOTS.map(s => backupIdbGet('slot' + s)));
   if (!handles.some(h => h)) return; // aucun dossier configuré : rien à faire
-  const last = parseInt(localStorage.getItem((GP + 'last_backup_run'))) || 0;
-  const lastTry = parseInt(localStorage.getItem((GP + 'last_backup_attempt'))) || 0;
+  const last = parseInt(DB.getItem((GP + 'last_backup_run'))) || 0;
+  const lastTry = parseInt(DB.getItem((GP + 'last_backup_attempt'))) || 0;
   const daysSince = (Date.now() - last) / 86400000;
   if (Date.now() - lastTry < 3600000) return;   // pas plus d'une tentative automatique par heure
   // Jour choisi (et pas déjà fait aujourd'hui) OU rattrapage : plus de 7 jours sans sauvegarde réussie (journal pas ouvert le bon jour, échec…).
@@ -6077,11 +6220,11 @@ async function renderBackupSettings() {
   }).join('');
   const info = document.getElementById('backup-last-run-info');
   if (info) {
-    const last = parseInt(localStorage.getItem((GP + 'last_backup_run')));
-    const lastTry = parseInt(localStorage.getItem((GP + 'last_backup_attempt')));
+    const last = parseInt(DB.getItem((GP + 'last_backup_run')));
+    const lastTry = parseInt(DB.getItem((GP + 'last_backup_attempt')));
     if (!last) { info.textContent = lastTry ? 'Aucune sauvegarde réussie pour l\'instant — dernière tentative le ' + new Date(lastTry).toLocaleString('fr-FR') + ' : échec (vérifie l\'autorisation des dossiers).' : 'Aucune sauvegarde automatique effectuée pour l\'instant.'; }
     else {
-      let results = []; try { results = JSON.parse(localStorage.getItem((GP + 'last_backup_results')) || '[]'); } catch (e) {}
+      let results = []; try { results = JSON.parse(DB.getItem((GP + 'last_backup_results')) || '[]'); } catch (e) {}
       const ok = results.filter(r => r.ok).length;
       info.textContent = 'Dernière sauvegarde : ' + new Date(last).toLocaleString('fr-FR') + ' (' + ok + '/' + BACKUP_SLOTS.length + ' dossier(s) réussi(s)). La sauvegarde automatique se déclenche quand le journal est ouvert : le jour choisi, ou dès la prochaine ouverture si plus de 7 jours se sont écoulés.';
     }
@@ -6106,17 +6249,17 @@ function importData(input) {
         const prevTrades = trades.slice();
         trades = sanitizeTrades(data.trades); sortTradesChrono();
         if (!save()) { trades = prevTrades; return; }   // rien n'est modifié si le stockage refuse
-        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
         applySavedTheme();
-        if (localStorage.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+        if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
         else document.body.classList.remove('texture-on');
         applyNavOrder();
-        accountSize = parseFloat(localStorage.getItem((JP + 'account'))) || accountSize;
+        accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;
         reloadImportSettings();
-        CAL_HEAT_INTENSITY = parseFloat(localStorage.getItem((GP + 'cal_heat_intensity')) || '1');
-        CHART_INTENSITY = parseFloat(localStorage.getItem((GP + 'chart_intensity')) || '2');
+        CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
+        CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
         const savedLayout = loadDashLayout();
         if (savedLayout) applyDashLayout(savedLayout);
         scalingState = null;
@@ -6136,7 +6279,7 @@ function importData(input) {
 function confirmReset() {
   openModal('Réinitialiser le journal ?', 'Tous tes trades seront supprimés. Une copie de sécurité sera gardée localement (restaurable depuis cette page) au cas où.', () => {
     if (trades.length > 0) {
-      try { localStorage.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
+      try { DB.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
       catch (e) {
         // Pas la place de garder une copie locale : on télécharge un backup complet AVANT d'effacer quoi que ce soit.
         try { exportData(); } catch (e2) { showToast('Impossible de sauvegarder avant réinitialisation — rien n\'a été effacé', 'error'); return; }
@@ -6152,7 +6295,7 @@ function confirmReset() {
 }
 
 function loadResetBackup() {
-  try { return JSON.parse(localStorage.getItem((JP + 'reset_backup')) || 'null'); } catch(e) { return null; }
+  try { return JSON.parse(DB.getItem((JP + 'reset_backup')) || 'null'); } catch(e) { return null; }
 }
 function restoreResetBackup() {
   const backup = loadResetBackup();
@@ -6161,22 +6304,22 @@ function restoreResetBackup() {
     const prevTrades = trades;
     trades = sanitizeTrades(backup.trades); sortTradesChrono();
     if (!save()) { trades = prevTrades; return; }
-    localStorage.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
+    DB.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
     renderAll();
     renderTrashUI();
     showToast('Sauvegarde restaurée — ' + trades.length + ' trades', 'success');
   });
 }
 function dismissResetBackup() {
-  localStorage.removeItem((JP + 'reset_backup'));
+  DB.removeItem((JP + 'reset_backup'));
   renderTrashUI();
 }
 
 // ── CORBEILLE (trades supprimés individuellement) ───────────────────
 function loadTrash() {
-  try { return JSON.parse(localStorage.getItem((JP + 'trash')) || '[]'); } catch(e) { return []; }
+  try { return JSON.parse(DB.getItem((JP + 'trash')) || '[]'); } catch(e) { return []; }
 }
-function saveTrash(list) { try { localStorage.setItem((JP + 'trash'), JSON.stringify(list)); return true; } catch (e) { console.error('Corbeille non enregistrée :', e); return false; } }
+function saveTrash(list) { try { DB.setItem((JP + 'trash'), JSON.stringify(list)); return true; } catch (e) { console.error('Corbeille non enregistrée :', e); return false; } }
 
 function restoreTrashItem(idx) {
   const trash = loadTrash();
@@ -6251,7 +6394,7 @@ function checkExportReminder() {
   if (!el) return;
   if (sessionStorage.getItem((JP + 'export_reminder_dismissed'))) { el.style.display = 'none'; return; }
   if (trades.length < 5) { el.style.display = 'none'; return; }
-  const last = parseInt(localStorage.getItem((JP + 'last_export')) || '0', 10);
+  const last = parseInt(DB.getItem((JP + 'last_export')) || '0', 10);
   const days = last ? (Date.now() - last) / 86400000 : Infinity;
   if (days >= 7) {
     document.getElementById('export-reminder-text').textContent = last
@@ -6275,7 +6418,7 @@ function checkImportReminder() {
   const el = document.getElementById('import-reminder');
   if (!el) return;
   if (sessionStorage.getItem((JP + 'import_reminder_dismissed'))) { el.style.display = 'none'; return; }
-  const last = parseInt(localStorage.getItem((JP + 'last_csv_import')) || '0', 10);
+  const last = parseInt(DB.getItem((JP + 'last_csv_import')) || '0', 10);
   if (!last) { el.style.display = 'none'; return; }
   const days = (Date.now() - last) / 86400000;
   if (days >= 3) {
@@ -6358,18 +6501,18 @@ function computeDayData(dateStr, dayMap) {
   calDayDataCache[dateStr] = data;
   return data;
 }
-let CAL_HEAT_INTENSITY = parseFloat(localStorage.getItem((GP + 'cal_heat_intensity')) || '1');
+let CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
 function onHeatIntensityChange(val) {
   CAL_HEAT_INTENSITY = parseInt(val, 10) / 100;
-  localStorage.setItem((GP + 'cal_heat_intensity'), CAL_HEAT_INTENSITY);
+  DB.setItem((GP + 'cal_heat_intensity'), CAL_HEAT_INTENSITY);
   const label = document.getElementById('heat-intensity-val');
   if (label) label.textContent = val + '%';
   renderCalendrier();
 }
-let CHART_INTENSITY = parseFloat(localStorage.getItem((GP + 'chart_intensity')) || '2');
+let CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
 function onChartIntensityChange(val) {
   CHART_INTENSITY = parseInt(val, 10) / 100;
-  localStorage.setItem((GP + 'chart_intensity'), CHART_INTENSITY);
+  DB.setItem((GP + 'chart_intensity'), CHART_INTENSITY);
   const label = document.getElementById('chart-intensity-val');
   if (label) label.textContent = val + '%';
   renderAll();
@@ -6918,7 +7061,7 @@ function renderWeekdayBars() {
 // ── CALCULATEUR DE TAILLE DE POSITION (RR) ─────────────────────────────
 function loadPositionCalc() {
   try {
-    const raw = JSON.parse(localStorage.getItem((JP + 'calc')) || 'null');
+    const raw = JSON.parse(DB.getItem((JP + 'calc')) || 'null');
     if (raw) {
       document.getElementById('calc-balance').value = raw.balance ?? '';
       document.getElementById('calc-risk-pct').value = raw.riskPct ?? '';
@@ -6936,7 +7079,7 @@ function renderPositionCalc() {
   const riskPct = parseFloat(document.getElementById('calc-risk-pct').value);
   const stopDist = parseFloat(document.getElementById('calc-stop-dist').value);
   const pointValue = parseFloat(document.getElementById('calc-point-value').value);
-  localStorage.setItem((JP + 'calc'), JSON.stringify({ balance, riskPct, stopDist, pointValue }));
+  DB.setItem((JP + 'calc'), JSON.stringify({ balance, riskPct, stopDist, pointValue }));
 
   const cont = document.getElementById('calc-result');
   if (!cont) return;
@@ -7532,7 +7675,7 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
     showToast(m, 'error');
     return;
   }
-  localStorage.setItem((JP + 'last_csv_import'), Date.now());
+  DB.setItem((JP + 'last_csv_import'), Date.now());
   sessionStorage.removeItem((JP + 'import_reminder_dismissed'));
   renderAll();
   refreshAssetDropdowns();
@@ -7578,7 +7721,7 @@ function scalingDefaults() {
 function loadScalingState() {
   const d = scalingDefaults();
   try {
-    const raw = JSON.parse(localStorage.getItem(SCALING_KEY) || 'null');
+    const raw = JSON.parse(DB.getItem(SCALING_KEY) || 'null');
     if (raw && typeof raw === 'object') {
       ['start', 'riskPct', 'goal', 'current'].forEach(k => { if (typeof raw[k] === 'number' && isFinite(raw[k])) d[k] = raw[k]; });
       if (SCALING_MODES[raw.mode]) d.mode = raw.mode;
@@ -7604,7 +7747,7 @@ function loadScalingState() {
   return d;
 }
 function getScalingState() { return scalingState || loadScalingState(); }
-function saveScalingState() { try { localStorage.setItem(SCALING_KEY, JSON.stringify(scalingState)); } catch (e) {} }
+function saveScalingState() { try { DB.setItem(SCALING_KEY, JSON.stringify(scalingState)); } catch (e) {} }
 
 function scalingJournalBalance() {
   const base = accountSize > 0 ? accountSize : 0;
@@ -8217,7 +8360,7 @@ function activateSearchItem(index) {
     setTimeout(() => openTradeDetail(item.trade.id), 150);
   }
 }
-document.addEventListener('DOMContentLoaded', () => {
+onReady(() => {
   const input = document.getElementById('search-input');
   if (input) {
     input.addEventListener('keydown', e => {
@@ -8268,7 +8411,7 @@ function journalFormDirty() {
 }
 function doSwitchJournal(id) {
   try { sessionStorage.setItem('journal_return_page', currentPageId()); } catch (e) {}
-  localStorage.setItem('journal_active', id);
+  DB.setItem('journal_active', id);
   location.reload();
 }
 function switchJournal(id) {
@@ -8278,7 +8421,7 @@ function switchJournal(id) {
 }
 applyJournalIdentity();
 // Après un changement de journal, on revient sur la page où l'on était.
-document.addEventListener('DOMContentLoaded', () => {
+onReady(() => {
   let ret = null;
   try { ret = sessionStorage.getItem('journal_return_page'); sessionStorage.removeItem('journal_return_page'); } catch (e) {}
   if (ret && ret !== 'dashboard' && document.getElementById('page-' + ret)) showPage(ret, document.querySelector('.nav-item[data-page="' + ret + '"]'));

@@ -571,7 +571,7 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
     showToast(m, 'error');
     return;
   }
-  localStorage.setItem((JP + 'last_csv_import'), Date.now());
+  DB.setItem((JP + 'last_csv_import'), Date.now());
   sessionStorage.removeItem((JP + 'import_reminder_dismissed'));
   renderAll();
   refreshAssetDropdowns();

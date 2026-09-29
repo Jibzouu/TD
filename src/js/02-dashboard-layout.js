@@ -13,9 +13,9 @@ const DASH_WIDGET_DEFAULTS = {
 };
 
 function loadDashLayout() {
-  try { return JSON.parse(localStorage.getItem((JP + 'dash_layout_v2')) || 'null'); } catch (e) { return null; }
+  try { return JSON.parse(DB.getItem((JP + 'dash_layout_v2')) || 'null'); } catch (e) { return null; }
 }
-function saveDashLayout(layout) { localStorage.setItem((JP + 'dash_layout_v2'), JSON.stringify(layout)); }
+function saveDashLayout(layout) { DB.setItem((JP + 'dash_layout_v2'), JSON.stringify(layout)); }
 
 function getCurrentDashLayout() {
   const grid = document.getElementById('dash-grid');
@@ -72,7 +72,7 @@ function setWidgetWidth(widgetId, widthClass) {
   persistDashLayout();
 }
 function resetDashboardLayout() {
-  localStorage.removeItem((JP + 'dash_layout_v2'));
+  DB.removeItem((JP + 'dash_layout_v2'));
   const grid = document.getElementById('dash-grid');
   if (!grid) return;
   DASH_WIDGET_ORDER_DEFAULT.forEach(id => {

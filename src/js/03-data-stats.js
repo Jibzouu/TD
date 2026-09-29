@@ -21,23 +21,27 @@ function sortTradesChrono() {
   });
 }
 
-// Le stockage du navigateur (≈ 5 M de caractères) est PARTAGÉ par les trois journaux.
+// Stockage : IndexedDB (place accordée par le navigateur, souvent plusieurs centaines de Mo) ; en repli localStorage ≈ 5 Mo.
+// La place est PARTAGÉE par les trois journaux.
 const STORAGE_LIMIT_CHARS = 5 * 1024 * 1024;
+function tradeImages(t) { return [t.cap].concat(Array.isArray(t.caps) ? t.caps : []).filter(Boolean); }
 function storageUsage() {
   let total = 0, mine = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i), n = k.length + (localStorage.getItem(k) || '').length;
-    total += n; if (k.indexOf(JP) === 0) mine += n;
-  }
+  DB.keys().forEach(k => { const n = k.length + (DB.getItem(k) || '').length; total += n; if (k.indexOf(JP) === 0) mine += n; });
   let images = 0, imgCount = 0;
-  trades.forEach(t => { if (t.cap) { images += t.cap.length; imgCount++; } });
-  return { total, mine, images, imgCount, limit: STORAGE_LIMIT_CHARS, pct: total / STORAGE_LIMIT_CHARS * 100 };
+  trades.forEach(t => tradeImages(t).forEach(c => { images += c.length; imgCount++; }));
+  const idb = DB.mode === 'indexeddb' && DB.quota;
+  // En IndexedDB : quota réel du navigateur (au plus 2 Go affichés, le reste n'a pas de sens pour un journal).
+  const limit = idb ? Math.min(DB.quota, 2 * 1024 * 1024 * 1024) : STORAGE_LIMIT_CHARS;
+  const used = idb ? Math.max(DB.usage || 0, total) : total;
+  return { total: used, mine, images, imgCount, limit, pct: used / limit * 100, mode: DB.mode };
 }
 function save() {
   _atCache = null;
-  try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); return true; }
+  try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); return true; }
   catch (e) { reportStorageError(e); return false; }
 }
+DB.onError(e => reportStorageError(e));
 function reportStorageError(e) {
   console.error('Écriture impossible dans le stockage :', e);
   let el = document.getElementById('storage-error');
@@ -98,14 +102,14 @@ async function recompressStoredImages() {
 function createSafetySnapshot(label) {
   try {
     const snap = { at: Date.now(), label, trades: trades.map(t => t.cap ? Object.assign({}, t, { cap: '' }) : t), planData, watchData, imagesDropped: trades.filter(t => t.cap).length };
-    localStorage.setItem((JP + 'safety_snapshot'), JSON.stringify(snap));
+    DB.setItem((JP + 'safety_snapshot'), JSON.stringify(snap));
     return true;
   } catch (e) {
     try { exportData(); } catch (e2) {}
     return false;
   }
 }
-function loadSafetySnapshot() { try { return JSON.parse(localStorage.getItem((JP + 'safety_snapshot')) || 'null'); } catch (e) { return null; } }
+function loadSafetySnapshot() { try { return JSON.parse(DB.getItem((JP + 'safety_snapshot')) || 'null'); } catch (e) { return null; } }
 function restoreSafetySnapshot() {
   const snap = loadSafetySnapshot();
   if (!snap || !Array.isArray(snap.trades)) return;
@@ -113,21 +117,21 @@ function restoreSafetySnapshot() {
     const prev = trades.slice();
     trades = sanitizeTrades(snap.trades); sortTradesChrono();
     if (!save()) { trades = prev; return; }
-    if (snap.planData) { planData = snap.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
-    if (snap.watchData) { watchData = snap.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-    localStorage.removeItem((JP + 'safety_snapshot'));
+    if (snap.planData) { planData = snap.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
+    if (snap.watchData) { watchData = snap.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
+    DB.removeItem((JP + 'safety_snapshot'));
     renderAll(); initPlan(); renderWatchlist(); renderTrashUI(); refreshAssetDropdowns();
     showToast('Importation annulée — ' + trades.length + ' trades restaurés', 'success');
   });
 }
-function dismissSafetySnapshot() { localStorage.removeItem((JP + 'safety_snapshot')); renderTrashUI(); }
+function dismissSafetySnapshot() { DB.removeItem((JP + 'safety_snapshot')); renderTrashUI(); }
 function renderStorageCard() {
   const el = document.getElementById('storage-card-body');
   if (!el) return;
   const u = storageUsage(), col = u.pct >= 92 ? 'var(--red)' : (u.pct >= 80 ? 'var(--amber)' : 'var(--green)');
   const kb = n => Math.round(n / 1024).toLocaleString('fr-FR') + ' Ko';
   el.innerHTML = '<div style="height:10px;background:var(--bg4);border-radius:99px;overflow:hidden;margin:10px 0 8px"><div style="height:100%;width:' + Math.min(100, u.pct).toFixed(1) + '%;background:' + col + '"></div></div>' +
-    '<div style="font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7"><b style="color:' + col + '">' + u.pct.toFixed(1) + ' %</b> utilisé · ' + kb(u.total) + ' sur ≈ ' + kb(u.limit) + ' (partagé par les 3 journaux)<br>Ce journal : ' + kb(u.mine) + ' · dont ' + u.imgCount + ' capture(s) = ' + kb(u.images) + '</div>';
+    '<div style="font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7"><b style="color:' + col + '">' + u.pct.toFixed(1) + ' %</b> utilisé · ' + kb(u.total) + ' sur ' + (u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit)) + ' disponibles · ' + (u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)') + ' · partagé par les 3 journaux<br>Ce journal : ' + kb(u.mine) + ' · dont ' + u.imgCount + ' capture(s) = ' + kb(u.images) + '</div>';
 }
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────
@@ -160,7 +164,7 @@ function dayNet(list) {
 // ── ORIGINE DU R ─────────────────────────────────────────────────────────────────────
 // prix = distance de prix (exact) · manuel = saisi · risque = P&L € ÷ risque configuré (estimé) · defaut = RR fixe sans base réelle (FICTIF)
 const R_SRC_LABELS = { prix: 'R exact (distance de prix)', manuel: 'R saisi', risque: 'R estimé (P&L € ÷ risque configuré)', defaut: 'R fictif (RR par défaut, aucune base réelle)', aucun: 'pas de R' };
-let R_MODE = localStorage.getItem((JP + 'r_mode')) || 'usable';
+let R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
 function computeRWithSource(pnlEur, res, priceCtx) {
   if (priceCtx) {
     const d = computeDistanceR(priceCtx.entryPrice, priceCtx.slPrice, priceCtx.exitPrice, priceCtx.dir);
@@ -192,15 +196,15 @@ function analysisTrades() {
   return _atCache;
 }
 function setRMode(m) {
-  R_MODE = m; localStorage.setItem((JP + 'r_mode'), m); _atCache = null;
+  R_MODE = m; DB.setItem((JP + 'r_mode'), m); _atCache = null;
   renderAll();
 }
 function migrateRSources() {
-  if (localStorage.getItem((JP + 'rsrc_v1'))) return;
+  if (DB.getItem((JP + 'rsrc_v1'))) return;
   let changed = false;
   trades.forEach(t => { if (!t.rSrc && t.pnl != null) { t.rSrc = rSource(t); changed = true; } });
-  if (changed) { try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
-  localStorage.setItem((JP + 'rsrc_v1'), '1');
+  if (changed) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
+  DB.setItem((JP + 'rsrc_v1'), '1');
 }
 function renderRCoverage() {
   const el = document.getElementById('r-coverage');
@@ -230,7 +234,7 @@ function estimateRFromLosses() {
   if (losses.length < 3) { showToast('Pas assez de pertes pour estimer un risque', 'error'); return; }
   const avg = Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length));
   openModal('Estimer le R avec ' + avg + ' € de risque ?', 'Le R des trades sans stop-loss sera calculé comme P&L € ÷ ' + avg + ' € (ta perte moyenne). Ces R sont marqués « estimés » et restent exclus si tu choisis « R exact seulement ».', () => {
-    DEFAULT_RISK_EUR = avg; localStorage.setItem((JP + 'default_risk_eur'), avg);
+    DEFAULT_RISK_EUR = avg; DB.setItem((JP + 'default_risk_eur'), avg);
     let k = 0;
     const before = JSON.stringify(trades);
     trades.forEach(t => { if (rSource(t) === 'defaut') { const cr = computeRWithSource(t.pnlEur, t.res); t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src; k++; } });
@@ -256,7 +260,7 @@ function tradeChecklistComplete(t) {
   return total > 0 && tradeChecklistLabels(t).length >= total;
 }
 function migrateChecklistLabels() {
-  if (localStorage.getItem((JP + 'checklist_v2'))) return;
+  if (DB.getItem((JP + 'checklist_v2'))) return;
   const items = getEntryItems();
   let changed = false;
   trades.forEach(t => {
@@ -266,8 +270,8 @@ function migrateChecklistLabels() {
       changed = true;
     }
   });
-  if (changed) { try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
-  localStorage.setItem((JP + 'checklist_v2'), '1');
+  if (changed) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
+  DB.setItem((JP + 'checklist_v2'), '1');
 }
 // Renommer un critère ou une erreur dans le Plan renomme aussi ce libellé dans les trades déjà saisis (sinon les stats se coupent en deux).
 function renameLabelInTrades(field, oldV, newV) {

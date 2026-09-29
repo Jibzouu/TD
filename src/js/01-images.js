@@ -54,7 +54,7 @@ function saveAccountSize() {
   const val = parseFloat(document.getElementById('account-size').value);
   if (!isNaN(val) && val > 0) {
     accountSize = val;
-    localStorage.setItem((JP + 'account'), val);
+    DB.setItem((JP + 'account'), val);
     renderKPIs();
     renderYearProgress();
   }

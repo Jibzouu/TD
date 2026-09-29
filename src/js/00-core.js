@@ -4,7 +4,7 @@ const JOURNALS = {
   bt: { tab: 'Backtest', title: 'Journal de Backtest', sub: 'Stratégies · Historique testé',     slug: 'backtest' },
   pf: { tab: 'PropFirm', title: 'Journal PropFirm',    sub: 'Challenges · Comptes financés',     slug: 'propfirm' }
 };
-const JOURNAL_ID = (() => { try { const v = localStorage.getItem('journal_active'); return JOURNALS[v] ? v : 'tj'; } catch (e) { return 'tj'; } })();
+const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return JOURNALS[v] ? v : 'tj'; } catch (e) { return 'tj'; } })();
 const JP = JOURNAL_ID + '_';   // préfixe de stockage : tj_ (live) · bt_ (backtest) · pf_ (propfirm)
 document.title = JOURNALS[JOURNAL_ID].title;
 
@@ -15,20 +15,20 @@ const SHARED_SETTINGS = ['theme', 'custom_themes', 'theme_texture', 'theme_autos
 // (à défaut Backtest, puis PropFirm) et on fusionne les thèmes personnalisés enregistrés dans les journaux.
 (function migrateSharedAppearance() {
   try {
-    if (localStorage.getItem('g_appearance_migrated')) return;
+    if (DB.getItem('g_appearance_migrated')) return;
     const order = ['tj', 'bt', 'pf'];
     const nonEmpty = v => { if (v === null) return false; try { const o = JSON.parse(v); return o !== null && (typeof o !== 'object' || Object.keys(o).length > 0); } catch (e) { return v !== ''; } };
     SHARED_SETTINGS.forEach(k => {
-      if (localStorage.getItem(GP + k) !== null) return;
+      if (DB.getItem(GP + k) !== null) return;
       if (k === 'custom_themes') {
         const seen = new Set(), merged = [];
-        order.forEach(j => { try { (JSON.parse(localStorage.getItem(j + '_' + k) || '[]') || []).forEach(t => { if (t && !seen.has(t.id)) { seen.add(t.id); merged.push(t); } }); } catch (e) {} });
-        if (merged.length) localStorage.setItem(GP + k, JSON.stringify(merged));
+        order.forEach(j => { try { (JSON.parse(DB.getItem(j + '_' + k) || '[]') || []).forEach(t => { if (t && !seen.has(t.id)) { seen.add(t.id); merged.push(t); } }); } catch (e) {} });
+        if (merged.length) DB.setItem(GP + k, JSON.stringify(merged));
         return;
       }
-      for (const j of order) { const v = localStorage.getItem(j + '_' + k); if (nonEmpty(v)) { localStorage.setItem(GP + k, v); break; } }
+      for (const j of order) { const v = DB.getItem(j + '_' + k); if (nonEmpty(v)) { DB.setItem(GP + k, v); break; } }
     });
-    localStorage.setItem('g_appearance_migrated', '1');
+    DB.setItem('g_appearance_migrated', '1');
   } catch (e) {}
 })();
 
@@ -41,12 +41,12 @@ function localDateStr(d) {
 // Lecture JSON protégée : une donnée corrompue ne doit jamais empêcher le journal de démarrer.
 // La valeur illisible est mise de côté (clé *_corrupt_backup) au lieu d'être écrasée à la prochaine sauvegarde.
 function loadJSON(key, fallback) {
-  const raw = localStorage.getItem(key);
+  const raw = DB.getItem(key);
   if (raw === null || raw === '') return fallback;
   try { const v = JSON.parse(raw); return v === null || v === undefined ? fallback : v; }
   catch (e) {
     console.error('Donnée illisible dans « ' + key + ' » :', e);
-    try { localStorage.setItem(key + '_corrupt_backup', raw); } catch (e2) {}
+    try { DB.setItem(key + '_corrupt_backup', raw); } catch (e2) {}
     window._corruptKeys = (window._corruptKeys || []).concat(key);
     return fallback;
   }
@@ -125,19 +125,19 @@ let trades = sanitizeTrades(loadJSON(JP + 'trades', []));
 sortTradesChrono();
 let watchData = loadJSON(JP + 'watch', null);
 let planData = loadJSON(JP + 'plan', null);
-let accountSize = parseFloat(localStorage.getItem((JP + 'account')) || '10000');
+let accountSize = parseFloat(DB.getItem((JP + 'account')) || '10000');
 let currentImgBase64 = '';
 
 // Default R multiples applied to imported trades when the source file only
 // gives a €/$ P&L and no real R value (e.g. TradingView's "List of trades" export).
 // Adjustable from the Export / Import page.
-let DEFAULT_RR_WIN = parseFloat(localStorage.getItem((JP + 'default_rr_win')) || '2');
+let DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2');
 // Décalage (en heures) entre l'heure de tes exports et ton propre fuseau — sinon les sessions (Asie/Londres/NY) sont calculées sur la mauvaise heure.
-let TZ_OFFSET_HOURS = parseFloat(localStorage.getItem((JP + 'tz_offset_hours')) || '0');
+let TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0');
 function saveTZOffset() {
   const v = parseFloat(document.getElementById('tz-offset-hours').value);
   TZ_OFFSET_HOURS = isNaN(v) ? 0 : v;
-  localStorage.setItem((JP + 'tz_offset_hours'), TZ_OFFSET_HOURS);
+  DB.setItem((JP + 'tz_offset_hours'), TZ_OFFSET_HOURS);
 }
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
 function recalcSessions() {
@@ -157,24 +157,24 @@ function recalcSessions() {
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
-let DEFAULT_RR_LOSS = -Math.abs(parseFloat(localStorage.getItem((JP + 'default_rr_loss')) || '1'));
+let DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1'));
 function saveDefaultRR() {
   const w = parseFloat(document.getElementById('default-rr-win').value);
   const l = parseFloat(document.getElementById('default-rr-loss').value);
-  if (!isNaN(w) && w > 0) { DEFAULT_RR_WIN = w; localStorage.setItem((JP + 'default_rr_win'), w); }
-  if (!isNaN(l) && l > 0) { DEFAULT_RR_LOSS = -Math.abs(l); localStorage.setItem((JP + 'default_rr_loss'), l); }
+  if (!isNaN(w) && w > 0) { DEFAULT_RR_WIN = w; DB.setItem((JP + 'default_rr_win'), w); }
+  if (!isNaN(l) && l > 0) { DEFAULT_RR_LOSS = -Math.abs(l); DB.setItem((JP + 'default_rr_loss'), l); }
 }
 
 // Real risk per trade in €. When set, imported R multiples are computed as
 // (real €P&L ÷ risk€) instead of a flat default — a much truer picture than
 // assuming every winner is worth exactly the same R.
-let DEFAULT_RISK_EUR = parseFloat(localStorage.getItem((JP + 'default_risk_eur')) || '0');
+let DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0');
 // Taux appliqué aux montants importés dans une autre devise que l'euro (1 unité étrangère = IMPORT_FX_RATE €).
-let IMPORT_FX_RATE = parseFloat(localStorage.getItem((JP + 'import_fx_rate')) || '1') || 1;
+let IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
 function saveImportFxRate() {
   const v = parseFloat(document.getElementById('import-fx-rate').value);
   IMPORT_FX_RATE = (!isNaN(v) && v > 0) ? v : 1;
-  localStorage.setItem((JP + 'import_fx_rate'), IMPORT_FX_RATE);
+  DB.setItem((JP + 'import_fx_rate'), IMPORT_FX_RATE);
 }
 // Devise lue dans un nom de colonne (« P&L net USD », « Profit (EUR) »…). '' si aucune devise n'est indiquée.
 function detectCcyFromHeader(h) {
@@ -211,7 +211,7 @@ function reconvertImportedTrades() {
 function saveDefaultRiskEur() {
   const v = parseFloat(document.getElementById('default-risk-eur').value);
   DEFAULT_RISK_EUR = (!isNaN(v) && v > 0) ? v : 0;
-  localStorage.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
+  DB.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
 }
 // Central place all import paths use to get an R multiple for a trade.
 function computeDistanceR(entryPrice, slPrice, exitPrice, dir) {

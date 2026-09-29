@@ -9,7 +9,7 @@ const BACKUP_SETTINGS_KEYS = [
 function collectAllSettings() {
   const out = {};
   BACKUP_SETTINGS_KEYS.forEach(k => {
-    const v = localStorage.getItem(k);
+    const v = DB.getItem(k);
     if (v !== null) out[k] = v;
   });
   return out;
@@ -22,17 +22,17 @@ function restoreAllSettings(settings) {
   Object.entries(settings).forEach(([k, v]) => {
     const m = /^(tj|bt|pf|g)_(.+)$/.exec(k);
     if (!m || typeof v !== 'string' || !allowed.has(m[2])) return;
-    localStorage.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
+    DB.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
   });
 }
 // Après restauration d'un backup : recharge en mémoire les réglages d'import/R (sinon l'ancien réglage restait actif jusqu'au rechargement de la page).
 function reloadImportSettings() {
-  DEFAULT_RR_WIN = parseFloat(localStorage.getItem((JP + 'default_rr_win')) || '2') || 2;
-  DEFAULT_RR_LOSS = -Math.abs(parseFloat(localStorage.getItem((JP + 'default_rr_loss')) || '1') || 1);
-  DEFAULT_RISK_EUR = parseFloat(localStorage.getItem((JP + 'default_risk_eur')) || '0') || 0;
-  TZ_OFFSET_HOURS = parseFloat(localStorage.getItem((JP + 'tz_offset_hours')) || '0') || 0;
-  IMPORT_FX_RATE = parseFloat(localStorage.getItem((JP + 'import_fx_rate')) || '1') || 1;
-  R_MODE = localStorage.getItem((JP + 'r_mode')) || 'usable';
+  DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2') || 2;
+  DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1') || 1);
+  DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0') || 0;
+  TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0') || 0;
+  IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
+  R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   set('account-size', accountSize); set('default-rr-win', DEFAULT_RR_WIN); set('default-rr-loss', Math.abs(DEFAULT_RR_LOSS));
   set('default-risk-eur', DEFAULT_RISK_EUR || ''); set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
@@ -52,7 +52,7 @@ function exportData() {
   a.download = 'journal-' + JOURNALS[JOURNAL_ID].slug + '-backup-' + localDateStr() + '.json';
   a.click();
   URL.revokeObjectURL(url);
-  localStorage.setItem((JP + 'last_export'), Date.now());
+  DB.setItem((JP + 'last_export'), Date.now());
   hideExportReminder();
   showToast('Backup complet téléchargé ✓ (trades + réglages + thèmes)', 'success');
 }
@@ -125,7 +125,7 @@ async function verifyBackupPermission(handle) {
 }
 function fullBackupPayload() {
   const out = {};
-  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); out[k] = localStorage.getItem(k); }
+  for (let i = 0; i < DB.length; i++) { const k = DB.key(i); out[k] = DB.getItem(k); }
   return { version: 'full-backup-v1', app: 'journal-de-trading', exportedAt: new Date().toISOString(), data: out };
 }
 async function writeBackupToSlot(slot) {
@@ -147,23 +147,23 @@ async function runBackupNow(silent) {
   const okCount = results.filter(r => r.ok).length;
   const anyConfigured = results.some(r => r.reason !== 'non configuré');
   // La date de dernière sauvegarde n'avance que si au moins un dossier a vraiment reçu le fichier : un échec sera retenté à la prochaine ouverture.
-  if (okCount > 0) localStorage.setItem((GP + 'last_backup_run'), Date.now());
-  localStorage.setItem((GP + 'last_backup_attempt'), Date.now());
-  localStorage.setItem((GP + 'last_backup_results'), JSON.stringify(results));
+  if (okCount > 0) DB.setItem((GP + 'last_backup_run'), Date.now());
+  DB.setItem((GP + 'last_backup_attempt'), Date.now());
+  DB.setItem((GP + 'last_backup_results'), JSON.stringify(results));
   if (okCount > 0) showToast('Sauvegarde effectuée : ' + okCount + '/' + BACKUP_SLOTS.length + ' dossier(s) ✓', 'success');
   else if (!silent && anyConfigured) showToast('Échec de la sauvegarde — vérifie l\'autorisation des dossiers ci-dessous.', 'error');
   else if (!silent) showToast('Choisis d\'abord au moins un dossier ci-dessous.', 'error');
   renderBackupSettings();
   return results;
 }
-function getBackupDay() { const v = parseInt(localStorage.getItem((GP + 'backup_weekday'))); return isNaN(v) ? 5 : v; } // vendredi par défaut
-function setBackupDay(v) { localStorage.setItem((GP + 'backup_weekday'), v); renderBackupSettings(); }
+function getBackupDay() { const v = parseInt(DB.getItem((GP + 'backup_weekday'))); return isNaN(v) ? 5 : v; } // vendredi par défaut
+function setBackupDay(v) { DB.setItem((GP + 'backup_weekday'), v); renderBackupSettings(); }
 async function checkAutoBackupDue() {
   if (!FS_ACCESS_SUPPORTED) return;
   const handles = await Promise.all(BACKUP_SLOTS.map(s => backupIdbGet('slot' + s)));
   if (!handles.some(h => h)) return; // aucun dossier configuré : rien à faire
-  const last = parseInt(localStorage.getItem((GP + 'last_backup_run'))) || 0;
-  const lastTry = parseInt(localStorage.getItem((GP + 'last_backup_attempt'))) || 0;
+  const last = parseInt(DB.getItem((GP + 'last_backup_run'))) || 0;
+  const lastTry = parseInt(DB.getItem((GP + 'last_backup_attempt'))) || 0;
   const daysSince = (Date.now() - last) / 86400000;
   if (Date.now() - lastTry < 3600000) return;   // pas plus d'une tentative automatique par heure
   // Jour choisi (et pas déjà fait aujourd'hui) OU rattrapage : plus de 7 jours sans sauvegarde réussie (journal pas ouvert le bon jour, échec…).
@@ -193,11 +193,11 @@ async function renderBackupSettings() {
   }).join('');
   const info = document.getElementById('backup-last-run-info');
   if (info) {
-    const last = parseInt(localStorage.getItem((GP + 'last_backup_run')));
-    const lastTry = parseInt(localStorage.getItem((GP + 'last_backup_attempt')));
+    const last = parseInt(DB.getItem((GP + 'last_backup_run')));
+    const lastTry = parseInt(DB.getItem((GP + 'last_backup_attempt')));
     if (!last) { info.textContent = lastTry ? 'Aucune sauvegarde réussie pour l\'instant — dernière tentative le ' + new Date(lastTry).toLocaleString('fr-FR') + ' : échec (vérifie l\'autorisation des dossiers).' : 'Aucune sauvegarde automatique effectuée pour l\'instant.'; }
     else {
-      let results = []; try { results = JSON.parse(localStorage.getItem((GP + 'last_backup_results')) || '[]'); } catch (e) {}
+      let results = []; try { results = JSON.parse(DB.getItem((GP + 'last_backup_results')) || '[]'); } catch (e) {}
       const ok = results.filter(r => r.ok).length;
       info.textContent = 'Dernière sauvegarde : ' + new Date(last).toLocaleString('fr-FR') + ' (' + ok + '/' + BACKUP_SLOTS.length + ' dossier(s) réussi(s)). La sauvegarde automatique se déclenche quand le journal est ouvert : le jour choisi, ou dès la prochaine ouverture si plus de 7 jours se sont écoulés.';
     }
@@ -222,17 +222,17 @@ function importData(input) {
         const prevTrades = trades.slice();
         trades = sanitizeTrades(data.trades); sortTradesChrono();
         if (!save()) { trades = prevTrades; return; }   // rien n'est modifié si le stockage refuse
-        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
         applySavedTheme();
-        if (localStorage.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+        if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
         else document.body.classList.remove('texture-on');
         applyNavOrder();
-        accountSize = parseFloat(localStorage.getItem((JP + 'account'))) || accountSize;
+        accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;
         reloadImportSettings();
-        CAL_HEAT_INTENSITY = parseFloat(localStorage.getItem((GP + 'cal_heat_intensity')) || '1');
-        CHART_INTENSITY = parseFloat(localStorage.getItem((GP + 'chart_intensity')) || '2');
+        CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
+        CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
         const savedLayout = loadDashLayout();
         if (savedLayout) applyDashLayout(savedLayout);
         scalingState = null;
@@ -252,7 +252,7 @@ function importData(input) {
 function confirmReset() {
   openModal('Réinitialiser le journal ?', 'Tous tes trades seront supprimés. Une copie de sécurité sera gardée localement (restaurable depuis cette page) au cas où.', () => {
     if (trades.length > 0) {
-      try { localStorage.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
+      try { DB.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
       catch (e) {
         // Pas la place de garder une copie locale : on télécharge un backup complet AVANT d'effacer quoi que ce soit.
         try { exportData(); } catch (e2) { showToast('Impossible de sauvegarder avant réinitialisation — rien n\'a été effacé', 'error'); return; }
@@ -268,7 +268,7 @@ function confirmReset() {
 }
 
 function loadResetBackup() {
-  try { return JSON.parse(localStorage.getItem((JP + 'reset_backup')) || 'null'); } catch(e) { return null; }
+  try { return JSON.parse(DB.getItem((JP + 'reset_backup')) || 'null'); } catch(e) { return null; }
 }
 function restoreResetBackup() {
   const backup = loadResetBackup();
@@ -277,22 +277,22 @@ function restoreResetBackup() {
     const prevTrades = trades;
     trades = sanitizeTrades(backup.trades); sortTradesChrono();
     if (!save()) { trades = prevTrades; return; }
-    localStorage.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
+    DB.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
     renderAll();
     renderTrashUI();
     showToast('Sauvegarde restaurée — ' + trades.length + ' trades', 'success');
   });
 }
 function dismissResetBackup() {
-  localStorage.removeItem((JP + 'reset_backup'));
+  DB.removeItem((JP + 'reset_backup'));
   renderTrashUI();
 }
 
 // ── CORBEILLE (trades supprimés individuellement) ───────────────────
 function loadTrash() {
-  try { return JSON.parse(localStorage.getItem((JP + 'trash')) || '[]'); } catch(e) { return []; }
+  try { return JSON.parse(DB.getItem((JP + 'trash')) || '[]'); } catch(e) { return []; }
 }
-function saveTrash(list) { try { localStorage.setItem((JP + 'trash'), JSON.stringify(list)); return true; } catch (e) { console.error('Corbeille non enregistrée :', e); return false; } }
+function saveTrash(list) { try { DB.setItem((JP + 'trash'), JSON.stringify(list)); return true; } catch (e) { console.error('Corbeille non enregistrée :', e); return false; } }
 
 function restoreTrashItem(idx) {
   const trash = loadTrash();
@@ -367,7 +367,7 @@ function checkExportReminder() {
   if (!el) return;
   if (sessionStorage.getItem((JP + 'export_reminder_dismissed'))) { el.style.display = 'none'; return; }
   if (trades.length < 5) { el.style.display = 'none'; return; }
-  const last = parseInt(localStorage.getItem((JP + 'last_export')) || '0', 10);
+  const last = parseInt(DB.getItem((JP + 'last_export')) || '0', 10);
   const days = last ? (Date.now() - last) / 86400000 : Infinity;
   if (days >= 7) {
     document.getElementById('export-reminder-text').textContent = last
@@ -391,7 +391,7 @@ function checkImportReminder() {
   const el = document.getElementById('import-reminder');
   if (!el) return;
   if (sessionStorage.getItem((JP + 'import_reminder_dismissed'))) { el.style.display = 'none'; return; }
-  const last = parseInt(localStorage.getItem((JP + 'last_csv_import')) || '0', 10);
+  const last = parseInt(DB.getItem((JP + 'last_csv_import')) || '0', 10);
   if (!last) { el.style.display = 'none'; return; }
   const days = (Date.now() - last) / 86400000;
   if (days >= 3) {

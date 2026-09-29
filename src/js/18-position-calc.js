@@ -1,7 +1,7 @@
 // ── CALCULATEUR DE TAILLE DE POSITION (RR) ─────────────────────────────
 function loadPositionCalc() {
   try {
-    const raw = JSON.parse(localStorage.getItem((JP + 'calc')) || 'null');
+    const raw = JSON.parse(DB.getItem((JP + 'calc')) || 'null');
     if (raw) {
       document.getElementById('calc-balance').value = raw.balance ?? '';
       document.getElementById('calc-risk-pct').value = raw.riskPct ?? '';
@@ -19,7 +19,7 @@ function renderPositionCalc() {
   const riskPct = parseFloat(document.getElementById('calc-risk-pct').value);
   const stopDist = parseFloat(document.getElementById('calc-stop-dist').value);
   const pointValue = parseFloat(document.getElementById('calc-point-value').value);
-  localStorage.setItem((JP + 'calc'), JSON.stringify({ balance, riskPct, stopDist, pointValue }));
+  DB.setItem((JP + 'calc'), JSON.stringify({ balance, riskPct, stopDist, pointValue }));
 
   const cont = document.getElementById('calc-result');
   if (!cont) return;

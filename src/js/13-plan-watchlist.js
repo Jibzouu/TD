@@ -80,18 +80,18 @@ function renderMistakeTagsEditor() {
 }
 function updateMistakeTag(i, val) {
   planData.mistakeTags[i] = val;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderTradeMistakes();
 }
 function addMistakeTag() {
   planData.mistakeTags.push('Nouvelle erreur');
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderMistakeTagsEditor();
   renderTradeMistakes();
 }
 function removeMistakeTag(i) {
   planData.mistakeTags.splice(i, 1);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderMistakeTagsEditor();
   renderTradeMistakes();
 }
@@ -124,12 +124,12 @@ function renderChecklistGroup(key, groupKey) {
 
 function updateChecklistItem(key, idx, val) {
   planData[key][idx] = val;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   if (key === 'entryItems') renderTradeChecklist();
 }
 function addChecklistItem(key) {
   planData[key].push('Nouveau critère');
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderChecklistGroup(key, key === 'entryItems' ? 'ce' : 'cf');
   if (key === 'entryItems') renderTradeChecklist();
 }
@@ -139,7 +139,7 @@ function removeChecklistItem(key, idx, groupKey) {
   const pos = arr.indexOf(idx);
   if (pos > -1) arr.splice(pos, 1);
   for (let j = 0; j < arr.length; j++) { if (arr[j] > idx) arr[j]--; }
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderChecklistGroup(key, groupKey);
   if (key === 'entryItems') renderTradeChecklist();
 }
@@ -158,16 +158,16 @@ function renderRiskRules() {
 
 function updateRiskRule(i, col, val) {
   planData.risk[i][col] = val;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 function addRiskRule() {
   planData.risk.push(['Nouvelle règle', '—']);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderRiskRules();
 }
 function removeRiskRule(i) {
   planData.risk.splice(i, 1);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
   renderRiskRules();
 }
 
@@ -176,12 +176,12 @@ function toggleCheck(group, idx, el) {
   const key = group === 'ce' ? planData.ce : planData.cf;
   const pos = key.indexOf(idx);
   if (pos >= 0) key.splice(pos, 1); else key.push(idx);
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 
 function savePlanNotes() {
   planData.notes = document.getElementById('plan-notes').value;
-  localStorage.setItem((JP + 'plan'), JSON.stringify(planData));
+  DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 
 // ── WATCHLIST ────────────────────────────────────────────────────────
@@ -233,6 +233,6 @@ function renderWatchlist() {
 function saveWatch(asset, field, val) {
   if (!watchData[asset]) watchData[asset] = {};
   watchData[asset][field] = val;
-  localStorage.setItem((JP + 'watch'), JSON.stringify(watchData));
+  DB.setItem((JP + 'watch'), JSON.stringify(watchData));
 }
 

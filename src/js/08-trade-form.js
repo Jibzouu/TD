@@ -228,17 +228,17 @@ function renderTradeChecklist() {
 
 // ── DD JOURNALIER (avec override manuel) ────────────────────────────
 function loadDDLimitPct() {
-  return parseFloat(localStorage.getItem((JP + 'dd_limit_pct')) || '1');
+  return parseFloat(DB.getItem((JP + 'dd_limit_pct')) || '1');
 }
 function saveDDLimitPct() {
   const v = parseFloat(document.getElementById('dd-limit-pct').value);
-  if (!isNaN(v) && v > 0) localStorage.setItem((JP + 'dd_limit_pct'), v);
+  if (!isNaN(v) && v > 0) DB.setItem((JP + 'dd_limit_pct'), v);
   renderDDBanner();
 }
 function loadDDManualMap() {
-  try { return JSON.parse(localStorage.getItem((JP + 'dd_manual')) || '{}'); } catch(e) { return {}; }
+  try { return JSON.parse(DB.getItem((JP + 'dd_manual')) || '{}'); } catch(e) { return {}; }
 }
-function saveDDManualMap(map) { localStorage.setItem((JP + 'dd_manual'), JSON.stringify(map)); }
+function saveDDManualMap(map) { DB.setItem((JP + 'dd_manual'), JSON.stringify(map)); }
 
 function toggleDDManualInput() {
   const row = document.getElementById('dd-manual-row');

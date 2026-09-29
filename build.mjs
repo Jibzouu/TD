@@ -38,6 +38,7 @@ export function build({ quiet } = {}) {
     vendor,
     styles: readDir('styles', '.css').join('\n'),
     body: readDirHtml('partials'),
+    boot: safeScript(readDir('boot', '.js').join('\n')),
     scripts: safeScript(readDir('js', '.js').join('\n')),
   };
   // Remplacement par fonction : les « $ » du code ne doivent pas être interprétés.

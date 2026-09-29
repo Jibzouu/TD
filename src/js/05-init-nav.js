@@ -1,12 +1,12 @@
 // ── INIT ─────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+onReady(() => {
   safeRun(migrateChecklistLabels, 'migrateChecklistLabels');   // ici et pas plus haut : la checklist par défaut (const) n'est définie que plus bas dans le script
   initSidebarState();
   initDashboardLayout();
   initScalingDraw();
   applySavedTheme();
-  if (localStorage.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
-  if (localStorage.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
+  if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+  if (DB.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
   applyNavOrder();
   initNavDragDrop();
   document.getElementById('f-date').value = localDateStr();
@@ -27,12 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── RÉORGANISATION DE LA SIDEBAR (glisser-déposer) ──────────────────
 function applyNavOrder() {
   try {
-    const order = JSON.parse(localStorage.getItem((JP + 'nav_order')) || 'null');
+    const order = JSON.parse(DB.getItem((JP + 'nav_order')) || 'null');
     if (!order) return;
     // Orders saved before separators were trackable don't include sep1/sep2 —
     // replaying those would push the separators to the top again. Discard them once.
     if (!order.includes('sep1') || !order.includes('sep2')) {
-      localStorage.removeItem((JP + 'nav_order'));
+      DB.removeItem((JP + 'nav_order'));
       return;
     }
     const nav = document.querySelector('.nav');
@@ -56,7 +56,7 @@ function applyNavOrder() {
 }
 function saveNavOrder() {
   const order = [...document.querySelectorAll('.nav > [data-navid]')].map(el => el.dataset.navid);
-  localStorage.setItem((JP + 'nav_order'), JSON.stringify(order));
+  DB.setItem((JP + 'nav_order'), JSON.stringify(order));
 }
 function getNavDragAfterElement(container, y) {
   const items = [...container.querySelectorAll('[data-navid]:not(.dragging)')];

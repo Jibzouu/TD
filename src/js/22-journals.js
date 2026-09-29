@@ -30,7 +30,7 @@ function journalFormDirty() {
 }
 function doSwitchJournal(id) {
   try { sessionStorage.setItem('journal_return_page', currentPageId()); } catch (e) {}
-  localStorage.setItem('journal_active', id);
+  DB.setItem('journal_active', id);
   location.reload();
 }
 function switchJournal(id) {
@@ -40,7 +40,7 @@ function switchJournal(id) {
 }
 applyJournalIdentity();
 // Après un changement de journal, on revient sur la page où l'on était.
-document.addEventListener('DOMContentLoaded', () => {
+onReady(() => {
   let ret = null;
   try { ret = sessionStorage.getItem('journal_return_page'); sessionStorage.removeItem('journal_return_page'); } catch (e) {}
   if (ret && ret !== 'dashboard' && document.getElementById('page-' + ret)) showPage(ret, document.querySelector('.nav-item[data-page="' + ret + '"]'));

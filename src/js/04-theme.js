@@ -52,11 +52,11 @@ const THEME_PRESETS = {
 // Un thème personnalisé (couleur modifiée à la main → plus de --preset-key) n'est jamais touché.
 (function migrateToTerminalCharter() {
   try {
-    if (localStorage.getItem('g_charter_v2')) return;
-    const th = JSON.parse(localStorage.getItem('g_theme') || '{}') || {};
+    if (DB.getItem('g_charter_v2')) return;
+    const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
     if (th['--preset-key'] === 'default' && th['--bg'] === '#0b0c10') {
       Object.keys(th).forEach(k => { if (/^--(bg|bg2|bg3|bg4|border|border2|txt|txt2|txt3|green|red|amber|blue|purple|accent)(-d|-dd)?$/.test(k)) delete th[k]; });
-      localStorage.setItem('g_theme', JSON.stringify(th));
+      DB.setItem('g_theme', JSON.stringify(th));
     }
     if (th['--preset-key'] === 'proclair' && th['--bg'] === '#f4f5fa') {
       Object.keys(th).forEach(k => { if (/^--(bg|bg2|bg3|bg4|border|border2|txt|txt2|txt3|green|red|amber|blue|purple|accent)(-d|-dd)?$/.test(k)) delete th[k]; });
@@ -65,9 +65,9 @@ const THEME_PRESETS = {
         if (['--green', '--red', '--amber', '--blue', '--purple', '--accent'].includes(k)) th[k + '-d'] = hexToRgba(v, .12);
         if (k === '--green' || k === '--red') th[k + '-dd'] = hexToRgba(v, .06);
       });
-      localStorage.setItem('g_theme', JSON.stringify(th));
+      DB.setItem('g_theme', JSON.stringify(th));
     }
-    localStorage.setItem('g_charter_v2', '1');
+    DB.setItem('g_charter_v2', '1');
   } catch (e) {}
 })();
 
@@ -79,9 +79,9 @@ function hexToRgba(hex, alpha) {
   return `rgba(${(num>>16)&255},${(num>>8)&255},${num&255},${alpha})`;
 }
 function loadThemeObj() {
-  try { const o = JSON.parse(localStorage.getItem((GP + 'theme')) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(e) { return {}; }
+  try { const o = JSON.parse(DB.getItem((GP + 'theme')) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(e) { return {}; }
 }
-function saveThemeObj(theme) { localStorage.setItem((GP + 'theme'), JSON.stringify(theme)); }
+function saveThemeObj(theme) { DB.setItem((GP + 'theme'), JSON.stringify(theme)); }
 
 function applyBodyStyleClasses(theme) {
   document.body.classList.remove('bgstyle-gradient','bgstyle-grid','cardstyle-glass','cardstyle-elevated','glow-on');
@@ -204,7 +204,7 @@ function onGlowChange(checked) {
   applyBodyStyleClasses(theme);
 }
 function onTextureChange(checked) {
-  localStorage.setItem((GP + 'theme_texture'), checked ? '1' : '0');
+  DB.setItem((GP + 'theme_texture'), checked ? '1' : '0');
   document.body.classList.toggle('texture-on', checked);
 }
 function applySystemTheme() {
@@ -212,12 +212,12 @@ function applySystemTheme() {
   applyPreset(prefersDark ? 'default' : 'proclair');
 }
 function onAutoThemeChange(checked) {
-  localStorage.setItem((GP + 'theme_autosystem'), checked ? '1' : '0');
+  DB.setItem((GP + 'theme_autosystem'), checked ? '1' : '0');
   if (checked) applySystemTheme();
 }
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (localStorage.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
+    if (DB.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
   });
 }
 
@@ -249,7 +249,7 @@ function applyPreset(key, silent) {
 }
 
 function resetTheme() {
-  localStorage.removeItem((GP + 'theme'));
+  DB.removeItem((GP + 'theme'));
   location.reload();
 }
 
@@ -275,12 +275,12 @@ function renderThemePresetGrid() {
 }
 
 function getCustomThemes() {
-  try { const l = JSON.parse(localStorage.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
+  try { const l = JSON.parse(DB.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
 }
 // Couleur acceptée seulement si c'est vraiment une couleur (#hex, rgb(a)) : un thème importé ne peut pas injecter de HTML via un attribut style.
 function safeColor(v, fallback) { return (typeof v === 'string' && /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%]+\))$/.test(v.trim())) ? v.trim() : fallback; }
 function saveCustomThemesList(list) {
-  localStorage.setItem((GP + 'custom_themes'), JSON.stringify(list));
+  DB.setItem((GP + 'custom_themes'), JSON.stringify(list));
 }
 function saveCurrentThemeAs() {
   const name = prompt('Nom de ce thème :', '');
@@ -403,8 +403,8 @@ function renderSettingsPage() {
   const glowToggle = document.getElementById('glow-toggle');
   if (glowToggle) glowToggle.checked = !!theme['--glow'];
   const textureToggle = document.getElementById('texture-toggle');
-  if (textureToggle) textureToggle.checked = localStorage.getItem((GP + 'theme_texture')) === '1';
+  if (textureToggle) textureToggle.checked = DB.getItem((GP + 'theme_texture')) === '1';
   const autoThemeToggle = document.getElementById('autotheme-toggle');
-  if (autoThemeToggle) autoThemeToggle.checked = localStorage.getItem((GP + 'theme_autosystem')) === '1';
+  if (autoThemeToggle) autoThemeToggle.checked = DB.getItem((GP + 'theme_autosystem')) === '1';
 }
 

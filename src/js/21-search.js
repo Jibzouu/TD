@@ -119,7 +119,7 @@ function activateSearchItem(index) {
     setTimeout(() => openTradeDetail(item.trade.id), 150);
   }
 }
-document.addEventListener('DOMContentLoaded', () => {
+onReady(() => {
   const input = document.getElementById('search-input');
   if (input) {
     input.addEventListener('keydown', e => {
