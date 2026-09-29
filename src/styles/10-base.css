@@ -516,3 +516,5 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
 .sc-cush-in.own input{border-color:var(--amber);color:var(--amber)}
 .sc-cush-res{color:var(--txt2)}.sc-cush-res b{color:var(--txt);font-weight:600}
 .sc-cush-warn{font-size:11px;white-space:normal;max-width:260px}
+.sc-table td{white-space:nowrap}.sc-end-lbl{width:96px;margin-left:-48px}
+.sc-table th,.sc-table td{padding-left:9px;padding-right:9px}.sc-cush-in input{width:64px}
