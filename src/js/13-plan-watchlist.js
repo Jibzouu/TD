@@ -62,11 +62,33 @@ function initPlan() {
   renderChecklistGroup('filterItems', 'cf');
   renderRiskRules();
   renderMistakeTagsEditor();
+  renderSetupsEditor();
   document.getElementById('plan-notes').value = planData.notes || '';
   renderTradeChecklist();
   renderTradeMistakes();
 }
 
+// Setups : liste éditable (renommer un setup le renomme aussi dans les trades déjà saisis).
+function renderSetupsEditor() {
+  const cont = document.getElementById('setups-editor'); if (!cont) return;
+  if (!Array.isArray(planData.setups)) planData.setups = [...new Set(trades.map(t => t.setup).filter(Boolean))].sort();
+  mount(cont, html`${planData.setups.map((s, i) => html`<div class="risk-row" style="gap:8px">
+      <input class="watch-input" style="flex:1;font-size:12.5px" value="${s}" onfocus="this.dataset.orig=this.value" onchange="renameSetup(${raw(i)}, this.dataset.orig, this.value)" placeholder="Nom du setup" aria-label="Nom du setup">
+      <span class="ui-muted" style="white-space:nowrap">${trades.filter(t => t.setup === s).length} trade(s)</span>
+      <button class="del-btn" onclick="removeSetup(${raw(i)})" title="Retirer de la liste" aria-label="Retirer ce setup">×</button></div>`)}
+    <button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addSetup()">+ Ajouter un setup</button>`);
+}
+function savePlanData() { try { DB.setItem((JP + 'plan'), JSON.stringify(planData)); } catch (e) { reportStorageError(e); } }
+function addSetup() { planData.setups.push('Nouveau setup'); savePlanData(); renderSetupsEditor(); refreshSetupList(); }
+function removeSetup(i) { planData.setups.splice(i, 1); savePlanData(); renderSetupsEditor(); refreshSetupList(); }
+function renameSetup(i, oldV, newV) {
+  newV = String(newV || '').trim().slice(0, 60); if (!newV) { renderSetupsEditor(); return; }
+  planData.setups[i] = newV; savePlanData();
+  const touched = trades.filter(t => t.setup === oldV && oldV !== newV);
+  if (touched.length) { touched.forEach(t => { t.setup = newV; }); if (save()) showToast('Setup renommé dans ' + touched.length + ' trade(s) ✓', 'success'); }
+  if (FILTER.setup === oldV) { FILTER.setup = newV; DB.setItem(JP + 'global_filter', JSON.stringify(FILTER)); }
+  renderSetupsEditor(); refreshSetupList(); renderAll();
+}
 function renderMistakeTagsEditor() {
   const cont = document.getElementById('mistake-tags');
   if (!cont) return;

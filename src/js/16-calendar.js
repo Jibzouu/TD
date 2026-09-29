@@ -128,6 +128,7 @@ function computeCalStreaks(sortedDayEntries) {
 }
 
 function getCalFilteredTrades() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const calAsset = document.getElementById('cal-filter-asset')?.value || '';
   const calSession = document.getElementById('cal-filter-session')?.value || '';
   return trades.filter(t => (!calAsset || t.asset === calAsset) && (!calSession || t.session === calSession));
@@ -316,14 +317,7 @@ function renderYearlyCalendar() {
 }
 
 
-function getISOWeek(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return { year: d.getUTCFullYear(), week: weekNo };
-}
+// (getISOWeek : voir 00a-calc.js)
 
 function renderRRTables() {
   const trades = analysisTrades();

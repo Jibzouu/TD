@@ -5,39 +5,6 @@ function normHeaderCSV(h) {
     .replace(/[^a-z0-9]/g, '');
 }
 
-// Séparateur détecté sur la ligne d'en-tête (hors guillemets) : « , » (TradingView), « ; » (Excel FR) ou tabulation.
-function detectCSVDelimiter(text) {
-  const counts = { ',': 0, ';': 0, '\t': 0 };
-  let inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '"') inQ = !inQ;
-    else if (!inQ && c === '\n') break;
-    else if (!inQ && counts[c] !== undefined) counts[c]++;
-  }
-  return Object.keys(counts).reduce((best, d) => counts[d] > counts[best] ? d : best, ',');
-}
-function parseCSVGeneric(text) {
-  text = String(text || '').replace(/^\uFEFF/, '');   // BOM UTF-8 des exports Excel
-  const delim = detectCSVDelimiter(text);
-  const rows = [];
-  let row = [], field = '', inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
-      else field += c;
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === delim) { row.push(field); field = ''; }
-      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-      else if (c === '\r') { /* skip */ }
-      else field += c;
-    }
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
-}
 
 function guessSymbolFromFilenameCSV(filename) {
   if (!filename) return '';
@@ -50,9 +17,10 @@ function guessSymbolFromFilenameCSV(filename) {
   return '';
 }
 
-function sessionFromHour(h) {
+function sessionFromHour(h, offset) {
+  if (offset === undefined) offset = TZ_OFFSET_HOURS;   // heures d'un export : décalage réglé ; heure locale (saisie rapide) : 0
   if (h === null || h === undefined || isNaN(h)) return '';
-  h = ((Math.round(h + TZ_OFFSET_HOURS) % 24) + 24) % 24;   // applique le décalage réglé par l'utilisateur, replié sur 0-23h
+  h = ((Math.round(h + offset) % 24) + 24) % 24;   // applique le décalage réglé par l'utilisateur, replié sur 0-23h
   if (h >= 0 && h < 6) return 'Asie';
   if (h >= 6 && h < 8) return 'Overlap Asie/Londres';
   if (h >= 8 && h < 12) return 'Londres';
@@ -265,17 +233,19 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
     const finalR = distRPlausible ? rawDistR : rMultiple;
     const finalSlPrice = distRPlausible ? levels.slPrice : null;
 
+    const signalName = (() => {
+      if (!entryRow || col.signal === -1) return '';
+      const s = (entryRow[col.signal] || '').trim();
+      return /^\d+$/.test(s) ? '' : s;
+    })();
     out.push({
       id: Date.now() + Math.floor(Math.random()*100000),
       date, asset, tf: '', dir, session: sessionFromHour(entryDT.hour),
       entry: entryDT.time, exit: exitDT.time, emotion: null,
       res, rr: finalR, pnl: finalR, rSrc: distRPlausible ? 'prix' : rmSrc.src, pnlEur: pnl, ccy: srcCcy || '', fxRate: fx, size: null, cap: '',
       mfe, mae, tvKey, entryPrice, slPrice: finalSlPrice, tpPrice: levels.tpPrice, exitPrice,
-      desc: (() => {
-        if (!entryRow || col.signal === -1) return '';
-        const s = (entryRow[col.signal] || '').trim();
-        return /^\d+$/.test(s) ? '' : s;
-      })()
+      desc: signalName,
+      setup: signalName.slice(0, 60)   // le « signal » TradingView = nom de la stratégie → sert de setup pour le filtre et l'Edge Finder
     });
   });
   return out;

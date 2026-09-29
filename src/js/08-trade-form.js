@@ -3,7 +3,7 @@ let editingTradeId = null;
 
 function resetTradeForm() {
   ['f-asset','f-tf','f-dir','f-session','f-res','f-emotion'].forEach(id => document.getElementById(id).value = '');
-  ['f-rr','f-pnl','f-pnleur','f-size','f-desc','f-entry','f-exit'].forEach(id => document.getElementById(id).value = '');
+  ['f-rr','f-pnl','f-pnleur','f-size','f-desc','f-entry','f-exit','f-setup','f-tags','f-review'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['f-entry-price','f-sl-price','f-tp-price','f-exit-price'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const preview = document.getElementById('distance-r-preview');
   if (preview) preview.style.display = 'none';
@@ -32,6 +32,9 @@ function startEditTrade(id) {
   document.getElementById('f-pnleur').value = (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : '';
   document.getElementById('f-size').value = (t.size !== null && t.size !== undefined) ? t.size : '';
   document.getElementById('f-desc').value = t.desc || '';
+  document.getElementById('f-setup').value = t.setup || '';
+  document.getElementById('f-tags').value = Array.isArray(t.tags) ? t.tags.join(', ') : '';
+  document.getElementById('f-review').value = t.review || '';
   document.getElementById('f-entry-price').value = (t.entryPrice !== null && t.entryPrice !== undefined) ? t.entryPrice : '';
   document.getElementById('f-sl-price').value = (t.slPrice !== null && t.slPrice !== undefined) ? t.slPrice : '';
   document.getElementById('f-tp-price').value = (t.tpPrice !== null && t.tpPrice !== undefined) ? t.tpPrice : '';
@@ -46,17 +49,8 @@ function startEditTrade(id) {
     el.checked = Array.isArray(t.mistakes) && t.mistakes.includes(el.value);
   });
 
-  if (t.cap) {
-    currentImgBase64 = t.cap;
-    document.getElementById('upload-placeholder').style.display = 'none';
-    document.getElementById('upload-preview').style.display = 'block';
-    document.getElementById('img-preview-el').src = t.cap;
-  } else {
-    currentImgBase64 = '';
-    document.getElementById('upload-placeholder').style.display = 'block';
-    document.getElementById('upload-preview').style.display = 'none';
-    document.getElementById('img-preview-el').src = '';
-  }
+  currentImgs = tradeImages(t).slice();
+  renderUploadThumbs();
 
   const banner = document.getElementById('edit-trade-banner');
   const bannerText = document.getElementById('edit-trade-banner-text');
@@ -71,7 +65,7 @@ function startEditTrade(id) {
   if (t.entryPrice || t.slPrice || t.tpPrice || t.exitPrice) openFormSectionById('section-prices');
   if (t.tf || t.session || t.entry || t.exit || t.size || t.emotion) openFormSectionById('section-context');
   if (tradeChecklistLabels(t).length || (Array.isArray(t.mistakes) && t.mistakes.length)) openFormSectionById('section-checklist');
-  if (t.desc || t.cap) openFormSectionById('section-notes');
+  if (t.desc || t.review || tradeImages(t).length) openFormSectionById('section-notes');
 
   closeTradeDetail();
   showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]'));
@@ -136,6 +130,19 @@ function updateDistanceRPreview() {
   }
 }
 
+// Tags libres : séparés par des virgules, nettoyés, sans doublon, 12 au maximum.
+function parseTags(str) {
+  return [...new Set(String(str || '').split(/[,;]/).map(s => s.trim().replace(/^#/, '').slice(0, 30)).filter(Boolean))].slice(0, 12);
+}
+// Setups connus : ceux du plan de trading + ceux déjà utilisés (liste de suggestions du champ Setup et du filtre).
+function knownSetups() {
+  const fromPlan = (planData && Array.isArray(planData.setups)) ? planData.setups : [];
+  return [...new Set(fromPlan.concat(trades.map(t => t.setup).filter(Boolean)))].sort((a, b) => a.localeCompare(b));
+}
+function refreshSetupList() {
+  const dl = document.getElementById('setup-list');
+  if (dl) dl.innerHTML = knownSetups().map(s => `<option value="${esc(s)}"></option>`).join('');
+}
 function addTrade() {
   const date = document.getElementById('f-date').value;
   const asset = document.getElementById('f-asset').value;
@@ -154,8 +161,12 @@ function addTrade() {
   const pnlEur = pnlEurRaw !== '' ? parseFloat(pnlEurRaw) : null;
   const sizeRaw = document.getElementById('f-size').value;
   const size = sizeRaw !== '' ? parseFloat(sizeRaw) : null;
-  const cap = currentImgBase64 || '';
+  const caps = currentImgs.map(safeImgSrc).filter(Boolean);
+  const cap = caps[0] || '';
   const desc = document.getElementById('f-desc').value.trim();
+  const setup = document.getElementById('f-setup').value.trim().slice(0, 60);
+  const tags = parseTags(document.getElementById('f-tags').value);
+  const review = document.getElementById('f-review').value.trim();
   const entryItemsNow = getEntryItems();
   const checklist = Array.from(document.querySelectorAll('.f-checklist-item:checked')).map(el => parseInt(el.dataset.idx, 10));
   const checklistLabels = checklist.map(i => entryItemsNow[i]).filter(v => v !== undefined);
@@ -190,7 +201,7 @@ function addTrade() {
   if (editingTradeId !== null) {
     const idx = trades.findIndex(t => t.id === editingTradeId);
     if (idx !== -1) {
-      trades[idx] = { ...trades[idx], date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, desc, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
+      trades[idx] = { ...trades[idx], date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, caps, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
     }
     sortTradesChrono();
     if (!save()) { trades = prevTrades; return; }   // stockage plein : rien n'est perdu, le formulaire reste tel quel
@@ -207,7 +218,7 @@ function addTrade() {
     return;
   }
 
-  trades.unshift({ id: Date.now(), date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, desc, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice });
+  trades.unshift({ id: Date.now(), date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, caps, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice });
   sortTradesChrono();
   if (!save()) { trades = prevTrades; return; }   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
   resetTradeForm();

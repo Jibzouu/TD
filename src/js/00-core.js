@@ -33,11 +33,7 @@ const SHARED_SETTINGS = ['theme', 'custom_themes', 'theme_texture', 'theme_autos
 })();
 
 // ── OUTILS DE ROBUSTESSE ─────────────────────────────────────────────
-// Date du jour au format AAAA-MM-JJ dans le fuseau LOCAL (toISOString() donne la date UTC : entre 0 h et 2 h en France, c'était la veille).
-function localDateStr(d) {
-  d = d || new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
+// (localDateStr, parseNumCSV, computeDistanceR… : voir 00a-calc.js, le module de calculs purs testé unitairement)
 // Lecture JSON protégée : une donnée corrompue ne doit jamais empêcher le journal de démarrer.
 // La valeur illisible est mise de côté (clé *_corrupt_backup) au lieu d'être écrasée à la prochaine sauvegarde.
 function loadJSON(key, fallback) {
@@ -73,25 +69,10 @@ function chartsAvailable(canvasId) {
   }
   return ok;
 }
-// Nombre lu dans un CSV : accepte la virgule décimale (12,5), les séparateurs de milliers (1 234,56 · 1,234.56 · 1.234,56),
-// les symboles monétaires, le signe moins typographique et les parenthèses comptables. Renvoie NaN si ce n'est pas un nombre.
-function parseNumCSV(raw) {
-  if (raw === null || raw === undefined) return NaN;
-  let s = String(raw).trim().replace(/[\s  ']/g, '').replace(/−/g, '-').replace(/[€$£%]/g, '').replace(/^(USD|EUR|GBP|CHF)|(USD|EUR|GBP|CHF)$/i, '');
-  if (s === '') return NaN;
-  let neg = false;
-  if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
-  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
-  if (lc > -1 && ld > -1) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
-  else if (lc > -1) s = s.split(',').length > 2 ? s.replace(/,/g, '') : s.replace(',', '.');
-  if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return NaN;
-  const v = Number(s);
-  return neg ? -v : v;
-}
 // Normalise un trade venant du stockage ou d'un fichier importé : types attendus, valeurs inconnues neutralisées.
 // Empêche qu'un backup ou un CSV piégé injecte du HTML/JS via un champ affiché (heure, taille, prix, résultat…).
 const TRADE_NUM_FIELDS = ['rr', 'pnl', 'pnlEur', 'size', 'ddUsed', 'emotion', 'entryPrice', 'slPrice', 'tpPrice', 'exitPrice', 'mfe', 'mae', 'fxRate', 'checklistTotal'];
-const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy'];
+const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy', 'setup', 'review'];
 function sanitizeTrade(t) {
   if (!t || typeof t !== 'object') return null;
   const o = Object.assign({}, t);
@@ -114,19 +95,22 @@ function sanitizeTrade(t) {
   if ('checklist' in o) o.checklist = Array.isArray(o.checklist) ? o.checklist.map(Number).filter(n => Number.isInteger(n) && n >= 0) : [];
   if ('checklistLabels' in o) o.checklistLabels = Array.isArray(o.checklistLabels) ? o.checklistLabels.map(String) : [];
   if ('mistakes' in o) o.mistakes = Array.isArray(o.mistakes) ? o.mistakes.map(String) : [];
+  if ('tags' in o) o.tags = Array.isArray(o.tags) ? o.tags.map(v => String(v).slice(0, 30)).filter(Boolean).slice(0, 12) : [];
   o.cap = safeImgSrc(o.cap);
+  if ('caps' in o) o.caps = Array.isArray(o.caps) ? o.caps.map(safeImgSrc).filter(Boolean).slice(0, 8) : [];
+  if (o.caps && o.caps.length && !o.cap) o.cap = o.caps[0];
   return o;
 }
 function sanitizeTrades(arr) { return (Array.isArray(arr) ? arr : []).map(sanitizeTrade).filter(Boolean); }
 
 // ── DATA ────────────────────────────────────────────────────────────
 let _atCache = null;   // cache de la vue « analyse » (déclaré ici : sortTradesChrono() est appelée dès le chargement)
+let _viewCache = null; // cache de la vue filtrée (filtre global) — voir 03b-state.js
 let trades = sanitizeTrades(loadJSON(JP + 'trades', []));
 sortTradesChrono();
 let watchData = loadJSON(JP + 'watch', null);
 let planData = loadJSON(JP + 'plan', null);
 let accountSize = parseFloat(DB.getItem((JP + 'account')) || '10000');
-let currentImgBase64 = '';
 
 // Default R multiples applied to imported trades when the source file only
 // gives a €/$ P&L and no real R value (e.g. TradingView's "List of trades" export).
@@ -212,16 +196,6 @@ function saveDefaultRiskEur() {
   const v = parseFloat(document.getElementById('default-risk-eur').value);
   DEFAULT_RISK_EUR = (!isNaN(v) && v > 0) ? v : 0;
   DB.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
-}
-// Central place all import paths use to get an R multiple for a trade.
-function computeDistanceR(entryPrice, slPrice, exitPrice, dir) {
-  if (entryPrice === null || entryPrice === undefined || isNaN(entryPrice)) return null;
-  if (slPrice === null || slPrice === undefined || isNaN(slPrice)) return null;
-  if (exitPrice === null || exitPrice === undefined || isNaN(exitPrice)) return null;
-  const riskDist = Math.abs(entryPrice - slPrice);
-  if (riskDist <= 0) return null;
-  const traveled = dir === 'Short' ? (entryPrice - exitPrice) : (exitPrice - entryPrice);
-  return Math.round((traveled / riskDist) * 100) / 100;
 }
 function computeRealR(pnlEur, res, priceCtx) { return computeRWithSource(pnlEur, res, priceCtx).r; }
 

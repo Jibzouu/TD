@@ -4,6 +4,7 @@ let tableSortKey = null, tableSortDir = 1;
 let groupByDayMode = false;
 
 function filterTrades() {
+  const trades = viewTrades();   // vue filtrée (filtre global), puis filtres propres au tableau
   const filterRes = document.getElementById('filter-res')?.value || '';
   const filterAsset = document.getElementById('filter-asset')?.value || '';
   const filterSession = document.getElementById('filter-session')?.value || '';
@@ -42,27 +43,21 @@ function resetTradeFilters() {
 }
 
 function tradeRowHtml(t, num) {
-  const bc = t.res==='TP'?'b-tp':t.res==='SL'?'b-sl':t.res==='BE'?'b-be':'b-open';
-  const rsrc = rSource(t), approx = (rsrc === 'risque' || rsrc === 'defaut') ? '≈' : '', rtitle = esc(R_SRC_LABELS[rsrc]);
-  const pnlStr = t.pnl != null ? (t.pnl>0?`<span class="pnl-p" title="${rtitle}">${approx}+${t.pnl.toFixed(1)}R</span>`:t.pnl<0?`<span class="pnl-n" title="${rtitle}">${approx}${t.pnl.toFixed(1)}R</span>`:`<span class="pnl-z" title="${rtitle}">0R</span>`) : '—';
-  const pnlEurStr = (t.pnlEur!==null && t.pnlEur!==undefined) ? (t.pnlEur>0?`<span class="pnl-p">${fmtEUR(t.pnlEur,true,2)}</span>`:t.pnlEur<0?`<span class="pnl-n">${fmtEUR(t.pnlEur,false,2)}</span>`:`<span class="pnl-z">0 €</span>`) : '—';
-  const dir = t.dir ? `<span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${esc(t.dir)}</span>` : '—';
-  const icons = [
-    t.cap ? '<span title="Capture disponible">📷</span>' : '',
-    t.emotion ? `<span title="Humeur ${esc(t.emotion)}/5" style="color:${t.emotion>=4?'var(--green)':t.emotion>=3?'var(--amber)':'var(--red)'}">●</span>` : ''
-  ].filter(Boolean).join(' ');
-  return `<tr class="trade-row" onclick="openTradeDetail(${t.id})">
-    <td style="color:var(--txt3)">${num}</td>
-    <td>${esc(t.date||'—')}</td>
-    <td style="font-weight:500">${esc(t.asset||'—')}</td>
-    <td>${dir}</td>
-    <td><span class="badge ${bc}">${esc(t.res)}</span></td>
-    <td>${t.rr?esc(t.rr)+'R':'—'}</td>
-    <td>${pnlStr}</td>
-    <td>${pnlEurStr}</td>
-    <td style="text-align:center">${icons}</td>
-    <td><button class="del-btn row-del" onclick="event.stopPropagation();deleteTrade(${t.id})" title="Supprimer">×</button></td>
-  </tr>`;
+  const rsrc = rSource(t), approx = (rsrc === 'risque' || rsrc === 'defaut') ? '≈' : '';
+  const nImg = tradeImages(t).length;
+  const id = raw(t.id);
+  return String(html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date || '—'} sur ${t.asset || '—'}">
+    <td class="muted-num">${num}</td>
+    <td>${t.date || '—'}</td>
+    <td><span class="row-asset">${t.asset || '—'}</span>${t.setup ? html`<span class="row-setup">${t.setup}</span>` : ''}</td>
+    <td>${t.dir ? html`<span class="badge ${raw(t.dir === 'Long' ? 'b-long' : 'b-short')}">${t.dir}</span>` : '—'}</td>
+    <td>${UI.badgeRes(t.res)}</td>
+    <td>${t.rr ? t.rr + 'R' : '—'}</td>
+    <td title="${R_SRC_LABELS[rsrc]}">${t.pnl != null ? html`${approx}${UI.pnl(t.pnl, 'R')}` : '—'}</td>
+    <td>${UI.pnl(t.pnlEur, '€')}</td>
+    <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" style="color:${raw(t.emotion >= 4 ? 'var(--green)' : t.emotion >= 3 ? 'var(--amber)' : 'var(--red)')}">●</span>` : ''}</td>
+    <td><button class="del-btn row-del" onclick="event.stopPropagation();deleteTrade(${id})" title="Supprimer" aria-label="Supprimer ce trade">×</button></td>
+  </tr>`);
 }
 
 function renderTable() {
@@ -77,24 +72,25 @@ function renderTable() {
   const numberMap = new Map();
   chronological.forEach((t, i) => numberMap.set(t.id, i + 1));
 
-  // Mini-stats for the filtered set.
+  const sub = document.getElementById('trades-subtitle');
+  if (sub) sub.textContent = trades.length + ' trade' + (trades.length !== 1 ? 's' : '') + ' enregistré' + (trades.length !== 1 ? 's' : '') + (filterActive() ? ' · ' + viewTrades().length + ' dans le filtre global' : '') + ' · clique une ligne pour ouvrir la fiche (← → pour naviguer)';
+
+  // Mini-statistiques de la sélection affichée.
   const miniEl = document.getElementById('trades-minibar');
   if (miniEl) {
     if (filtered.length === 0) {
       miniEl.innerHTML = '';
     } else {
-      const closed = filtered.filter(t => ['TP','SL','BE'].includes(t.res));
-      const wins = filtered.filter(t => t.res === 'TP').length;
-      const winRate = closed.length ? (wins/closed.length*100) : null;
-      const totalR = filtered.reduce((s,t) => s + (t.pnl||0), 0);
-      const eurArr = filtered.filter(t => t.pnlEur!==null && t.pnlEur!==undefined);
-      const totalEur = eurArr.reduce((s,t) => s + t.pnlEur, 0);
-      miniEl.innerHTML = `
-        <div class="mb-item"><span class="mb-label">Trades</span><span class="mb-val">${filtered.length}</span></div>
-        <div class="mb-item"><span class="mb-label">Win rate</span><span class="mb-val" style="color:${winRate===null?'var(--txt3)':winRate>=50?'var(--green)':'var(--red)'}">${winRate===null?'—':winRate.toFixed(0)+'%'}</span></div>
-        <div class="mb-item"><span class="mb-label">P&L (R)</span><span class="mb-val" style="color:${totalR>=0?'var(--green)':'var(--red)'}">${totalR>=0?'+':''}${totalR.toFixed(1)}R</span></div>
-        <div class="mb-item"><span class="mb-label">P&L (€)</span><span class="mb-val" style="color:${totalEur>=0?'var(--green)':'var(--red)'}">${fmtEUR(totalEur, true)}</span></div>
-      `;
+      const W = winStats(filtered), be = breakevenWinRate(filtered);
+      const an = analysisTrades(), ids = new Set(filtered.map(t => t.id));
+      const totalR = an.filter(t => ids.has(t.id) && t.pnl != null).reduce((s, t) => s + t.pnl, 0);
+      const eurArr = filtered.filter(t => t.pnlEur != null);
+      const totalEur = eurArr.reduce((s, t) => s + t.pnlEur, 0);
+      mount(miniEl, html`
+        ${UI.stat('Trades', String(filtered.length), { compact: true })}
+        ${UI.stat('Win rate', W.n ? (W.rate * 100).toFixed(0) + ' %' : '—', { compact: true, color: !W.n || be === null ? null : (W.rate >= be ? 'var(--green)' : 'var(--red)'), sub: be !== null && W.n ? 'seuil ' + Math.round(be * 100) + ' %' : '' })}
+        ${UI.stat('P&L (R)', (totalR >= 0 ? '+' : '') + totalR.toFixed(1) + 'R', { compact: true, color: totalR >= 0 ? 'var(--green)' : 'var(--red)' })}
+        ${UI.stat('P&L (€)', eurArr.length ? fmtEUR(totalEur, true) : '—', { compact: true, color: totalEur >= 0 ? 'var(--green)' : 'var(--red)' })}`);
     }
   }
 
@@ -108,15 +104,10 @@ function renderTable() {
 
   if (!filtered.length) {
     const hasAnyTrades = trades.length > 0;
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">
-      <div style="padding:36px 20px;text-align:center">
-        <div style="font-size:28px;margin-bottom:10px;opacity:.5">📭</div>
-        <div style="font-size:13px;color:var(--txt2);margin-bottom:14px">${hasAnyTrades ? "Aucun trade ne correspond à ces filtres" : "Ton journal est vide pour l'instant"}</div>
-        ${hasAnyTrades
-          ? `<button class="btn-ghost" onclick="resetTradeFilters()">Réinitialiser les filtres</button>`
-          : `<button class="btn-primary" onclick="showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]'))">+ Ajouter ton premier trade</button>`}
-      </div>
-    </td></tr>`;
+    tbody.innerHTML = String(html`<tr class="empty-row"><td colspan="10">${hasAnyTrades
+      ? UI.empty('🔎', 'Aucun trade ne correspond', 'Élargis la période ou retire un filtre (barre du haut ou filtres du tableau).', { label: 'Effacer tous les filtres', onclick: 'resetTradeFilters();resetGlobalFilter()' })
+      : UI.empty('📒', 'Ton journal est vide pour l\'instant', 'Ajoute ton premier trade (touche N) ou importe un CSV TradingView depuis Export / Import.', { label: '+ Ajouter un trade', onclick: 'openQuickAdd()' })}</td></tr>`);
+    drawerOrder = [];
     return;
   }
 
@@ -146,107 +137,136 @@ function renderTable() {
   } else {
     tbody.innerHTML = filtered.map(t => tradeRowHtml(t, numberMap.get(t.id))).join('');
   }
+  drawerOrder = groupByDayMode ? Object.keys(filtered.reduce((m, t) => ((m[t.date || 'Sans date'] = 1), m), {})).sort((a, b) => b.localeCompare(a)).flatMap(d => filtered.filter(t => (t.date || 'Sans date') === d).map(t => t.id)) : filtered.map(t => t.id);
 }
 
-// ── DÉTAIL D'UN TRADE (tiroir latéral) ───────────────────────────────
+// ── FICHE D'UN TRADE (tiroir latéral) ────────────────────────────────
+// Navigation ←/→ dans l'ordre affiché par le tableau (filtres et tri compris), captures en galerie annotable,
+// profil du trade (SL / entrée / sortie / TP, excursions MAE-MFE), tags, et note « après coup » modifiable sur place.
+let drawerOrder = [];          // ids dans l'ordre du dernier tableau affiché
+let drawerTradeId = null;
+function drawerNavList() { return drawerOrder.length ? drawerOrder : viewTrades().map(t => t.id); }
+function stepTradeDetail(d) {
+  const list = drawerNavList(), i = list.indexOf(drawerTradeId);
+  if (i < 0) return;
+  const n = i + d;
+  if (n >= 0 && n < list.length) openTradeDetail(list[n]);
+}
+// Profil du trade : où se situent entrée, sortie, stop et objectif (en prix), ou excursions MAE/MFE (en €).
+// Repères du profil : triés par position, étiquettes alternées dessus/dessous, bords recalés pour ne jamais déborder.
+function tpMarks(marks) {
+  return [...marks].sort((a, b) => a[3] - b[3]).map((m, i) => {
+    const cls = 'tp-mark' + (i % 2 ? ' up' : '') + (m[3] < 12 ? ' edge-l' : m[3] > 88 ? ' edge-r' : '');
+    return html`<div class="${cls}" style="left:${raw(m[3])}%;--c:${raw(m[2])}"><span class="tp-lbl">${m[0]}<b>${m[1]}</b></span></div>`;
+  });
+}
+function tradeProfileHtml(t) {
+  const pts = [['SL', t.slPrice, 'var(--red)'], ['Entrée', t.entryPrice, 'var(--txt2)'], ['Sortie', t.exitPrice, 'var(--accent)'], ['TP', t.tpPrice, 'var(--green)']].filter(p => p[1] != null && isFinite(p[1]));
+  if (pts.length >= 2 && t.entryPrice != null) {
+    const vals = pts.map(p => p[1]), lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+    const x = v => ((v - lo) / span * 92 + 4).toFixed(1);
+    const short = t.dir === 'Short';
+    const planned = t.slPrice != null && t.tpPrice != null && Math.abs(t.entryPrice - t.slPrice) > 0 ? Math.abs(t.tpPrice - t.entryPrice) / Math.abs(t.entryPrice - t.slPrice) : null;
+    const done = computeDistanceR(t.entryPrice, t.slPrice, t.exitPrice, t.dir);
+    return html`<div class="tp-profile" role="img" aria-label="Profil du trade : ${pts.map(p => p[0] + ' ' + p[1]).join(', ')}">
+      <div class="tp-track">${t.exitPrice != null ? raw(`<div class="tp-move" style="left:${Math.min(x(t.entryPrice), x(t.exitPrice))}%;width:${Math.abs(x(t.exitPrice) - x(t.entryPrice))}%;background:${(short ? t.exitPrice < t.entryPrice : t.exitPrice > t.entryPrice) ? 'var(--green)' : 'var(--red)'}"></div>`) : ''}
+      ${tpMarks(pts.map(p => [p[0], p[1], p[2], x(p[1])]))}</div>
+      <div class="tp-foot"><span>${short ? 'Short ↓' : 'Long ↑'}</span><span>R visé ${planned != null ? planned.toFixed(2) + 'R' : '—'} · R réalisé ${done != null ? (done >= 0 ? '+' : '') + done.toFixed(2) + 'R' : '—'}${planned && done != null ? html` · <b>${Math.round(done / planned * 100)} %</b> de l'objectif` : ''}</span></div>
+    </div>`;
+  }
+  if (t.mfe != null || t.mae != null) {
+    const mae = -(Math.abs(t.mae) || 0), mfe = Math.abs(t.mfe) || 0, res = t.pnlEur || 0;
+    const lo = Math.min(mae, res, 0), hi = Math.max(mfe, res, 0), span = (hi - lo) || 1, x = v => ((v - lo) / span * 92 + 4).toFixed(1);
+    return html`<div class="tp-profile"><div class="tp-track">
+      <div class="tp-move" style="left:${raw(x(mae))}%;width:${raw((x(mfe) - x(mae)).toFixed(1))}%;background:color-mix(in srgb,var(--txt3) 35%,transparent)"></div>
+      ${tpMarks([['MAE', fmtEUR(mae), 'var(--red)', x(mae)], ['Entrée', '0 €', 'var(--txt2)', x(0)], ['Sortie', fmtEUR(res, true), 'var(--accent)', x(res)], ['MFE', fmtEUR(mfe, true), 'var(--green)', x(mfe)]])}
+    </div><div class="tp-foot"><span>Excursions pendant le trade</span><span>${mfe > 0 ? html`Capturé <b>${Math.max(0, Math.round(res / mfe * 100))} %</b> du mouvement favorable` : ''}</span></div></div>`;
+  }
+  return html`<div class="ui-muted">Renseigne les prix (entrée, stop, objectif, sortie) pour voir le profil du trade.</div>`;
+}
+function tradeDuration(t) {
+  const m = s => { const [h, mm] = String(s || '').split(':').map(Number); return isNaN(h) || isNaN(mm) ? null : h * 60 + mm; };
+  const a = m(t.entry), b = m(t.exit); if (a === null || b === null || b < a) return '—';
+  const d = b - a; return d >= 60 ? Math.floor(d / 60) + ' h ' + String(d % 60).padStart(2, '0') : d + ' min';
+}
 function openTradeDetail(id) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
-  const bc = t.res==='TP'?'b-tp':t.res==='SL'?'b-sl':t.res==='BE'?'b-be':'b-open';
-  const dir = t.dir ? `<span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${esc(t.dir)}</span>` : '—';
-  const pnlStr = t.pnl != null ? (t.pnl>0?`<span class="pnl-p">+${t.pnl.toFixed(1)}R</span>`:t.pnl<0?`<span class="pnl-n">${t.pnl.toFixed(1)}R</span>`:`<span class="pnl-z">0R</span>`) : '—';
-  const pnlEurStr = (t.pnlEur!==null && t.pnlEur!==undefined) ? (t.pnlEur>0?`<span class="pnl-p">${fmtEUR(t.pnlEur,true,2)}</span>`:t.pnlEur<0?`<span class="pnl-n">${fmtEUR(t.pnlEur,false,2)}</span>`:`<span class="pnl-z">0 €</span>`) : '—';
-  const qual = t.rr ? (t.rr>=3?`<div class="qual q-ap">A+</div>`:t.rr>=2?`<div class="qual q-a">A</div>`:t.rr>=1.5?`<div class="qual q-b">B</div>`:`<div class="qual q-c">C</div>`) : '<span style="color:var(--txt3);font-size:12px">—</span>';
-  const emotionStars = t.emotion ? '★'.repeat(t.emotion)+'☆'.repeat(5-t.emotion) : '—';
-
-  const checkedLabels = tradeChecklistLabels(t);
-  const checklistHtml = checkedLabels.length
-    ? checkedLabels.map(label => `<div style="font-size:12px;color:var(--green);padding:3px 0">✓ ${esc(label)}</div>`).join('')
-    : '<div style="font-size:12px;color:var(--txt3)">Aucune checklist cochée</div>';
-
-  const mistakesHtml = (Array.isArray(t.mistakes) && t.mistakes.length)
-    ? t.mistakes.map(m => `<span class="badge" style="background:rgba(244,114,182,.12);color:#f472b6;margin:2px 4px 2px 0;display:inline-block">${esc(m)}</span>`).join('')
-    : '<div style="font-size:12px;color:var(--txt3)">Aucune erreur taguée</div>';
-
-  const capSrc = safeImgSrc(t.cap);
-  const capHtml = capSrc
-    ? `<img src="${capSrc}" style="width:100%;border-radius:var(--r);border:1px solid var(--border);cursor:pointer;margin-top:8px" onclick="openLightboxById(${t.id})">`
-    : (t.cap ? '<div style="font-size:12px;color:var(--txt3);margin-top:8px">Capture invalide — ignorée par sécurité</div>' : '<div style="font-size:12px;color:var(--txt3);margin-top:8px">Aucune capture</div>');
-
-  const hasDistR = computeDistanceR(t.entryPrice, t.slPrice, t.exitPrice, t.dir) !== null;
+  drawerTradeId = id;
+  const list = drawerNavList(), pos = list.indexOf(id);
+  const imgs = tradeImages(t);
   const rMethod = ({
-    prix: { txt: '📐 R calculé par distance de prix (exact)', col: 'var(--green)' },
-    manuel: { txt: '✍️ R saisi', col: 'var(--green)' },
-    risque: { txt: '💶 R estimé : P&L € ÷ risque configuré (' + DEFAULT_RISK_EUR + ' €)', col: 'var(--blue)' },
-    defaut: { txt: '⚠️ R FICTIF : RR par défaut, aucune base réelle (exclu des stats en R)', col: 'var(--amber)' },
-    aucun: { txt: 'Pas de R', col: 'var(--txt3)' }
+    prix: ['📐 R calculé par distance de prix (exact)', 'var(--green)'], manuel: ['✍️ R saisi', 'var(--green)'],
+    risque: ['💶 R estimé : P&L € ÷ risque configuré (' + DEFAULT_RISK_EUR + ' €)', 'var(--blue)'],
+    defaut: ['⚠️ R FICTIF : RR par défaut, aucune base réelle (exclu des stats en R)', 'var(--amber)'], aucun: ['Pas de R', 'var(--txt3)']
   })[rSource(t)];
-  const priceLevelsHtml = (t.entryPrice || t.slPrice || t.tpPrice || t.exitPrice) ? `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Prix entrée</span><span>${esc(t.entryPrice ?? '—')}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Stop Loss</span><span>${esc(t.slPrice ?? '—')}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Take Profit</span><span>${esc(t.tpPrice ?? '—')}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Prix sortie</span><span>${esc(t.exitPrice ?? '—')}</span></div>` : '';
-
-  document.getElementById('trade-drawer').innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+  const quality = t.rr ? (t.rr >= 3 ? 'A+' : t.rr >= 2 ? 'A' : t.rr >= 1.5 ? 'B' : 'C') : '—';
+  const checked = tradeChecklistLabels(t);
+  const body = html`
+    <div class="dw-head">
       <div>
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3)">${esc(t.date||'—')} · ${esc(t.tf||'—')}</div>
-        <div style="font-size:20px;font-weight:600;margin-top:4px">${esc(t.asset||'—')} ${dir}</div>
+        <div class="dw-meta">${fmtDateFR(t.date, true)}${t.tf ? ' · ' + t.tf : ''}${t.session ? ' · ' + t.session : ''}</div>
+        <h2 class="dw-title" id="dw-title">${t.asset || '—'} ${t.dir ? html`<span class="badge ${raw(t.dir === 'Long' ? 'b-long' : 'b-short')}">${t.dir}</span>` : ''} ${UI.badgeRes(t.res)}</h2>
+        ${t.setup ? html`<div class="dw-setup">Setup : <b>${t.setup}</b></div>` : ''}
       </div>
-      <button class="btn-ghost" onclick="closeTradeDetail()" style="padding:6px 10px">×</button>
-    </div>
-    <div style="font-size:11px;font-family:var(--mono);color:${rMethod.col};margin-bottom:16px">${rMethod.txt}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:4px">Résultat</div>
-        <span class="badge ${bc}" style="font-size:13px">${esc(t.res)}</span>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:4px">Qualité</div>
-        ${qual}
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:4px">RR / P&amp;L</div>
-        <div style="font-family:var(--mono);font-size:13px">${t.rr?esc(t.rr)+'R':'—'} · ${pnlStr}</div>
-        <div style="font-family:var(--mono);font-size:12px;margin-top:2px">${pnlEurStr}</div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:4px">Humeur</div>
-        <div style="font-size:13px">${emotionStars}</div>
+      <div class="dw-nav">
+        <button class="btn-ghost" onclick="stepTradeDetail(-1)" ${raw(pos <= 0 ? 'disabled' : '')} aria-label="Trade précédent" title="Trade précédent (←)">←</button>
+        <span class="dw-pos">${pos >= 0 ? (pos + 1) + ' / ' + list.length : ''}</span>
+        <button class="btn-ghost" onclick="stepTradeDetail(1)" ${raw(pos < 0 || pos >= list.length - 1 ? 'disabled' : '')} aria-label="Trade suivant" title="Trade suivant (→)">→</button>
+        <button class="btn-ghost" onclick="closeTradeDetail()" aria-label="Fermer la fiche">✕</button>
       </div>
     </div>
-    <div style="margin-bottom:16px;font-size:12px;font-family:var(--mono);color:var(--txt2)">
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Session</span><span>${esc(t.session||'—')}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Entrée</span><span>${esc(t.entry||'—')}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Sortie</span><span>${esc(t.exit||'—')}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Taille</span><span>${esc(t.size||'—')}</span></div>
-      ${priceLevelsHtml}
+    <div class="dw-rsrc" style="color:${raw(rMethod[1])}">${rMethod[0]}</div>
+    <div class="dw-stats">
+      ${UI.stat('P&L', UI.pnl(t.pnlEur, '€'))}
+      ${UI.stat('Résultat en R', UI.pnl(t.pnl, 'R'))}
+      ${UI.stat('Qualité (RR)', t.rr ? quality + ' · ' + t.rr + 'R' : '—')}
+      ${UI.stat('Humeur', t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—')}
     </div>
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">Description / setup</div>
-      <div style="font-size:12.5px;color:var(--txt2);line-height:1.6;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px">${t.desc ? esc(t.desc) : '<span style="color:var(--txt3)">—</span>'}</div>
-    </div>
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">Checklist respectée</div>
-      ${checklistHtml}
-    </div>
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">Erreurs taguées</div>
-      ${mistakesHtml}
-    </div>
-    <div style="margin-bottom:20px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">Capture</div>
-      ${capHtml}
-    </div>
-    <div style="display:flex;gap:10px">
-      <button style="flex:1;border-radius:var(--r);padding:10px;font-family:var(--mono);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--txt);border:1px solid var(--border2)" onclick="startEditTrade(${t.id})">✏️ Modifier</button>
-      <button style="flex:1;border-radius:var(--r);padding:10px;font-family:var(--mono);font-size:12px;cursor:pointer;background:var(--red);color:#fff;border:none" onclick="closeTradeDetail();deleteTrade(${t.id})">Supprimer</button>
-    </div>
-  `;
-  document.getElementById('trade-drawer-overlay').classList.add('show');
+    ${UI.section('Profil du trade', tradeProfileHtml(t))}
+    ${UI.kv([['Entrée', t.entry || '—'], ['Sortie', t.exit || '—'], ['Durée', tradeDuration(t)], ['Taille', t.size ?? '—'],
+      t.entryPrice != null ? ['Prix d\'entrée', t.entryPrice] : null, t.slPrice != null ? ['Stop loss', t.slPrice] : null, t.tpPrice != null ? ['Take profit', t.tpPrice] : null, t.exitPrice != null ? ['Prix de sortie', t.exitPrice] : null])}
+    ${Array.isArray(t.tags) && t.tags.length ? UI.section('Tags', UI.chips(t.tags.map(x => '#' + x))) : ''}
+    ${UI.section('Description / confluences', html`<div class="dw-text">${t.desc || html`<span class="ui-muted">—</span>`}</div>`)}
+    ${UI.section('Note après coup', html`<textarea class="dw-review" id="dw-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" onchange="saveTradeReview(${raw(t.id)}, this.value)">${t.review || ''}</textarea><div class="ui-muted" style="margin-top:4px">Enregistré automatiquement quand tu quittes le champ.</div>`)}
+    ${UI.section('Checklist respectée', checked.length ? html`${checked.map(c => html`<div class="dw-check">✓ ${c}</div>`)}` : html`<div class="ui-muted">Aucune checklist cochée</div>`)}
+    ${UI.section('Erreurs taguées', Array.isArray(t.mistakes) && t.mistakes.length ? UI.chips(t.mistakes, 'chip-mistake') : html`<div class="ui-muted">Aucune erreur taguée</div>`)}
+    ${UI.section('Captures (' + imgs.length + ')', imgs.length ? html`<div class="drawer-caps">${imgs.map((src, i) => html`<img src="${raw(safeImgSrc(src))}" alt="Capture ${i + 1}" onclick="openLightboxById(${raw(t.id)}, ${raw(i)})">`)}</div><div class="ui-muted" style="margin-top:6px">Clique une capture pour l'agrandir et l'annoter.</div>` : html`<div class="ui-muted">Aucune capture — ajoute-les via « Modifier ».</div>`)}
+    <div class="dw-actions">
+      <button class="btn-ghost" onclick="startEditTrade(${raw(t.id)})">✏️ Modifier</button>
+      <button class="btn-ghost" onclick="duplicateTrade(${raw(t.id)})">⧉ Dupliquer</button>
+      <button class="btn-danger" onclick="closeTradeDetail();deleteTrade(${raw(t.id)})">Supprimer</button>
+    </div>`;
+  mount('trade-drawer', body);
+  const ov = document.getElementById('trade-drawer-overlay');
+  if (!ov.classList.contains('show')) { ov.classList.add('show'); rememberFocus(); }
+  setTimeout(() => { const f = document.querySelector('#trade-drawer .dw-nav .btn-ghost:not([disabled])'); if (f && !document.getElementById('trade-drawer').contains(document.activeElement)) f.focus(); }, 60);
 }
+function saveTradeReview(id, value) {
+  const t = trades.find(x => x.id === id); if (!t) return;
+  const prev = t.review; t.review = String(value || '').trim();
+  if (!save()) { t.review = prev; return; }
+  DATA_VERSION++;
+  showToast('Note après coup enregistrée ✓', 'success');
+}
+function duplicateTrade(id) {
+  const t = trades.find(x => x.id === id); if (!t) return;
+  startEditTrade(id);
+  // Mode « nouveau trade » pré-rempli : même contexte, date du jour, résultat et captures à renseigner.
+  editingTradeId = null;
+  document.getElementById('f-date').value = localDateStr();
+  ['f-res', 'f-pnleur', 'f-pnl', 'f-rr', 'f-exit', 'f-exit-price', 'f-review'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+  clearImg();
+  document.getElementById('edit-trade-banner').style.display = 'none';
+  document.getElementById('form-title-text').textContent = 'Nouveau trade (copie de ' + (t.asset || '') + ')';
+  document.getElementById('trade-submit-btn-text').textContent = 'Enregistrer le trade';
+}
+
 function closeTradeDetail() {
   const el = document.getElementById('trade-drawer-overlay');
-  if (el) el.classList.remove('show');
+  if (!el || !el.classList.contains('show')) return;
+  el.classList.remove('show');
+  drawerTradeId = null;
+  restoreFocus();
 }
 

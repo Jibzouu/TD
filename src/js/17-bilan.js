@@ -1,5 +1,6 @@
 // ── BILAN JOURNALIER ─────────────────────────────────────────────────
 function renderBilan() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const sel = document.getElementById('bilan-date-select');
   if (!sel) return;
 

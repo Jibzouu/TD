@@ -168,7 +168,7 @@ function wrBarCell(rate, thr, n) {
 function fmtPct(v, digits) { return (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR', { minimumFractionDigits: digits ?? 1, maximumFractionDigits: digits ?? 1 }) + ' %'; }
 // Seuil de rentabilité du win rate : avec un payoff P (gain moyen ÷ perte moyenne), on est rentable au-dessus de 1 / (1 + P).
 function breakevenWinRate(list) {
-  list = list || trades;
+  list = list || viewTrades();
   const e = list.filter(t => t.pnlEur != null && ['TP', 'SL'].includes(t.res));
   let w = e.filter(t => t.res === 'TP').map(t => t.pnlEur), l = e.filter(t => t.res === 'SL').map(t => Math.abs(t.pnlEur));
   if (!w.length || !l.length) {

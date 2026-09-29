@@ -53,6 +53,7 @@ function renderStatsSessionTables() {
 
 // ── STATS : analyse MAE / MFE ───────────────────────────────────────
 function renderMaeMfeAnalysis() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const cont = document.getElementById('mae-mfe-body');
   if (!cont) return;
   const withData = trades.filter(t => (t.mfe!==null && t.mfe!==undefined) || (t.mae!==null && t.mae!==undefined));
@@ -149,6 +150,7 @@ function renderChecklistAnalysis() {
 
 // ── TILT METER : détection de revenge trading ───────────────────────
 function computeTiltTrades() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const toMin = hhmm => { const [h, m] = String(hhmm || '').split(':').map(Number); return (isNaN(h) || isNaN(m)) ? null : h * 60 + m; };
   const byDay = {};
   trades.forEach(t => { if (!t.date || toMin(t.entry) === null) return; (byDay[t.date] = byDay[t.date] || []).push(t); });
@@ -240,6 +242,7 @@ function computeDimensionSegments(keyFn, minN) {
 }
 
 function renderEdgeFinder() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const cont = document.getElementById('edge-finder-body');
   if (!cont) return;
   const closedCount = trades.filter(t => ['TP','SL','BE'].includes(t.res)).length;
@@ -253,7 +256,7 @@ function renderEdgeFinder() {
     { label: "Heure d'entrée", segs: computeDimensionSegments(t => { if(!t.entry) return null; const h=parseInt(t.entry.split(':')[0],10); return isNaN(h)?null:String(h).padStart(2,'0')+'h'; }) },
     { label: 'Actif', segs: computeDimensionSegments(t => t.asset || null) },
     { label: 'Session', segs: computeDimensionSegments(t => t.session || null) },
-    { label: 'Stratégie / setup', segs: computeDimensionSegments(t => t.desc || null) },
+    { label: 'Setup', segs: computeDimensionSegments(t => t.setup || null) },
     { label: 'Sens', segs: computeDimensionSegments(t => t.dir || null) },
   ];
 
@@ -311,6 +314,7 @@ function renderEdgeFinder() {
 
 // ── SHARPE / SORTINO ─────────────────────────────────────────────────
 function computeDailyReturns() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const byDay = {};
   trades.forEach(t => { if (!t.date || t.pnlEur === null || t.pnlEur === undefined) return; byDay[t.date] = (byDay[t.date]||0) + t.pnlEur; });
   const bal = accountSize || 10000;
@@ -369,6 +373,7 @@ function normalCDF(x) {
   return prob;
 }
 function renderCoinFlip() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const cont = document.getElementById('coinflip-body');
   if (!cont) return;
   const wins = trades.filter(t => t.res === 'TP').length;

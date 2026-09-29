@@ -4,6 +4,7 @@ const SEARCH_PAGES = [
   { page:'calendrier', icon:'📅', label:'Calendrier' },
   { page:'stats', icon:'📊', label:'Statistiques' },
   { page:'bilan', icon:'🕐', label:'Bilan journalier' },
+  { page:'revue', icon:'🗒️', label:'Revue hebdomadaire' },
   { page:'trades', icon:'📋', label:'Journal des trades' },
   { page:'plan', icon:'📝', label:'Plan de trading' },
   { page:'watchlist', icon:'👁️', label:'Watchlist' },
@@ -13,7 +14,9 @@ const SEARCH_PAGES = [
   { page:'parametres', icon:'⚙️', label:'Paramètres' },
 ];
 const SEARCH_ACTIONS = [
-  { icon:'➕', label:'Ajouter un trade', run: () => { closeGlobalSearch(); showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]')); setTimeout(() => document.getElementById('trade-form-card')?.scrollIntoView({behavior:'smooth'}), 100); } },
+  { icon:'⚡', label:'Saisie rapide d\'un trade (N)', run: () => { closeGlobalSearch(); openQuickAdd(); } },
+  { icon:'⌨️', label:'Raccourcis clavier (?)', run: () => { closeGlobalSearch(); openShortcutsHelp(); } },
+  { icon:'➕', label:'Ajouter un trade complet', run: () => { closeGlobalSearch(); showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]')); setTimeout(() => document.getElementById('trade-form-card')?.scrollIntoView({behavior:'smooth'}), 100); } },
   { icon:'💾', label:'Exporter mes données', run: () => { closeGlobalSearch(); exportData(); } },
   { icon:'📅', label:'Aller à aujourd\'hui (Calendrier)', run: () => { closeGlobalSearch(); showPage('calendrier', document.querySelector('.nav-item[data-page=calendrier]')); calToday(); } },
   { icon:'🎨', label:'Changer de thème', run: () => { closeGlobalSearch(); showPage('parametres', document.querySelector('.nav-item[data-page=parametres]')); } },
@@ -29,6 +32,7 @@ function openGlobalSearch() {
   const overlay = document.getElementById('search-overlay');
   const input = document.getElementById('search-input');
   if (!overlay || !input) return;
+  if (!overlay.classList.contains('show')) rememberFocus();
   overlay.classList.add('show');
   input.value = '';
   renderGlobalSearchResults('');
@@ -36,7 +40,9 @@ function openGlobalSearch() {
 }
 function closeGlobalSearch() {
   const overlay = document.getElementById('search-overlay');
-  if (overlay) overlay.classList.remove('show');
+  if (!overlay || !overlay.classList.contains('show')) return;
+  overlay.classList.remove('show');
+  restoreFocus();
 }
 function toggleGlobalSearch() {
   const overlay = document.getElementById('search-overlay');

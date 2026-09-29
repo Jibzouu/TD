@@ -73,32 +73,12 @@ function dismissWelcome() {
 }
 
 function renderAll() {
-  _atCache = null;
-  // Chaque bloc est isolé : une erreur dans un graphique ne doit jamais empêcher le reste du journal de s'afficher.
-  safeRun(renderKPIs, 'renderKPIs');
-  safeRun(renderKpiSparklines, 'renderKpiSparklines');
-  safeRun(renderSummaryBanner, 'renderSummaryBanner');
-  safeRun(renderWelcomeCard, 'renderWelcomeCard');
-  safeRun(applyChartDefaults, 'applyChartDefaults');
-  safeRun(renderYearProgress, 'renderYearProgress');
-  safeRun(renderWinRateMeters, 'renderWinRateMeters');
-  safeRun(renderRDistribution, 'renderRDistribution');
-  safeRun(renderHeatmapDH, 'renderHeatmapDH');
-  safeRun(renderMonthlyReturnsTable, 'renderMonthlyReturnsTable');
-  safeRun(renderRadar, 'renderRadar');
-  safeRun(renderAssetBars, 'renderAssetBars');
-  safeRun(renderTable, 'renderTable');
-  safeRun(renderStats, 'renderStats');
-  safeRun(renderCalendrier, 'renderCalendrier');
-  safeRun(renderBilan, 'renderBilan');
-  if (JOURNAL_ID === 'pf') safeRun(renderPropFirm, 'renderPropFirm');
-  safeRun(renderScaling, 'renderScaling');
-  safeRun(updateSidebarCount, 'updateSidebarCount');
-  safeRun(renderStorageWarning, 'renderStorageWarning');
-  safeRun(renderRCoverage, 'renderRCoverage');
-  safeRun(renderTrashUI, 'renderTrashUI');
-  safeRun(checkExportReminder, 'checkExportReminder');
-  safeRun(checkImportReminder, 'checkImportReminder');
+  invalidateViews();
+  DATA_VERSION++;
+  // Seule la page affichée est recalculée tout de suite ; les autres le seront à leur ouverture (renderPage).
+  // Chaque bloc reste isolé (safeRun) : une erreur dans un graphique n'empêche jamais le reste de s'afficher.
+  renderPage(currentPage(), true);
+  [updateSidebarCount, renderStorageWarning, refreshSetupList, renderFilterBar, checkExportReminder, checkImportReminder].forEach(fn => safeRun(fn, fn.name));
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────────────
@@ -119,18 +99,17 @@ function showPage(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (window.matchMedia('(max-width: 860px)').matches) closeMobileSidebar();
-  if (id === 'stats') { renderStats(); restoreStatsSubtab(); }
-  if (id === 'calendrier') renderCalendrier();
-  if (id === 'bilan') renderBilan();
-  if (id === 'propfirm') renderPropFirm();
-  if (id === 'scaling') { fillScalingForm(); renderScalingZones(); renderScaling({ center: true }); }
-  if (id === 'export') renderBackupSettings();
+  // Pages dont le contenu vit hors du journal (réglages, sauvegardes) : toujours rafraîchies à l'ouverture.
+  renderPage(id, ['scaling', 'export', 'propfirm'].includes(id));
+  safeRun(renderFilterBar, 'renderFilterBar');
+  window.scrollTo({ top: 0 });
 }
 
 function showStatsSubtab(id) {
   document.querySelectorAll('.subtab-panel').forEach(p => p.classList.toggle('active', p.dataset.subtab === id));
   document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === id));
   DB.setItem((JP + 'stats_subtab'), id);
+  if (id === 'analyses') { applyChartDefaults(); renderProAnalyses(); }
 }
 function restoreStatsSubtab() {
   const saved = DB.getItem((JP + 'stats_subtab'));

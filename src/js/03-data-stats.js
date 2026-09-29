@@ -11,7 +11,7 @@ function safeImgSrc(src) { return (typeof src === 'string' && /^data:image\/(png
 // Tous les graphiques lisent [...trades].reverse() comme « ordre chronologique » : cet ordre doit donc être exact.
 function tradeTimeKey(t) { return (t.date || '') + ' ' + (t.exit || t.entry || ''); }
 function sortTradesChrono() {
-  _atCache = null;
+  invalidateViews();
   trades.sort((a, b) => {
     const ka = tradeTimeKey(a), kb = tradeTimeKey(b);
     if (ka !== kb) return ka < kb ? 1 : -1;
@@ -37,7 +37,7 @@ function storageUsage() {
   return { total: used, mine, images, imgCount, limit, pct: used / limit * 100, mode: DB.mode };
 }
 function save() {
-  _atCache = null;
+  invalidateViews();
   try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); return true; }
   catch (e) { reportStorageError(e); return false; }
 }
@@ -136,17 +136,7 @@ function renderStorageCard() {
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────
 // Win rate = gagnants ÷ trades clos (les break-even comptent au dénominateur). Intervalle de Wilson à 95 %.
-function wilsonCI(k, n, z) {
-  z = z || 1.96; if (!n) return [0, 0];
-  const p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
-  return [Math.max(0, c - m), Math.min(1, c + m)];
-}
-function winStats(list) {
-  const closed = list.filter(t => ['TP', 'SL', 'BE'].includes(t.res));
-  const wins = closed.filter(t => t.res === 'TP').length, losses = closed.filter(t => t.res === 'SL').length;
-  const n = closed.length, ci = n ? wilsonCI(wins, n) : [0, 0];
-  return { n, wins, losses, be: n - wins - losses, rate: n ? wins / n : null, lo: ci[0], hi: ci[1] };
-}
+// (wilsonCI et winStats : voir 00a-calc.js)
 function fmtWinLine(w) { return w.wins + ' G · ' + w.losses + ' P' + (w.be ? ' · ' + w.be + ' BE' : ''); }
 function fmtCI(w) { return w.n ? 'IC 95 % : ' + Math.round(w.lo * 100) + '–' + Math.round(w.hi * 100) + ' %' : ''; }
 // P&L net par jour, en € (le R n'est utilisé que si aucun montant en € n'existe dans le journal)
@@ -192,11 +182,11 @@ function rUsable(t) {
 }
 // Vue « analyse » : mêmes trades, mais le R non retenu est masqué (les montants en € ne changent JAMAIS).
 function analysisTrades() {
-  if (!_atCache) _atCache = trades.map(t => (t.pnl === null || t.pnl === undefined || rUsable(t)) ? t : Object.assign({}, t, { pnl: null, rr: null }));
+  if (!_atCache) _atCache = viewTrades().map(t => (t.pnl === null || t.pnl === undefined || rUsable(t)) ? t : Object.assign({}, t, { pnl: null, rr: null }));
   return _atCache;
 }
 function setRMode(m) {
-  R_MODE = m; DB.setItem((JP + 'r_mode'), m); _atCache = null;
+  R_MODE = m; DB.setItem((JP + 'r_mode'), m); invalidateViews();
   renderAll();
 }
 function migrateRSources() {

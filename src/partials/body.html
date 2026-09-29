@@ -48,6 +48,10 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
         Bilan journalier
       </button>
+      <button class="nav-item" onclick="showPage('revue',this)" data-page="revue" data-navid="revue">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6h6M5 8.5h6M5 11h3.5"/></svg>
+        Revue hebdo
+      </button>
       <button class="nav-item" onclick="showPage('propfirm',this)" data-page="propfirm" data-navid="propfirm">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.5 2 4v4.2c0 3.6 2.5 6 6 6.8 3.5-.8 6-3.2 6-6.8V4L8 1.5Z"/><path d="M5.5 8l1.8 1.8L10.5 6"/></svg>
         Prop Firm
@@ -82,6 +86,28 @@
 
   <!-- MAIN -->
   <main class="main">
+    <!-- ═══ FILTRE GLOBAL : s'applique au Dashboard, au Journal, aux Statistiques, au Calendrier, au Bilan et à la Revue ═══ -->
+    <div class="filter-bar" id="filter-bar" role="search" aria-label="Filtre global">
+      <div class="fb-group">
+        <label class="fb-label" for="gf-period">Période</label>
+        <select id="gf-period" class="fb-select" onchange="setGlobalFilter({ period: this.value })">
+          <option value="all">Tout l'historique</option><option value="7d">7 derniers jours</option><option value="30d">30 derniers jours</option>
+          <option value="90d">3 derniers mois</option><option value="month">Mois en cours</option><option value="ytd">Année en cours</option><option value="custom">Personnalisée…</option>
+        </select>
+        <span id="gf-custom" class="fb-custom" style="display:none">
+          <input type="date" id="gf-from" class="fb-select" aria-label="Du" onchange="setGlobalFilter({ period: 'custom', from: this.value, to: document.getElementById('gf-to').value })">
+          <span class="fb-arrow">→</span>
+          <input type="date" id="gf-to" class="fb-select" aria-label="Au" onchange="setGlobalFilter({ period: 'custom', from: document.getElementById('gf-from').value, to: this.value })">
+        </span>
+      </div>
+      <div class="fb-group"><label class="fb-label" for="gf-asset">Actif</label><select id="gf-asset" class="fb-select" onchange="setGlobalFilter({ asset: this.value })"></select></div>
+      <div class="fb-group"><label class="fb-label" for="gf-session">Session</label><select id="gf-session" class="fb-select" onchange="setGlobalFilter({ session: this.value })"></select></div>
+      <div class="fb-group"><label class="fb-label" for="gf-setup">Setup</label><select id="gf-setup" class="fb-select" onchange="setGlobalFilter({ setup: this.value })"></select></div>
+      <div class="fb-group"><label class="fb-label" for="gf-dir">Sens</label><select id="gf-dir" class="fb-select" onchange="setGlobalFilter({ dir: this.value })"><option value="">Tous</option><option>Long</option><option>Short</option></select></div>
+      <span class="fb-spacer"></span>
+      <span class="fb-summary" id="gf-summary" aria-live="polite"></span>
+      <button class="btn-ghost fb-reset" id="gf-reset" onclick="resetGlobalFilter()" style="display:none">Effacer les filtres</button>
+    </div>
 
     <!-- ═══ DASHBOARD ═══ -->
     <div id="page-dashboard" class="page active">
@@ -370,10 +396,11 @@
             </select>
           </div>
         </div>
-        <div class="form-row f3" style="margin-bottom:20px">
-          <div class="field"><label>RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
-          <div class="field"><label>P&L en R (optionnel)</label><input type="number" id="f-pnl" placeholder="auto si vide" step="0.1"></div>
-          <div class="field"><label>P&L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
+        <div class="form-row f4" style="margin-bottom:20px">
+          <div class="field"><label for="f-pnleur">P&amp;L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
+          <div class="field"><label for="f-setup">Setup / stratégie</label><input type="text" id="f-setup" list="setup-list" placeholder="ex : OB + FVG" maxlength="60" autocomplete="off"><datalist id="setup-list"></datalist></div>
+          <div class="field"><label for="f-rr">RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
+          <div class="field"><label for="f-pnl">P&amp;L en R (optionnel)</label><input type="number" id="f-pnl" placeholder="auto si vide" step="0.1"></div>
         </div>
 
         <!-- Sections dépliables : tout ce qui n'est pas indispensable pour enregistrer vite -->
@@ -413,7 +440,8 @@
               <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
               <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
             </div>
-            <div class="form-row f2" style="margin-bottom:0">
+            <div class="form-row f3" style="margin-bottom:0">
+              <div class="field"><label for="f-tags">Tags libres</label><input type="text" id="f-tags" placeholder="ex : news, contre-tendance" maxlength="200" autocomplete="off"></div>
               <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
               <div class="field"><label>Note émotionnelle</label>
                 <select id="f-emotion">
@@ -451,31 +479,30 @@
 
         <div class="form-section" id="section-notes">
           <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
-            <span class="fs-icon">📝</span><span class="fs-title">Notes & capture</span><span class="fs-hint">description, setup, screenshot</span><span class="fs-chevron">▾</span>
+            <span class="fs-icon">📝</span><span class="fs-title">Notes & captures</span><span class="fs-hint">description, captures, note après coup</span><span class="fs-chevron">▾</span>
           </button>
           <div class="form-section-body">
-            <div class="form-row f2" style="margin-bottom:0">
+            <div class="form-row f2" style="margin-bottom:12px">
               <div class="field">
-                <label>Capture du trade (JPG / PNG)</label>
-                <div class="img-upload-zone" id="upload-zone"
+                <label>Captures du trade (plusieurs possibles : avant, pendant, après)</label>
+                <div class="img-upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Ajouter des captures"
                   ondragover="event.preventDefault();this.classList.add('drag')"
                   ondragleave="this.classList.remove('drag')"
                   ondrop="handleDrop(event)"
-                  onclick="document.getElementById('f-img').click()">
-                  <input type="file" id="f-img" accept="image/*" onchange="handleImgSelect(this)">
+                  onclick="document.getElementById('f-img').click()"
+                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('f-img').click()}">
+                  <input type="file" id="f-img" accept="image/*" multiple onchange="handleImgSelect(this)">
                   <div id="upload-placeholder">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--txt3)" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 4px;display:block"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2 14l4-4 3 3 3-4 4 5"/></svg>
-                    <p>Clique ou glisse une image ici</p>
+                    <p>Clique, glisse ou colle (Ctrl+V) une ou plusieurs images</p>
                   </div>
-                  <div id="upload-preview" style="display:none">
-                    <div class="img-preview-wrap">
-                      <img id="img-preview-el" class="img-preview" src="" alt="preview" onclick="event.stopPropagation();openLightbox(this.src)">
-                      <button class="img-preview-del" onclick="event.stopPropagation();clearImg()" title="Supprimer">×</button>
-                    </div>
-                  </div>
+                  <div id="upload-preview" class="thumbs" style="display:none"></div>
                 </div>
               </div>
-              <div class="field"><label>Description / setup / confluences</label><textarea id="f-desc" placeholder="Setup, confluences, raison d'entrée…" style="min-height:120px"></textarea></div>
+              <div class="field"><label for="f-desc">Description / setup / confluences</label><textarea id="f-desc" placeholder="Pourquoi ce trade ? Setup, confluences, raison d'entrée…" style="min-height:120px"></textarea></div>
+            </div>
+            <div class="form-row" style="margin-bottom:0">
+              <div class="field"><label for="f-review">Note après coup (revue)</label><textarea id="f-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" style="min-height:70px"></textarea></div>
             </div>
           </div>
         </div>
@@ -561,6 +588,7 @@
         <button class="subtab-btn" data-subtab="timing" onclick="showStatsSubtab('timing')">Timing</button>
         <button class="subtab-btn" data-subtab="behavior" onclick="showStatsSubtab('behavior')">Comportement</button>
         <button class="subtab-btn" data-subtab="advanced" onclick="showStatsSubtab('advanced')">Avancé</button>
+        <button class="subtab-btn" data-subtab="analyses" onclick="showStatsSubtab('analyses')">Analyses pro</button>
       </div>
 
       <div class="subtab-panel active" data-subtab="overview">
@@ -637,6 +665,38 @@
         <div class="panel">
           <div class="panel-hdr"><span>Coût de tes erreurs<small class="panel-sub">€ perdus par type d'erreur taguée</small></span></div>
           <div id="mistake-cost-body" style="padding:18px"></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab="analyses">
+        <div class="panel" style="margin-bottom:12px">
+          <div class="panel-hdr"><span>Simulation Monte-Carlo<small class="panel-sub" id="mc-sub">1 000 futurs possibles de ta courbe, tirés au hasard dans tes propres résultats</small></span>
+            <span class="mc-controls">
+              <label class="fb-label" for="mc-n">Trades simulés</label>
+              <select id="mc-n" class="fb-select" onchange="renderMonteCarlo()"><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option></select>
+              <label class="fb-label" for="mc-dd">Seuil de drawdown</label>
+              <select id="mc-dd" class="fb-select" onchange="renderMonteCarlo()"><option value="5">5 %</option><option value="10" selected>10 %</option><option value="15">15 %</option><option value="20">20 %</option></select>
+            </span>
+          </div>
+          <div class="eq-stats" id="mc-stats"></div>
+          <div class="chart-wrap" style="height:280px"><canvas id="mcChart"></canvas></div>
+          <p class="ui-muted" style="margin-top:10px">Chaque simulation rejoue tes trades clos dans un ordre et une combinaison aléatoires (tirage avec remise). La zone foncée contient la moitié des scénarios, la zone claire 90 %. Ce n'est pas une prédiction : c'est la dispersion que ton edge actuel peut produire par simple malchance ou chance.</p>
+        </div>
+        <div class="charts-row" style="grid-template-columns:1fr 1fr">
+          <div class="panel">
+            <div class="panel-hdr"><span>Excursions MAE / MFE<small class="panel-sub">chaque point = un trade · plus bas = moins de chaleur encaissée, plus haut = plus de profit latent</small></span></div>
+            <div class="eq-stats" id="maemfe-stats"></div>
+            <div class="chart-wrap" style="height:260px" id="wrap-maemfe"><canvas id="maeMfeChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-hdr"><span>R réalisé vs R visé<small class="panel-sub">trades avec prix d'entrée, stop, objectif et sortie</small></span></div>
+            <div class="eq-stats" id="rvr-stats"></div>
+            <div class="chart-wrap" style="height:260px" id="wrap-rvr"><canvas id="rvrChart"></canvas></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr"><span>Équité par setup<small class="panel-sub" id="sm-sub">mêmes échelles pour comparer d'un coup d'œil</small></span></div>
+          <div id="small-multiples" class="sm-grid"></div>
         </div>
       </div>
 
@@ -800,6 +860,10 @@
           <div id="risk-rules"></div>
         </div>
         <div class="plan-card">
+          <div class="plan-card-title"><div class="plan-dot" style="background:var(--accent)"></div>Mes setups <span style="font-weight:normal;color:var(--txt3);font-size:11px">(proposés dans le formulaire et le filtre global)</span></div>
+          <div id="setups-editor"></div>
+        </div>
+        <div class="plan-card">
           <div class="plan-card-title"><div class="plan-dot" style="background:#f472b6"></div>Erreurs à suivre <span style="font-weight:normal;color:var(--txt3);font-size:11px">(chiffrées en € dans Statistiques)</span></div>
           <div id="mistake-tags"></div>
         </div>
@@ -912,6 +976,21 @@
           <div id="weekday-bars" class="asset-list"></div>
         </div>
       </div>
+    </div>
+
+    <!-- ═══ REVUE HEBDOMADAIRE ═══ -->
+    <div id="page-revue" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Revue hebdomadaire</h2><p id="revue-subtitle">Chiffres de la semaine, meilleurs et pires trades, erreurs, et tes réponses aux questions de revue</p></div>
+        <div class="revue-nav no-print">
+          <button class="btn-ghost" onclick="revueStep(-1)" aria-label="Semaine précédente">←</button>
+          <span id="revue-week-label" class="revue-week"></span>
+          <button class="btn-ghost" onclick="revueStep(1)" aria-label="Semaine suivante">→</button>
+          <button class="btn-ghost" onclick="revueThisWeek()">Cette semaine</button>
+          <button class="btn-primary" onclick="printWeeklyReview()">⎙ Exporter en PDF</button>
+        </div>
+      </div>
+      <div id="revue-content"></div>
     </div>
 
     <!-- ═══ EXPORT ═══ -->
@@ -1184,12 +1263,12 @@
 </div>
 
 <!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
-  <div class="modal">
-    <h3>Confirmer la suppression</h3>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-msg">
+    <h3 id="modal-title">Confirmer la suppression</h3>
     <p id="modal-msg">Cette action est irréversible.</p>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
@@ -1199,14 +1278,75 @@
 </div>
 
 <!-- LIGHTBOX -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">×</button>
-  <img id="lightbox-img" src="" alt="Capture du trade">
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Captures du trade" aria-hidden="true" onclick="if(event.target===this && !gallery.annot) closeLightbox()">
+  <div class="lb-bar">
+    <button class="lb-btn" id="lb-prev" onclick="galleryStep(-1)" aria-label="Capture précédente">←</button>
+    <span id="lb-counter" class="lb-counter">1 / 1</span>
+    <button class="lb-btn" id="lb-next" onclick="galleryStep(1)" aria-label="Capture suivante">→</button>
+    <span style="flex:1"></span>
+    <button class="lb-btn" id="lb-annotate" onclick="startAnnotation()">✏️ Annoter</button>
+    <span id="lb-annot-tools" class="lb-tools" style="display:none">
+      <button class="lb-btn" data-annot-tool="rect" onclick="setAnnotTool('rect')" title="Rectangle">▭</button>
+      <button class="lb-btn" data-annot-tool="arrow" onclick="setAnnotTool('arrow')" title="Flèche">↗</button>
+      <button class="lb-btn" data-annot-tool="pen" onclick="setAnnotTool('pen')" title="Crayon">✎</button>
+      <span class="lb-sep"></span>
+      <button class="lb-swatch" data-annot-color="#ef5350" style="background:#ef5350" onclick="setAnnotColor('#ef5350')" aria-label="Rouge"></button>
+      <button class="lb-swatch" data-annot-color="#26a69a" style="background:#26a69a" onclick="setAnnotColor('#26a69a')" aria-label="Vert"></button>
+      <button class="lb-swatch" data-annot-color="#4c8dff" style="background:#4c8dff" onclick="setAnnotColor('#4c8dff')" aria-label="Bleu"></button>
+      <button class="lb-swatch" data-annot-color="#f0b429" style="background:#f0b429" onclick="setAnnotColor('#f0b429')" aria-label="Jaune"></button>
+      <button class="lb-swatch" data-annot-color="#ffffff" style="background:#ffffff" onclick="setAnnotColor('#ffffff')" aria-label="Blanc"></button>
+      <span class="lb-sep"></span>
+      <button class="lb-btn" onclick="undoAnnotation()">↶ Annuler</button>
+      <button class="lb-btn" onclick="cancelAnnotation()">Abandonner</button>
+      <button class="lb-btn lb-primary" onclick="saveAnnotation()">Enregistrer</button>
+    </span>
+    <button class="lb-btn" id="lb-close" onclick="closeLightbox()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="lb-stage" onclick="if(event.target===this && !gallery.annot) closeLightbox()">
+    <img id="lightbox-img" src="" alt="Capture du trade" onclick="toggleGalleryZoom()">
+    <canvas id="lb-canvas" style="display:none"></canvas>
+  </div>
 </div>
 
 <!-- DRAWER : détail d'un trade -->
 <div class="drawer-overlay" id="trade-drawer-overlay" onclick="if(event.target===this) closeTradeDetail()">
-  <div class="drawer" id="trade-drawer"></div>
+  <div class="drawer" id="trade-drawer" role="dialog" aria-modal="true" aria-labelledby="dw-title"></div>
+</div>
+
+<!-- SAISIE RAPIDE (touche N) -->
+<div class="modal-overlay" id="quick-add" onclick="if(event.target===this) closeQuickAdd()">
+  <div class="modal qa-modal" role="dialog" aria-modal="true" aria-labelledby="qa-title">
+    <h3 id="qa-title">Saisie rapide</h3>
+    <p>L'essentiel en 3 champs — le reste (prix, captures, checklist) se complète plus tard via « Modifier ».</p>
+    <div class="qa-grid">
+      <div class="field"><label for="qa-asset">Actif</label><input id="qa-asset" list="qa-asset-list" autocomplete="off" placeholder="ex : EUR/USD"><datalist id="qa-asset-list"></datalist></div>
+      <div class="field"><label>Résultat</label>
+        <div class="seg qa-res" role="radiogroup" aria-label="Résultat">
+          <button type="button" class="seg-btn" data-res="TP" role="radio" onclick="setQuickRes('TP')">Gagnant</button>
+          <button type="button" class="seg-btn" data-res="SL" role="radio" onclick="setQuickRes('SL')">Perdant</button>
+          <button type="button" class="seg-btn" data-res="BE" role="radio" onclick="setQuickRes('BE')">BE</button>
+        </div>
+      </div>
+      <div class="field"><label for="qa-pnl">P&amp;L en €</label><input id="qa-pnl" type="number" step="0.01" placeholder="+150 ou -60"></div>
+      <div class="field"><label for="qa-setup">Setup (optionnel)</label><input id="qa-setup" list="setup-list" autocomplete="off" maxlength="60"></div>
+      <div class="field"><label for="qa-dir">Sens (optionnel)</label><select id="qa-dir"><option value="">—</option><option>Long</option><option>Short</option></select></div>
+      <div class="field"><label for="qa-date">Date</label><input id="qa-date" type="date"></div>
+    </div>
+    <div class="modal-btns">
+      <span class="qa-hint">Entrée = enregistrer · Échap = fermer</span>
+      <button class="btn-cancel" onclick="closeQuickAdd()">Annuler</button>
+      <button class="btn-primary" onclick="saveQuickAdd()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- AIDE : RACCOURCIS CLAVIER (touche ?) -->
+<div class="modal-overlay" id="shortcuts-help" onclick="if(event.target===this) closeShortcutsHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sh-title">
+    <h3 id="sh-title">Raccourcis clavier</h3>
+    <div class="sh-grid" id="sh-grid"></div>
+    <div class="modal-btns"><button class="btn-primary" onclick="closeShortcutsHelp()">Compris</button></div>
+  </div>
 </div>
 
 <!-- RECHERCHE GLOBALE (Ctrl/Cmd+K) -->

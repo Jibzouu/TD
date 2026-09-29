@@ -102,12 +102,14 @@ function setPnlChartMode(mode) {
 }
 // Série journalière (fin de journée) : solde en € dès qu'un montant en € existe, sinon R cumulé (hors R fictifs).
 function equitySeries() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const withEur = trades.filter(t => t.pnlEur != null && t.date);
   const useEur = withEur.length > 0;
   const src = useEur ? withEur : analysisTrades().filter(t => t.pnl != null && t.date);
   const byDay = {}, nDay = {};
   src.forEach(t => { byDay[t.date] = (byDay[t.date] || 0) + (useEur ? t.pnlEur : t.pnl); nDay[t.date] = (nDay[t.date] || 0) + 1; });
-  const start = useEur ? (accountSize || 0) : 0;
+  // Avec une période filtrée, la courbe part du solde réel au début de la période (départ + P&L antérieur).
+  const start = useEur ? balanceBeforeFilter() : 0;
   let cum = start, peak = start;
   const pts = Object.keys(byDay).sort().map(d => {
     cum += byDay[d]; peak = Math.max(peak, cum);
@@ -137,7 +139,7 @@ function renderYearProgress() {
     if (statsEl) statsEl.innerHTML = '';
     if (sub) sub.textContent = 'Renseigne un P&L (€ ou R) sur tes trades pour voir ta courbe';
   } else {
-    if (sub) sub.textContent = (E.useEur ? 'Solde en €, depuis le solde de départ' : 'R cumulé (aucun montant en € saisi)') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
+    if (sub) sub.textContent = (E.useEur ? (filterDateRange().from ? 'Solde en €, depuis le début de la période' : 'Solde en €, depuis le solde de départ') : 'R cumulé (aucun montant en € saisi)') + (filterActive() ? ' · filtre actif' : '') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
     if (statsEl) statsEl.innerHTML =
       stat(E.useEur ? 'Solde actuel' : 'R cumulé', E.fmt(endBal)) +
       (perf !== null ? stat('Performance', fmtPct(perf), perf >= 0 ? t.green : t.red) : '') +
@@ -187,7 +189,7 @@ function renderYearProgress() {
         } }) },
         scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : v + 'R' } } })
       },
-      plugins: [refLinePlugin('startLine', E.start, E.useEur ? 'Départ ' + fmtEUR(E.start) : '0R'), {
+      plugins: [refLinePlugin('startLine', E.start, E.useEur ? (filterDateRange().from ? 'Début de période ' : 'Départ ') + fmtEUR(E.start) : '0R'), {
         id: 'peakLabel', afterDatasetsDraw(ch) { if (peakI > 0) drawPointLabel(ch, 0, peakI, 'Plus haut ' + E.fmt(data[peakI]), t.accent, true); }
       }]
     });
@@ -238,6 +240,7 @@ function renderHeroSide(E, endBal, perf) {
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────
 function renderWinRateMeters() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const el = document.getElementById('winrate-body');
   if (!el) return;
   const W = winStats(trades);
@@ -328,6 +331,7 @@ function renderRDistribution() {
 
 // ── RENDEMENTS MENSUELS : P&L € et % du solde en début de mois ──────
 function renderMonthlyReturnsTable() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const cont = document.getElementById('monthly-returns-table');
   if (!cont) return;
   const byMonth = {};
@@ -414,6 +418,7 @@ function renderHeatmapDH() {
 // ── RADAR ────────────────────────────────────────────────────────────
 // Chaque critère mesure un comportement (pas un résultat). Un critère non suivi est affiché comme tel et exclu de la moyenne.
 function computeDiscipline() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const closed = trades.filter(t => ['TP', 'SL', 'BE'].includes(t.res));
   const items = [];
   const entryCount = getEntryItems().length;
@@ -456,6 +461,7 @@ function renderRadar() {
 
 // ── PERFORMANCE PAR ACTIF ────────────────────────────────────────────
 function renderAssetBars() {
+  const trades = viewTrades();   // vue filtrée (filtre global)
   const cont = document.getElementById('asset-bars');
   if (!cont) return;
   if (!trades.length) { cont.innerHTML = '<p class="empty-note">Apparaîtra dès ton premier trade.</p>'; return; }
