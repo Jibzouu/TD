@@ -35,7 +35,8 @@
 .sp-base{stroke:var(--txt3)}
 .sp-area{fill:var(--accent);opacity:.1}
 .sp-line{stroke:var(--accent)}
-.mr-table{min-width:760px}
+.mr-table{width:100%;min-width:calc(66px * (var(--mr-cols, 12) + 2))}
+.mr-table td.mr-td .mr-cell{max-width:120px;margin:0 auto}
 .mr-table th.c{text-align:center}
 .mr-table th.r{text-align:right}
 .mr-year{font-family:var(--mono);font-weight:600}

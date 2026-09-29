@@ -75,8 +75,8 @@ function computePropFirmStatus() {
   const bestDayPct = positiveDaysSum > 0 ? (bestDayPnl/positiveDaysSum*100) : 0;
   const consistencyOk = !consistencyOn || positiveDaysSum <= 0 || bestDayPct <= consistencyPct;
 
-  // Perte journalière max (réglée dans le bandeau DD du Dashboard) : une seule journée au-delà = challenge échoué.
-  // Les montants saisis à la main dans le bandeau DD remplacent le calcul automatique pour le jour concerné.
+  // Perte journalière max (réglée dans Paramètres) : une seule journée au-delà = challenge échoué.
+  // Les montants saisis à la main dans la barre « Aujourd'hui » remplacent le calcul automatique pour le jour concerné.
   const dailyLimitAmount = startBalance * (dailyLimitPct / 100);
   const manualDD = loadDDManualMap();
   const dailyNet = Object.assign({}, byDay);

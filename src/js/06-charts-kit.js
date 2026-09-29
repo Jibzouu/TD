@@ -27,14 +27,6 @@ function renderSparklineInto(svgId, values, color) {
 function chronoClosedTrades() {
   return [...analysisTrades()].reverse().filter(t => ['TP','SL','BE'].includes(t.res));
 }
-function makeBuckets(arr, count) {
-  if (arr.length === 0) return [];
-  const n = Math.min(count, arr.length);
-  const size = Math.ceil(arr.length / n);
-  const buckets = [];
-  for (let i = 0; i < arr.length; i += size) buckets.push(arr.slice(i, i+size));
-  return buckets;
-}
 function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
@@ -218,52 +210,45 @@ function animateHeroValue(target) {
   }
   heroAnimFrame = requestAnimationFrame(step);
 }
-function trendBadge(elId, values, suffix) {
+// Badge d'évolution d'une carte : variation sur les 10 derniers trades (vs les 10 précédents).
+function trendBadge(elId, delta, suffix, digits, title) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!values || values.length < 2) { el.textContent = ''; el.className = 'kpi-trend'; return; }
-  const delta = values[values.length-1] - values[0];
+  if (delta === null || delta === undefined || isNaN(delta)) { el.textContent = ''; el.className = 'kpi-trend'; el.removeAttribute('title'); return; }
   const dir = Math.abs(delta) < 0.05 ? 'flat' : (delta > 0 ? 'up' : 'down');
-  const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '→';
-  el.textContent = arrow + ' ' + (delta>=0?'+':'') + delta.toFixed(1) + (suffix||'');
+  el.textContent = (dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '→ ') + (delta >= 0 ? '+' : '') + delta.toFixed(digits ?? 1).replace('.', ',') + (suffix || '');
   el.className = 'kpi-trend ' + dir;
+  el.title = title || '';
 }
 
+// Mini-courbes des cartes : valeur glissante (fenêtre de trades) pour une tendance lisible, pas un zigzag par paquet.
+const KPI_WINDOW = 10;
 function renderKpiSparklines() {
   const closed = chronoClosedTrades();
-  const buckets = makeBuckets(closed, 8);
-
-  if (buckets.length >= 2) {
-    const wrSeries = buckets.map(b => b.length ? b.filter(t=>t.res==='TP').length/b.length*100 : 0);
-    renderSparklineInto('k-wr-spark', wrSeries, cssVar('--green','#22c55e'));
-    trendBadge('k-wr-trend', wrSeries, 'pts');
-
-    let cum = 0;
-    const pnlSeries = buckets.map(b => { cum += b.reduce((s,t)=>s+(t.pnl||0),0); return parseFloat(cum.toFixed(2)); });
-    renderSparklineInto('k-pnl-spark', pnlSeries, cssVar('--blue','#60a5fa'));
-    trendBadge('k-pnl-trend', pnlSeries, 'R');
-
-    const eurOf = t => (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : 0;
-    const rrSeries = buckets.map(b => { const w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : 0; });
-    renderSparklineInto('k-rr-spark', rrSeries, cssVar('--amber','#f59e0b'));
-    trendBadge('k-rr-trend', rrSeries, '');
-
-    const pfSeries = buckets.map(b => {
-      const gw = b.filter(t=>t.res==='TP').reduce((s,t)=>s+eurOf(t),0);
-      const gl = Math.abs(b.filter(t=>t.res==='SL').reduce((s,t)=>s+eurOf(t),0));
-      return Math.min(gl>0 ? gw/gl : (gw>0?3:0), 3);
-    });
-    renderSparklineInto('k-pf-spark', pfSeries, cssVar('--purple','#a78bfa'));
-    trendBadge('k-pf-trend', pfSeries, '');
-  } else {
-    ['k-wr-spark','k-pnl-spark','k-rr-spark','k-pf-spark'].forEach(id => { mount(id, ''); });
-    ['k-wr-trend','k-pnl-trend','k-rr-trend','k-pf-trend'].forEach(id => { const el=document.getElementById(id); if (el) { el.textContent=''; el.className='kpi-trend'; } });
+  // Forme récente : les 10 derniers trades clos, du plus ancien au plus récent.
+  mount('k-form-dots', html`${closed.slice(-10).map(t => html`<span class="${raw(t.res === 'TP' ? 'fill-green' : t.res === 'SL' ? 'fill-red' : 'fill-amber')}" title="${t.date || ''} · ${t.res}"></span>`)}`);
+  const ids = ['wr', 'pnl', 'rr', 'pf'];
+  if (closed.length < KPI_WINDOW + 2) {
+    ids.forEach(k => { mount('k-' + k + '-spark', ''); trendBadge('k-' + k + '-trend', null); });
+    return;
   }
-
-  const dotsEl = document.getElementById('k-form-dots');
-  if (dotsEl) {
-    const last10 = closed.slice(-10);
-    mount(dotsEl, html`${last10.map(t => html`<span class="${raw(t.res === 'TP' ? 'fill-green' : t.res === 'SL' ? 'fill-red' : 'fill-amber')}" title="${t.date || ''} · ${t.res}"></span>`)}`);
-  }
+  const eurOf = t => (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : 0;
+  const win = (i, w) => closed.slice(Math.max(0, i - w), i);
+  const wrAt = i => { const b = win(i, KPI_WINDOW * 2); return b.filter(t => t.res === 'TP').length / b.length * 100; };
+  const cum = []; closed.reduce((c, t, i) => (cum[i + 1] = c + (t.pnl || 0)), 0); cum[0] = 0;
+  const payoffAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : null; };
+  const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.filter(t => t.res === 'TP').reduce((s, t) => s + eurOf(t), 0), gl = Math.abs(b.filter(t => t.res === 'SL').reduce((s, t) => s + eurOf(t), 0)); return gl > 0 ? Math.min(gw / gl, 5) : null; };
+  // Au plus ~30 points, régulièrement espacés, du KPI_WINDOW-ième trade au dernier.
+  const n = closed.length, steps = Math.min(30, n - KPI_WINDOW + 1);
+  const at = [...new Set(Array.from({ length: steps }, (_, j) => Math.round(KPI_WINDOW + (n - KPI_WINDOW) * j / Math.max(1, steps - 1))))];
+  const series = f => at.map(f).filter(v => v !== null);
+  const draw = (k, f) => renderSparklineInto('k-' + k + '-spark', series(f));
+  draw('wr', wrAt); draw('pnl', i => cum[i]); draw('rr', payoffAt); draw('pf', pfAt);
+  const prev = n - KPI_WINDOW, T = ' sur les ' + KPI_WINDOW + ' derniers trades, comparé aux ' + KPI_WINDOW + ' précédents';
+  const d = (f) => { const a = f(n), b = f(prev); return a === null || b === null ? null : a - b; };
+  trendBadge('k-wr-trend', d(wrAt), ' pts', 0, 'Win rate (20 trades glissants)' + T);
+  trendBadge('k-pnl-trend', cum[n] - cum[prev], 'R', 1, 'R gagnés sur les ' + KPI_WINDOW + ' derniers trades');
+  trendBadge('k-rr-trend', d(payoffAt), '', 2, 'Payoff (20 trades glissants)' + T);
+  trendBadge('k-pf-trend', d(pfAt), '', 2, 'Profit factor (20 trades glissants)' + T);
 }
 

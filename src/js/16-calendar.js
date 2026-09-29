@@ -61,10 +61,13 @@ function onChartIntensityChange(val) {
   if (label) label.textContent = val + '%';
   renderAll();
 }
-function heatColors(pnlEurSum, maxAbs) {
+// opts.boost : échelle en racine carrée et plage plus large, pour les grilles denses (heatmap jour × heure) où
+// la plupart des cases sont petites devant la plus grande et resteraient presque noires en échelle linéaire.
+function heatColors(pnlEurSum, maxAbs, opts) {
   const green = cssVar('--green','#22c55e'), red = cssVar('--red','#ef4444'), amber = cssVar('--amber','#f59e0b');
-  const ratio = maxAbs > 0 ? Math.min(Math.abs(pnlEurSum) / maxAbs, 1) : 0.4;
-  const alpha = Math.min((0.12 + ratio * 0.5) * CAL_HEAT_INTENSITY, 0.92);
+  let ratio = maxAbs > 0 ? Math.min(Math.abs(pnlEurSum) / maxAbs, 1) : 0.4;
+  if (opts && opts.boost) ratio = Math.sqrt(ratio);
+  const alpha = opts && opts.boost ? Math.min(0.14 + ratio * 0.76, 0.92) : Math.min((0.12 + ratio * 0.5) * CAL_HEAT_INTENSITY, 0.92);
   const amberAlpha = Math.min(0.18 * CAL_HEAT_INTENSITY, 0.85);
   // Sur un fond très saturé, le texte de la même couleur devient illisible : on bascule sur un texte contrasté.
   const base = cssVar('--bg3', '#1a1c26');

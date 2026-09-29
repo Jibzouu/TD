@@ -65,10 +65,10 @@
 }
 
 html{scroll-behavior:smooth}
-body,.panel,.kpi,.hero-metric,.export-card,.plan-card,table,th,td,.badge,#dd-banner,.sidebar,.logo,.nav-item,input,select,textarea{transition:background-color .28s ease,border-color .28s ease,color .28s ease}
+body,.panel,.kpi,.hero-metric,.export-card,.plan-card,table,th,td,.badge,.day-strip,.sidebar,.logo,.nav-item,input,select,textarea{transition:background-color .28s ease,border-color .28s ease,color .28s ease}
 body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100vh;overflow-x:hidden;font-variant-numeric:tabular-nums}
 :root{--bstyle:solid}
-.panel,.kpi,.hero-metric,.export-card,.plan-card,#dd-banner{border-style:var(--bstyle) !important}
+.panel,.kpi,.hero-metric,.export-card,.plan-card,.day-strip{border-style:var(--bstyle) !important}
 
 /* ── Ambiance visuelle : arrière-plan ── */
 body.bgstyle-gradient{background:radial-gradient(circle at 15% -10%, color-mix(in srgb, var(--bg2) 70%, transparent), transparent 55%), radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--purple) 8%, transparent), transparent 40%), var(--bg);background-attachment:fixed}
@@ -76,13 +76,13 @@ body.bgstyle-grid{background-image:linear-gradient(color-mix(in srgb, var(--txt)
 
 /* ── Ambiance visuelle : cartes ── */
 body.cardstyle-glass .panel, body.cardstyle-glass .kpi, body.cardstyle-glass .plan-card,
-body.cardstyle-glass .export-card, body.cardstyle-glass #dd-banner, body.cardstyle-glass .stat-section{
+body.cardstyle-glass .export-card, body.cardstyle-glass .day-strip, body.cardstyle-glass .stat-section{
   background:color-mix(in srgb, var(--bg3) 55%, transparent) !important;
   backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
   border:1px solid color-mix(in srgb, var(--txt) 10%, transparent) !important;
 }
 body.cardstyle-elevated .panel, body.cardstyle-elevated .kpi, body.cardstyle-elevated .plan-card,
-body.cardstyle-elevated .export-card, body.cardstyle-elevated #dd-banner, body.cardstyle-elevated .stat-section{
+body.cardstyle-elevated .export-card, body.cardstyle-elevated .day-strip, body.cardstyle-elevated .stat-section{
   box-shadow:0 10px 28px -8px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.3);
 }
 
@@ -591,7 +591,7 @@ input[type=checkbox],input[type=range]{accent-color:var(--accent) !important}
 .sc-chip.reached{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
 
 /* Surfaces : cartes calmes, bordure fine, pas d'ombre */
-.panel,.form-card,.tbl-card,.stat-section,.plan-card,.export-card,.watch-section,.kpi,.hero-metric,#dd-banner{box-shadow:none;border-color:var(--border)}
+.panel,.form-card,.tbl-card,.stat-section,.plan-card,.export-card,.watch-section,.kpi,.hero-metric,.day-strip{box-shadow:none;border-color:var(--border)}
 .panel{padding:18px 20px;border-radius:var(--r2)}
 .panel-hdr{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--txt);text-transform:none;letter-spacing:-.005em;margin-bottom:14px;align-items:flex-start}
 .panel-sub{display:block;font-size:11.5px;font-weight:400;color:var(--txt3);margin-top:2px;letter-spacing:0}
@@ -1040,7 +1040,8 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .sp-base{stroke:var(--txt3)}
 .sp-area{fill:var(--accent);opacity:.1}
 .sp-line{stroke:var(--accent)}
-.mr-table{min-width:760px}
+.mr-table{width:100%;min-width:calc(66px * (var(--mr-cols, 12) + 2))}
+.mr-table td.mr-td .mr-cell{max-width:120px;margin:0 auto}
 .mr-table th.c{text-align:center}
 .mr-table th.r{text-align:right}
 .mr-year{font-family:var(--mono);font-weight:600}
@@ -1235,19 +1236,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .btn-ghost.btn-s7{padding:7px 10px;font-size:11px}
 .btn-ghost.btn-blue,.btn-ghost.btn-blue:hover{padding:7px 14px;font-size:11px;border-color:var(--blue);color:var(--blue)}
 .row-between-top{display:flex;justify-content:space-between;align-items:flex-start}
-.dd-main{flex:1;min-width:240px}
-.dd-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
-.dd-head-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mono-muted{font-size:11px;font-family:var(--mono);color:var(--txt3)}
-.dd-head-right{text-align:right;display:flex;align-items:center;gap:6px}
-.dd-bar{height:10px;background:var(--bg4);border-radius:calc(var(--r) * .5);overflow:hidden;position:relative}
-.dd-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-.dd-limit{font-size:11px;font-family:var(--mono);color:var(--txt3);display:flex;align-items:center;gap:4px}
-.dd-side{display:flex;align-items:center;gap:10px;flex-shrink:0}
-label.dd-side-label,.field label.dd-side-label{font-size:11px;font-family:var(--mono);color:var(--txt3);white-space:nowrap}
-.pos-rel{position:relative}
-.input-suffix{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--txt3);pointer-events:none;font-family:var(--mono)}
-.row-end-10{display:flex;justify-content:flex-end;margin-bottom:10px}
 .btn-ghost.btn-s6{padding:6px 12px;font-size:11px}
 .mb-0{margin-bottom:0}
 .mb-16{margin-bottom:16px}
@@ -1326,24 +1315,10 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 .sep-m14{margin:14px 0;padding-top:14px;border-top:1px solid var(--border)}
 #welcome-card{background:linear-gradient(155deg, color-mix(in srgb, var(--green) 7%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:22px 24px;margin-bottom:16px}
 #welcome-step3{font-size:11.5px;color:var(--txt3);line-height:1.5}
-#summary-banner{background:linear-gradient(155deg, color-mix(in srgb, var(--blue) 6%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--txt2)}
 #export-reminder{align-items:center;gap:14px;background:var(--amber-d);border:1px solid rgba(245,158,11,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px}
 #export-reminder-text{flex:1;font-size:12.5px;color:var(--txt2)}
 #import-reminder{align-items:center;gap:14px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px}
 #import-reminder-text{flex:1;font-size:12.5px;color:var(--txt2)}
-#dd-banner{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-#dd-date{background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none}
-#dd-status-badge{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:calc(var(--r) * .4);background:var(--bg3);color:var(--txt3)}
-#dd-amount{font-size:18px;font-weight:600;font-family:var(--mono);color:var(--txt)}
-#dd-limit-label{font-size:11px;font-family:var(--mono);color:var(--txt3)}
-#dd-edit-btn{background:none;border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt3);cursor:pointer;padding:3px 7px;font-size:11px;line-height:1}
-#dd-manual-row{align-items:center;gap:8px;margin-bottom:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);padding:8px 10px}
-#dd-manual-input{width:100px;background:var(--bg2);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
-#dd-bar{height:100%;width:0%;border-radius:calc(var(--r) * .5);transition:width .5s cubic-bezier(.4,0,.2,1),background .3s}
-#dd-warning-line{position:absolute;top:0;height:100%;width:1px;background:rgba(245,158,11,.6)}
-#dd-pct-label{font-size:11px;font-family:var(--mono);color:var(--txt3)}
-#dd-limit-pct{width:42px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .5);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:2px 4px;outline:none;text-align:center}
-#account-size{width:110px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:7px 28px 7px 10px;outline:none}
 #wrap-year-progress{height:260px}
 #wrap-underwater{height:92px}
 #asset-bars{min-height:120px}
@@ -1406,6 +1381,119 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #chart-line-style-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
 #heat-intensity-slider{width:100%;accent-color:var(--green)}
 #chart-intensity-slider{width:100%;accent-color:var(--green)}
+
+/* ═══ styles/60-dashboard.css ═══ */
+/* ═══ Dashboard v3 : barre « Aujourd'hui », en-tête, cartes, sections ═══ */
+
+/* ── Barre « Aujourd'hui » ── */
+.day-strip{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(260px,1.3fr) minmax(260px,1.4fr);gap:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px}
+.day-strip.no-insights{grid-template-columns:minmax(180px,.8fr) minmax(260px,2fr)}
+.day-strip.no-insights .today-insights{display:none}
+.day-strip > *{padding:16px 20px;min-width:0}
+.day-strip > * + *{border-left:1px solid var(--border)}
+.today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.today-label{font-size:12px;font-weight:600;color:var(--txt2)}
+.today-date{background:transparent;border:1px solid transparent;border-radius:6px;color:var(--txt3);font:500 11px var(--sans);padding:2px 4px;cursor:pointer;max-width:118px}
+.today-date:hover,.today-date:focus{border-color:var(--border2);color:var(--txt2);outline:none}
+.today-pnl{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.today-sub{font-size:11.5px;color:var(--txt3);margin-top:4px}
+.today-dd-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.today-dd-title{font-size:12px;font-weight:600;color:var(--txt2)}
+.today-bar{position:relative;height:8px;border-radius:4px;background:var(--bg4)}
+.today-bar > #dd-bar{height:100%;width:0;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.today-bar-warn{position:absolute;left:75%;top:-3px;bottom:-3px;width:1.5px;background:var(--txt3);border-radius:1px}
+.today-dd-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--txt3)}
+#dd-pct-label{color:var(--txt2)}
+.today-edit{background:none;border:none;padding:0 0 0 6px;color:var(--txt3);font:500 11.5px var(--sans);cursor:pointer}
+.today-edit:hover{color:var(--txt)}
+.today-edit.on{color:var(--amber)}
+#dd-manual-row{align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+#dd-manual-input{width:170px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--txt);font:500 12px var(--mono);padding:5px 8px;outline:none}
+#dd-manual-input:focus{border-color:var(--accent)}
+
+/* Étiquette d'état : toujours icône + libellé, jamais la couleur seule */
+.st-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--bg4);color:var(--txt3)}
+.st-chip.ok{background:var(--green-d);color:var(--green)}
+.st-chip.warn{background:var(--amber-d);color:var(--amber)}
+.st-chip.crit{background:var(--red-d);color:var(--red)}
+
+/* Constats cliquables */
+.today-insights{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.insight{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:5px 8px;margin:0 -8px;cursor:pointer;color:var(--txt2);font:400 12px var(--sans)}
+.insight:hover{background:var(--bg3);border-color:var(--border)}
+.insight:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.insight-ic{font-size:13px;width:18px;text-align:center;flex-shrink:0}
+.insight-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.insight-k{color:var(--txt3);margin-right:6px}
+.insight b{color:var(--txt);font-weight:600}
+
+@media (max-width:1100px){
+  .day-strip{grid-template-columns:1fr 1.4fr}
+  .today-insights{grid-column:1 / -1;border-left:none!important;border-top:1px solid var(--border);flex-direction:row;flex-wrap:wrap}
+  .today-insights .insight{width:auto;margin:0}
+}
+@media (max-width:640px){
+  .day-strip,.day-strip.no-insights{grid-template-columns:1fr}
+  .day-strip > * + *{border-left:none;border-top:1px solid var(--border)}
+  .today-insights{flex-direction:column}
+  .today-insights .insight{width:100%}
+}
+
+/* ── Paramètres : compte & dashboard ── */
+.acct-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;padding:18px}
+.acct-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--txt2)}
+.acct-field > span:first-child{font-weight:600}
+.acct-field small{font-size:11px;color:var(--txt3);line-height:1.45}
+.acct-field .btn-ghost{align-self:flex-start}
+.acct-input{display:flex;align-items:center;gap:8px;color:var(--txt3);font-size:11.5px}
+.acct-input input{width:120px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font:500 13px var(--mono);padding:7px 10px;outline:none}
+.acct-input input:focus{border-color:var(--accent)}
+
+/* ── En-tête : P&L total + 4 chiffres clés (plus de mini-courbe en double avec la courbe d'équité) ── */
+.hero-metric{grid-template-columns:auto 1fr;gap:32px}
+.hero-metric-value{font-size:48px;line-height:1.05}
+.hero-side{grid-template-columns:repeat(4,max-content);justify-content:end;gap:10px 36px}
+.hero-side .hs-val{font-size:16px}
+@media (max-width:1100px){ .hero-metric{grid-template-columns:1fr} .hero-side{justify-content:start;border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:14px} }
+@media (max-width:640px){ .hero-side{grid-template-columns:repeat(2,max-content)} .hero-metric-value{font-size:38px} }
+
+/* ── Cartes indicateurs : même hauteur, une ligne de sous-texte, courbe calée en bas ── */
+.kpi-grid-5{align-items:stretch}
+.kpi{display:flex;flex-direction:column;min-width:0}
+.kpi .kpi-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .kpi-spark,.kpi .kpi-form-dots{margin-top:auto;padding-top:10px}
+.kpi .kpi-spark{height:36px;box-sizing:content-box}
+.kpi-trend{cursor:help}
+.hero-side{justify-self:end}
+@media (max-width:1100px){ .hero-side{justify-self:stretch} }
+
+/* ── Sections de la grille ── */
+.dash-grid{align-items:stretch}
+.dash-section{min-width:0}
+.dash-section:not(:first-child){margin-top:14px}
+.dash-sec-title{display:flex;align-items:baseline;gap:10px;margin:0;padding:0 2px 2px;font-size:14px;font-weight:600;color:var(--txt);letter-spacing:-.01em}
+.dash-sec-title small{font-size:12px;font-weight:400;color:var(--txt3)}
+.dash-sec-title::after{content:'';flex:1;height:1px;background:var(--border);align-self:center;margin-left:6px}
+
+/* Discipline en pleine largeur : critères sur deux colonnes */
+.dash-widget.w-full #discipline-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:36px}
+@media (max-width:860px){ .dash-widget.w-full #discipline-list{grid-template-columns:1fr} }
+
+/* Heatmap : montant dans les cases marquantes */
+.hm-v{font:600 10px var(--mono);color:var(--hm-ink,var(--txt));white-space:nowrap;pointer-events:none}
+@media (max-width:1000px){ .hm-v{display:none} }
+
+/* Distribution des R : légende des repères verticaux */
+.rd-key{display:inline-block;width:12px;height:0;border-top:2px dashed currentColor;margin-right:6px;vertical-align:middle}
+.rd-key.acc{color:var(--accent)}.rd-key.grn{color:var(--green)}.rd-key.red{color:var(--red)}
+
+/* Typographie : police à chasse fixe réservée aux chiffres ; libellés (jours, actifs) en police de texte */
+#page-dashboard .asset-name,#page-dashboard .hm-rowlbl{font-family:var(--sans)}
+#page-dashboard .asset-name{font-weight:500}
+@media (max-width:860px){ .kpi-grid-5 > .kpi:last-child:nth-child(odd){grid-column:1 / -1} }
+.eq-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:200px;text-align:center;color:var(--txt3);font-size:12.5px;padding:24px}
+.eq-empty b{color:var(--txt);font-size:14px;font-weight:600}
+.eq-empty[hidden],.chart-wrap[hidden],.uw-head[hidden]{display:none}
 
 </style>
 </head>
@@ -1543,16 +1631,13 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           </div>
           <div class="wc-tip">
             <div class="wc-tip-title">3. Configure ton compte</div>
-            <div id="welcome-step3">Solde, limite de perte journalière, et challenge Prop Firm si tu en fais un.</div>
+            <div id="welcome-step3" class="wc-tip-text">Solde de départ et limite de perte journalière dans Paramètres, et challenge Prop Firm si tu en fais un.</div>
           </div>
           <div class="wc-tip">
             <div class="wc-tip-title">4. Fais-le tien</div>
             <div class="wc-tip-text">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd class="kbd">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
           </div>
         </div>
-      </div>
-      <div id="summary-banner" style="display:none">
-        <span class="mr-8">📊</span><span id="summary-banner-text"></span>
       </div>
       <div id="export-reminder" style="display:none">
         <span class="fs-16">💾</span>
@@ -1573,6 +1658,38 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
         </div>
       </div>
 
+      <!-- ═══ AUJOURD'HUI : P&L du jour, perte max autorisée, constats ═══ -->
+      <section class="day-strip" id="today-strip" aria-label="Aujourd'hui">
+        <div class="today-main">
+          <div class="today-head">
+            <span class="today-label" id="today-label">Aujourd'hui</span>
+            <input type="date" id="dd-date" class="today-date" onchange="renderDDBanner()" aria-label="Choisir la journée affichée" title="Voir une autre journée">
+          </div>
+          <div class="today-pnl" id="dd-amount">—</div>
+          <div class="today-sub" id="today-sub">Pas de trade aujourd'hui</div>
+        </div>
+        <div class="today-dd">
+          <div class="today-dd-head">
+            <span class="today-dd-title">Perte max du jour</span>
+            <span class="st-chip" id="dd-status-badge">—</span>
+          </div>
+          <div class="today-bar" role="img" id="dd-bar-wrap" aria-label="Perte du jour par rapport à la limite">
+            <div id="dd-bar"></div>
+            <div class="today-bar-warn" title="75 % de la limite"></div>
+          </div>
+          <div class="today-dd-foot">
+            <span id="dd-pct-label">—</span>
+            <span><span id="dd-limit-label"></span> <button class="today-edit" id="dd-edit-btn" onclick="toggleDDManualInput()" title="Saisir le P&amp;L du jour à la main (si tes trades ne sont pas encore enregistrés)">✎ à la main</button></span>
+          </div>
+          <div id="dd-manual-row" style="display:none">
+            <input type="number" id="dd-manual-input" step="1" placeholder="P&amp;L du jour, ex : -120" aria-label="P&amp;L du jour en euros">
+            <button class="btn-ghost btn-xs2" onclick="saveDDManual()">Enregistrer</button>
+            <button class="btn-ghost btn-xs2" onclick="clearDDManual()">Revenir à l'auto</button>
+          </div>
+        </div>
+        <div class="today-insights" id="summary-banner" aria-label="Constats"></div>
+      </section>
+
       <div class="hero-metric">
         <div class="hero-main">
           <div class="hero-metric-label">Performance globale</div>
@@ -1580,7 +1697,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           <div class="hero-metric-sub" id="k-pnleur-sub">en euros</div>
         </div>
         <div class="hero-side" id="hero-side"></div>
-        <svg class="hero-spark" id="hero-spark" viewBox="0 0 240 64" preserveAspectRatio="none" aria-hidden="true"></svg>
       </div>
       <div id="r-coverage"></div>
       <div class="kpi-grid kpi-grid-5">
@@ -1628,55 +1744,8 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
         </div>
       </div>
 
-      <!-- DD JOURNALIER INDICATOR -->
-      <div id="dd-banner">
-        <div class="dd-main">
-          <div class="dd-head">
-            <div class="dd-head-left">
-              <span class="mono-muted">Drawdown journalier</span>
-              <input type="date" id="dd-date" onchange="renderDDBanner()">
-              <span id="dd-status-badge">—</span>
-            </div>
-            <div class="dd-head-right">
-              <span id="dd-amount">—</span>
-              <span id="dd-limit-label"></span>
-              <button id="dd-edit-btn" onclick="toggleDDManualInput()" title="Modifier à la main">✎</button>
-            </div>
-          </div>
-          <div id="dd-manual-row" style="display:none">
-            <span class="mono-muted">P&L du jour (€), à la main :</span>
-            <input type="number" id="dd-manual-input" step="1" placeholder="ex : -120">
-            <button class="btn-ghost btn-xs2" onclick="saveDDManual()">Enregistrer</button>
-            <button class="btn-ghost btn-xs2" onclick="clearDDManual()">Revenir à l'auto</button>
-          </div>
-          <div class="dd-bar">
-            <div id="dd-bar"></div>
-            <div id="dd-warning-line" style="display:none"></div>
-          </div>
-          <div class="dd-foot">
-            <span class="mono-muted">0%</span>
-            <span id="dd-pct-label">—</span>
-            <span class="dd-limit">
-              Limite
-              <input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()">%
-            </span>
-          </div>
-        </div>
-        <div class="dd-side">
-          <label class="dd-side-label">Solde de départ</label>
-          <div class="pos-rel">
-            <input type="number" id="account-size" placeholder="10000" min="0" step="100"
-             
-              oninput="saveAccountSize()" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'">
-            <span class="input-suffix">€</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="row-end-10">
-        <button class="btn-ghost btn-s6" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
-      </div>
       <div class="dash-grid" id="dash-grid">
+        <div class="dash-widget w-full dash-section" data-widget="sec-perf" data-no-resize="1"><h3 class="dash-sec-title">Performance<small>résultats, régularité, distribution</small></h3></div>
         <div class="dash-widget w-full" data-widget="year-progress">
           <div class="panel">
             <div class="panel-hdr">
@@ -1690,7 +1759,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div class="eq-stats" id="equity-stats"></div>
+            <div class="eq-empty" id="eq-empty" hidden><b>Ta courbe d'équité apparaîtra ici</b><span>Ajoute un trade avec son P&amp;L (touche N pour une saisie rapide) ou importe un CSV depuis Export / Import.</span></div>
             <div class="chart-wrap" id="wrap-year-progress"><canvas id="yearProgressChart"></canvas></div>
             <div class="uw-head"><span>Drawdown depuis le plus haut</span><span id="drawdown-sub"></span></div>
             <div class="chart-wrap" id="wrap-underwater"><canvas id="underwaterChart"></canvas></div>
@@ -1709,18 +1778,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
             <div id="winrate-body" class="wr-body"></div>
           </div>
         </div>
-        <div class="dash-widget w-half" data-widget="asset-bars">
-          <div class="panel">
-            <div class="panel-hdr">
-              <span>Performance par actif<small class="panel-sub">win rate · trades · P&amp;L</small></span>
-              <span class="widget-controls">
-                <select class="widget-width-select" onchange="setWidgetWidth('asset-bars', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
-                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
-              </span>
-            </div>
-            <div class="asset-list" id="asset-bars"><p class="empty-note">Aucun trade</p></div>
-          </div>
-        </div>
         <div class="dash-widget w-half" data-widget="r-distribution">
           <div class="panel">
             <div class="panel-hdr">
@@ -1735,21 +1792,29 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
             <div class="widget-resize-handle"></div>
           </div>
         </div>
-        <div class="dash-widget w-half" data-widget="radar">
+        <div class="dash-widget w-full dash-section" data-widget="sec-where" data-no-resize="1"><h3 class="dash-sec-title">Où je gagne<small>actifs, mois, créneaux horaires</small></h3></div>
+        <div class="dash-widget w-half" data-widget="asset-bars">
           <div class="panel">
             <div class="panel-hdr">
-              <span>Discipline<small class="panel-sub">ta façon de trader, pas tes résultats</small></span>
+              <span>Performance par actif<small class="panel-sub">win rate · trades · P&amp;L</small></span>
               <span class="widget-controls">
-                <select class="widget-width-select" onchange="setWidgetWidth('radar', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <select class="widget-width-select" onchange="setWidgetWidth('asset-bars', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div class="disc-score">
-              <span id="discipline-score-val">—</span>
-              <div class="disc-meter"><div id="discipline-score-marker"></div></div>
+            <div class="asset-list" id="asset-bars"><p class="empty-note">Aucun trade</p></div>
+          </div>
+        </div>
+        <div class="dash-widget w-half" data-widget="monthly-returns" data-no-resize="1">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Rendements mensuels<small class="panel-sub">P&amp;L et % du solde en début de mois</small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('monthly-returns', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
             </div>
-            <div id="discipline-note" class="disc-note"></div>
-            <div class="chart-wrap" id="wrap-radar"><div id="discipline-list"></div></div>
+            <div id="monthly-returns-table"></div>
           </div>
         </div>
         <div class="dash-widget w-full" data-widget="heatmap-dh">
@@ -1764,15 +1829,22 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
             <div id="heatmap-dh" class="hm-wrap"></div>
           </div>
         </div>
-        <div class="dash-widget w-full" data-widget="monthly-returns" data-no-resize="1">
+        <div class="dash-widget w-full dash-section" data-widget="sec-how" data-no-resize="1"><h3 class="dash-sec-title">Comment je trade<small>discipline et respect du plan</small></h3></div>
+        <div class="dash-widget w-full" data-widget="radar">
           <div class="panel">
             <div class="panel-hdr">
-              <span>Rendements mensuels<small class="panel-sub">P&amp;L et % du solde en début de mois</small></span>
+              <span>Discipline<small class="panel-sub">ta façon de trader, pas tes résultats</small></span>
               <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('radar', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div id="monthly-returns-table"></div>
+            <div class="disc-score">
+              <span id="discipline-score-val">—</span>
+              <div class="disc-meter"><div id="discipline-score-marker"></div></div>
+            </div>
+            <div id="discipline-note" class="disc-note"></div>
+            <div class="chart-wrap" id="wrap-radar"><div id="discipline-list"></div></div>
           </div>
         </div>
       </div>
@@ -2156,7 +2228,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           <input type="number" id="pf-consistency-pct" step="1" min="1" max="100" oninput="savePfSetting('consistency_pct', this.value); renderPropFirm()">
           <span class="txt2-12">% du profit total</span>
           <span class="flex-1"></span>
-          <span class="mono-muted">Perte journalière max : réglée dans le bandeau DD du Dashboard (<span id="pf-daily-limit-echo">1</span>%)</span>
+          <span class="mono-muted">Perte journalière max : réglée dans Paramètres (<span id="pf-daily-limit-echo">1</span>%)</span>
         </div>
       </div>
 
@@ -2511,7 +2583,25 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 
     <div id="page-parametres" class="page">
       <div class="page-hdr">
-        <div class="page-hdr-left"><h2>Paramètres</h2><p>Personnalise l'apparence comme tu veux — elle est commune aux trois journaux (Live, Backtest, PropFirm) et tout est sauvegardé localement</p></div>
+        <div class="page-hdr-left"><h2>Paramètres</h2><p>Ton compte, puis l'apparence (commune aux trois journaux) — tout est sauvegardé localement</p></div>
+      </div>
+
+      <div class="panel mb-20">
+        <div class="panel-hdr"><span>Compte &amp; Dashboard<small class="panel-sub">propre au journal actif (Live, Backtest ou PropFirm)</small></span></div>
+        <div class="acct-grid">
+          <label class="acct-field"><span>Solde de départ</span>
+            <span class="acct-input"><input type="number" id="account-size" placeholder="10000" min="0" step="100" oninput="saveAccountSize()"><span>€</span></span>
+            <small>Base de la courbe d'équité, du rendement et de la limite de perte.</small>
+          </label>
+          <label class="acct-field"><span>Perte journalière max</span>
+            <span class="acct-input"><input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()"><span>% du solde</span></span>
+            <small>Jauge « Perte max du jour » du Dashboard et critère de Discipline.</small>
+          </label>
+          <div class="acct-field"><span>Disposition du Dashboard</span>
+            <button class="btn-ghost" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
+            <small>Ordre et largeur des blocs, déplaçables avec la poignée ⠿.</small>
+          </div>
+        </div>
       </div>
 
       <div class="panel mb-20">
@@ -3498,15 +3588,17 @@ function saveAccountSize() {
 // ── DASHBOARD : widgets déplaçables / redimensionnables ─────────────
 // Disposition v2 (charte « Terminal pro ») : l'équité en tête, puis les analyses. L'ancienne disposition sauvegardée
 // (clé dash_layout) référençait des widgets qui n'existent plus : elle est ignorée.
-const DASH_WIDGET_ORDER_DEFAULT = ['year-progress','winrate','asset-bars','r-distribution','radar','heatmap-dh','monthly-returns'];
+// Disposition v3 : trois sections titrées (Performance / Où je gagne / Comment je trade). Les titres de section sont des
+// éléments de la grille comme les autres (pleine largeur, sans poignée) : les blocs peuvent être glissés de l'une à l'autre.
+const DASH_WIDGET_ORDER_DEFAULT = ['sec-perf','year-progress','winrate','r-distribution','sec-where','asset-bars','monthly-returns','heatmap-dh','sec-how','radar'];
 const DASH_WIDGET_DEFAULTS = {
   'year-progress':  { width: 'w-full',  h: 260, w: null },
   'winrate':        { width: 'w-half',  h: null, w: null },
-  'asset-bars':     { width: 'w-half',  h: null, w: null },
   'r-distribution': { width: 'w-half',  h: 210, w: null },
-  'radar':          { width: 'w-half',  h: null, w: null },
+  'asset-bars':     { width: 'w-half',  h: null, w: null },
+  'monthly-returns':{ width: 'w-half',  h: null, w: null },
   'heatmap-dh':     { width: 'w-full',  h: null, w: null },
-  'monthly-returns':{ width: 'w-full',  h: null, w: null }
+  'radar':          { width: 'w-full',  h: null, w: null }
 };
 
 function loadDashLayout() {
@@ -3535,11 +3627,15 @@ function persistDashLayout() {
 function applyDashLayout(layout) {
   const grid = document.getElementById('dash-grid');
   if (!grid || !layout) return;
-  (layout.order || []).forEach(id => {
+  // Disposition enregistrée avant l'arrivée des sections : on garde seulement les hauteurs réglées à la main,
+  // l'ordre et les largeurs repartent des nouveaux réglages par défaut (sinon des blocs resteraient orphelins).
+  const legacy = !(layout.order || []).includes('sec-perf');
+  const order = legacy ? DASH_WIDGET_ORDER_DEFAULT : layout.order;
+  order.forEach(id => {
     const el = grid.querySelector(`.dash-widget[data-widget="${id}"]`);
     if (el) grid.appendChild(el);
   });
-  Object.entries(layout.widths || {}).forEach(([id, cls]) => {
+  Object.entries(legacy ? {} : (layout.widths || {})).forEach(([id, cls]) => {
     const el = grid.querySelector(`.dash-widget[data-widget="${id}"]`);
     if (!el) return;
     el.classList.remove('w-third','w-half','w-full');
@@ -3675,7 +3771,7 @@ function initDashboardLayout() {
   if (!grid) return;
   const saved = loadDashLayout();
   if (saved) applyDashLayout(saved);
-  else initDashLayoutDefaults();
+  initDashLayoutDefaults();   // aligne les sélecteurs de largeur sur la disposition réelle
   initDashWidgetDrag();
   initDashWidgetResize();
 }
@@ -4648,14 +4744,6 @@ function renderSparklineInto(svgId, values, color) {
 function chronoClosedTrades() {
   return [...analysisTrades()].reverse().filter(t => ['TP','SL','BE'].includes(t.res));
 }
-function makeBuckets(arr, count) {
-  if (arr.length === 0) return [];
-  const n = Math.min(count, arr.length);
-  const size = Math.ceil(arr.length / n);
-  const buckets = [];
-  for (let i = 0; i < arr.length; i += size) buckets.push(arr.slice(i, i+size));
-  return buckets;
-}
 function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
@@ -4839,116 +4927,81 @@ function animateHeroValue(target) {
   }
   heroAnimFrame = requestAnimationFrame(step);
 }
-function trendBadge(elId, values, suffix) {
+// Badge d'évolution d'une carte : variation sur les 10 derniers trades (vs les 10 précédents).
+function trendBadge(elId, delta, suffix, digits, title) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!values || values.length < 2) { el.textContent = ''; el.className = 'kpi-trend'; return; }
-  const delta = values[values.length-1] - values[0];
+  if (delta === null || delta === undefined || isNaN(delta)) { el.textContent = ''; el.className = 'kpi-trend'; el.removeAttribute('title'); return; }
   const dir = Math.abs(delta) < 0.05 ? 'flat' : (delta > 0 ? 'up' : 'down');
-  const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '→';
-  el.textContent = arrow + ' ' + (delta>=0?'+':'') + delta.toFixed(1) + (suffix||'');
+  el.textContent = (dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '→ ') + (delta >= 0 ? '+' : '') + delta.toFixed(digits ?? 1).replace('.', ',') + (suffix || '');
   el.className = 'kpi-trend ' + dir;
+  el.title = title || '';
 }
 
+// Mini-courbes des cartes : valeur glissante (fenêtre de trades) pour une tendance lisible, pas un zigzag par paquet.
+const KPI_WINDOW = 10;
 function renderKpiSparklines() {
   const closed = chronoClosedTrades();
-  const buckets = makeBuckets(closed, 8);
-
-  if (buckets.length >= 2) {
-    const wrSeries = buckets.map(b => b.length ? b.filter(t=>t.res==='TP').length/b.length*100 : 0);
-    renderSparklineInto('k-wr-spark', wrSeries, cssVar('--green','#22c55e'));
-    trendBadge('k-wr-trend', wrSeries, 'pts');
-
-    let cum = 0;
-    const pnlSeries = buckets.map(b => { cum += b.reduce((s,t)=>s+(t.pnl||0),0); return parseFloat(cum.toFixed(2)); });
-    renderSparklineInto('k-pnl-spark', pnlSeries, cssVar('--blue','#60a5fa'));
-    trendBadge('k-pnl-trend', pnlSeries, 'R');
-
-    const eurOf = t => (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : 0;
-    const rrSeries = buckets.map(b => { const w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : 0; });
-    renderSparklineInto('k-rr-spark', rrSeries, cssVar('--amber','#f59e0b'));
-    trendBadge('k-rr-trend', rrSeries, '');
-
-    const pfSeries = buckets.map(b => {
-      const gw = b.filter(t=>t.res==='TP').reduce((s,t)=>s+eurOf(t),0);
-      const gl = Math.abs(b.filter(t=>t.res==='SL').reduce((s,t)=>s+eurOf(t),0));
-      return Math.min(gl>0 ? gw/gl : (gw>0?3:0), 3);
-    });
-    renderSparklineInto('k-pf-spark', pfSeries, cssVar('--purple','#a78bfa'));
-    trendBadge('k-pf-trend', pfSeries, '');
-  } else {
-    ['k-wr-spark','k-pnl-spark','k-rr-spark','k-pf-spark'].forEach(id => { mount(id, ''); });
-    ['k-wr-trend','k-pnl-trend','k-rr-trend','k-pf-trend'].forEach(id => { const el=document.getElementById(id); if (el) { el.textContent=''; el.className='kpi-trend'; } });
+  // Forme récente : les 10 derniers trades clos, du plus ancien au plus récent.
+  mount('k-form-dots', html`${closed.slice(-10).map(t => html`<span class="${raw(t.res === 'TP' ? 'fill-green' : t.res === 'SL' ? 'fill-red' : 'fill-amber')}" title="${t.date || ''} · ${t.res}"></span>`)}`);
+  const ids = ['wr', 'pnl', 'rr', 'pf'];
+  if (closed.length < KPI_WINDOW + 2) {
+    ids.forEach(k => { mount('k-' + k + '-spark', ''); trendBadge('k-' + k + '-trend', null); });
+    return;
   }
-
-  const dotsEl = document.getElementById('k-form-dots');
-  if (dotsEl) {
-    const last10 = closed.slice(-10);
-    mount(dotsEl, html`${last10.map(t => html`<span class="${raw(t.res === 'TP' ? 'fill-green' : t.res === 'SL' ? 'fill-red' : 'fill-amber')}" title="${t.date || ''} · ${t.res}"></span>`)}`);
-  }
+  const eurOf = t => (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : 0;
+  const win = (i, w) => closed.slice(Math.max(0, i - w), i);
+  const wrAt = i => { const b = win(i, KPI_WINDOW * 2); return b.filter(t => t.res === 'TP').length / b.length * 100; };
+  const cum = []; closed.reduce((c, t, i) => (cum[i + 1] = c + (t.pnl || 0)), 0); cum[0] = 0;
+  const payoffAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : null; };
+  const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.filter(t => t.res === 'TP').reduce((s, t) => s + eurOf(t), 0), gl = Math.abs(b.filter(t => t.res === 'SL').reduce((s, t) => s + eurOf(t), 0)); return gl > 0 ? Math.min(gw / gl, 5) : null; };
+  // Au plus ~30 points, régulièrement espacés, du KPI_WINDOW-ième trade au dernier.
+  const n = closed.length, steps = Math.min(30, n - KPI_WINDOW + 1);
+  const at = [...new Set(Array.from({ length: steps }, (_, j) => Math.round(KPI_WINDOW + (n - KPI_WINDOW) * j / Math.max(1, steps - 1))))];
+  const series = f => at.map(f).filter(v => v !== null);
+  const draw = (k, f) => renderSparklineInto('k-' + k + '-spark', series(f));
+  draw('wr', wrAt); draw('pnl', i => cum[i]); draw('rr', payoffAt); draw('pf', pfAt);
+  const prev = n - KPI_WINDOW, T = ' sur les ' + KPI_WINDOW + ' derniers trades, comparé aux ' + KPI_WINDOW + ' précédents';
+  const d = (f) => { const a = f(n), b = f(prev); return a === null || b === null ? null : a - b; };
+  trendBadge('k-wr-trend', d(wrAt), ' pts', 0, 'Win rate (20 trades glissants)' + T);
+  trendBadge('k-pnl-trend', cum[n] - cum[prev], 'R', 1, 'R gagnés sur les ' + KPI_WINDOW + ' derniers trades');
+  trendBadge('k-rr-trend', d(payoffAt), '', 2, 'Payoff (20 trades glissants)' + T);
+  trendBadge('k-pf-trend', d(pfAt), '', 2, 'Profit factor (20 trades glissants)' + T);
 }
 
 
 /* ═══ js/07-dashboard-nav.js ═══ */
-// ── BANDEAU DE RÉSUMÉ (dérivé des vraies données, vérifiable) ───────
+// ── CONSTATS (barre « Aujourd'hui ») : dérivés des vraies données, chacun mène à la page qui le détaille ──
 function renderSummaryBanner() {
   const trades = analysisTrades();
-  const banner = document.getElementById('summary-banner');
-  const textEl = document.getElementById('summary-banner-text');
-  if (!banner || !textEl) return;
+  const box = document.getElementById('summary-banner'), strip = document.getElementById('today-strip');
+  if (!box) return;
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
-  if (closed.length < 5) { banner.style.display = 'none'; return; }
-
-  const eurArr = trades.filter(t => t.pnlEur !== null && t.pnlEur !== undefined);
-  const totalEur = eurArr.reduce((s,t) => s+t.pnlEur, 0);
-
-  const WD_NAMES = {0:'dimanche',1:'lundi',2:'mardi',3:'mercredi',4:'jeudi',5:'vendredi',6:'samedi'};
-  const wdMap = {};
+  const WD_NAMES = { 0: 'dimanche', 1: 'lundi', 2: 'mardi', 3: 'mercredi', 4: 'jeudi', 5: 'vendredi', 6: 'samedi' };
+  const best = map => Object.entries(map).reduce((b, [k, v]) => (b === null || v > b[1]) ? [k, v] : b, null);
+  const wdMap = {}, hMap = {};
   trades.forEach(t => {
-    if (!t.date || t.pnl === null || t.pnl === undefined) return;
-    const d = new Date(t.date + 'T00:00:00');
-    if (isNaN(d)) return;
-    const dow = d.getDay();
-    wdMap[dow] = (wdMap[dow] || 0) + t.pnl;
+    if (t.pnl === null || t.pnl === undefined) return;
+    const d = t.date ? new Date(t.date + 'T00:00:00') : null;
+    if (d && !isNaN(d)) wdMap[d.getDay()] = (wdMap[d.getDay()] || 0) + t.pnl;
+    const h = t.entry ? parseInt(t.entry.split(':')[0], 10) : NaN;
+    if (!isNaN(h)) hMap[h] = (hMap[h] || 0) + t.pnl;
   });
-  let bestDow = null, bestDowVal = -Infinity;
-  Object.entries(wdMap).forEach(([dow,v]) => { if (v > bestDowVal) { bestDowVal = v; bestDow = dow; } });
-
-  const hMap = {};
-  trades.forEach(t => {
-    if (!t.entry || t.pnl === null || t.pnl === undefined) return;
-    const h = parseInt(t.entry.split(':')[0], 10);
-    if (isNaN(h)) return;
-    hMap[h] = (hMap[h] || 0) + t.pnl;
-  });
-  let bestHour = null, bestHourVal = -Infinity;
-  Object.entries(hMap).forEach(([h,v]) => { if (v > bestHourVal) { bestHourVal = v; bestHour = h; } });
-
-  let tiltCost = 0, tiltCount = 0;
-  if (typeof computeTiltTrades === 'function') {
-    const { flagged } = computeTiltTrades();
-    tiltCount = flagged.length;
-    tiltCost = flagged.reduce((s,f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
+  const bDow = best(wdMap), bHour = best(hMap);
+  const tilt = typeof computeTiltTrades === 'function' ? computeTiltTrades().flagged : [];
+  const tiltCost = tilt.reduce((s, f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
+  const fmtR = v => (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + 'R';
+  const goBilan = "showPage('bilan', document.querySelector('.nav-item[data-page=bilan]'))";
+  const goTilt = "showPage('stats', document.querySelector('.nav-item[data-page=stats]'));showStatsSubtab('behavior')";
+  const chip = (icon, key, val, extra, tone, go) => html`<button class="insight" onclick="${raw(go)}"><span class="insight-ic" aria-hidden="true">${icon}</span><span class="insight-txt"><span class="insight-k">${key}</span><b>${val}</b>${extra ? html` <span class="tone-${raw(tone)}">${extra}</span>` : ''}</span></button>`;
+  const chips = [];
+  if (closed.length >= 5) {
+    if (bDow && bDow[1] > 0) chips.push(chip('📅', 'Meilleur jour', WD_NAMES[bDow[0]], fmtR(bDow[1]), 'green', goBilan));
+    if (bHour && bHour[1] > 0) chips.push(chip('🕐', "Meilleure heure d'entrée", String(bHour[0]).padStart(2, '0') + 'h', fmtR(bHour[1]), 'green', goBilan));
+    if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt));
   }
-
-  const goToBilan = raw(`event.preventDefault();showPage('bilan', document.querySelector('.nav-item[onclick*=bilan]'))`);
-  const goToStats = raw(`event.preventDefault();showPage('stats', document.querySelector('.nav-item[onclick*=stats]'))`);
-
-  const parts = [];
-  const eurTxt = fmtEUR(totalEur, true);
-  parts.push(html`Tu es <strong class="tone-${raw(totalEur >= 0 ? 'green' : 'red')}">${eurTxt}</strong> sur l'ensemble de ton historique (${trades.length} trades).`);
-  if (bestDow !== null && bestDowVal > 0) {
-    parts.push(html`Ton meilleur jour est le <a class="sb-link tone-blue" onclick="${goToBilan}">${WD_NAMES[bestDow]}</a> (${bestDowVal>=0?'+':''}${bestDowVal.toFixed(1)}R cumulé).`);
-  }
-  if (bestHour !== null && bestHourVal > 0) {
-    parts.push(html`Ta meilleure heure d'entrée est <a class="sb-link tone-blue" onclick="${goToBilan}">${String(bestHour).padStart(2,'0')}h</a>.`);
-  }
-  if (tiltCount > 0 && tiltCost > 0) {
-    parts.push(html`<a class="sb-link tone-amber" onclick="${goToStats}">${tiltCount} trade(s) signalé(s) par le Tilt Meter</a> t'ont coûté environ ${tiltCost.toFixed(0)} €.`);
-  }
-
-  mount(textEl, html`${parts.map((p, i) => html`${i ? ' ' : ''}${p}`)}`);
-  banner.style.display = 'block';
+  mount(box, html`${chips}`);
+  if (strip) strip.classList.toggle('no-insights', !chips.length);
 }
 
 function renderWelcomeCard() {
@@ -5253,8 +5306,7 @@ function loadDDLimitPct() {
 }
 function saveDDLimitPct() {
   const v = parseFloat(document.getElementById('dd-limit-pct').value);
-  if (!isNaN(v) && v > 0) DB.setItem((JP + 'dd_limit_pct'), v);
-  renderDDBanner();
+  if (!isNaN(v) && v > 0) { DB.setItem((JP + 'dd_limit_pct'), v); renderAll(); }
 }
 function loadDDManualMap() {
   try { return JSON.parse(DB.getItem((JP + 'dd_manual')) || '{}'); } catch(e) { return {}; }
@@ -5293,11 +5345,12 @@ function clearDDManual() {
   showToast('Retour au calcul automatique');
 }
 
+// Barre « Aujourd'hui » : P&L de la journée choisie (aujourd'hui par défaut) et part de la perte max autorisée utilisée.
 function renderDDBanner() {
   const dateInput = document.getElementById('dd-date');
   if (!dateInput) return;
   if (!dateInput.value) dateInput.value = localDateStr();
-  const date = dateInput.value;
+  const date = dateInput.value, isToday = date === localDateStr();
 
   const limitPctInput = document.getElementById('dd-limit-pct');
   const limitPct = loadDDLimitPct();
@@ -5305,53 +5358,36 @@ function renderDDBanner() {
 
   const manualMap = loadDDManualMap();
   const isManual = manualMap[date] !== undefined;
-
-  const dayTrades = trades.filter(t => t.date === date && t.pnlEur !== null && t.pnlEur !== undefined);
-  const autoPnlEur = dayTrades.reduce((s,t) => s + t.pnlEur, 0);
-  const dayPnlEur = isManual ? manualMap[date] : autoPnlEur;
+  const allDay = trades.filter(t => t.date === date);
+  const dayTrades = allDay.filter(t => t.pnlEur !== null && t.pnlEur !== undefined);
+  const dayPnlEur = isManual ? manualMap[date] : dayTrades.reduce((s, t) => s + t.pnlEur, 0);
   const hasData = isManual || dayTrades.length > 0;
-
   const ddLimit = accountSize * (limitPct / 100);
   const ddLoss = dayPnlEur < 0 ? Math.abs(dayPnlEur) : 0;
   const ddPct = ddLimit > 0 ? (ddLoss / ddLimit * 100) : 0;
+  const level = !hasData ? 'none' : ddPct >= 100 ? 'crit' : ddPct >= 75 ? 'warn' : 'ok';
 
-  const ddBar = document.getElementById('dd-bar');
-  const ddAmount = document.getElementById('dd-amount');
-  const ddPctLabel = document.getElementById('dd-pct-label');
-  const ddBadge = document.getElementById('dd-status-badge');
-  const ddLimitLabel = document.getElementById('dd-limit-label');
-  const ddWarnLine = document.getElementById('dd-warning-line');
-  const ddEditBtn = document.getElementById('dd-edit-btn');
-
-  if (ddWarnLine) { ddWarnLine.style.display = 'block'; ddWarnLine.style.left = '75%'; }
-  if (ddEditBtn) { ddEditBtn.style.color = isManual ? 'var(--amber)' : 'var(--txt3)'; ddEditBtn.style.borderColor = isManual ? 'var(--amber)' : 'var(--border2)'; }
-
-  const barW = Math.min(ddPct, 100);
-  const barColor = ddPct >= 100 ? 'var(--red)' : ddPct >= 75 ? 'var(--amber)' : ddPct >= 40 ? 'var(--blue)' : 'var(--green)';
-  if (ddBar) { ddBar.style.width = barW + '%'; ddBar.style.background = barColor; }
-  if (ddLimitLabel) ddLimitLabel.textContent = '/ ' + fmtEUR(ddLimit) + (isManual ? ' · manuel' : '');
-
-  if (!hasData) {
-    if (ddAmount) { ddAmount.textContent = '—'; ddAmount.style.color = 'var(--txt3)'; }
-    if (ddPctLabel) ddPctLabel.textContent = 'Pas de trade ce jour-là';
-    if (ddBadge) { ddBadge.textContent = 'Pas de trade'; ddBadge.style.background = 'var(--bg4)'; ddBadge.style.color = 'var(--txt3)'; }
-  } else if (dayPnlEur >= 0) {
-    if (ddAmount) { ddAmount.textContent = fmtEUR(dayPnlEur, true); ddAmount.style.color = 'var(--green)'; }
-    if (ddPctLabel) ddPctLabel.textContent = '0% du DD utilisé';
-    if (ddBadge) { ddBadge.textContent = '✓ Dans les clous'; ddBadge.style.background = 'var(--green-d)'; ddBadge.style.color = 'var(--green)'; }
-  } else if (ddPct >= 100) {
-    if (ddAmount) { ddAmount.textContent = '-' + fmtEUR(ddLoss); ddAmount.style.color = 'var(--red)'; }
-    if (ddPctLabel) ddPctLabel.textContent = '⚠ Limite atteinte !';
-    if (ddBadge) { ddBadge.textContent = '🚨 STOP — Limite dépassée'; ddBadge.style.background = 'var(--red-d)'; ddBadge.style.color = 'var(--red)'; }
-  } else if (ddPct >= 75) {
-    if (ddAmount) { ddAmount.textContent = '-' + fmtEUR(ddLoss); ddAmount.style.color = 'var(--amber)'; }
-    if (ddPctLabel) ddPctLabel.textContent = ddPct.toFixed(0) + '% — Danger';
-    if (ddBadge) { ddBadge.textContent = '⚡ Attention · ' + ddPct.toFixed(0) + '%'; ddBadge.style.background = 'var(--amber-d)'; ddBadge.style.color = 'var(--amber)'; }
-  } else {
-    if (ddAmount) { ddAmount.textContent = '-' + fmtEUR(ddLoss); ddAmount.style.color = 'var(--blue)'; }
-    if (ddPctLabel) ddPctLabel.textContent = ddPct.toFixed(0) + '% du DD utilisé';
-    if (ddBadge) { ddBadge.textContent = ddPct.toFixed(0) + '% utilisé' + (isManual?' · manuel':''); ddBadge.style.background = 'var(--blue-d)'; ddBadge.style.color = 'var(--blue)'; }
-  }
+  const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+  set('today-label', el => { el.textContent = isToday ? "Aujourd'hui" : fmtDateFR(date, true); });
+  set('dd-amount', el => {
+    el.textContent = hasData ? fmtEUR(dayPnlEur, true) : '—';
+    el.className = 'today-pnl tone-' + (!hasData ? 'muted' : dayPnlEur > 0 ? 'green' : dayPnlEur < 0 ? 'red' : 'txt');
+  });
+  const W = allDay.filter(t => t.res === 'TP').length, L = allDay.filter(t => t.res === 'SL').length, B = allDay.filter(t => t.res === 'BE').length;
+  set('today-sub', el => {
+    el.textContent = allDay.length
+      ? allDay.length + ' trade' + (allDay.length > 1 ? 's' : '') + ' · ' + W + ' G · ' + L + ' P' + (B ? ' · ' + B + ' BE' : '') + (isManual ? ' · montant saisi à la main' : '')
+      : (isManual ? 'Montant saisi à la main' : isToday ? "Pas encore de trade aujourd'hui" : 'Pas de trade ce jour-là');
+  });
+  set('dd-bar', el => { el.style.width = Math.min(ddPct, 100) + '%'; el.className = 'fill-' + ({ none: 'muted', ok: 'green', warn: 'amber', crit: 'red' })[level]; });
+  set('dd-bar-wrap', el => el.setAttribute('aria-label', 'Perte du jour : ' + Math.round(ddPct) + ' % de la limite de ' + fmtEUR(ddLimit)));
+  set('dd-pct-label', el => { el.textContent = !hasData ? '—' : dayPnlEur >= 0 ? 'Aucune perte' : ddPct.toFixed(0) + ' % de la limite utilisée'; });
+  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; });
+  set('dd-status-badge', el => {
+    el.textContent = ({ none: 'Pas de trade', ok: '✓ Dans les clous', warn: '⚡ Attention', crit: '🚨 Limite dépassée' })[level];
+    el.className = 'st-chip ' + level;
+  });
+  set('dd-edit-btn', el => el.classList.toggle('on', isManual));
 }
 
 function deleteTrade(id) {
@@ -5393,8 +5429,9 @@ function renderKPIs() {
   } else { wrEl.textContent = '—'; wrEl.className = 'kpi-val neu'; }
   const wrSub = document.getElementById('k-wr-sub');
   const beW = W.n ? breakevenWinRate() : null;
-  wrSub.textContent = W.n ? fmtWinLine(W) + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') + ' · ' + fmtCI(W).replace('IC 95 % : ', 'IC ') : 'aucun trade fermé';
-  wrSub.title = W.n ? 'Win rate = gagnants ÷ trades clos (break-even inclus au dénominateur) · ' + fmtCI(W) + ' · n = ' + W.n : '';
+  // Une seule ligne : gagnants / perdants et seuil ; le détail (BE, intervalle de confiance) est dans l'info-bulle.
+  wrSub.textContent = W.n ? W.wins + ' G · ' + W.losses + ' P' + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') : 'aucun trade fermé';
+  wrSub.title = W.n ? fmtWinLine(W) + ' · win rate = gagnants ÷ trades clos (break-even inclus) · ' + fmtCI(W) : '';
 
   // P&L
   const pnlArr = trades.filter(t => t.pnl != null);
@@ -5404,8 +5441,8 @@ function renderKPIs() {
     pnlEl.textContent = (total >= 0 ? '+' : '') + total.toFixed(1) + 'R';
     pnlEl.className = 'kpi-val ' + (total > 0 ? 'pos' : total < 0 ? 'neg' : 'neu');
     const pnlSub = document.getElementById('k-pnl-sub');
-    pnlSub.textContent = (total / pnlArr.length).toFixed(2) + 'R / trade · R sur ' + pnlArr.length + '/' + n;
-    pnlSub.title = 'Seuls les trades dont le R est retenu (mode « ' + ({ strict: 'R exact seulement', usable: 'R exact + estimé', all: 'Tout' })[R_MODE] + ' ») sont comptés : ' + pnlArr.length + ' sur ' + n + ' trades clos.';
+    pnlSub.textContent = (total / pnlArr.length >= 0 ? '+' : '') + (total / pnlArr.length).toFixed(2).replace('.', ',') + 'R par trade' + (pnlArr.length < n ? ' · ' + pnlArr.length + '/' + n + ' avec R' : '');
+    pnlSub.title = 'Seuls les trades dont le R est connu sont comptés : ' + pnlArr.length + ' sur ' + n + ' trades clos.';
   } else { pnlEl.textContent = '—'; pnlEl.className = 'kpi-val neu'; document.getElementById('k-pnl-sub').textContent = 'en R'; }
 
   // P&L €
@@ -5507,25 +5544,19 @@ function renderYearProgress() {
   const perf = E.useEur && E.start > 0 ? (endBal - E.start) / E.start * 100 : null;
   const curDD = last ? (E.useEur ? last.ddPct : last.ddAbs) : null;
 
-  // Bandeau de chiffres (et résumé dans le hero)
-  const stat = esItem;
-  const statsEl = document.getElementById('equity-stats');
+  // Sous-titre de la courbe (les chiffres clés sont dans l'en-tête du Dashboard, pas répétés ici)
   const sub = document.getElementById('year-progress-sub');
-  if (!P.length) {
-    if (statsEl) mount(statsEl, '');
-    if (sub) sub.textContent = 'Renseigne un P&L (€ ou R) sur tes trades pour voir ta courbe';
-  } else {
-    if (sub) sub.textContent = (E.useEur ? (filterDateRange().from ? 'Solde en €, depuis le début de la période' : 'Solde en €, depuis le solde de départ') : 'R cumulé (aucun montant en € saisi)') + (filterActive() ? ' · filtre actif' : '') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
-    if (statsEl) mount(statsEl, html`${[
-      stat(E.useEur ? 'Solde actuel' : 'R cumulé', E.fmt(endBal)),
-      perf !== null ? stat('Performance', fmtPct(perf), perf >= 0 ? 'green' : 'red') : '',
-      stat('Plus haut', E.fmt(Math.max(E.start, ...P.map(p => p.bal)))),
-      stat('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0', E.maxDD ? 'red' : null),
-      stat('Drawdown actuel', curDD ? (E.useEur ? fmtPct(curDD) : curDD.toFixed(2) + 'R') : 'aucun')]}`);
-  }
-  renderHeroSide(E, endBal, perf);
+  if (sub) sub.textContent = !P.length ? 'Renseigne un P&L (€ ou R) sur tes trades pour voir ta courbe'
+    : (E.useEur ? (filterDateRange().from ? 'Solde en €, depuis le début de la période' : 'Solde en €, depuis le solde de départ') : 'R cumulé (aucun montant en € saisi)') + (filterActive() ? ' · filtre actif' : '') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
+  renderHeroSide(E, endBal, perf, curDD);
 
   if (yearProgressChartInst) { yearProgressChartInst.destroy(); yearProgressChartInst = null; }
+  // Journal vide : un message plutôt qu'une grille vide à 0R.
+  const empty = !P.length;
+  ['eq-empty'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = !empty; });
+  ['wrap-year-progress', 'wrap-underwater'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = empty; });
+  document.querySelectorAll('#dash-grid [data-widget="year-progress"] .uw-head').forEach(el => { el.hidden = empty; });
+  if (empty) { if (underwaterChartInst) { underwaterChartInst.destroy(); underwaterChartInst = null; } return; }
   if (!chartsAvailable('yearProgressChart')) { renderUnderwater(E); return; }
   const ctx = canvas.getContext('2d');
   const daily = PNL_CHART_MODE === 'daily';
@@ -5593,19 +5624,14 @@ function renderUnderwater(E, daily) {
     }
   });
 }
-// Résumé à côté du chiffre principal : solde, rendement, drawdown max + mini-courbe d'équité.
-function renderHeroSide(E, endBal, perf) {
-  const side = document.getElementById('hero-side'), spark = document.getElementById('hero-spark');
-  if (!side || !spark) return;
-  if (!E.pts.length) { mount(side, ''); mount(spark, ''); return; }
-  const it = (l, v, tone) => html`<div class="hs-item"><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
-  mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0 %')}${it('Jours tradés', String(E.pts.length))}`);
-  const vals = [E.start, ...E.pts.map(p => p.bal)];
-  const { path, lastX, lastY } = buildSparklinePath(vals, 240, 64, 4);
-  const min = Math.min(...vals), max = Math.max(...vals), range = (max - min) || 1;
-  const baseY = 64 - 4 - ((E.start - min) / range) * 56;
-  const y0 = baseY.toFixed(1), lx = lastX.toFixed(1), ly = lastY.toFixed(1);
-  mount(spark, html`<line class="sp-base" x1="0" x2="240" y1="${y0}" y2="${y0}" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><path class="sp-area" d="${path} L${lx},64 L4,64 Z"/><path class="sp-line" d="${path}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path class="sp-line" d="M${lx},${ly} h0" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`);
+// En-tête du Dashboard : les 4 chiffres clés du compte, à côté du P&L total (une seule fois sur la page).
+function renderHeroSide(E, endBal, perf, curDD) {
+  const side = document.getElementById('hero-side');
+  if (!side) return;
+  if (!E.pts.length) { mount(side, ''); return; }
+  const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
+  const dd = v => v ? (E.useEur ? fmtPct(v) : v.toFixed(2) + 'R') : (E.useEur ? '0 %' : '0R');
+  mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
 }
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────
@@ -5665,14 +5691,16 @@ function renderRDistribution() {
   const avgW = wins.length ? wins.reduce((a, b) => a + b, 0) / wins.length : null;
   const avgL = losses.length ? losses.reduce((a, b) => a + b, 0) / losses.length : null;
   const exp = rValues.reduce((a, b) => a + b, 0) / rValues.length;
-  if (statsEl) mount(statsEl, html`${esItem('Espérance', fmtR(exp) + 'R / trade', exp >= 0 ? 'green' : 'red')}${esItem('Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${esItem('Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
+  // Les trois repères verticaux du graphique sont nommés ici (légende), plus au-dessus des barres où ils se chevauchaient.
+  const mark = (cls, label, v) => html`<div class="es-item"><span class="es-label"><i class="rd-key ${raw(cls)}" aria-hidden="true"></i>${label}</span><span class="es-val">${v}</span></div>`;
+  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + 'R / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
   if (!chartsAvailable('rDistChart')) return;
   const idxOf = v => Math.max(0, Math.min(nb - 1, (v - b0) / bw - .5));   // position continue (au centre des classes)
   rDistChartInst = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: { labels, datasets: [{ data: buckets, backgroundColor: colors, hoverBackgroundColor: colors.map(c => withAlpha(c, .8)), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 24, barPercentage: .92, categoryPercentage: .92 }] },
     options: {
-      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 26 } },
+      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 6 } },
       plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: items => items[0] ? 'De ' + items[0].label + 'R à ' + fmtR(b0 + (items[0].dataIndex + 1) * bw) + 'R' : '', label: c => c.raw + ' trade' + (c.raw !== 1 ? 's' : '') + ' · ' + Math.round(c.raw / closed.length * 100) + ' %' } }) },
       scales: proScales({ xTicks: 12, yWidth: 40, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + 'R'; } } }, y: { ticks: { precision: 0 } } })
     },
@@ -5681,15 +5709,12 @@ function renderRDistribution() {
       afterDatasetsDraw(chart) {
         const { ctx: c, chartArea: a, scales } = chart;
         const px = v => { const x = scales.x, i = idxOf(v), lo = Math.floor(i), hi = Math.min(nb - 1, lo + 1); return x.getPixelForValue(lo) + (x.getPixelForValue(hi) - x.getPixelForValue(lo)) * (i - lo); };
-        const mark = (v, color, label, row) => {
+        const mark = (v, color) => {
           if (v === null) return;
           const x = Math.round(px(v)) + .5; c.save();
-          c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.setLineDash([]);
-          c.font = '500 11px ' + chartFontFamily(); const w = c.measureText(label).width + 18, bx = Math.min(Math.max(x - w / 2, a.left), a.right - w), by = a.top - 22 + row * 0;
-          c.fillStyle = t.bg2; c.fillRect(bx, by, w, 17); c.fillStyle = color; c.beginPath(); c.arc(bx + 7, by + 8.5, 3, 0, Math.PI * 2); c.fill();
-          c.fillStyle = t.txt2; c.textBaseline = 'middle'; c.fillText(label, bx + 13, by + 9); c.restore();
+          c.strokeStyle = color; c.lineWidth = 1.5; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.restore();
         };
-        mark(avgL, t.red, 'moy. perte', 0); mark(avgW, t.green, 'moy. gain', 0); mark(exp, t.accent, 'espérance', 0);
+        mark(avgL, t.red); mark(avgW, t.green); mark(exp, t.accent);
       }
     }]
   });
@@ -5712,9 +5737,12 @@ function renderMonthlyReturnsTable() {
   const maxAbs = Math.max(...Object.values(byMonth).map(Math.abs), 1);
   const M = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
   const pctTxt = (v, base) => base > 0 ? fmtPct(v / base * 100) : '';
+  // Colonnes : du premier au dernier mois tradé (toutes années confondues) — pas de rangée de « — » pour les mois vides.
+  const mNums = keys.map(k => parseInt(k.slice(5, 7), 10) - 1);
+  const cols = []; for (let i = Math.min(...mNums); i <= Math.max(...mNums); i++) cols.push(i);
   const yearRow = y => {
     let tot = 0;
-    const cells = M.map((_, i) => {
+    const cells = cols.map(i => {
       const k = y + '-' + String(i + 1).padStart(2, '0'), v = byMonth[k];
       if (v === undefined) return html`<td class="mr-empty">—</td>`;
       tot += v;
@@ -5723,7 +5751,7 @@ function renderMonthlyReturnsTable() {
     });
     return html`<tr><td class="mr-year">${y}</td>${cells}<td class="mr-total tone-${raw(tot >= 0 ? 'green' : 'red')}">${fmtEUR(tot, true)}<div class="mr-total-pct">${pctTxt(tot, yearStart[y])}</div></td></tr>`;
   };
-  mount(cont, html`<div class="scroll-x"><table class="mr-table"><thead><tr><th>Année</th>${M.map(m => html`<th class="c">${m}</th>`)}<th class="r">Année</th></tr></thead><tbody>${years.slice().reverse().map(yearRow)}</tbody></table></div>`);
+  mount(cont, html`<div class="scroll-x"><table class="mr-table" style="${raw('--mr-cols:' + cols.length)}"><thead><tr><th></th>${cols.map(i => html`<th class="c">${M[i]}</th>`)}<th class="r">Total</th></tr></thead><tbody>${years.slice().reverse().map(yearRow)}</tbody></table></div>`);
 }
 
 // ── HEATMAP JOUR × HEURE D'ENTRÉE ────────────────────────────────────
@@ -5755,13 +5783,15 @@ function renderHeatmapDH() {
     hours.forEach(h => {
       const g = grid[d + '-' + h];
       if (!g) { cells.push(html`<div class="hm-cell"></div>`); return; }
-      const hc = heatColors(g.net, maxAbs), i = heatDHCells.length;
+      const hc = heatColors(g.net, maxAbs, { boost: true }), i = heatDHCells.length;
       heatDHCells.push({ title: DL[d] + ' · ' + String(h).padStart(2, '0') + 'h – ' + String((h + 1) % 24).padStart(2, '0') + 'h', g });
-      cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw('background:' + hc.bg)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)"></div>`);
+      // Montant écrit seulement dans les cases marquantes (≥ 45 % du plus grand écart, 3 trades ou plus) : le reste passe par l'info-bulle.
+      const label = g.n >= 3 && Math.abs(g.net) >= maxAbs * 0.45 ? (useEur ? fmtEURCompact(g.net).replace(/^(?!-)/, g.net > 0 ? '+' : '') : (g.net >= 0 ? '+' : '') + g.net.toFixed(1) + 'R') : '';
+      cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw(`background:${hc.bg};--hm-ink:${hc.strong ? hc.onFill : 'var(--txt)'}`)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)">${label ? html`<span class="hm-v">${label}</span>` : ''}</div>`);
     });
   });
   mount(cont, html`<div class="hm-grid" style="${raw('--cols:' + hours.length)}"><div></div>${hours.map(h => html`<div class="hm-collbl">${String(h).padStart(2, '0')}h</div>`)}${cells}</div>
-    <div class="hm-legend"><span>Perte</span><span class="hm-scale">${[-1, -.6, -.25, .25, .6, 1].map(r => html`<span style="${raw('background:' + heatColors(r * maxAbs, maxAbs).bg)}"></span>`)}</span><span>Gain</span><span class="hm-legend-note">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`);
+    <div class="hm-legend"><span>Perte</span><span class="hm-scale">${[-1, -.6, -.25, .25, .6, 1].map(r => html`<span style="${raw('background:' + heatColors(r * maxAbs, maxAbs, { boost: true }).bg)}"></span>`)}</span><span>Gain</span><span class="hm-legend-note">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`);
   const ranked = heatDHCells.filter(c => c.g.n >= 3).sort((a, b) => b.g.net - a.g.net);
   if (sub) sub.textContent = ranked.length ? 'Meilleur créneau : ' + ranked[0].title + ' (' + fmtV(ranked[0].g.net) + ', ' + ranked[0].g.n + ' trades)' + (ranked.length > 1 && ranked[ranked.length - 1].g.net < 0 ? ' · le plus coûteux : ' + ranked[ranked.length - 1].title + ' (' + fmtV(ranked[ranked.length - 1].g.net) + ')' : '') : (useEur ? 'Résultat net en € par créneau' : 'R cumulé par créneau');
   const show = (e, el) => {
@@ -6619,8 +6649,8 @@ function computePropFirmStatus() {
   const bestDayPct = positiveDaysSum > 0 ? (bestDayPnl/positiveDaysSum*100) : 0;
   const consistencyOk = !consistencyOn || positiveDaysSum <= 0 || bestDayPct <= consistencyPct;
 
-  // Perte journalière max (réglée dans le bandeau DD du Dashboard) : une seule journée au-delà = challenge échoué.
-  // Les montants saisis à la main dans le bandeau DD remplacent le calcul automatique pour le jour concerné.
+  // Perte journalière max (réglée dans Paramètres) : une seule journée au-delà = challenge échoué.
+  // Les montants saisis à la main dans la barre « Aujourd'hui » remplacent le calcul automatique pour le jour concerné.
   const dailyLimitAmount = startBalance * (dailyLimitPct / 100);
   const manualDD = loadDDManualMap();
   const dailyNet = Object.assign({}, byDay);
@@ -7616,10 +7646,13 @@ function onChartIntensityChange(val) {
   if (label) label.textContent = val + '%';
   renderAll();
 }
-function heatColors(pnlEurSum, maxAbs) {
+// opts.boost : échelle en racine carrée et plage plus large, pour les grilles denses (heatmap jour × heure) où
+// la plupart des cases sont petites devant la plus grande et resteraient presque noires en échelle linéaire.
+function heatColors(pnlEurSum, maxAbs, opts) {
   const green = cssVar('--green','#22c55e'), red = cssVar('--red','#ef4444'), amber = cssVar('--amber','#f59e0b');
-  const ratio = maxAbs > 0 ? Math.min(Math.abs(pnlEurSum) / maxAbs, 1) : 0.4;
-  const alpha = Math.min((0.12 + ratio * 0.5) * CAL_HEAT_INTENSITY, 0.92);
+  let ratio = maxAbs > 0 ? Math.min(Math.abs(pnlEurSum) / maxAbs, 1) : 0.4;
+  if (opts && opts.boost) ratio = Math.sqrt(ratio);
+  const alpha = opts && opts.boost ? Math.min(0.14 + ratio * 0.76, 0.92) : Math.min((0.12 + ratio * 0.5) * CAL_HEAT_INTENSITY, 0.92);
   const amberAlpha = Math.min(0.18 * CAL_HEAT_INTENSITY, 0.85);
   // Sur un fond très saturé, le texte de la même couleur devient illisible : on bascule sur un texte contrasté.
   const base = cssVar('--bg3', '#1a1c26');

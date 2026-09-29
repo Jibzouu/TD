@@ -190,3 +190,26 @@ test('page Export : réglages d’import repliés, ouverts si un réglage est ac
   assert.equal(await page.evaluate(() => document.getElementById('import-settings').open), true, 'ouvert quand un décalage est réglé');
   await ctx.close();
 });
+
+test('dashboard v3 : barre Aujourd’hui, réglages dans Paramètres, sections, ancienne disposition migrée', async () => {
+  const today = '2026-06-17';
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: {
+    tj_trades: [T({ id: 1, date: today, res: 'SL', pnl: -1, pnlEur: -80 }), T({ id: 2, date: today, res: 'TP', pnl: 0.1, pnlEur: 5 }), ...sampleTrades()],
+    tj_dash_layout_v2: { order: ['radar', 'year-progress'], widths: { radar: 'w-third' }, sizes: {} },
+  } });
+  assert.equal(await page.locator('#dd-amount').textContent(), '-75 €');
+  assert.match(await page.locator('#today-sub').textContent(), /2 trades · 1 G · 1 P/);
+  assert.equal(await page.getAttribute('#dd-status-badge', 'class'), 'st-chip warn', '75 € sur 100 € : seuil d’alerte (75 %) atteint');
+  assert.ok(await page.locator('#summary-banner .insight').count() >= 1, 'constats affichés');
+  assert.equal(await page.locator('#page-dashboard #account-size, #page-dashboard #dd-limit-pct').count(), 0, 'réglages hors du Dashboard');
+  assert.equal(await page.locator('#page-parametres #account-size').count(), 1);
+  const order = await page.evaluate(() => [...document.querySelectorAll('#dash-grid > .dash-widget')].map(w => w.dataset.widget));
+  assert.deepEqual(order.slice(0, 2), ['sec-perf', 'year-progress'], 'ancienne disposition : nouvel ordre par défaut');
+  assert.ok(await page.locator('[data-widget="radar"]').evaluate(el => el.classList.contains('w-full')), 'ancienne largeur ignorée');
+  await goto(page, 'parametres');
+  await page.fill('#dd-limit-pct', '0.5');
+  await goto(page, 'dashboard');
+  assert.equal(await page.getAttribute('#dd-status-badge', 'class'), 'st-chip crit', 'limite abaissée à 50 € : dépassée');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

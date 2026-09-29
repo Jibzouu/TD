@@ -242,8 +242,7 @@ function loadDDLimitPct() {
 }
 function saveDDLimitPct() {
   const v = parseFloat(document.getElementById('dd-limit-pct').value);
-  if (!isNaN(v) && v > 0) DB.setItem((JP + 'dd_limit_pct'), v);
-  renderDDBanner();
+  if (!isNaN(v) && v > 0) { DB.setItem((JP + 'dd_limit_pct'), v); renderAll(); }
 }
 function loadDDManualMap() {
   try { return JSON.parse(DB.getItem((JP + 'dd_manual')) || '{}'); } catch(e) { return {}; }
@@ -282,11 +281,12 @@ function clearDDManual() {
   showToast('Retour au calcul automatique');
 }
 
+// Barre « Aujourd'hui » : P&L de la journée choisie (aujourd'hui par défaut) et part de la perte max autorisée utilisée.
 function renderDDBanner() {
   const dateInput = document.getElementById('dd-date');
   if (!dateInput) return;
   if (!dateInput.value) dateInput.value = localDateStr();
-  const date = dateInput.value;
+  const date = dateInput.value, isToday = date === localDateStr();
 
   const limitPctInput = document.getElementById('dd-limit-pct');
   const limitPct = loadDDLimitPct();
@@ -294,53 +294,36 @@ function renderDDBanner() {
 
   const manualMap = loadDDManualMap();
   const isManual = manualMap[date] !== undefined;
-
-  const dayTrades = trades.filter(t => t.date === date && t.pnlEur !== null && t.pnlEur !== undefined);
-  const autoPnlEur = dayTrades.reduce((s,t) => s + t.pnlEur, 0);
-  const dayPnlEur = isManual ? manualMap[date] : autoPnlEur;
+  const allDay = trades.filter(t => t.date === date);
+  const dayTrades = allDay.filter(t => t.pnlEur !== null && t.pnlEur !== undefined);
+  const dayPnlEur = isManual ? manualMap[date] : dayTrades.reduce((s, t) => s + t.pnlEur, 0);
   const hasData = isManual || dayTrades.length > 0;
-
   const ddLimit = accountSize * (limitPct / 100);
   const ddLoss = dayPnlEur < 0 ? Math.abs(dayPnlEur) : 0;
   const ddPct = ddLimit > 0 ? (ddLoss / ddLimit * 100) : 0;
+  const level = !hasData ? 'none' : ddPct >= 100 ? 'crit' : ddPct >= 75 ? 'warn' : 'ok';
 
-  const ddBar = document.getElementById('dd-bar');
-  const ddAmount = document.getElementById('dd-amount');
-  const ddPctLabel = document.getElementById('dd-pct-label');
-  const ddBadge = document.getElementById('dd-status-badge');
-  const ddLimitLabel = document.getElementById('dd-limit-label');
-  const ddWarnLine = document.getElementById('dd-warning-line');
-  const ddEditBtn = document.getElementById('dd-edit-btn');
-
-  if (ddWarnLine) { ddWarnLine.style.display = 'block'; ddWarnLine.style.left = '75%'; }
-  if (ddEditBtn) { ddEditBtn.style.color = isManual ? 'var(--amber)' : 'var(--txt3)'; ddEditBtn.style.borderColor = isManual ? 'var(--amber)' : 'var(--border2)'; }
-
-  const barW = Math.min(ddPct, 100);
-  const barColor = ddPct >= 100 ? 'var(--red)' : ddPct >= 75 ? 'var(--amber)' : ddPct >= 40 ? 'var(--blue)' : 'var(--green)';
-  if (ddBar) { ddBar.style.width = barW + '%'; ddBar.style.background = barColor; }
-  if (ddLimitLabel) ddLimitLabel.textContent = '/ ' + fmtEUR(ddLimit) + (isManual ? ' · manuel' : '');
-
-  if (!hasData) {
-    if (ddAmount) { ddAmount.textContent = '—'; ddAmount.style.color = 'var(--txt3)'; }
-    if (ddPctLabel) ddPctLabel.textContent = 'Pas de trade ce jour-là';
-    if (ddBadge) { ddBadge.textContent = 'Pas de trade'; ddBadge.style.background = 'var(--bg4)'; ddBadge.style.color = 'var(--txt3)'; }
-  } else if (dayPnlEur >= 0) {
-    if (ddAmount) { ddAmount.textContent = fmtEUR(dayPnlEur, true); ddAmount.style.color = 'var(--green)'; }
-    if (ddPctLabel) ddPctLabel.textContent = '0% du DD utilisé';
-    if (ddBadge) { ddBadge.textContent = '✓ Dans les clous'; ddBadge.style.background = 'var(--green-d)'; ddBadge.style.color = 'var(--green)'; }
-  } else if (ddPct >= 100) {
-    if (ddAmount) { ddAmount.textContent = '-' + fmtEUR(ddLoss); ddAmount.style.color = 'var(--red)'; }
-    if (ddPctLabel) ddPctLabel.textContent = '⚠ Limite atteinte !';
-    if (ddBadge) { ddBadge.textContent = '🚨 STOP — Limite dépassée'; ddBadge.style.background = 'var(--red-d)'; ddBadge.style.color = 'var(--red)'; }
-  } else if (ddPct >= 75) {
-    if (ddAmount) { ddAmount.textContent = '-' + fmtEUR(ddLoss); ddAmount.style.color = 'var(--amber)'; }
-    if (ddPctLabel) ddPctLabel.textContent = ddPct.toFixed(0) + '% — Danger';
-    if (ddBadge) { ddBadge.textContent = '⚡ Attention · ' + ddPct.toFixed(0) + '%'; ddBadge.style.background = 'var(--amber-d)'; ddBadge.style.color = 'var(--amber)'; }
-  } else {
-    if (ddAmount) { ddAmount.textContent = '-' + fmtEUR(ddLoss); ddAmount.style.color = 'var(--blue)'; }
-    if (ddPctLabel) ddPctLabel.textContent = ddPct.toFixed(0) + '% du DD utilisé';
-    if (ddBadge) { ddBadge.textContent = ddPct.toFixed(0) + '% utilisé' + (isManual?' · manuel':''); ddBadge.style.background = 'var(--blue-d)'; ddBadge.style.color = 'var(--blue)'; }
-  }
+  const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+  set('today-label', el => { el.textContent = isToday ? "Aujourd'hui" : fmtDateFR(date, true); });
+  set('dd-amount', el => {
+    el.textContent = hasData ? fmtEUR(dayPnlEur, true) : '—';
+    el.className = 'today-pnl tone-' + (!hasData ? 'muted' : dayPnlEur > 0 ? 'green' : dayPnlEur < 0 ? 'red' : 'txt');
+  });
+  const W = allDay.filter(t => t.res === 'TP').length, L = allDay.filter(t => t.res === 'SL').length, B = allDay.filter(t => t.res === 'BE').length;
+  set('today-sub', el => {
+    el.textContent = allDay.length
+      ? allDay.length + ' trade' + (allDay.length > 1 ? 's' : '') + ' · ' + W + ' G · ' + L + ' P' + (B ? ' · ' + B + ' BE' : '') + (isManual ? ' · montant saisi à la main' : '')
+      : (isManual ? 'Montant saisi à la main' : isToday ? "Pas encore de trade aujourd'hui" : 'Pas de trade ce jour-là');
+  });
+  set('dd-bar', el => { el.style.width = Math.min(ddPct, 100) + '%'; el.className = 'fill-' + ({ none: 'muted', ok: 'green', warn: 'amber', crit: 'red' })[level]; });
+  set('dd-bar-wrap', el => el.setAttribute('aria-label', 'Perte du jour : ' + Math.round(ddPct) + ' % de la limite de ' + fmtEUR(ddLimit)));
+  set('dd-pct-label', el => { el.textContent = !hasData ? '—' : dayPnlEur >= 0 ? 'Aucune perte' : ddPct.toFixed(0) + ' % de la limite utilisée'; });
+  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; });
+  set('dd-status-badge', el => {
+    el.textContent = ({ none: 'Pas de trade', ok: '✓ Dans les clous', warn: '⚡ Attention', crit: '🚨 Limite dépassée' })[level];
+    el.className = 'st-chip ' + level;
+  });
+  set('dd-edit-btn', el => el.classList.toggle('on', isManual));
 }
 
 function deleteTrade(id) {

@@ -1,62 +1,34 @@
-// ── BANDEAU DE RÉSUMÉ (dérivé des vraies données, vérifiable) ───────
+// ── CONSTATS (barre « Aujourd'hui ») : dérivés des vraies données, chacun mène à la page qui le détaille ──
 function renderSummaryBanner() {
   const trades = analysisTrades();
-  const banner = document.getElementById('summary-banner');
-  const textEl = document.getElementById('summary-banner-text');
-  if (!banner || !textEl) return;
+  const box = document.getElementById('summary-banner'), strip = document.getElementById('today-strip');
+  if (!box) return;
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
-  if (closed.length < 5) { banner.style.display = 'none'; return; }
-
-  const eurArr = trades.filter(t => t.pnlEur !== null && t.pnlEur !== undefined);
-  const totalEur = eurArr.reduce((s,t) => s+t.pnlEur, 0);
-
-  const WD_NAMES = {0:'dimanche',1:'lundi',2:'mardi',3:'mercredi',4:'jeudi',5:'vendredi',6:'samedi'};
-  const wdMap = {};
+  const WD_NAMES = { 0: 'dimanche', 1: 'lundi', 2: 'mardi', 3: 'mercredi', 4: 'jeudi', 5: 'vendredi', 6: 'samedi' };
+  const best = map => Object.entries(map).reduce((b, [k, v]) => (b === null || v > b[1]) ? [k, v] : b, null);
+  const wdMap = {}, hMap = {};
   trades.forEach(t => {
-    if (!t.date || t.pnl === null || t.pnl === undefined) return;
-    const d = new Date(t.date + 'T00:00:00');
-    if (isNaN(d)) return;
-    const dow = d.getDay();
-    wdMap[dow] = (wdMap[dow] || 0) + t.pnl;
+    if (t.pnl === null || t.pnl === undefined) return;
+    const d = t.date ? new Date(t.date + 'T00:00:00') : null;
+    if (d && !isNaN(d)) wdMap[d.getDay()] = (wdMap[d.getDay()] || 0) + t.pnl;
+    const h = t.entry ? parseInt(t.entry.split(':')[0], 10) : NaN;
+    if (!isNaN(h)) hMap[h] = (hMap[h] || 0) + t.pnl;
   });
-  let bestDow = null, bestDowVal = -Infinity;
-  Object.entries(wdMap).forEach(([dow,v]) => { if (v > bestDowVal) { bestDowVal = v; bestDow = dow; } });
-
-  const hMap = {};
-  trades.forEach(t => {
-    if (!t.entry || t.pnl === null || t.pnl === undefined) return;
-    const h = parseInt(t.entry.split(':')[0], 10);
-    if (isNaN(h)) return;
-    hMap[h] = (hMap[h] || 0) + t.pnl;
-  });
-  let bestHour = null, bestHourVal = -Infinity;
-  Object.entries(hMap).forEach(([h,v]) => { if (v > bestHourVal) { bestHourVal = v; bestHour = h; } });
-
-  let tiltCost = 0, tiltCount = 0;
-  if (typeof computeTiltTrades === 'function') {
-    const { flagged } = computeTiltTrades();
-    tiltCount = flagged.length;
-    tiltCost = flagged.reduce((s,f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
+  const bDow = best(wdMap), bHour = best(hMap);
+  const tilt = typeof computeTiltTrades === 'function' ? computeTiltTrades().flagged : [];
+  const tiltCost = tilt.reduce((s, f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
+  const fmtR = v => (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + 'R';
+  const goBilan = "showPage('bilan', document.querySelector('.nav-item[data-page=bilan]'))";
+  const goTilt = "showPage('stats', document.querySelector('.nav-item[data-page=stats]'));showStatsSubtab('behavior')";
+  const chip = (icon, key, val, extra, tone, go) => html`<button class="insight" onclick="${raw(go)}"><span class="insight-ic" aria-hidden="true">${icon}</span><span class="insight-txt"><span class="insight-k">${key}</span><b>${val}</b>${extra ? html` <span class="tone-${raw(tone)}">${extra}</span>` : ''}</span></button>`;
+  const chips = [];
+  if (closed.length >= 5) {
+    if (bDow && bDow[1] > 0) chips.push(chip('📅', 'Meilleur jour', WD_NAMES[bDow[0]], fmtR(bDow[1]), 'green', goBilan));
+    if (bHour && bHour[1] > 0) chips.push(chip('🕐', "Meilleure heure d'entrée", String(bHour[0]).padStart(2, '0') + 'h', fmtR(bHour[1]), 'green', goBilan));
+    if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt));
   }
-
-  const goToBilan = raw(`event.preventDefault();showPage('bilan', document.querySelector('.nav-item[onclick*=bilan]'))`);
-  const goToStats = raw(`event.preventDefault();showPage('stats', document.querySelector('.nav-item[onclick*=stats]'))`);
-
-  const parts = [];
-  const eurTxt = fmtEUR(totalEur, true);
-  parts.push(html`Tu es <strong class="tone-${raw(totalEur >= 0 ? 'green' : 'red')}">${eurTxt}</strong> sur l'ensemble de ton historique (${trades.length} trades).`);
-  if (bestDow !== null && bestDowVal > 0) {
-    parts.push(html`Ton meilleur jour est le <a class="sb-link tone-blue" onclick="${goToBilan}">${WD_NAMES[bestDow]}</a> (${bestDowVal>=0?'+':''}${bestDowVal.toFixed(1)}R cumulé).`);
-  }
-  if (bestHour !== null && bestHourVal > 0) {
-    parts.push(html`Ta meilleure heure d'entrée est <a class="sb-link tone-blue" onclick="${goToBilan}">${String(bestHour).padStart(2,'0')}h</a>.`);
-  }
-  if (tiltCount > 0 && tiltCost > 0) {
-    parts.push(html`<a class="sb-link tone-amber" onclick="${goToStats}">${tiltCount} trade(s) signalé(s) par le Tilt Meter</a> t'ont coûté environ ${tiltCost.toFixed(0)} €.`);
-  }
-
-  mount(textEl, html`${parts.map((p, i) => html`${i ? ' ' : ''}${p}`)}`);
-  banner.style.display = 'block';
+  mount(box, html`${chips}`);
+  if (strip) strip.classList.toggle('no-insights', !chips.length);
 }
 
 function renderWelcomeCard() {

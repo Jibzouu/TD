@@ -1,15 +1,17 @@
 // ── DASHBOARD : widgets déplaçables / redimensionnables ─────────────
 // Disposition v2 (charte « Terminal pro ») : l'équité en tête, puis les analyses. L'ancienne disposition sauvegardée
 // (clé dash_layout) référençait des widgets qui n'existent plus : elle est ignorée.
-const DASH_WIDGET_ORDER_DEFAULT = ['year-progress','winrate','asset-bars','r-distribution','radar','heatmap-dh','monthly-returns'];
+// Disposition v3 : trois sections titrées (Performance / Où je gagne / Comment je trade). Les titres de section sont des
+// éléments de la grille comme les autres (pleine largeur, sans poignée) : les blocs peuvent être glissés de l'une à l'autre.
+const DASH_WIDGET_ORDER_DEFAULT = ['sec-perf','year-progress','winrate','r-distribution','sec-where','asset-bars','monthly-returns','heatmap-dh','sec-how','radar'];
 const DASH_WIDGET_DEFAULTS = {
   'year-progress':  { width: 'w-full',  h: 260, w: null },
   'winrate':        { width: 'w-half',  h: null, w: null },
-  'asset-bars':     { width: 'w-half',  h: null, w: null },
   'r-distribution': { width: 'w-half',  h: 210, w: null },
-  'radar':          { width: 'w-half',  h: null, w: null },
+  'asset-bars':     { width: 'w-half',  h: null, w: null },
+  'monthly-returns':{ width: 'w-half',  h: null, w: null },
   'heatmap-dh':     { width: 'w-full',  h: null, w: null },
-  'monthly-returns':{ width: 'w-full',  h: null, w: null }
+  'radar':          { width: 'w-full',  h: null, w: null }
 };
 
 function loadDashLayout() {
@@ -38,11 +40,15 @@ function persistDashLayout() {
 function applyDashLayout(layout) {
   const grid = document.getElementById('dash-grid');
   if (!grid || !layout) return;
-  (layout.order || []).forEach(id => {
+  // Disposition enregistrée avant l'arrivée des sections : on garde seulement les hauteurs réglées à la main,
+  // l'ordre et les largeurs repartent des nouveaux réglages par défaut (sinon des blocs resteraient orphelins).
+  const legacy = !(layout.order || []).includes('sec-perf');
+  const order = legacy ? DASH_WIDGET_ORDER_DEFAULT : layout.order;
+  order.forEach(id => {
     const el = grid.querySelector(`.dash-widget[data-widget="${id}"]`);
     if (el) grid.appendChild(el);
   });
-  Object.entries(layout.widths || {}).forEach(([id, cls]) => {
+  Object.entries(legacy ? {} : (layout.widths || {})).forEach(([id, cls]) => {
     const el = grid.querySelector(`.dash-widget[data-widget="${id}"]`);
     if (!el) return;
     el.classList.remove('w-third','w-half','w-full');
@@ -178,7 +184,7 @@ function initDashboardLayout() {
   if (!grid) return;
   const saved = loadDashLayout();
   if (saved) applyDashLayout(saved);
-  else initDashLayoutDefaults();
+  initDashLayoutDefaults();   // aligne les sélecteurs de largeur sur la disposition réelle
   initDashWidgetDrag();
   initDashWidgetResize();
 }

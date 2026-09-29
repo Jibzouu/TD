@@ -26,10 +26,10 @@
 }
 
 html{scroll-behavior:smooth}
-body,.panel,.kpi,.hero-metric,.export-card,.plan-card,table,th,td,.badge,#dd-banner,.sidebar,.logo,.nav-item,input,select,textarea{transition:background-color .28s ease,border-color .28s ease,color .28s ease}
+body,.panel,.kpi,.hero-metric,.export-card,.plan-card,table,th,td,.badge,.day-strip,.sidebar,.logo,.nav-item,input,select,textarea{transition:background-color .28s ease,border-color .28s ease,color .28s ease}
 body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100vh;overflow-x:hidden;font-variant-numeric:tabular-nums}
 :root{--bstyle:solid}
-.panel,.kpi,.hero-metric,.export-card,.plan-card,#dd-banner{border-style:var(--bstyle) !important}
+.panel,.kpi,.hero-metric,.export-card,.plan-card,.day-strip{border-style:var(--bstyle) !important}
 
 /* ── Ambiance visuelle : arrière-plan ── */
 body.bgstyle-gradient{background:radial-gradient(circle at 15% -10%, color-mix(in srgb, var(--bg2) 70%, transparent), transparent 55%), radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--purple) 8%, transparent), transparent 40%), var(--bg);background-attachment:fixed}
@@ -37,13 +37,13 @@ body.bgstyle-grid{background-image:linear-gradient(color-mix(in srgb, var(--txt)
 
 /* ── Ambiance visuelle : cartes ── */
 body.cardstyle-glass .panel, body.cardstyle-glass .kpi, body.cardstyle-glass .plan-card,
-body.cardstyle-glass .export-card, body.cardstyle-glass #dd-banner, body.cardstyle-glass .stat-section{
+body.cardstyle-glass .export-card, body.cardstyle-glass .day-strip, body.cardstyle-glass .stat-section{
   background:color-mix(in srgb, var(--bg3) 55%, transparent) !important;
   backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
   border:1px solid color-mix(in srgb, var(--txt) 10%, transparent) !important;
 }
 body.cardstyle-elevated .panel, body.cardstyle-elevated .kpi, body.cardstyle-elevated .plan-card,
-body.cardstyle-elevated .export-card, body.cardstyle-elevated #dd-banner, body.cardstyle-elevated .stat-section{
+body.cardstyle-elevated .export-card, body.cardstyle-elevated .day-strip, body.cardstyle-elevated .stat-section{
   box-shadow:0 10px 28px -8px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.3);
 }
 

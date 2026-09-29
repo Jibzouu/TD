@@ -131,16 +131,13 @@
           </div>
           <div class="wc-tip">
             <div class="wc-tip-title">3. Configure ton compte</div>
-            <div id="welcome-step3">Solde, limite de perte journalière, et challenge Prop Firm si tu en fais un.</div>
+            <div id="welcome-step3" class="wc-tip-text">Solde de départ et limite de perte journalière dans Paramètres, et challenge Prop Firm si tu en fais un.</div>
           </div>
           <div class="wc-tip">
             <div class="wc-tip-title">4. Fais-le tien</div>
             <div class="wc-tip-text">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd class="kbd">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
           </div>
         </div>
-      </div>
-      <div id="summary-banner" style="display:none">
-        <span class="mr-8">📊</span><span id="summary-banner-text"></span>
       </div>
       <div id="export-reminder" style="display:none">
         <span class="fs-16">💾</span>
@@ -161,6 +158,38 @@
         </div>
       </div>
 
+      <!-- ═══ AUJOURD'HUI : P&L du jour, perte max autorisée, constats ═══ -->
+      <section class="day-strip" id="today-strip" aria-label="Aujourd'hui">
+        <div class="today-main">
+          <div class="today-head">
+            <span class="today-label" id="today-label">Aujourd'hui</span>
+            <input type="date" id="dd-date" class="today-date" onchange="renderDDBanner()" aria-label="Choisir la journée affichée" title="Voir une autre journée">
+          </div>
+          <div class="today-pnl" id="dd-amount">—</div>
+          <div class="today-sub" id="today-sub">Pas de trade aujourd'hui</div>
+        </div>
+        <div class="today-dd">
+          <div class="today-dd-head">
+            <span class="today-dd-title">Perte max du jour</span>
+            <span class="st-chip" id="dd-status-badge">—</span>
+          </div>
+          <div class="today-bar" role="img" id="dd-bar-wrap" aria-label="Perte du jour par rapport à la limite">
+            <div id="dd-bar"></div>
+            <div class="today-bar-warn" title="75 % de la limite"></div>
+          </div>
+          <div class="today-dd-foot">
+            <span id="dd-pct-label">—</span>
+            <span><span id="dd-limit-label"></span> <button class="today-edit" id="dd-edit-btn" onclick="toggleDDManualInput()" title="Saisir le P&amp;L du jour à la main (si tes trades ne sont pas encore enregistrés)">✎ à la main</button></span>
+          </div>
+          <div id="dd-manual-row" style="display:none">
+            <input type="number" id="dd-manual-input" step="1" placeholder="P&amp;L du jour, ex : -120" aria-label="P&amp;L du jour en euros">
+            <button class="btn-ghost btn-xs2" onclick="saveDDManual()">Enregistrer</button>
+            <button class="btn-ghost btn-xs2" onclick="clearDDManual()">Revenir à l'auto</button>
+          </div>
+        </div>
+        <div class="today-insights" id="summary-banner" aria-label="Constats"></div>
+      </section>
+
       <div class="hero-metric">
         <div class="hero-main">
           <div class="hero-metric-label">Performance globale</div>
@@ -168,7 +197,6 @@
           <div class="hero-metric-sub" id="k-pnleur-sub">en euros</div>
         </div>
         <div class="hero-side" id="hero-side"></div>
-        <svg class="hero-spark" id="hero-spark" viewBox="0 0 240 64" preserveAspectRatio="none" aria-hidden="true"></svg>
       </div>
       <div id="r-coverage"></div>
       <div class="kpi-grid kpi-grid-5">
@@ -216,55 +244,8 @@
         </div>
       </div>
 
-      <!-- DD JOURNALIER INDICATOR -->
-      <div id="dd-banner">
-        <div class="dd-main">
-          <div class="dd-head">
-            <div class="dd-head-left">
-              <span class="mono-muted">Drawdown journalier</span>
-              <input type="date" id="dd-date" onchange="renderDDBanner()">
-              <span id="dd-status-badge">—</span>
-            </div>
-            <div class="dd-head-right">
-              <span id="dd-amount">—</span>
-              <span id="dd-limit-label"></span>
-              <button id="dd-edit-btn" onclick="toggleDDManualInput()" title="Modifier à la main">✎</button>
-            </div>
-          </div>
-          <div id="dd-manual-row" style="display:none">
-            <span class="mono-muted">P&L du jour (€), à la main :</span>
-            <input type="number" id="dd-manual-input" step="1" placeholder="ex : -120">
-            <button class="btn-ghost btn-xs2" onclick="saveDDManual()">Enregistrer</button>
-            <button class="btn-ghost btn-xs2" onclick="clearDDManual()">Revenir à l'auto</button>
-          </div>
-          <div class="dd-bar">
-            <div id="dd-bar"></div>
-            <div id="dd-warning-line" style="display:none"></div>
-          </div>
-          <div class="dd-foot">
-            <span class="mono-muted">0%</span>
-            <span id="dd-pct-label">—</span>
-            <span class="dd-limit">
-              Limite
-              <input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()">%
-            </span>
-          </div>
-        </div>
-        <div class="dd-side">
-          <label class="dd-side-label">Solde de départ</label>
-          <div class="pos-rel">
-            <input type="number" id="account-size" placeholder="10000" min="0" step="100"
-             
-              oninput="saveAccountSize()" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'">
-            <span class="input-suffix">€</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="row-end-10">
-        <button class="btn-ghost btn-s6" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
-      </div>
       <div class="dash-grid" id="dash-grid">
+        <div class="dash-widget w-full dash-section" data-widget="sec-perf" data-no-resize="1"><h3 class="dash-sec-title">Performance<small>résultats, régularité, distribution</small></h3></div>
         <div class="dash-widget w-full" data-widget="year-progress">
           <div class="panel">
             <div class="panel-hdr">
@@ -278,7 +259,7 @@
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div class="eq-stats" id="equity-stats"></div>
+            <div class="eq-empty" id="eq-empty" hidden><b>Ta courbe d'équité apparaîtra ici</b><span>Ajoute un trade avec son P&amp;L (touche N pour une saisie rapide) ou importe un CSV depuis Export / Import.</span></div>
             <div class="chart-wrap" id="wrap-year-progress"><canvas id="yearProgressChart"></canvas></div>
             <div class="uw-head"><span>Drawdown depuis le plus haut</span><span id="drawdown-sub"></span></div>
             <div class="chart-wrap" id="wrap-underwater"><canvas id="underwaterChart"></canvas></div>
@@ -297,18 +278,6 @@
             <div id="winrate-body" class="wr-body"></div>
           </div>
         </div>
-        <div class="dash-widget w-half" data-widget="asset-bars">
-          <div class="panel">
-            <div class="panel-hdr">
-              <span>Performance par actif<small class="panel-sub">win rate · trades · P&amp;L</small></span>
-              <span class="widget-controls">
-                <select class="widget-width-select" onchange="setWidgetWidth('asset-bars', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
-                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
-              </span>
-            </div>
-            <div class="asset-list" id="asset-bars"><p class="empty-note">Aucun trade</p></div>
-          </div>
-        </div>
         <div class="dash-widget w-half" data-widget="r-distribution">
           <div class="panel">
             <div class="panel-hdr">
@@ -323,21 +292,29 @@
             <div class="widget-resize-handle"></div>
           </div>
         </div>
-        <div class="dash-widget w-half" data-widget="radar">
+        <div class="dash-widget w-full dash-section" data-widget="sec-where" data-no-resize="1"><h3 class="dash-sec-title">Où je gagne<small>actifs, mois, créneaux horaires</small></h3></div>
+        <div class="dash-widget w-half" data-widget="asset-bars">
           <div class="panel">
             <div class="panel-hdr">
-              <span>Discipline<small class="panel-sub">ta façon de trader, pas tes résultats</small></span>
+              <span>Performance par actif<small class="panel-sub">win rate · trades · P&amp;L</small></span>
               <span class="widget-controls">
-                <select class="widget-width-select" onchange="setWidgetWidth('radar', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <select class="widget-width-select" onchange="setWidgetWidth('asset-bars', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div class="disc-score">
-              <span id="discipline-score-val">—</span>
-              <div class="disc-meter"><div id="discipline-score-marker"></div></div>
+            <div class="asset-list" id="asset-bars"><p class="empty-note">Aucun trade</p></div>
+          </div>
+        </div>
+        <div class="dash-widget w-half" data-widget="monthly-returns" data-no-resize="1">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Rendements mensuels<small class="panel-sub">P&amp;L et % du solde en début de mois</small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('monthly-returns', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
             </div>
-            <div id="discipline-note" class="disc-note"></div>
-            <div class="chart-wrap" id="wrap-radar"><div id="discipline-list"></div></div>
+            <div id="monthly-returns-table"></div>
           </div>
         </div>
         <div class="dash-widget w-full" data-widget="heatmap-dh">
@@ -352,15 +329,22 @@
             <div id="heatmap-dh" class="hm-wrap"></div>
           </div>
         </div>
-        <div class="dash-widget w-full" data-widget="monthly-returns" data-no-resize="1">
+        <div class="dash-widget w-full dash-section" data-widget="sec-how" data-no-resize="1"><h3 class="dash-sec-title">Comment je trade<small>discipline et respect du plan</small></h3></div>
+        <div class="dash-widget w-full" data-widget="radar">
           <div class="panel">
             <div class="panel-hdr">
-              <span>Rendements mensuels<small class="panel-sub">P&amp;L et % du solde en début de mois</small></span>
+              <span>Discipline<small class="panel-sub">ta façon de trader, pas tes résultats</small></span>
               <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('radar', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div id="monthly-returns-table"></div>
+            <div class="disc-score">
+              <span id="discipline-score-val">—</span>
+              <div class="disc-meter"><div id="discipline-score-marker"></div></div>
+            </div>
+            <div id="discipline-note" class="disc-note"></div>
+            <div class="chart-wrap" id="wrap-radar"><div id="discipline-list"></div></div>
           </div>
         </div>
       </div>
@@ -744,7 +728,7 @@
           <input type="number" id="pf-consistency-pct" step="1" min="1" max="100" oninput="savePfSetting('consistency_pct', this.value); renderPropFirm()">
           <span class="txt2-12">% du profit total</span>
           <span class="flex-1"></span>
-          <span class="mono-muted">Perte journalière max : réglée dans le bandeau DD du Dashboard (<span id="pf-daily-limit-echo">1</span>%)</span>
+          <span class="mono-muted">Perte journalière max : réglée dans Paramètres (<span id="pf-daily-limit-echo">1</span>%)</span>
         </div>
       </div>
 
@@ -1099,7 +1083,25 @@
 
     <div id="page-parametres" class="page">
       <div class="page-hdr">
-        <div class="page-hdr-left"><h2>Paramètres</h2><p>Personnalise l'apparence comme tu veux — elle est commune aux trois journaux (Live, Backtest, PropFirm) et tout est sauvegardé localement</p></div>
+        <div class="page-hdr-left"><h2>Paramètres</h2><p>Ton compte, puis l'apparence (commune aux trois journaux) — tout est sauvegardé localement</p></div>
+      </div>
+
+      <div class="panel mb-20">
+        <div class="panel-hdr"><span>Compte &amp; Dashboard<small class="panel-sub">propre au journal actif (Live, Backtest ou PropFirm)</small></span></div>
+        <div class="acct-grid">
+          <label class="acct-field"><span>Solde de départ</span>
+            <span class="acct-input"><input type="number" id="account-size" placeholder="10000" min="0" step="100" oninput="saveAccountSize()"><span>€</span></span>
+            <small>Base de la courbe d'équité, du rendement et de la limite de perte.</small>
+          </label>
+          <label class="acct-field"><span>Perte journalière max</span>
+            <span class="acct-input"><input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()"><span>% du solde</span></span>
+            <small>Jauge « Perte max du jour » du Dashboard et critère de Discipline.</small>
+          </label>
+          <div class="acct-field"><span>Disposition du Dashboard</span>
+            <button class="btn-ghost" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
+            <small>Ordre et largeur des blocs, déplaçables avec la poignée ⠿.</small>
+          </div>
+        </div>
       </div>
 
       <div class="panel mb-20">

@@ -17,8 +17,9 @@ function renderKPIs() {
   } else { wrEl.textContent = '—'; wrEl.className = 'kpi-val neu'; }
   const wrSub = document.getElementById('k-wr-sub');
   const beW = W.n ? breakevenWinRate() : null;
-  wrSub.textContent = W.n ? fmtWinLine(W) + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') + ' · ' + fmtCI(W).replace('IC 95 % : ', 'IC ') : 'aucun trade fermé';
-  wrSub.title = W.n ? 'Win rate = gagnants ÷ trades clos (break-even inclus au dénominateur) · ' + fmtCI(W) + ' · n = ' + W.n : '';
+  // Une seule ligne : gagnants / perdants et seuil ; le détail (BE, intervalle de confiance) est dans l'info-bulle.
+  wrSub.textContent = W.n ? W.wins + ' G · ' + W.losses + ' P' + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') : 'aucun trade fermé';
+  wrSub.title = W.n ? fmtWinLine(W) + ' · win rate = gagnants ÷ trades clos (break-even inclus) · ' + fmtCI(W) : '';
 
   // P&L
   const pnlArr = trades.filter(t => t.pnl != null);
@@ -28,8 +29,8 @@ function renderKPIs() {
     pnlEl.textContent = (total >= 0 ? '+' : '') + total.toFixed(1) + 'R';
     pnlEl.className = 'kpi-val ' + (total > 0 ? 'pos' : total < 0 ? 'neg' : 'neu');
     const pnlSub = document.getElementById('k-pnl-sub');
-    pnlSub.textContent = (total / pnlArr.length).toFixed(2) + 'R / trade · R sur ' + pnlArr.length + '/' + n;
-    pnlSub.title = 'Seuls les trades dont le R est retenu (mode « ' + ({ strict: 'R exact seulement', usable: 'R exact + estimé', all: 'Tout' })[R_MODE] + ' ») sont comptés : ' + pnlArr.length + ' sur ' + n + ' trades clos.';
+    pnlSub.textContent = (total / pnlArr.length >= 0 ? '+' : '') + (total / pnlArr.length).toFixed(2).replace('.', ',') + 'R par trade' + (pnlArr.length < n ? ' · ' + pnlArr.length + '/' + n + ' avec R' : '');
+    pnlSub.title = 'Seuls les trades dont le R est connu sont comptés : ' + pnlArr.length + ' sur ' + n + ' trades clos.';
   } else { pnlEl.textContent = '—'; pnlEl.className = 'kpi-val neu'; document.getElementById('k-pnl-sub').textContent = 'en R'; }
 
   // P&L €
@@ -131,25 +132,19 @@ function renderYearProgress() {
   const perf = E.useEur && E.start > 0 ? (endBal - E.start) / E.start * 100 : null;
   const curDD = last ? (E.useEur ? last.ddPct : last.ddAbs) : null;
 
-  // Bandeau de chiffres (et résumé dans le hero)
-  const stat = esItem;
-  const statsEl = document.getElementById('equity-stats');
+  // Sous-titre de la courbe (les chiffres clés sont dans l'en-tête du Dashboard, pas répétés ici)
   const sub = document.getElementById('year-progress-sub');
-  if (!P.length) {
-    if (statsEl) mount(statsEl, '');
-    if (sub) sub.textContent = 'Renseigne un P&L (€ ou R) sur tes trades pour voir ta courbe';
-  } else {
-    if (sub) sub.textContent = (E.useEur ? (filterDateRange().from ? 'Solde en €, depuis le début de la période' : 'Solde en €, depuis le solde de départ') : 'R cumulé (aucun montant en € saisi)') + (filterActive() ? ' · filtre actif' : '') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
-    if (statsEl) mount(statsEl, html`${[
-      stat(E.useEur ? 'Solde actuel' : 'R cumulé', E.fmt(endBal)),
-      perf !== null ? stat('Performance', fmtPct(perf), perf >= 0 ? 'green' : 'red') : '',
-      stat('Plus haut', E.fmt(Math.max(E.start, ...P.map(p => p.bal)))),
-      stat('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0', E.maxDD ? 'red' : null),
-      stat('Drawdown actuel', curDD ? (E.useEur ? fmtPct(curDD) : curDD.toFixed(2) + 'R') : 'aucun')]}`);
-  }
-  renderHeroSide(E, endBal, perf);
+  if (sub) sub.textContent = !P.length ? 'Renseigne un P&L (€ ou R) sur tes trades pour voir ta courbe'
+    : (E.useEur ? (filterDateRange().from ? 'Solde en €, depuis le début de la période' : 'Solde en €, depuis le solde de départ') : 'R cumulé (aucun montant en € saisi)') + (filterActive() ? ' · filtre actif' : '') + ' · ' + fmtDateFR(P[0].date) + ' → ' + fmtDateFR(last.date) + ' · ' + P.length + ' jour(s) tradé(s)';
+  renderHeroSide(E, endBal, perf, curDD);
 
   if (yearProgressChartInst) { yearProgressChartInst.destroy(); yearProgressChartInst = null; }
+  // Journal vide : un message plutôt qu'une grille vide à 0R.
+  const empty = !P.length;
+  ['eq-empty'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = !empty; });
+  ['wrap-year-progress', 'wrap-underwater'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = empty; });
+  document.querySelectorAll('#dash-grid [data-widget="year-progress"] .uw-head').forEach(el => { el.hidden = empty; });
+  if (empty) { if (underwaterChartInst) { underwaterChartInst.destroy(); underwaterChartInst = null; } return; }
   if (!chartsAvailable('yearProgressChart')) { renderUnderwater(E); return; }
   const ctx = canvas.getContext('2d');
   const daily = PNL_CHART_MODE === 'daily';
@@ -217,19 +212,14 @@ function renderUnderwater(E, daily) {
     }
   });
 }
-// Résumé à côté du chiffre principal : solde, rendement, drawdown max + mini-courbe d'équité.
-function renderHeroSide(E, endBal, perf) {
-  const side = document.getElementById('hero-side'), spark = document.getElementById('hero-spark');
-  if (!side || !spark) return;
-  if (!E.pts.length) { mount(side, ''); mount(spark, ''); return; }
-  const it = (l, v, tone) => html`<div class="hs-item"><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
-  mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? (E.useEur ? fmtPct(E.maxDD.v) : E.maxDD.v.toFixed(2) + 'R') : '0 %')}${it('Jours tradés', String(E.pts.length))}`);
-  const vals = [E.start, ...E.pts.map(p => p.bal)];
-  const { path, lastX, lastY } = buildSparklinePath(vals, 240, 64, 4);
-  const min = Math.min(...vals), max = Math.max(...vals), range = (max - min) || 1;
-  const baseY = 64 - 4 - ((E.start - min) / range) * 56;
-  const y0 = baseY.toFixed(1), lx = lastX.toFixed(1), ly = lastY.toFixed(1);
-  mount(spark, html`<line class="sp-base" x1="0" x2="240" y1="${y0}" y2="${y0}" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><path class="sp-area" d="${path} L${lx},64 L4,64 Z"/><path class="sp-line" d="${path}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path class="sp-line" d="M${lx},${ly} h0" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`);
+// En-tête du Dashboard : les 4 chiffres clés du compte, à côté du P&L total (une seule fois sur la page).
+function renderHeroSide(E, endBal, perf, curDD) {
+  const side = document.getElementById('hero-side');
+  if (!side) return;
+  if (!E.pts.length) { mount(side, ''); return; }
+  const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
+  const dd = v => v ? (E.useEur ? fmtPct(v) : v.toFixed(2) + 'R') : (E.useEur ? '0 %' : '0R');
+  mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
 }
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────
@@ -289,14 +279,16 @@ function renderRDistribution() {
   const avgW = wins.length ? wins.reduce((a, b) => a + b, 0) / wins.length : null;
   const avgL = losses.length ? losses.reduce((a, b) => a + b, 0) / losses.length : null;
   const exp = rValues.reduce((a, b) => a + b, 0) / rValues.length;
-  if (statsEl) mount(statsEl, html`${esItem('Espérance', fmtR(exp) + 'R / trade', exp >= 0 ? 'green' : 'red')}${esItem('Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${esItem('Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
+  // Les trois repères verticaux du graphique sont nommés ici (légende), plus au-dessus des barres où ils se chevauchaient.
+  const mark = (cls, label, v) => html`<div class="es-item"><span class="es-label"><i class="rd-key ${raw(cls)}" aria-hidden="true"></i>${label}</span><span class="es-val">${v}</span></div>`;
+  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + 'R / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
   if (!chartsAvailable('rDistChart')) return;
   const idxOf = v => Math.max(0, Math.min(nb - 1, (v - b0) / bw - .5));   // position continue (au centre des classes)
   rDistChartInst = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: { labels, datasets: [{ data: buckets, backgroundColor: colors, hoverBackgroundColor: colors.map(c => withAlpha(c, .8)), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 24, barPercentage: .92, categoryPercentage: .92 }] },
     options: {
-      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 26 } },
+      responsive: true, maintainAspectRatio: false, layout: { padding: { top: 6 } },
       plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: items => items[0] ? 'De ' + items[0].label + 'R à ' + fmtR(b0 + (items[0].dataIndex + 1) * bw) + 'R' : '', label: c => c.raw + ' trade' + (c.raw !== 1 ? 's' : '') + ' · ' + Math.round(c.raw / closed.length * 100) + ' %' } }) },
       scales: proScales({ xTicks: 12, yWidth: 40, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + 'R'; } } }, y: { ticks: { precision: 0 } } })
     },
@@ -305,15 +297,12 @@ function renderRDistribution() {
       afterDatasetsDraw(chart) {
         const { ctx: c, chartArea: a, scales } = chart;
         const px = v => { const x = scales.x, i = idxOf(v), lo = Math.floor(i), hi = Math.min(nb - 1, lo + 1); return x.getPixelForValue(lo) + (x.getPixelForValue(hi) - x.getPixelForValue(lo)) * (i - lo); };
-        const mark = (v, color, label, row) => {
+        const mark = (v, color) => {
           if (v === null) return;
           const x = Math.round(px(v)) + .5; c.save();
-          c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.setLineDash([]);
-          c.font = '500 11px ' + chartFontFamily(); const w = c.measureText(label).width + 18, bx = Math.min(Math.max(x - w / 2, a.left), a.right - w), by = a.top - 22 + row * 0;
-          c.fillStyle = t.bg2; c.fillRect(bx, by, w, 17); c.fillStyle = color; c.beginPath(); c.arc(bx + 7, by + 8.5, 3, 0, Math.PI * 2); c.fill();
-          c.fillStyle = t.txt2; c.textBaseline = 'middle'; c.fillText(label, bx + 13, by + 9); c.restore();
+          c.strokeStyle = color; c.lineWidth = 1.5; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.restore();
         };
-        mark(avgL, t.red, 'moy. perte', 0); mark(avgW, t.green, 'moy. gain', 0); mark(exp, t.accent, 'espérance', 0);
+        mark(avgL, t.red); mark(avgW, t.green); mark(exp, t.accent);
       }
     }]
   });
@@ -336,9 +325,12 @@ function renderMonthlyReturnsTable() {
   const maxAbs = Math.max(...Object.values(byMonth).map(Math.abs), 1);
   const M = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
   const pctTxt = (v, base) => base > 0 ? fmtPct(v / base * 100) : '';
+  // Colonnes : du premier au dernier mois tradé (toutes années confondues) — pas de rangée de « — » pour les mois vides.
+  const mNums = keys.map(k => parseInt(k.slice(5, 7), 10) - 1);
+  const cols = []; for (let i = Math.min(...mNums); i <= Math.max(...mNums); i++) cols.push(i);
   const yearRow = y => {
     let tot = 0;
-    const cells = M.map((_, i) => {
+    const cells = cols.map(i => {
       const k = y + '-' + String(i + 1).padStart(2, '0'), v = byMonth[k];
       if (v === undefined) return html`<td class="mr-empty">—</td>`;
       tot += v;
@@ -347,7 +339,7 @@ function renderMonthlyReturnsTable() {
     });
     return html`<tr><td class="mr-year">${y}</td>${cells}<td class="mr-total tone-${raw(tot >= 0 ? 'green' : 'red')}">${fmtEUR(tot, true)}<div class="mr-total-pct">${pctTxt(tot, yearStart[y])}</div></td></tr>`;
   };
-  mount(cont, html`<div class="scroll-x"><table class="mr-table"><thead><tr><th>Année</th>${M.map(m => html`<th class="c">${m}</th>`)}<th class="r">Année</th></tr></thead><tbody>${years.slice().reverse().map(yearRow)}</tbody></table></div>`);
+  mount(cont, html`<div class="scroll-x"><table class="mr-table" style="${raw('--mr-cols:' + cols.length)}"><thead><tr><th></th>${cols.map(i => html`<th class="c">${M[i]}</th>`)}<th class="r">Total</th></tr></thead><tbody>${years.slice().reverse().map(yearRow)}</tbody></table></div>`);
 }
 
 // ── HEATMAP JOUR × HEURE D'ENTRÉE ────────────────────────────────────
@@ -379,13 +371,15 @@ function renderHeatmapDH() {
     hours.forEach(h => {
       const g = grid[d + '-' + h];
       if (!g) { cells.push(html`<div class="hm-cell"></div>`); return; }
-      const hc = heatColors(g.net, maxAbs), i = heatDHCells.length;
+      const hc = heatColors(g.net, maxAbs, { boost: true }), i = heatDHCells.length;
       heatDHCells.push({ title: DL[d] + ' · ' + String(h).padStart(2, '0') + 'h – ' + String((h + 1) % 24).padStart(2, '0') + 'h', g });
-      cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw('background:' + hc.bg)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)"></div>`);
+      // Montant écrit seulement dans les cases marquantes (≥ 45 % du plus grand écart, 3 trades ou plus) : le reste passe par l'info-bulle.
+      const label = g.n >= 3 && Math.abs(g.net) >= maxAbs * 0.45 ? (useEur ? fmtEURCompact(g.net).replace(/^(?!-)/, g.net > 0 ? '+' : '') : (g.net >= 0 ? '+' : '') + g.net.toFixed(1) + 'R') : '';
+      cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw(`background:${hc.bg};--hm-ink:${hc.strong ? hc.onFill : 'var(--txt)'}`)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)">${label ? html`<span class="hm-v">${label}</span>` : ''}</div>`);
     });
   });
   mount(cont, html`<div class="hm-grid" style="${raw('--cols:' + hours.length)}"><div></div>${hours.map(h => html`<div class="hm-collbl">${String(h).padStart(2, '0')}h</div>`)}${cells}</div>
-    <div class="hm-legend"><span>Perte</span><span class="hm-scale">${[-1, -.6, -.25, .25, .6, 1].map(r => html`<span style="${raw('background:' + heatColors(r * maxAbs, maxAbs).bg)}"></span>`)}</span><span>Gain</span><span class="hm-legend-note">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`);
+    <div class="hm-legend"><span>Perte</span><span class="hm-scale">${[-1, -.6, -.25, .25, .6, 1].map(r => html`<span style="${raw('background:' + heatColors(r * maxAbs, maxAbs, { boost: true }).bg)}"></span>`)}</span><span>Gain</span><span class="hm-legend-note">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`);
   const ranked = heatDHCells.filter(c => c.g.n >= 3).sort((a, b) => b.g.net - a.g.net);
   if (sub) sub.textContent = ranked.length ? 'Meilleur créneau : ' + ranked[0].title + ' (' + fmtV(ranked[0].g.net) + ', ' + ranked[0].g.n + ' trades)' + (ranked.length > 1 && ranked[ranked.length - 1].g.net < 0 ? ' · le plus coûteux : ' + ranked[ranked.length - 1].title + ' (' + fmtV(ranked[ranked.length - 1].g.net) + ')' : '') : (useEur ? 'Résultat net en € par créneau' : 'R cumulé par créneau');
   const show = (e, el) => {

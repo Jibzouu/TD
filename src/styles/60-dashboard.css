@@ -1,0 +1,111 @@
+/* ═══ Dashboard v3 : barre « Aujourd'hui », en-tête, cartes, sections ═══ */
+
+/* ── Barre « Aujourd'hui » ── */
+.day-strip{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(260px,1.3fr) minmax(260px,1.4fr);gap:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px}
+.day-strip.no-insights{grid-template-columns:minmax(180px,.8fr) minmax(260px,2fr)}
+.day-strip.no-insights .today-insights{display:none}
+.day-strip > *{padding:16px 20px;min-width:0}
+.day-strip > * + *{border-left:1px solid var(--border)}
+.today-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.today-label{font-size:12px;font-weight:600;color:var(--txt2)}
+.today-date{background:transparent;border:1px solid transparent;border-radius:6px;color:var(--txt3);font:500 11px var(--sans);padding:2px 4px;cursor:pointer;max-width:118px}
+.today-date:hover,.today-date:focus{border-color:var(--border2);color:var(--txt2);outline:none}
+.today-pnl{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.today-sub{font-size:11.5px;color:var(--txt3);margin-top:4px}
+.today-dd-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.today-dd-title{font-size:12px;font-weight:600;color:var(--txt2)}
+.today-bar{position:relative;height:8px;border-radius:4px;background:var(--bg4)}
+.today-bar > #dd-bar{height:100%;width:0;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.today-bar-warn{position:absolute;left:75%;top:-3px;bottom:-3px;width:1.5px;background:var(--txt3);border-radius:1px}
+.today-dd-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--txt3)}
+#dd-pct-label{color:var(--txt2)}
+.today-edit{background:none;border:none;padding:0 0 0 6px;color:var(--txt3);font:500 11.5px var(--sans);cursor:pointer}
+.today-edit:hover{color:var(--txt)}
+.today-edit.on{color:var(--amber)}
+#dd-manual-row{align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+#dd-manual-input{width:170px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--txt);font:500 12px var(--mono);padding:5px 8px;outline:none}
+#dd-manual-input:focus{border-color:var(--accent)}
+
+/* Étiquette d'état : toujours icône + libellé, jamais la couleur seule */
+.st-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--bg4);color:var(--txt3)}
+.st-chip.ok{background:var(--green-d);color:var(--green)}
+.st-chip.warn{background:var(--amber-d);color:var(--amber)}
+.st-chip.crit{background:var(--red-d);color:var(--red)}
+
+/* Constats cliquables */
+.today-insights{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.insight{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:5px 8px;margin:0 -8px;cursor:pointer;color:var(--txt2);font:400 12px var(--sans)}
+.insight:hover{background:var(--bg3);border-color:var(--border)}
+.insight:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.insight-ic{font-size:13px;width:18px;text-align:center;flex-shrink:0}
+.insight-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.insight-k{color:var(--txt3);margin-right:6px}
+.insight b{color:var(--txt);font-weight:600}
+
+@media (max-width:1100px){
+  .day-strip{grid-template-columns:1fr 1.4fr}
+  .today-insights{grid-column:1 / -1;border-left:none!important;border-top:1px solid var(--border);flex-direction:row;flex-wrap:wrap}
+  .today-insights .insight{width:auto;margin:0}
+}
+@media (max-width:640px){
+  .day-strip,.day-strip.no-insights{grid-template-columns:1fr}
+  .day-strip > * + *{border-left:none;border-top:1px solid var(--border)}
+  .today-insights{flex-direction:column}
+  .today-insights .insight{width:100%}
+}
+
+/* ── Paramètres : compte & dashboard ── */
+.acct-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;padding:18px}
+.acct-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--txt2)}
+.acct-field > span:first-child{font-weight:600}
+.acct-field small{font-size:11px;color:var(--txt3);line-height:1.45}
+.acct-field .btn-ghost{align-self:flex-start}
+.acct-input{display:flex;align-items:center;gap:8px;color:var(--txt3);font-size:11.5px}
+.acct-input input{width:120px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font:500 13px var(--mono);padding:7px 10px;outline:none}
+.acct-input input:focus{border-color:var(--accent)}
+
+/* ── En-tête : P&L total + 4 chiffres clés (plus de mini-courbe en double avec la courbe d'équité) ── */
+.hero-metric{grid-template-columns:auto 1fr;gap:32px}
+.hero-metric-value{font-size:48px;line-height:1.05}
+.hero-side{grid-template-columns:repeat(4,max-content);justify-content:end;gap:10px 36px}
+.hero-side .hs-val{font-size:16px}
+@media (max-width:1100px){ .hero-metric{grid-template-columns:1fr} .hero-side{justify-content:start;border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:14px} }
+@media (max-width:640px){ .hero-side{grid-template-columns:repeat(2,max-content)} .hero-metric-value{font-size:38px} }
+
+/* ── Cartes indicateurs : même hauteur, une ligne de sous-texte, courbe calée en bas ── */
+.kpi-grid-5{align-items:stretch}
+.kpi{display:flex;flex-direction:column;min-width:0}
+.kpi .kpi-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .kpi-spark,.kpi .kpi-form-dots{margin-top:auto;padding-top:10px}
+.kpi .kpi-spark{height:36px;box-sizing:content-box}
+.kpi-trend{cursor:help}
+.hero-side{justify-self:end}
+@media (max-width:1100px){ .hero-side{justify-self:stretch} }
+
+/* ── Sections de la grille ── */
+.dash-grid{align-items:stretch}
+.dash-section{min-width:0}
+.dash-section:not(:first-child){margin-top:14px}
+.dash-sec-title{display:flex;align-items:baseline;gap:10px;margin:0;padding:0 2px 2px;font-size:14px;font-weight:600;color:var(--txt);letter-spacing:-.01em}
+.dash-sec-title small{font-size:12px;font-weight:400;color:var(--txt3)}
+.dash-sec-title::after{content:'';flex:1;height:1px;background:var(--border);align-self:center;margin-left:6px}
+
+/* Discipline en pleine largeur : critères sur deux colonnes */
+.dash-widget.w-full #discipline-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:36px}
+@media (max-width:860px){ .dash-widget.w-full #discipline-list{grid-template-columns:1fr} }
+
+/* Heatmap : montant dans les cases marquantes */
+.hm-v{font:600 10px var(--mono);color:var(--hm-ink,var(--txt));white-space:nowrap;pointer-events:none}
+@media (max-width:1000px){ .hm-v{display:none} }
+
+/* Distribution des R : légende des repères verticaux */
+.rd-key{display:inline-block;width:12px;height:0;border-top:2px dashed currentColor;margin-right:6px;vertical-align:middle}
+.rd-key.acc{color:var(--accent)}.rd-key.grn{color:var(--green)}.rd-key.red{color:var(--red)}
+
+/* Typographie : police à chasse fixe réservée aux chiffres ; libellés (jours, actifs) en police de texte */
+#page-dashboard .asset-name,#page-dashboard .hm-rowlbl{font-family:var(--sans)}
+#page-dashboard .asset-name{font-weight:500}
+@media (max-width:860px){ .kpi-grid-5 > .kpi:last-child:nth-child(odd){grid-column:1 / -1} }
+.eq-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:200px;text-align:center;color:var(--txt3);font-size:12.5px;padding:24px}
+.eq-empty b{color:var(--txt);font-size:14px;font-weight:600}
+.eq-empty[hidden],.chart-wrap[hidden],.uw-head[hidden]{display:none}
