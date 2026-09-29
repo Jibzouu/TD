@@ -17,16 +17,17 @@ function html(strings, ...vals) {
 const UI = {
   // Tuile chiffre : libellé discret, valeur nette, sous-texte optionnel.
   stat(label, value, opts = {}) {
-    return html`<div class="ui-stat${opts.compact ? ' compact' : ''}"><span class="ui-stat-label">${label}</span><span class="ui-stat-val"${raw(opts.color ? ` style="color:${opts.color}"` : '')}>${value}</span>${opts.sub ? html`<span class="ui-stat-sub">${opts.sub}</span>` : ''}</div>`;
+    return html`<div class="ui-stat${raw(opts.compact ? ' compact' : '')}"><span class="ui-stat-label">${label}</span><span class="ui-stat-val${raw(opts.tone ? ' tone-' + opts.tone : '')}">${value}</span>${opts.sub ? html`<span class="ui-stat-sub">${opts.sub}</span>` : ''}</div>`;
   },
   // Carte avec titre + sous-titre, corps libre (SafeHTML).
   card(title, sub, body, opts = {}) {
     return html`<section class="panel ui-card${opts.cls ? ' ' + opts.cls : ''}"${raw(opts.id ? ` id="${esc(opts.id)}"` : '')}><div class="panel-hdr"><span>${title}${sub ? html`<small class="panel-sub">${sub}</small>` : ''}</span>${opts.actions || ''}</div>${body}</section>`;
   },
   // Jauge 0–100 % avec repère optionnel (seuil) et couleur de sévérité.
-  meter(pct, color, opts = {}) {
+  // tone : green | red | amber | accent | muted. Largeur et repère = seules valeurs calculées laissées en ligne.
+  meter(pct, tone, opts = {}) {
     const p = Math.max(0, Math.min(100, pct || 0));
-    return html`<div class="meter"${raw(opts.label ? ` role="img" aria-label="${esc(opts.label)}"` : '')}><div class="meter-fill" style="width:${raw(p.toFixed(1))}%;background:${raw(color || 'var(--accent)')}"></div>${opts.tick != null ? raw(`<div class="meter-tick" style="left:calc(${Math.max(0, Math.min(100, opts.tick))}% - 1px)"></div>`) : ''}</div>`;
+    return html`<div class="meter"${raw(opts.label ? ` role="img" aria-label="${esc(opts.label)}"` : '')}><div class="meter-fill fill-${raw(tone || 'accent')}" style="${raw('width:' + p.toFixed(1) + '%')}"></div>${opts.tick != null ? html`<div class="meter-tick" style="${raw(`left:calc(${Math.max(0, Math.min(100, opts.tick))}% - 1px)`)}"></div>` : ''}</div>`;
   },
   // Liste clé → valeur (fiche trade, résumés).
   kv(rows) {

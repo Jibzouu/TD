@@ -46,7 +46,7 @@ function tradeRowHtml(t, num) {
   const rsrc = rSource(t), approx = (rsrc === 'risque' || rsrc === 'defaut') ? '≈' : '';
   const nImg = tradeImages(t).length;
   const id = raw(t.id);
-  return String(html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date || '—'} sur ${t.asset || '—'}">
+  return html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date || '—'} sur ${t.asset || '—'}">
     <td class="muted-num">${num}</td>
     <td>${t.date || '—'}</td>
     <td><span class="row-asset">${t.asset || '—'}</span>${t.setup ? html`<span class="row-setup">${t.setup}</span>` : ''}</td>
@@ -57,7 +57,7 @@ function tradeRowHtml(t, num) {
     <td>${UI.pnl(t.pnlEur, '€')}</td>
     <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" style="color:${raw(t.emotion >= 4 ? 'var(--green)' : t.emotion >= 3 ? 'var(--amber)' : 'var(--red)')}">●</span>` : ''}</td>
     <td><button class="del-btn row-del" onclick="event.stopPropagation();deleteTrade(${id})" title="Supprimer" aria-label="Supprimer ce trade">×</button></td>
-  </tr>`);
+  </tr>`;
 }
 
 function renderTable() {
@@ -79,7 +79,7 @@ function renderTable() {
   const miniEl = document.getElementById('trades-minibar');
   if (miniEl) {
     if (filtered.length === 0) {
-      miniEl.innerHTML = '';
+      mount(miniEl, '');
     } else {
       const W = winStats(filtered), be = breakevenWinRate(filtered);
       const an = analysisTrades(), ids = new Set(filtered.map(t => t.id));
@@ -88,9 +88,9 @@ function renderTable() {
       const totalEur = eurArr.reduce((s, t) => s + t.pnlEur, 0);
       mount(miniEl, html`
         ${UI.stat('Trades', String(filtered.length), { compact: true })}
-        ${UI.stat('Win rate', W.n ? (W.rate * 100).toFixed(0) + ' %' : '—', { compact: true, color: !W.n || be === null ? null : (W.rate >= be ? 'var(--green)' : 'var(--red)'), sub: be !== null && W.n ? 'seuil ' + Math.round(be * 100) + ' %' : '' })}
-        ${UI.stat('P&L (R)', (totalR >= 0 ? '+' : '') + totalR.toFixed(1) + 'R', { compact: true, color: totalR >= 0 ? 'var(--green)' : 'var(--red)' })}
-        ${UI.stat('P&L (€)', eurArr.length ? fmtEUR(totalEur, true) : '—', { compact: true, color: totalEur >= 0 ? 'var(--green)' : 'var(--red)' })}`);
+        ${UI.stat('Win rate', W.n ? (W.rate * 100).toFixed(0) + ' %' : '—', { compact: true, tone: !W.n || be === null ? null : (W.rate >= be ? 'green' : 'red'), sub: be !== null && W.n ? 'seuil ' + Math.round(be * 100) + ' %' : '' })}
+        ${UI.stat('P&L (R)', (totalR >= 0 ? '+' : '') + totalR.toFixed(1) + 'R', { compact: true, tone: totalR >= 0 ? 'green' : 'red' })}
+        ${UI.stat('P&L (€)', eurArr.length ? fmtEUR(totalEur, true) : '—', { compact: true, tone: totalEur >= 0 ? 'green' : 'red' })}`);
     }
   }
 
@@ -104,7 +104,7 @@ function renderTable() {
 
   if (!filtered.length) {
     const hasAnyTrades = trades.length > 0;
-    tbody.innerHTML = String(html`<tr class="empty-row"><td colspan="10">${hasAnyTrades
+    mount(tbody, html`<tr class="empty-row"><td colspan="10">${hasAnyTrades
       ? UI.empty('🔎', 'Aucun trade ne correspond', 'Élargis la période ou retire un filtre (barre du haut ou filtres du tableau).', { label: 'Effacer tous les filtres', onclick: 'resetTradeFilters();resetGlobalFilter()' })
       : UI.empty('📒', 'Ton journal est vide pour l\'instant', 'Ajoute ton premier trade (touche N) ou importe un CSV TradingView depuis Export / Import.', { label: '+ Ajouter un trade', onclick: 'openQuickAdd()' })}</td></tr>`);
     drawerOrder = [];
@@ -126,16 +126,14 @@ function renderTable() {
     const byDay = {};
     filtered.forEach(t => { const d = t.date || 'Sans date'; (byDay[d] = byDay[d] || []).push(t); });
     const dayKeys = Object.keys(byDay).sort((a,b) => b.localeCompare(a));
-    tbody.innerHTML = dayKeys.map(day => {
+    mount(tbody, html`${dayKeys.map(day => {
       const dayTrades = byDay[day];
       const dayR = dayTrades.reduce((s,t) => s+(t.pnl||0), 0);
       const dayEur = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur, 0);
-      const col = dayR >= 0 ? 'var(--green)' : 'var(--red)';
-      const header = `<tr class="day-group-row"><td colspan="10" style="color:${col}">${day} — ${dayTrades.length} trade(s) · ${dayR>=0?'+':''}${dayR.toFixed(1)}R · ${fmtEUR(dayEur, true)}</td></tr>`;
-      return header + dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id))).join('');
-    }).join('');
+      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day} — ${dayTrades.length} trade(s) · ${dayR>=0?'+':''}${dayR.toFixed(1)}R · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
+    })}`);
   } else {
-    tbody.innerHTML = filtered.map(t => tradeRowHtml(t, numberMap.get(t.id))).join('');
+    mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`);
   }
   drawerOrder = groupByDayMode ? Object.keys(filtered.reduce((m, t) => ((m[t.date || 'Sans date'] = 1), m), {})).sort((a, b) => b.localeCompare(a)).flatMap(d => filtered.filter(t => (t.date || 'Sans date') === d).map(t => t.id)) : filtered.map(t => t.id);
 }
@@ -157,11 +155,11 @@ function stepTradeDetail(d) {
 function tpMarks(marks) {
   return [...marks].sort((a, b) => a[3] - b[3]).map((m, i) => {
     const cls = 'tp-mark' + (i % 2 ? ' up' : '') + (m[3] < 12 ? ' edge-l' : m[3] > 88 ? ' edge-r' : '');
-    return html`<div class="${cls}" style="left:${raw(m[3])}%;--c:${raw(m[2])}"><span class="tp-lbl">${m[0]}<b>${m[1]}</b></span></div>`;
+    return html`<div class="${cls} fill-${raw(m[2])}" style="${raw('left:' + m[3] + '%')}"><span class="tp-lbl">${m[0]}<b>${m[1]}</b></span></div>`;
   });
 }
 function tradeProfileHtml(t) {
-  const pts = [['SL', t.slPrice, 'var(--red)'], ['Entrée', t.entryPrice, 'var(--txt2)'], ['Sortie', t.exitPrice, 'var(--accent)'], ['TP', t.tpPrice, 'var(--green)']].filter(p => p[1] != null && isFinite(p[1]));
+  const pts = [['SL', t.slPrice, 'red'], ['Entrée', t.entryPrice, 'txt2'], ['Sortie', t.exitPrice, 'accent'], ['TP', t.tpPrice, 'green']].filter(p => p[1] != null && isFinite(p[1]));
   if (pts.length >= 2 && t.entryPrice != null) {
     const vals = pts.map(p => p[1]), lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
     const x = v => ((v - lo) / span * 92 + 4).toFixed(1);
@@ -169,7 +167,7 @@ function tradeProfileHtml(t) {
     const planned = t.slPrice != null && t.tpPrice != null && Math.abs(t.entryPrice - t.slPrice) > 0 ? Math.abs(t.tpPrice - t.entryPrice) / Math.abs(t.entryPrice - t.slPrice) : null;
     const done = computeDistanceR(t.entryPrice, t.slPrice, t.exitPrice, t.dir);
     return html`<div class="tp-profile" role="img" aria-label="Profil du trade : ${pts.map(p => p[0] + ' ' + p[1]).join(', ')}">
-      <div class="tp-track">${t.exitPrice != null ? raw(`<div class="tp-move" style="left:${Math.min(x(t.entryPrice), x(t.exitPrice))}%;width:${Math.abs(x(t.exitPrice) - x(t.entryPrice))}%;background:${(short ? t.exitPrice < t.entryPrice : t.exitPrice > t.entryPrice) ? 'var(--green)' : 'var(--red)'}"></div>`) : ''}
+      <div class="tp-track">${t.exitPrice != null ? html`<div class="tp-move ${raw((short ? t.exitPrice < t.entryPrice : t.exitPrice > t.entryPrice) ? 'pos' : 'neg')}" style="${raw('left:' + Math.min(x(t.entryPrice), x(t.exitPrice)) + '%;width:' + Math.abs(x(t.exitPrice) - x(t.entryPrice)) + '%')}"></div>` : ''}
       ${tpMarks(pts.map(p => [p[0], p[1], p[2], x(p[1])]))}</div>
       <div class="tp-foot"><span>${short ? 'Short ↓' : 'Long ↑'}</span><span>R visé ${planned != null ? planned.toFixed(2) + 'R' : '—'} · R réalisé ${done != null ? (done >= 0 ? '+' : '') + done.toFixed(2) + 'R' : '—'}${planned && done != null ? html` · <b>${Math.round(done / planned * 100)} %</b> de l'objectif` : ''}</span></div>
     </div>`;
@@ -178,8 +176,8 @@ function tradeProfileHtml(t) {
     const mae = -(Math.abs(t.mae) || 0), mfe = Math.abs(t.mfe) || 0, res = t.pnlEur || 0;
     const lo = Math.min(mae, res, 0), hi = Math.max(mfe, res, 0), span = (hi - lo) || 1, x = v => ((v - lo) / span * 92 + 4).toFixed(1);
     return html`<div class="tp-profile"><div class="tp-track">
-      <div class="tp-move" style="left:${raw(x(mae))}%;width:${raw((x(mfe) - x(mae)).toFixed(1))}%;background:color-mix(in srgb,var(--txt3) 35%,transparent)"></div>
-      ${tpMarks([['MAE', fmtEUR(mae), 'var(--red)', x(mae)], ['Entrée', '0 €', 'var(--txt2)', x(0)], ['Sortie', fmtEUR(res, true), 'var(--accent)', x(res)], ['MFE', fmtEUR(mfe, true), 'var(--green)', x(mfe)]])}
+      <div class="tp-move range" style="${raw('left:' + x(mae) + '%;width:' + (x(mfe) - x(mae)).toFixed(1) + '%')}"></div>
+      ${tpMarks([['MAE', fmtEUR(mae), 'red', x(mae)], ['Entrée', '0 €', 'txt2', x(0)], ['Sortie', fmtEUR(res, true), 'accent', x(res)], ['MFE', fmtEUR(mfe, true), 'green', x(mfe)]])}
     </div><div class="tp-foot"><span>Excursions pendant le trade</span><span>${mfe > 0 ? html`Capturé <b>${Math.max(0, Math.round(res / mfe * 100))} %</b> du mouvement favorable` : ''}</span></div></div>`;
   }
   return html`<div class="ui-muted">Renseigne les prix (entrée, stop, objectif, sortie) pour voir le profil du trade.</div>`;
@@ -196,9 +194,9 @@ function openTradeDetail(id) {
   const list = drawerNavList(), pos = list.indexOf(id);
   const imgs = tradeImages(t);
   const rMethod = ({
-    prix: ['📐 R calculé par distance de prix (exact)', 'var(--green)'], manuel: ['✍️ R saisi', 'var(--green)'],
-    risque: ['💶 R estimé : P&L € ÷ risque configuré (' + DEFAULT_RISK_EUR + ' €)', 'var(--blue)'],
-    defaut: ['⚠️ R FICTIF : RR par défaut, aucune base réelle (exclu des stats en R)', 'var(--amber)'], aucun: ['Pas de R', 'var(--txt3)']
+    prix: ['📐 R calculé par distance de prix (exact)', 'green'], manuel: ['✍️ R saisi', 'green'],
+    risque: ['💶 R estimé : P&L € ÷ risque configuré (' + DEFAULT_RISK_EUR + ' €)', 'blue'],
+    defaut: ['⚠️ R FICTIF : RR par défaut, aucune base réelle (exclu des stats en R)', 'amber'], aucun: ['Pas de R', 'muted']
   })[rSource(t)];
   const quality = t.rr ? (t.rr >= 3 ? 'A+' : t.rr >= 2 ? 'A' : t.rr >= 1.5 ? 'B' : 'C') : '—';
   const checked = tradeChecklistLabels(t);
@@ -216,7 +214,7 @@ function openTradeDetail(id) {
         <button class="btn-ghost" onclick="closeTradeDetail()" aria-label="Fermer la fiche">✕</button>
       </div>
     </div>
-    <div class="dw-rsrc" style="color:${raw(rMethod[1])}">${rMethod[0]}</div>
+    <div class="dw-rsrc tone-${raw(rMethod[1])}">${rMethod[0]}</div>
     <div class="dw-stats">
       ${UI.stat('P&L', UI.pnl(t.pnlEur, '€'))}
       ${UI.stat('Résultat en R', UI.pnl(t.pnl, 'R'))}

@@ -384,7 +384,6 @@ function renderHeatmapDH() {
       cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw('background:' + hc.bg)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)"></div>`);
     });
   });
-  const t = chartTokens();
   mount(cont, html`<div class="hm-grid" style="${raw('--cols:' + hours.length)}"><div></div>${hours.map(h => html`<div class="hm-collbl">${String(h).padStart(2, '0')}h</div>`)}${cells}</div>
     <div class="hm-legend"><span>Perte</span><span class="hm-scale">${[-1, -.6, -.25, .25, .6, 1].map(r => html`<span style="${raw('background:' + heatColors(r * maxAbs, maxAbs).bg)}"></span>`)}</span><span>Gain</span><span class="hm-legend-note">Cases pâles : moins de 3 trades · survole une case pour le détail</span></div>`);
   const ranked = heatDHCells.filter(c => c.g.n >= 3).sort((a, b) => b.g.net - a.g.net);
@@ -392,7 +391,7 @@ function renderHeatmapDH() {
   const show = (e, el) => {
     const c = heatDHCells[+el.dataset.i]; if (!c) return;
     const ev = e && e.clientX !== undefined ? e : (() => { const r = el.getBoundingClientRect(); return { clientX: r.right, clientY: r.bottom }; })();
-    showHtmlTip(ev, c.title.charAt(0).toUpperCase() + c.title.slice(1), [['Résultat net', fmtV(c.g.net), c.g.net >= 0 ? t.green : t.red], ['Trades', String(c.g.n)], ['Win rate', Math.round(c.g.w / c.g.n * 100) + ' %']]);
+    showHtmlTip(ev, c.title.charAt(0).toUpperCase() + c.title.slice(1), [['Résultat net', fmtV(c.g.net), c.g.net >= 0 ? 'green' : 'red'], ['Trades', String(c.g.n)], ['Win rate', Math.round(c.g.w / c.g.n * 100) + ' %']]);
   };
   cont.querySelectorAll('.hm-cell.has').forEach(el => {
     el.addEventListener('mouseenter', e => show(e, el));
@@ -468,7 +467,7 @@ function renderAssetBars() {
       const tip = asset + ' : ' + w.wins + ' G / ' + w.losses + ' P' + (w.be ? ' / ' + w.be + ' BE' : '') + ' · ' + fmtCI(w) + (low ? ' · échantillon trop faible pour conclure (n < 10)' : '');
       return html`<div class="asset-row${raw(low ? ' low' : '')}" title="${tip}">
         <span class="asset-name">${asset.length > 12 ? asset.slice(0, 11) + '…' : asset}</span>
-        ${UI.meter(w.rate * 100, 'var(--accent)', { tick: be !== null ? be * 100 : null })}
+        ${UI.meter(w.rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}
         <span class="asset-num">${Math.round(w.rate * 100)} %</span>
         <span class="asset-num muted">${w.n}${low ? ' ⚠' : ''}</span>
         <span class="asset-num tone-${raw(pnl >= 0 ? 'green' : 'red')}">${eur !== null ? fmtEUR(eur, true) : (r >= 0 ? '+' : '') + r.toFixed(1) + 'R'}</span>

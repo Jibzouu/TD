@@ -106,7 +106,7 @@ function perfRowHtml(name, v, useEur, tag) {
   const total = v.tp + v.sl + v.be, rate = total ? v.tp / total : 0, low = v.n < 10, be = breakevenWinRate();
   return html`<div class="asset-row${raw(low ? ' low' : '')}" title="${low ? 'Échantillon trop faible pour conclure (n < 10)' : ''}">
     <span class="asset-name sans">${name}${tag || ''}</span>
-    ${UI.meter(rate * 100, 'var(--accent)', { tick: be !== null ? be * 100 : null })}
+    ${UI.meter(rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}
     <span class="asset-num">${Math.round(rate * 100)} %</span>
     <span class="asset-num muted">${v.n}${low ? ' ⚠' : ''}</span>
     <span class="asset-num tone-${raw(v.net >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(v.net, true, 0) : (v.net >= 0 ? '+' : '') + v.net.toFixed(1) + 'R'}</span>

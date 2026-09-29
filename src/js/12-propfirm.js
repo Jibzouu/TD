@@ -103,88 +103,69 @@ function renderPropFirm() {
   if (!cont) return;
   const enabled = document.getElementById('pf-enabled').checked;
   if (!enabled) {
-    cont.innerHTML = `<div class="panel"><p style="font-size:12px;color:var(--txt3);padding:18px 0">Active le suivi ci-dessus pour voir ta progression face aux règles du challenge (drawdown, objectif de profit, jours de trading, consistance).</p></div>`;
+    mount(cont, html`<div class="panel"><p class="empty-note pad-y-18">Active le suivi ci-dessus pour voir ta progression face aux règles du challenge (drawdown, objectif de profit, jours de trading, consistance).</p></div>`);
     return;
   }
 
   const s = computePropFirmStatus();
   const ddPct = s.startBalance>0 ? Math.min(Math.max((s.startBalance*(s.maxDDPct/100) - s.distanceToFloor) / (s.startBalance*(s.maxDDPct/100)) * 100, 0), 100) : 0;
-  const ddCol = s.breached ? 'var(--red)' : ddPct >= 75 ? 'var(--red)' : ddPct >= 50 ? 'var(--amber)' : 'var(--green)';
+  const ddTone = s.breached ? 'red' : ddPct >= 75 ? 'red' : ddPct >= 50 ? 'amber' : 'green';
 
   const allOk = !s.breached && s.dailyOk && s.consistencyOk;
   const readyToPass = allOk && s.targetReached && s.daysOk;
-  let verdictText, verdictCol, verdictIcon;
-  if (s.breached) { verdictText = 'Drawdown maximum dépassé — challenge en échec'; verdictCol = 'var(--red)'; verdictIcon = '🚨'; }
-  else if (!s.dailyOk) { verdictText = 'Perte journalière max dépassée (' + s.dailyBreaches.map(esc).join(', ') + ') — challenge en échec'; verdictCol = 'var(--red)'; verdictIcon = '🚨'; }
-  else if (readyToPass) { verdictText = 'Toutes les conditions sont réunies'; verdictCol = 'var(--green)'; verdictIcon = '✅'; }
-  else if (!s.consistencyOk) { verdictText = 'Règle de consistance non respectée sur le profit actuel'; verdictCol = 'var(--amber)'; verdictIcon = '⚠️'; }
-  else { verdictText = 'En cours — conditions pas encore toutes réunies'; verdictCol = 'var(--blue)'; verdictIcon = '⏳'; }
+  let verdictText, verdictTone, verdictIcon;
+  if (s.breached) { verdictText = 'Drawdown maximum dépassé — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
+  else if (!s.dailyOk) { verdictText = 'Perte journalière max dépassée (' + s.dailyBreaches.join(', ') + ') — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
+  else if (readyToPass) { verdictText = 'Toutes les conditions sont réunies'; verdictTone = 'green'; verdictIcon = '✅'; }
+  else if (!s.consistencyOk) { verdictText = 'Règle de consistance non respectée sur le profit actuel'; verdictTone = 'amber'; verdictIcon = '⚠️'; }
+  else { verdictText = 'En cours — conditions pas encore toutes réunies'; verdictTone = 'blue'; verdictIcon = '⏳'; }
+  const ok = (cond, yes, no) => cond ? yes : no;
+  const bar = (pct, tone) => html`<div class="pf-bar"><div class="pf-bar-fill fill-${raw(tone)}" style="${raw('width:' + pct + '%')}"></div></div>`;
 
-  cont.innerHTML = `
-    <div class="panel" style="margin-bottom:20px;border-left:3px solid ${verdictCol}">
-      <div style="padding:16px 18px;display:flex;align-items:center;gap:12px;font-size:13px;color:${verdictCol};font-weight:600">
-        <span style="font-size:18px">${verdictIcon}</span> ${verdictText}
-      </div>
-    </div>
-    <div class="panel" style="margin-bottom:12px">
+  mount(cont, html`
+    <div class="panel pf-verdict v-${raw(verdictTone)}"><div class="pf-verdict-body"><span class="pf-verdict-ic">${verdictIcon}</span> ${verdictText}</div></div>
+    <div class="panel mb-12">
       <div class="panel-hdr"><span>Progression du challenge<small class="panel-sub">équité en fin de journée · objectif et seuil de perte maximale</small></span></div>
-      <div class="chart-wrap" style="height:260px"><canvas id="pfEquityChart"></canvas></div>
+      <div class="chart-wrap h-260"><canvas id="pfEquityChart"></canvas></div>
     </div>
-    <div class="charts-row" style="grid-template-columns:1fr 1fr">
+    <div class="charts-row cols-2">
       <div class="panel">
         <div class="panel-hdr">Drawdown — ${PF_DD_TYPE_LABELS[s.ddType]}</div>
-        <div style="padding:4px 0 0">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-            <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${ddCol}">${s.distanceToFloor>=0?'':'-'}${fmtEUR(Math.abs(s.distanceToFloor))}</span>
-            <span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">marge avant seuil</span>
-          </div>
-          <div style="height:8px;border-radius:calc(var(--r) * .5);background:var(--bg4);overflow:hidden">
-            <div style="height:100%;width:${ddPct}%;background:${ddCol};border-radius:calc(var(--r) * .5)"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;font-family:var(--mono);color:var(--txt3)">
-            <span>Équité : ${fmtEUR(s.currentEquity)}</span>
-            <span>Seuil : ${fmtEUR(s.floor)}</span>
-          </div>
+        <div class="pf-block">
+          <div class="pf-head"><span class="pf-big tone-${raw(ddTone)}">${s.distanceToFloor >= 0 ? '' : '-'}${fmtEUR(Math.abs(s.distanceToFloor))}</span><span class="pf-small">marge avant seuil</span></div>
+          ${bar(ddPct, ddTone)}
+          <div class="pf-foot"><span>Équité : ${fmtEUR(s.currentEquity)}</span><span>Seuil : ${fmtEUR(s.floor)}</span></div>
         </div>
       </div>
       <div class="panel">
         <div class="panel-hdr">Objectif de profit</div>
-        <div style="padding:4px 0 0">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-            <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${s.totalPnl>=0?'var(--green)':'var(--red)'}">${fmtEUR(s.totalPnl, true)}</span>
-            <span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">objectif : ${fmtEUR(s.targetAmount)}</span>
-          </div>
-          <div style="height:8px;border-radius:calc(var(--r) * .5);background:var(--bg4);overflow:hidden">
-            <div style="height:100%;width:${s.targetProgress}%;background:${s.targetReached?'var(--green)':'var(--blue)'};border-radius:calc(var(--r) * .5)"></div>
-          </div>
-          <div style="margin-top:6px;font-size:11px;font-family:var(--mono);color:var(--txt3)">${s.targetProgress.toFixed(0)}% de l'objectif ${s.targetReached?'— atteint ✓':''}</div>
+        <div class="pf-block">
+          <div class="pf-head"><span class="pf-big tone-${raw(ok(s.totalPnl >= 0, 'green', 'red'))}">${fmtEUR(s.totalPnl, true)}</span><span class="pf-small">objectif : ${fmtEUR(s.targetAmount)}</span></div>
+          ${bar(s.targetProgress, ok(s.targetReached, 'green', 'blue'))}
+          <div class="pf-note">${s.targetProgress.toFixed(0)}% de l'objectif ${s.targetReached ? '— atteint ✓' : ''}</div>
         </div>
       </div>
     </div>
-    <div class="charts-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="charts-row cols-3">
       <div class="panel">
         <div class="panel-hdr">Perte journalière max</div>
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-          <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${s.dailyOk?'var(--green)':'var(--red)'}">${s.worstDayDate && s.worstDayPnl < 0 ? fmtEUR(s.worstDayPnl) : '0 €'}</span>
-          <span style="font-size:12px;color:var(--txt3);font-family:var(--mono)">pire journée${s.worstDayDate && s.worstDayPnl < 0 ? ' (' + esc(s.worstDayDate) + ')' : ''} · limite −${fmtEUR(s.dailyLimitAmount)} (${s.dailyLimitPct} %) ${s.dailyOk?'✓':'✗'}</span>
+        <div class="pf-line wrap">
+          <span class="pf-big tone-${raw(ok(s.dailyOk, 'green', 'red'))}">${s.worstDayDate && s.worstDayPnl < 0 ? fmtEUR(s.worstDayPnl) : '0 €'}</span>
+          <span class="pf-sub">pire journée${s.worstDayDate && s.worstDayPnl < 0 ? ' (' + s.worstDayDate + ')' : ''} · limite −${fmtEUR(s.dailyLimitAmount)} (${s.dailyLimitPct} %) ${s.dailyOk ? '✓' : '✗'}</span>
         </div>
-        ${s.dailyOk ? '' : `<p style="font-size:11px;color:var(--red);margin-top:8px;font-family:var(--mono)">${s.dailyBreaches.length} journée(s) au-delà de la limite : ${s.dailyBreaches.map(esc).join(', ')}</p>`}
+        ${s.dailyOk ? '' : html`<p class="pf-breach">${s.dailyBreaches.length} journée(s) au-delà de la limite : ${s.dailyBreaches.join(', ')}</p>`}
       </div>
       <div class="panel">
         <div class="panel-hdr">Jours de trading</div>
-        <div style="display:flex;align-items:baseline;gap:8px">
-          <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${s.daysOk?'var(--green)':'var(--txt)'}">${s.tradingDays}</span>
-          <span style="font-size:12px;color:var(--txt3);font-family:var(--mono)">/ ${s.minDays} minimum ${s.daysOk?'✓':''}</span>
-        </div>
+        <div class="pf-line"><span class="pf-big tone-${raw(ok(s.daysOk, 'green', 'txt'))}">${s.tradingDays}</span><span class="pf-sub">/ ${s.minDays} minimum ${s.daysOk ? '✓' : ''}</span></div>
       </div>
       <div class="panel">
-        <div class="panel-hdr">Règle de consistance ${s.consistencyOn?'':'(désactivée)'}</div>
-        ${s.consistencyOn ? `<div style="display:flex;align-items:baseline;gap:8px">
-          <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${s.consistencyOk?'var(--green)':'var(--red)'}">${s.bestDayPct.toFixed(0)}%</span>
-          <span style="font-size:12px;color:var(--txt3);font-family:var(--mono)">meilleur jour / profit total (max ${s.consistencyPct}%) ${s.consistencyOk?'✓':'✗'}</span>
-        </div>` : `<p style="font-size:12px;color:var(--txt3)">Active-la dans les paramètres si ta firme l'impose (ex : FTMO).</p>`}
+        <div class="panel-hdr">Règle de consistance ${s.consistencyOn ? '' : '(désactivée)'}</div>
+        ${s.consistencyOn
+          ? html`<div class="pf-line"><span class="pf-big tone-${raw(ok(s.consistencyOk, 'green', 'red'))}">${s.bestDayPct.toFixed(0)}%</span><span class="pf-sub">meilleur jour / profit total (max ${s.consistencyPct}%) ${s.consistencyOk ? '✓' : '✗'}</span></div>`
+          : html`<p class="empty-note">Active-la dans les paramètres si ta firme l'impose (ex : FTMO).</p>`}
       </div>
-    </div>`;
+    </div>`);
   safeRun(() => renderPfEquityChart(s), 'renderPfEquityChart');
 }
 
@@ -242,11 +223,11 @@ function renderStats() {
   const rrArr = trades.filter(t=>t.rr);
 
   function statRow(label, val, cls='') {
-    return `<div class="stat-row"><span class="stat-row-label">${label}</span><span class="stat-row-val ${cls}">${val}</span></div>`;
+    return html`<div class="stat-row"><span class="stat-row-label">${label}</span><span class="stat-row-val ${raw(cls)}">${val}</span></div>`;
   }
   function pct(a,b) { return b>0?(a/b*100).toFixed(1)+'%':'—'; }
 
-  document.getElementById('stats-perf').innerHTML = [
+  mount('stats-perf', html`${[
     statRow('Total trades', trades.length),
     statRow('Trades fermés', n),
     statRow('TP', wins.length, 'pnl-p'),
@@ -254,9 +235,9 @@ function renderStats() {
     statRow('Break Even', bes.length),
     statRow('En cours', trades.filter(t=>t.res==='OPEN').length),
     statRow('Win rate', pct(wins.length,n), (() => { const be = breakevenWinRate(); return be === null || !n ? '' : (wins.length / n >= be ? 'pnl-p' : 'pnl-n'); })()),
-  ].join('');
+  ]}`);
 
-  document.getElementById('stats-pnl').innerHTML = [
+  mount('stats-pnl', html`${[
     statRow('P&L Total (R)', pnlArr.length>0?(totalPnl>=0?'+':'')+totalPnl.toFixed(2)+'R':'—', totalPnl>0?'pnl-p':totalPnl<0?'pnl-n':''),
     statRow('P&L Total (€)', (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>=0?'+':'')+et.toFixed(2)+' €':'—'})(), (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>0?'pnl-p':et<0?'pnl-n':''):''})()), 
     statRow('P&L Moyen/trade', pnlArr.length>0?(totalPnl/pnlArr.length>=0?'+':'')+(totalPnl/pnlArr.length).toFixed(2)+'R':'—'),
@@ -265,9 +246,9 @@ function renderStats() {
     statRow('Profit Factor', gl>0?(gw/gl).toFixed(2):wins.length>0?'∞':'—', gl>0&&gw/gl>=1?'pnl-p':''),
     statRow('Max gain', wins.length>0?'+'+Math.max(...wins.map(t=>t.pnl||0)).toFixed(2)+'R':'—', 'pnl-p'),
     statRow('Max perte', losses.length>0?'-'+Math.abs(Math.min(...losses.map(t=>t.pnl||0))).toFixed(2)+'R':'—', 'pnl-n'),
-  ].join('');
+  ]}`);
 
-  document.getElementById('stats-rr').innerHTML = [
+  mount('stats-rr', html`${[
     statRow('RR Moyen', rrArr.length>0?(rrArr.reduce((s,t)=>s+t.rr,0)/rrArr.length).toFixed(2)+'R':'—'),
     statRow('RR Max', rrArr.length>0?Math.max(...rrArr.map(t=>t.rr)).toFixed(2)+'R':'—'),
     statRow('RR Min', rrArr.length>0?Math.min(...rrArr.map(t=>t.rr)).toFixed(2)+'R':'—'),
@@ -275,7 +256,7 @@ function renderStats() {
     statRow('Trades A  (RR≥2)', trades.filter(t=>t.rr>=2&&t.rr<3).length),
     statRow('Trades B  (RR≥1.5)', trades.filter(t=>t.rr>=1.5&&t.rr<2).length),
     statRow('Trades C  (RR<1.5)', trades.filter(t=>t.rr&&t.rr<1.5).length),
-  ].join('');
+  ]}`);
 
   // Asset breakdown : tous les actifs réellement présents (y compris ceux découverts à l'import), du plus tradé au moins tradé.
   const assetCounts = {};
@@ -283,7 +264,7 @@ function renderStats() {
   const assets = Object.keys(assetCounts).sort((a, b) => assetCounts[b] - assetCounts[a] || a.localeCompare(b));
   const assetTbody = document.getElementById('stats-assets-tbody');
   const beWR = breakevenWinRate();
-  assetTbody.innerHTML = assets.map(asset => {
+  mount(assetTbody, html`${assets.map(asset => {
     const at = trades.filter(t=>t.asset===asset);
     if (!at.length) return '';
     const ac = at.filter(t=>['TP','SL','BE'].includes(t.res));
@@ -295,23 +276,23 @@ function renderStats() {
     const arr = at.filter(t=>t.rr);
     const avgRR = arr.length>0?(arr.reduce((s,t)=>s+t.rr,0)/arr.length).toFixed(2)+'R':'—';
     const wrNum = ac.length>0?atp/ac.length:0;
-    return `<tr>
-      <td style="font-weight:500">${esc(asset)}</td>
+    return html`<tr>
+      <td class="fw-500">${asset}</td>
       <td>${at.length}</td>
-      <td style="color:var(--green)">${atp}</td>
-      <td style="color:var(--red)">${asl}</td>
-      <td style="color:var(--amber)">${abe}</td>
+      <td class="tone-green">${atp}</td>
+      <td class="tone-red">${asl}</td>
+      <td class="tone-amber">${abe}</td>
       <td>${ac.length ? wrBarCell(wrNum, beWR, ac.length) : '—'}</td>
-      <td class="${apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z'}">${at.filter(t=>t.pnl != null).length>0?(apnl>=0?'+':'')+apnl.toFixed(2)+'R':'—'}</td>
+      <td class="${raw(apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z')}">${at.filter(t=>t.pnl != null).length>0?(apnl>=0?'+':'')+apnl.toFixed(2)+'R':'—'}</td>
       <td>${avgRR}</td>
     </tr>`;
-  }).join('');
+  })}`);
 
   // TF breakdown
   const TF_ORDER = ['M1','M3','M5','M10','M15','M30','H1','H4','Multi-TF'];
   const tfs = TF_ORDER.concat([...new Set(trades.map(t => t.tf).filter(tf => tf && !TF_ORDER.includes(tf)))].sort());
   const tfTbody = document.getElementById('stats-tf-tbody');
-  tfTbody.innerHTML = tfs.map(tf => {
+  mount(tfTbody, html`${tfs.map(tf => {
     const tt = trades.filter(t=>t.tf===tf);
     if (!tt.length) return '';
     const tc = tt.filter(t=>['TP','SL','BE'].includes(t.res));
@@ -319,12 +300,12 @@ function renderStats() {
     const twr = tc.length>0?pct(ttp,tc.length):'—';
     const tpnl = tt.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
     const wrNum = tc.length>0?ttp/tc.length:0;
-    return `<tr>
-      <td style="font-weight:500">${esc(tf)}</td>
+    return html`<tr>
+      <td class="fw-500">${tf}</td>
       <td>${tt.length}</td>
       <td>${tc.length ? wrBarCell(wrNum, beWR, tc.length) : '—'}</td>
-      <td class="${tpnl>0?'pnl-p':tpnl<0?'pnl-n':'pnl-z'}">${tt.filter(t=>t.pnl != null).length>0?(tpnl>=0?'+':'')+tpnl.toFixed(2)+'R':'—'}</td>
+      <td class="${raw(tpnl>0?'pnl-p':tpnl<0?'pnl-n':'pnl-z')}">${tt.filter(t=>t.pnl != null).length>0?(tpnl>=0?'+':'')+tpnl.toFixed(2)+'R':'—'}</td>
     </tr>`;
-  }).join('');
+  })}`);
 }
 

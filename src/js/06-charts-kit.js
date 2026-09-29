@@ -18,11 +18,11 @@ function buildSparklinePath(values, w, h, pad) {
 function renderSparklineInto(svgId, values, color) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
-  if (!values || values.length < 2) { svg.innerHTML = ''; return; }
+  if (!values || values.length < 2) { mount(svg, ''); return; }
   const { path, lastX, lastY } = buildSparklinePath(values);
   // Tendance en encre discrète, dernier point à l'accent (la couleur de série est réservée aux vrais graphiques).
   // vector-effect : le trait garde son épaisseur malgré l'étirement du SVG ; le point final est un trait de longueur nulle → rond parfait.
-  svg.innerHTML = `<path d="${path}" fill="none" style="stroke:var(--txt3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="M${lastX.toFixed(1)},${lastY.toFixed(1)} h0" style="stroke:var(--accent)" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  mount(svg, html`<path class="sp-muted" d="${path}" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path class="sp-line" d="M${lastX.toFixed(1)},${lastY.toFixed(1)} h0" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`);
 }
 function chronoClosedTrades() {
   return [...analysisTrades()].reverse().filter(t => ['TP','SL','BE'].includes(t.res));
@@ -156,14 +156,13 @@ function fmtDateFR(iso, withYear) {
 // Cellule de tableau : barre divergente autour de zéro (vert à droite, rouge à gauche) + valeur alignée.
 function divBarCell(v, maxAbs, label) {
   const w = maxAbs > 0 ? Math.min(Math.abs(v) / maxAbs, 1) * 50 : 0;
-  const col = v >= 0 ? 'var(--green)' : 'var(--red)';
-  return `<div class="cell-bar"><div class="div-bar"><span style="${v >= 0 ? 'left:50%' : 'right:50%'};width:${w}%;background:${col}"></span></div><span class="cb-val" style="color:${v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--txt2)'}">${label}</span></div>`;
+  return html`<div class="cell-bar"><div class="div-bar"><span class="${raw(v >= 0 ? 'pos' : 'neg')}" style="${raw('width:' + w + '%')}"></span></div><span class="cb-val tone-${raw(v > 0 ? 'green' : v < 0 ? 'red' : 'txt2')}">${label}</span></div>`;
 }
 // Cellule de tableau : jauge de win rate (0–100 %) avec repère du seuil de rentabilité.
 function wrBarCell(rate, thr, n) {
   if (rate === null || rate === undefined || isNaN(rate)) return '—';
-  const col = thr === null || thr === undefined ? 'var(--accent)' : (rate >= thr ? 'var(--green)' : 'var(--red)');
-  return `<div class="cell-bar"><div class="meter"><div class="meter-fill" style="width:${rate * 100}%;background:${col};${n < 10 ? 'opacity:.55' : ''}"></div>${thr != null ? `<div class="meter-tick" style="left:calc(${thr * 100}% - 1px);top:-3px;bottom:-3px;width:1.5px;background:var(--txt2)"></div>` : ''}</div><span class="cb-val">${(rate * 100).toFixed(1).replace('.', ',')} %</span></div>`;
+  const tone = thr === null || thr === undefined ? 'accent' : (rate >= thr ? 'green' : 'red');
+  return html`<div class="cell-bar"><div class="meter"><div class="meter-fill fill-${raw(tone)}${raw(n < 10 ? ' dim' : '')}" style="${raw('width:' + rate * 100 + '%')}"></div>${thr != null ? html`<div class="meter-tick cb-tick" style="${raw(`left:calc(${thr * 100}% - 1px)`)}"></div>` : ''}</div><span class="cb-val">${(rate * 100).toFixed(1).replace('.', ',')} %</span></div>`;
 }
 function fmtPct(v, digits) { return (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR', { minimumFractionDigits: digits ?? 1, maximumFractionDigits: digits ?? 1 }) + ' %'; }
 // Seuil de rentabilité du win rate : avec un payoff P (gain moyen ÷ perte moyenne), on est rentable au-dessus de 1 / (1 + P).
@@ -187,7 +186,7 @@ function showHtmlTip(e, title, rows) {
   rows.forEach(([k, v, col]) => {
     const r = document.createElement('div'); r.className = 'tip-row';
     const a = document.createElement('span'); a.textContent = k;
-    const b = document.createElement('b'); b.textContent = v; if (col) b.style.color = col;
+    const b = document.createElement('b'); b.textContent = v; if (col) b.className = 'tone-' + col;
     r.appendChild(a); r.appendChild(b); tip.appendChild(r);
   });
   tip.classList.add('show'); positionCalTooltip(e);
@@ -257,17 +256,14 @@ function renderKpiSparklines() {
     renderSparklineInto('k-pf-spark', pfSeries, cssVar('--purple','#a78bfa'));
     trendBadge('k-pf-trend', pfSeries, '');
   } else {
-    ['k-wr-spark','k-pnl-spark','k-rr-spark','k-pf-spark'].forEach(id => { const el=document.getElementById(id); if (el) el.innerHTML=''; });
+    ['k-wr-spark','k-pnl-spark','k-rr-spark','k-pf-spark'].forEach(id => { mount(id, ''); });
     ['k-wr-trend','k-pnl-trend','k-rr-trend','k-pf-trend'].forEach(id => { const el=document.getElementById(id); if (el) { el.textContent=''; el.className='kpi-trend'; } });
   }
 
   const dotsEl = document.getElementById('k-form-dots');
   if (dotsEl) {
     const last10 = closed.slice(-10);
-    dotsEl.innerHTML = last10.map(t => {
-      const color = t.res==='TP' ? 'var(--green)' : t.res==='SL' ? 'var(--red)' : 'var(--amber)';
-      return `<span style="background:${color}" title="${esc(t.date||'')} · ${esc(t.res)}"></span>`;
-    }).join('');
+    mount(dotsEl, html`${last10.map(t => html`<span class="${raw(t.res === 'TP' ? 'fill-green' : t.res === 'SL' ? 'fill-red' : 'fill-amber')}" title="${t.date || ''} · ${t.res}"></span>`)}`);
   }
 }
 

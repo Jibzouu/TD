@@ -3,7 +3,7 @@ let mcChartInst = null, maeMfeChartInst = null, rvrChartInst = null, smChartInst
 function renderProAnalyses() {
   [renderMonteCarlo, renderMaeMfeScatter, renderRealizedVsPlanned, renderSmallMultiples].forEach(fn => safeRun(fn, fn.name));
 }
-const stat2 = (l, v, c) => UI.stat(l, v, { compact: true, color: c });
+const stat2 = (l, v, tone) => UI.stat(l, v, { compact: true, tone });
 
 // Monte-Carlo : tirages avec remise dans les résultats réels (en € si disponibles, sinon en R).
 function renderMonteCarlo() {
@@ -21,11 +21,11 @@ function renderMonteCarlo() {
   const f = v => useEur ? fmtEUR(v, false, 0) : (v >= 0 ? '+' : '') + v.toFixed(1) + 'R';
   const tk = chartTokens();
   mount(statsEl, html`
-    ${stat2('Médiane après ' + n + ' trades', f(percentile(R.finals, .5)), percentile(R.finals, .5) >= start ? tk.green : tk.red)}
+    ${stat2('Médiane après ' + n + ' trades', f(percentile(R.finals, .5)), percentile(R.finals, .5) >= start ? 'green' : 'red')}
     ${stat2('Scénario défavorable (5 %)', f(percentile(R.finals, .05)))}
     ${stat2('Scénario favorable (95 %)', f(percentile(R.finals, .95)))}
-    ${stat2('Probabilité de finir en perte', Math.round(R.negative * 100) + ' %', R.negative > .25 ? tk.red : null)}
-    ${useEur ? stat2('Risque de toucher −' + ddPct + ' %', Math.round(R.hitDD * 100) + ' %', R.hitDD > .2 ? tk.red : R.hitDD > .05 ? tk.amber : tk.green) : ''}
+    ${stat2('Probabilité de finir en perte', Math.round(R.negative * 100) + ' %', R.negative > .25 ? 'red' : null)}
+    ${useEur ? stat2('Risque de toucher −' + ddPct + ' %', Math.round(R.hitDD * 100) + ' %', R.hitDD > .2 ? 'red' : R.hitDD > .05 ? 'amber' : 'green') : ''}
     ${useEur ? stat2('Drawdown max médian', fmtPct(R.medianMaxDD * 100)) : ''}`);
   const sub = document.getElementById('mc-sub');
   if (sub) sub.textContent = '1 000 futurs possibles de ' + n + ' trades, tirés dans tes ' + vals.length + ' résultats réels (' + (useEur ? 'en €' : 'en R') + ')' + (filterActive() ? ' · filtre actif' : '');
@@ -61,7 +61,7 @@ function renderMaeMfeScatter() {
   const avg = (a, k) => a.length ? a.reduce((s, t) => s + Math.abs(t[k]), 0) / a.length : null;
   const lossWithProfit = loss.filter(t => Math.abs(t.mfe) > Math.abs(t.pnlEur || 0) * .5 && Math.abs(t.mfe) > 0).length;
   const tk = chartTokens();
-  mount(statsEl, html`${stat2('MAE moy. gagnants', fmtEUR(avg(win, 'mae')))}${stat2('MAE moy. perdants', fmtEUR(avg(loss, 'mae')))}${stat2('Perdants passés en profit', loss.length ? Math.round(lossWithProfit / loss.length * 100) + ' %' : '—', lossWithProfit / Math.max(1, loss.length) > .4 ? tk.amber : null)}`);
+  mount(statsEl, html`${stat2('MAE moy. gagnants', fmtEUR(avg(win, 'mae')))}${stat2('MAE moy. perdants', fmtEUR(avg(loss, 'mae')))}${stat2('Perdants passés en profit', loss.length ? Math.round(lossWithProfit / loss.length * 100) + ' %' : '—', lossWithProfit / Math.max(1, loss.length) > .4 ? 'amber' : null)}`);
   if (!chartsAvailable('maeMfeChart')) return;
   const ds = (list, label, color) => ({ label, data: list.map(t => ({ x: +Math.abs(t.mae).toFixed(2), y: +Math.abs(t.mfe).toFixed(2), t })), backgroundColor: withAlpha(color, .75), borderColor: tk.bg2, borderWidth: 1.5, pointRadius: 4.5, pointHoverRadius: 6, pointHitRadius: 10 });
   maeMfeChartInst = new Chart(canvas.getContext('2d'), {
@@ -90,7 +90,7 @@ function renderRealizedVsPlanned() {
   const reached = pts.filter(o => o.r >= o.p - 1e-9).length;
   const left = winners.reduce((s, o) => s + Math.max(0, o.p - o.r), 0);
   const tk = chartTokens();
-  mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? tk.amber : null)}${stat2('R laissés sur la table', left.toFixed(1) + 'R')}`);
+  mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? 'amber' : null)}${stat2('R laissés sur la table', left.toFixed(1) + 'R')}`);
   if (!chartsAvailable('rvrChart')) return;
   const maxP = Math.max(...pts.map(o => o.p), 1) * 1.1;
   rvrChartInst = new Chart(canvas.getContext('2d'), {
@@ -124,7 +124,7 @@ function renderSmallMultiples() {
   if (!top.length) { mount(cont, UI.empty('📈', 'Pas encore assez de trades par groupe', 'Il faut au moins 2 trades dans un setup (ou un actif) pour tracer sa courbe.', null)); return; }
   const series = top.map(([k, g]) => { let c = 0; return { k, n: g.length, w: g.filter(t => t.res === 'TP').length, pts: [0].concat(g.map(t => (c += useEur ? (t.pnlEur || 0) : (t.pnl || 0)))) }; });
   const all = series.flatMap(s => s.pts), yMin = Math.min(0, ...all), yMax = Math.max(0, ...all), xMax = Math.max(...series.map(s => s.pts.length - 1));
-  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades · ${Math.round(s.w / s.n * 100)} %</span></div><div class="sm-val" style="color:${raw(s.pts[s.pts.length - 1] >= 0 ? 'var(--green)' : 'var(--red)')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : (s.pts[s.pts.length - 1] >= 0 ? '+' : '') + s.pts[s.pts.length - 1].toFixed(1) + 'R'}</div><div class="chart-wrap" style="height:90px"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
+  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades · ${Math.round(s.w / s.n * 100)} %</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : (s.pts[s.pts.length - 1] >= 0 ? '+' : '') + s.pts[s.pts.length - 1].toFixed(1) + 'R'}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
   if (typeof Chart === 'undefined') return;
   const tk = chartTokens();
   series.forEach((s, i) => {

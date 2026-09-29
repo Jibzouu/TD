@@ -91,3 +91,48 @@
 .rr-table td.c2{color:var(--txt2)}
 .rr-table td.strong{font-weight:600}
 .rr-table td.rr-empty,.rr-table tr:last-child td.rr-empty{padding:16px;color:var(--txt3);font-size:12px;font-family:inherit;border-bottom:none}
+
+/* Kit graphiques (mini-courbes, barres de tableau) */
+.sp-muted{stroke:var(--txt3)}
+.div-bar span.pos{left:50%;background:var(--green)}
+.div-bar span.neg{right:50%;background:var(--red)}
+.meter-tick.cb-tick{top:-3px;bottom:-3px;width:1.5px;background:var(--txt2)}
+
+/* Prop Firm */
+.pad-y-18{padding:18px 0}
+.mb-12{margin-bottom:12px}
+.h-260{height:260px}
+.fw-500{font-weight:500}
+.charts-row.cols-2{grid-template-columns:1fr 1fr}
+.charts-row.cols-3{grid-template-columns:repeat(3,1fr)}
+.pf-verdict{margin-bottom:20px;border-left:3px solid var(--vc)}
+.pf-verdict.v-red{--vc:var(--red)}.pf-verdict.v-green{--vc:var(--green)}.pf-verdict.v-amber{--vc:var(--amber)}.pf-verdict.v-blue{--vc:var(--blue)}
+.pf-verdict-body{padding:16px 18px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--vc);font-weight:600}
+.pf-verdict-ic{font-size:18px}
+.pf-block{padding:4px 0 0}
+.pf-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.pf-big{font-size:22px;font-weight:700;font-family:var(--mono)}
+.pf-small{font-size:11px;color:var(--txt3);font-family:var(--mono)}
+.pf-bar{height:8px;border-radius:calc(var(--r) * .5);background:var(--bg4);overflow:hidden}
+.pf-bar-fill{height:100%;border-radius:calc(var(--r) * .5)}
+.fill-blue{background:var(--blue)!important}
+.pf-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;font-family:var(--mono);color:var(--txt3)}
+.pf-note{margin-top:6px;font-size:11px;font-family:var(--mono);color:var(--txt3)}
+.pf-line{display:flex;align-items:baseline;gap:8px}
+.pf-line.wrap{flex-wrap:wrap}
+.pf-sub{font-size:12px;color:var(--txt3);font-family:var(--mono)}
+.pf-breach{font-size:11px;color:var(--red);margin-top:8px;font-family:var(--mono)}
+
+/* Journal, fiche trade, revue, analyses */
+.fill-txt2{background:var(--txt2)!important}
+.tp-move.pos{background:var(--green)}.tp-move.neg{background:var(--red)}
+.tp-move.range{background:color-mix(in srgb,var(--txt3) 35%,transparent)}
+.h-200{height:200px}.h-90{height:90px}
+.m-0{margin:0}
+.td-empty{color:var(--txt3);padding:14px}
+.meter-tick.mid{left:calc(50% - 1px);background:var(--txt3)}
+.meter-tick-lbl.mid{left:50%;color:var(--txt3)}
+.mc-total{font-size:13px;margin-bottom:12px}
+.wi-intro{font-size:12px;color:var(--txt2);margin-bottom:14px}
+.wi-best{background:var(--green-dd)}
+.wi-foot{font-size:11px;color:var(--txt3);margin-top:12px;line-height:1.6}

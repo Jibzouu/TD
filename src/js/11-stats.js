@@ -38,14 +38,14 @@ function renderStatsSessionTables() {
   function fill(rows, tbodyId, emptyMsg) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
-    if (rows.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="color:var(--txt3);padding:14px">${emptyMsg}</td></tr>`; return; }
+    if (rows.length === 0) { mount(tbody, html`<tr><td colspan="4" class="td-empty">${emptyMsg}</td></tr>`); return; }
     const maxAbs = Math.max(...rows.map(r => Math.abs(r.rr)), 1e-9);
-    tbody.innerHTML = rows.map((r,i) => `<tr>
-        <td><span class="rank${i < 3 ? ' top' : ''}">${i + 1}</span>${esc(r.label)}</td>
-        <td>${r.n}${r.n < 10 ? ' <span style="color:var(--txt3)" title="Échantillon faible (n < 10)">⚠</span>' : ''}</td>
+    mount(tbody, html`${rows.map((r,i) => html`<tr>
+        <td><span class="rank${raw(i < 3 ? ' top' : '')}">${i + 1}</span>${r.label}</td>
+        <td>${r.n}${r.n < 10 ? html` <span class="tone-muted" title="Échantillon faible (n < 10)">⚠</span>` : ''}</td>
         <td>${r.wr.toFixed(0)} %</td>
         <td>${divBarCell(r.rr, maxAbs, (r.rr>=0?'+':'') + r.rr.toFixed(2) + 'R')}</td>
-      </tr>`).join('');
+      </tr>`)}`);
   }
   fill(wdRows, 'stats-weekday-tbody', 'Pas assez de trades datés.');
   fill(hRows, 'stats-hour-tbody', "Renseigne l'heure d'entrée de tes trades pour voir ce classement.");
@@ -106,7 +106,7 @@ function renderChecklistAnalysis() {
   }
   const fs = stats(full), ps = stats(partial);
   const card = (label, s, tone) => html`<div class="ui-tile"><div class="ui-tile-label">${label} <span class="ui-muted">(${s.n} trades)</span></div>
-    <div class="ui-grid c2" style="margin:0">${UI.stat('win rate', s.wr.toFixed(0) + '%', { compact: true, color: `var(--${tone})` })}${UI.stat('RR moyen', s.avgRR === null ? '—' : (s.avgRR >= 0 ? '+' : '') + s.avgRR.toFixed(2) + 'R', { compact: true, color: s.avgRR === null ? 'var(--txt3)' : s.avgRR >= 0 ? 'var(--green)' : 'var(--red)' })}</div></div>`;
+    <div class="ui-grid c2 m-0">${UI.stat('win rate', s.wr.toFixed(0) + '%', { compact: true, tone })}${UI.stat('RR moyen', s.avgRR === null ? '—' : (s.avgRR >= 0 ? '+' : '') + s.avgRR.toFixed(2) + 'R', { compact: true, tone: s.avgRR === null ? 'muted' : s.avgRR >= 0 ? 'green' : 'red' })}</div></div>`;
   let conclusion = '';
   if (fs.n >= 3 && ps.n >= 3) {
     const diff = fs.wr - ps.wr;
@@ -163,7 +163,7 @@ function renderTiltMeter() {
   }
   const tiltPct = Math.round((flagged.length / lossesWithFollowup) * 100);
   const calmScore = 100 - tiltPct;
-  const col = calmScore >= 70 ? 'var(--green)' : calmScore >= 40 ? 'var(--amber)' : 'var(--red)';
+  const col = calmScore >= 70 ? 'green' : calmScore >= 40 ? 'amber' : 'red';
   const head = html`<div class="ui-big">
     <div><div class="ui-big-label">Score de sang-froid</div><div class="ui-big-val">${calmScore}<small> / 100</small></div></div>
     <div class="ui-big-side">${UI.meter(calmScore, col, { label: 'Score de sang-froid ' + calmScore + ' sur 100' })}
@@ -318,14 +318,13 @@ function renderCoinFlip() {
   const significant = pValue < 0.05;
   const barPct = Math.min(Math.max(winRate*100,0),100);
   const p0Pct = Math.round(p0*100);
-  const fill = significant ? (winRate >= p0 ? 'var(--green)' : 'var(--red)') : 'var(--amber)';
+  const fillTone = significant ? (winRate >= p0 ? 'green' : 'red') : 'amber';
   // Jauge à deux repères (50 % et seuil réel) : positions calculées, seules valeurs de style laissées en ligne.
-  const ticks = raw(`<div class="meter-tick" style="left:calc(50% - 1px);background:var(--txt3)"></div><div class="meter-tick-lbl" style="left:50%;color:var(--txt3)">50 %</div>`
-    + (hasPayoff && Math.abs(p0Pct - 50) >= 4 ? `<div class="meter-tick" style="left:calc(${p0Pct}% - 1px)"></div><div class="meter-tick-lbl" style="left:${Math.max(8, p0Pct)}%">seuil ${p0Pct} %</div>` : ''));
+  const ticks = html`<div class="meter-tick mid"></div><div class="meter-tick-lbl mid">50 %</div>${hasPayoff && Math.abs(p0Pct - 50) >= 4 ? html`<div class="meter-tick" style="${raw(`left:calc(${p0Pct}% - 1px)`)}"></div><div class="meter-tick-lbl" style="${raw(`left:${Math.max(8, p0Pct)}%`)}">seuil ${p0Pct} %</div>` : ''}`;
 
   mount(cont, html`<div class="ui-big">
       <div><div class="ui-big-label">Ton win rate</div><div class="ui-big-val">${(winRate*100).toFixed(1).replace('.', ',')} %</div></div>
-      <div class="ui-big-side"><div class="meter with-ticks" role="img" aria-label="Win rate ${Math.round(barPct)} %, seuil de rentabilité ${p0Pct} %"><div class="meter-fill" style="width:${raw(barPct.toFixed(1))}%;background:${raw(fill)}"></div>${ticks}</div></div>
+      <div class="ui-big-side"><div class="meter with-ticks" role="img" aria-label="Win rate ${Math.round(barPct)} %, seuil de rentabilité ${p0Pct} %"><div class="meter-fill fill-${raw(fillTone)}" style="${raw('width:' + barPct.toFixed(1) + '%')}"></div>${ticks}</div></div>
     </div>
     ${UI.note(html`${hasPayoff ? html`Compte tenu de ton payoff (gain moyen ${fmtEUR(avgWinE,false,0)} / perte moyenne ${fmtEUR(avgLossE,false,0)}), ton seuil de rentabilité réel est ${UI.em(p0Pct + '%')} — pas 50 %. ` : ''}
       ${significant
@@ -355,7 +354,7 @@ function renderMistakeCostReport() {
   const rows = Object.entries(map).sort((a,b) => a[1].costEur - b[1].costEur);
   const totalCost = rows.reduce((s,[,v]) => s + (v.costEur<0?v.costEur:0), 0);
   const maxAbs = Math.max(...rows.map(([, v]) => Math.abs(v.costEur)), 1e-9);
-  mount(cont, html`<div class="ui-big-label" style="font-size:13px;margin-bottom:12px">Coût total estimé de tes erreurs taguées : ${UI.em(totalCost.toFixed(0) + ' €', 'red')}</div>
+  mount(cont, html`<div class="ui-big-label mc-total">Coût total estimé de tes erreurs taguées : ${UI.em(totalCost.toFixed(0) + ' €', 'red')}</div>
     <div class="ui-rows">${rows.map(([label, v]) => html`<div class="ui-row grid-bar"><span>${label} <span class="sub">${v.n}×</span></span>${raw(divBarCell(v.costEur, maxAbs, (v.costEur>=0?'+':'') + v.costEur.toFixed(0) + ' € · ' + (v.costR>=0?'+':'') + v.costR.toFixed(1) + 'R'))}</div>`)}</div>`);
 }
 
@@ -366,7 +365,7 @@ function renderWhatIf() {
   if (!cont) return;
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
   if (closed.length < 5) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Pas assez de trades fermés pour ce comparateur.</p>`;
+    mount(cont, html`<p class="empty-note">Pas assez de trades fermés pour ce comparateur.</p>`);
     return;
   }
   const tp = closed.filter(t => t.res === 'TP').length;
@@ -380,19 +379,14 @@ function renderWhatIf() {
   const rows = targets.map(rr => ({ rr, simulatedR: tp*rr - sl*1 }));
   const bestRow = rows.slice().sort((a,b) => b.simulatedR - a.simulatedR)[0];
 
-  let html = `<p style="font-size:12px;color:var(--txt2);margin-bottom:14px">Avec ton win rate actuel (${tp} gagnants / ${sl} perdants / ${be} BE) et un risque fixe de 1R par perte, voici ce que donnerait un objectif de gain fixe différent sur chaque trade gagnant :</p>`;
-  html += `<div style="overflow-x:auto"><table><thead><tr><th>Objectif RR</th><th>Résultat simulé</th><th>Différence vs réel</th></tr></thead><tbody>`;
-  rows.forEach(r => {
-    const diff = r.simulatedR - actualTotalR;
-    const isBest = r.rr === bestRow.rr;
-    html += `<tr style="${isBest?'background:var(--green-dd)':''}">
-      <td>${r.rr}R${isBest?' 🏆':''}</td>
-      <td style="color:${r.simulatedR>=0?'var(--green)':'var(--red)'}">${r.simulatedR>=0?'+':''}${r.simulatedR.toFixed(1)}R</td>
-      <td style="color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${diff.toFixed(1)}R</td>
-    </tr>`;
-  });
-  html += `</tbody></table></div>`;
-  html += `<p style="font-size:11px;color:var(--txt3);margin-top:12px;line-height:1.6">Ton résultat réel actuel : ${actualTotalR>=0?'+':''}${actualTotalR.toFixed(1)}R${actualAvgRR!==null?` (RR moyen observé : ${actualAvgRR.toFixed(2)}R)`:''}. Hypothèse simplificatrice : ce test suppose que ton win rate resterait identique avec un objectif RR différent — en réalité viser plus loin réduit souvent le taux de réussite, donc ce chiffre est une borne théorique, pas une prédiction.</p>`;
-  cont.innerHTML = html;
+  mount(cont, html`<p class="wi-intro">Avec ton win rate actuel (${tp} gagnants / ${sl} perdants / ${be} BE) et un risque fixe de 1R par perte, voici ce que donnerait un objectif de gain fixe différent sur chaque trade gagnant :</p>
+    <div class="scroll-x"><table><thead><tr><th>Objectif RR</th><th>Résultat simulé</th><th>Différence vs réel</th></tr></thead><tbody>${rows.map(r => {
+      const diff = r.simulatedR - actualTotalR, isBest = r.rr === bestRow.rr;
+      return html`<tr${raw(isBest ? ' class="wi-best"' : '')}>
+      <td>${r.rr}R${isBest ? ' 🏆' : ''}</td>
+      <td class="tone-${raw(r.simulatedR >= 0 ? 'green' : 'red')}">${r.simulatedR >= 0 ? '+' : ''}${r.simulatedR.toFixed(1)}R</td>
+      <td class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}R</td>
+    </tr>`; })}</tbody></table></div>
+    <p class="wi-foot">Ton résultat réel actuel : ${actualTotalR >= 0 ? '+' : ''}${actualTotalR.toFixed(1)}R${actualAvgRR !== null ? ` (RR moyen observé : ${actualAvgRR.toFixed(2)}R)` : ''}. Hypothèse simplificatrice : ce test suppose que ton win rate resterait identique avec un objectif RR différent — en réalité viser plus loin réduit souvent le taux de réussite, donc ce chiffre est une borne théorique, pas une prédiction.</p>`);
 }
 

@@ -25,6 +25,13 @@ for (let i = 0; i < 90; i++) {
 }
 tr.reverse();
 
+const STATES = [
+  ['fiche', `showPage('trades', document.querySelector('.nav-item[data-page="trades"]')); openTradeDetail(89)`, false],
+  ['groupe', `showPage('trades', document.querySelector('.nav-item[data-page="trades"]')); if (!groupByDayMode) toggleGroupByDay()`],
+  ['saisie-rapide', `showPage('dashboard', null); openQuickAdd()`, false],
+  ['raccourcis', `openShortcutsHelp()`, false],
+  ['edition', `showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); startEditTrade(89)`, false],
+];
 const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:behavior', 'stats:advanced', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'watchlist', 'export', 'parametres'];
 const b = await chromium.launch();
 async function run(journal, pages, vp, tag, data = tr) {
@@ -44,6 +51,12 @@ async function run(journal, pages, vp, tag, data = tr) {
   await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   await page.addStyleTag({ content: '*{caret-color:transparent!important}' });   // curseur clignotant
   for (const p of pages) {
+    if (Array.isArray(p)) {   // état particulier : [nom, code à exécuter dans la page]
+      await page.evaluate(p[1]); await page.waitForTimeout(1500);   // laisse finir un éventuel défilement animé
+      await page.screenshot({ path: join(OUT, `${tag}-${p[0]}.png`), fullPage: p[2] !== false });
+      await page.evaluate(`try { closeTradeDetail(); closeQuickAdd(); closeShortcutsHelp(); closeLightbox(); } catch (e) {}`);
+      continue;
+    }
     const [id, sub] = p.split(':');
     await page.evaluate(([id, sub]) => { showPage(id, document.querySelector('.nav-item[data-page="' + id + '"]')); if (id === 'calendrier' && (sub === 'year') !== (calViewMode === 'year')) toggleCalView(); else if (sub) showStatsSubtab(sub); }, [id, sub]);
     await page.waitForTimeout(250);
@@ -52,8 +65,8 @@ async function run(journal, pages, vp, tag, data = tr) {
   if (errs.length) console.log(tag, 'ERREURS', errs);
   await ctx.close();
 }
-await run('tj', PAGES, { width: 1400, height: 900 }, 'desk');
-await run('tj', PAGES, { width: 390, height: 844 }, 'mob');
+await run('tj', PAGES.concat(STATES), { width: 1400, height: 900 }, 'desk');
+await run('tj', PAGES.concat(STATES), { width: 390, height: 844 }, 'mob');
 await run('pf', ['propfirm', 'dashboard'], { width: 1400, height: 900 }, 'pf');
 await run('tj', PAGES, { width: 1400, height: 900 }, 'vide', []);   // états vides
 await b.close();
