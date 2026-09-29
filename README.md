@@ -20,6 +20,7 @@ capture précédent/suivant · `E` modifier le trade ouvert · `?` aide.
 npm install
 npm run build      # src/ → dist/journal.html (+ copie journal-complet.html)
 npm test           # tests unitaires + build + tests de bout en bout (Playwright/Chromium)
+npm run test:visual -- [ref]   # compare pixel par pixel ~70 captures (pages, états, mobile) avec la version git [ref]
 ```
 
 Le fichier livré est **généré** : on modifie `src/`, jamais `journal-complet.html` directement.
@@ -33,7 +34,7 @@ src/
   js/*.js             application, un module par domaine :
     00-core             état, constantes, nettoyage des trades
     00a-calc            calculs purs (win rate, R, CSV, drawdown, Monte-Carlo) — testés unitairement
-    00b-ui              composants : html`` échappé, UI.stat / card / tile / table / empty…
+    00b-ui              composants : html`` échappé + mount(), UI.stat / card / tile / meter / table / empty…
     03b-state           filtre global, rendu ciblé par page
     06-charts-kit       réglages communs des graphiques
     11b-analyses        Monte-Carlo, MAE/MFE, R réalisé vs visé, équité par setup
@@ -41,10 +42,16 @@ src/
     24-weekly-review    revue hebdomadaire + export PDF
     …
   pwa/                manifeste, service worker, icône
+  styles/40-components.css, 50-body.css : classes des composants et de la structure
 tests/
   unit/               node:test sur les calculs purs
   e2e/                Playwright : parcours complets dans un vrai navigateur
 ```
+
+Conventions d'affichage : tout HTML dynamique passe par html`…` + mount() (valeurs échappées par défaut) ;
+pas de style écrit en ligne, sauf les valeurs calculées à partir des données (largeur d'une jauge, position sur
+une frise, couleur d'une case de heatmap) et l'état initial `display:none` des blocs affichés par le JavaScript.
+Les couleurs passent par des tons (`tone-green`, `fill-red`…) qui suivent le thème choisi.
 
 La CI GitHub (`.github/workflows/ci.yml`) lance les tests à chaque push et vérifie que `journal-complet.html`
 correspond bien aux sources.

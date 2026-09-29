@@ -32,6 +32,8 @@ const STATES = [
   ['raccourcis', `openShortcutsHelp()`, false],
   ['edition', `showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); startEditTrade(89)`, false],
   ['corbeille', `saveTrash([{ trade: trades[0], deletedAt: Date.parse('2026-06-16') }, { trade: trades[1], deletedAt: Date.parse('2026-06-16') }]); showPage('export', document.querySelector('.nav-item[data-page="export"]'))`],
+  ['modale', `openModal('Supprimer ce trade ?', 'Il sera placé dans la corbeille.', () => {})`, false],
+  ['visionneuse', `(() => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const x = c.getContext('2d'); x.fillStyle = '#123'; x.fillRect(0, 0, 640, 360); x.fillStyle = '#4c8dff'; x.fillRect(100, 100, 200, 120); const d = c.toDataURL('image/png'); trades[0].caps = [d, d]; trades[0].cap = d; openLightboxById(trades[0].id, 0); startAnnotation(); })()`, false],
   ['alertes', `window.__su = storageUsage; storageUsage = () => Object.assign(__su(), { pct: 95 }); showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); renderStorageWarning(); setRMode('strict'); reportStorageError(new Error('test')); storageUsage = __su;`, false],
 ];
 const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:behavior', 'stats:advanced', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'watchlist', 'export', 'parametres'];
@@ -56,7 +58,7 @@ async function run(journal, pages, vp, tag, data = tr) {
     if (Array.isArray(p)) {   // état particulier : [nom, code à exécuter dans la page]
       await page.evaluate(p[1]); await page.waitForTimeout(1500);   // laisse finir un éventuel défilement animé
       await page.screenshot({ path: join(OUT, `${tag}-${p[0]}.png`), fullPage: p[2] !== false });
-      await page.evaluate(`try { closeTradeDetail(); closeQuickAdd(); closeShortcutsHelp(); closeLightbox(); } catch (e) {}`);
+      await page.evaluate(`try { closeTradeDetail(); closeQuickAdd(); closeShortcutsHelp(); closeLightbox(); closeModal(); } catch (e) {}`);
       continue;
     }
     const [id, sub] = p.split(':');
@@ -70,6 +72,6 @@ async function run(journal, pages, vp, tag, data = tr) {
 await run('tj', PAGES.concat(STATES), { width: 1400, height: 900 }, 'desk');
 await run('tj', PAGES.concat(STATES), { width: 390, height: 844 }, 'mob');
 await run('pf', ['propfirm', 'dashboard'], { width: 1400, height: 900 }, 'pf');
-await run('tj', PAGES, { width: 1400, height: 900 }, 'vide', []);   // états vides
+await run('tj', PAGES.concat([['bienvenue', `DB.removeItem(JP + 'welcome_dismissed'); showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); renderWelcomeCard()`, false]]), { width: 1400, height: 900 }, 'vide', []);   // états vides
 await b.close();
 console.log('ok', OUT);

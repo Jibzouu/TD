@@ -32,3 +32,4 @@ for (const f of readdirSync(A).filter(f => f.endsWith('.png')).sort()) {
 }
 await b.close();
 console.log(bad ? `${bad} capture(s) différente(s)` : 'identique');
+if (bad) process.exitCode = 1;

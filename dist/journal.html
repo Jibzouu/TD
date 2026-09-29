@@ -731,8 +731,8 @@ tbody tr:hover td{background:color-mix(in srgb,var(--txt) 3%,transparent)}
 .export-icon{font-size:18px;margin-bottom:6px;line-height:1}
 .export-title{font-size:14px;font-weight:600}
 .export-desc{font-size:12.5px;color:var(--txt2);margin-bottom:14px}
-.export-card div[style*="justify-content:center"]{justify-content:flex-start !important}
-.export-card p[style*="text-align:center"],.export-card div[style*="text-align:center"]{text-align:left !important}
+.export-card .center-row,.export-card .center-row-10{justify-content:flex-start !important}
+.export-card .note-center,.export-card .note-center-8,.export-card .text-center{text-align:left !important}
 #storage-card-body > div{text-align:left}
 .drawer{padding:24px 26px}
 .drawer .badge{font-size:11px}
@@ -1209,6 +1209,204 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .search-empty{padding:20px;text-align:center;font-size:12px;color:var(--txt3)}
 .chart-offline-note{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:8px}
 
+/* ═══ styles/50-body.css ═══ */
+/* ═══ Styles de la structure (partials/body.html), auparavant écrits en ligne ═══ */
+.sidebar-search-btn{display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:10px 10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--txt3);font-family:var(--sans);font-size:12px;cursor:pointer;text-align:left}
+.op-60{opacity:.6}
+.flex-1{flex:1}
+.kbd{background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px}
+.welcome-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.welcome-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.welcome-sub{font-size:12.5px;color:var(--txt3)}
+.btn-ghost.btn-welcome-x{padding:6px 12px;font-size:11px;flex-shrink:0}
+.welcome-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px}
+.wc-tip{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.wc-tip-title{font-size:12px;font-weight:600;margin-bottom:4px}
+.wc-tip-text{font-size:11.5px;color:var(--txt3);line-height:1.5}
+.mr-8{margin-right:8px}
+.fs-16{font-size:16px}
+.btn-ghost.btn-amber,.btn-ghost.btn-amber:hover{padding:7px 14px;font-size:11px;border-color:var(--amber);color:var(--amber)}
+.btn-ghost.btn-s7{padding:7px 10px;font-size:11px}
+.btn-ghost.btn-blue,.btn-ghost.btn-blue:hover{padding:7px 14px;font-size:11px;border-color:var(--blue);color:var(--blue)}
+.row-between-top{display:flex;justify-content:space-between;align-items:flex-start}
+.dd-main{flex:1;min-width:240px}
+.dd-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.dd-head-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mono-muted{font-size:11px;font-family:var(--mono);color:var(--txt3)}
+.dd-head-right{text-align:right;display:flex;align-items:center;gap:6px}
+.dd-bar{height:10px;background:var(--bg4);border-radius:calc(var(--r) * .5);overflow:hidden;position:relative}
+.dd-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.dd-limit{font-size:11px;font-family:var(--mono);color:var(--txt3);display:flex;align-items:center;gap:4px}
+.dd-side{display:flex;align-items:center;gap:10px;flex-shrink:0}
+label.dd-side-label,.field label.dd-side-label{font-size:11px;font-family:var(--mono);color:var(--txt3);white-space:nowrap}
+.pos-rel{position:relative}
+.input-suffix{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--txt3);pointer-events:none;font-family:var(--mono)}
+.row-end-10{display:flex;justify-content:flex-end;margin-bottom:10px}
+.btn-ghost.btn-s6{padding:6px 12px;font-size:11px}
+.mb-0{margin-bottom:0}
+.mb-16{margin-bottom:16px}
+.w-100{width:100%}
+.upload-icon{margin:0 auto 4px;display:block}
+.tbl-hdr-wrap{flex-wrap:wrap;gap:10px}
+.flex-wrap{flex-wrap:wrap}
+.btn-ghost.btn-s5{padding:5px 12px;font-size:11px}
+.panel-glow{margin-bottom:20px;background:linear-gradient(155deg, color-mix(in srgb, var(--purple) 6%, var(--bg2)), var(--bg2) 70%)}
+.h-280{height:280px}
+.mt-10{margin-top:10px}
+.hdr-between{display:flex;justify-content:space-between;align-items:center}
+label.pf-toggle,.field label.pf-toggle{display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono);color:var(--txt2);cursor:pointer;text-transform:none;letter-spacing:0}
+.pf-grid{padding:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.pf-options{padding:0 18px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px}
+label.check-label,.field label.check-label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt2);cursor:pointer}
+.txt2-12{font-size:12px;color:var(--txt2)}
+.hdr-wrap{justify-content:space-between;flex-wrap:wrap;row-gap:6px}
+.hint-plain{font-size:11px;color:var(--txt3);text-transform:none;letter-spacing:0}
+.row-end-6{display:flex;justify-content:flex-end;margin-bottom:6px}
+.dot-green{background:var(--green)}
+.dot-red{background:var(--red)}
+.dot-amber{background:var(--amber)}
+.dot-accent{background:var(--accent)}
+.th-sub{font-weight:normal;color:var(--txt3);font-size:11px}
+.dot-pink{background:#f472b6}
+.dot-blue{background:var(--blue)}
+.span-2{grid-column:span 2}
+.dot-purple{background:var(--purple)}
+.mb-14{margin-bottom:14px}
+.note-mono{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px;line-height:1.6}
+.row-g8{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row-g10{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.legend-row{display:flex;gap:16px;font-size:11px;font-family:var(--mono);color:var(--txt3);flex-wrap:wrap}
+.scroll-360{max-height:360px;overflow-y:auto}
+.mt-20{margin-top:20px}
+.eg-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:900px}
+.sep-top-16{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.amber-11{font-size:11px;color:var(--amber)}
+.center-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.inline-row5{display:flex;align-items:center;gap:5px}
+.green-11{font-size:11px;color:var(--green)}
+.red-11{font-size:11px;color:var(--red)}
+.note-center{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:10px;text-align:center;line-height:1.6}
+.note-center-8{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6}
+.muted-11{font-size:11px;color:var(--txt3)}
+.btn-ghost.ml-6{margin-left:6px}
+.center-row-10{display:flex;gap:10px;justify-content:center}
+.btn-danger.btn-danger-lg,.btn-danger.btn-danger-lg:hover{border-radius:var(--r);padding:10px 20px;font-family:var(--mono);font-size:12px;cursor:pointer;background:var(--red);color:#fff;border:none}
+.text-center{text-align:center}
+.btn-danger.btn-danger-sm,.btn-danger.btn-danger-sm:hover{border-radius:var(--r);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;background:var(--red);color:#fff;border:none}
+.btn-ghost.btn-s7-14{padding:7px 14px;font-size:11px}
+.grid-2-24{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+label.lbl-mono,.field label.lbl-mono{font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px}
+.row-wrap8{display:flex;gap:8px;flex-wrap:wrap}
+.span2-sep{grid-column:span 2;display:flex;align-items:center;gap:10px;padding-top:6px;border-top:1px solid var(--border)}
+label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(--txt2);cursor:pointer}
+.span2-row{grid-column:span 2;display:flex;align-items:center;gap:10px}
+.pad-18{padding:18px}
+.grid-2-center{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center}
+.hint-11{font-size:11px;color:var(--txt3);margin-top:6px}
+.sw-red{background:#ef5350}
+.sw-green{background:#26a69a}
+.sw-blue{background:#4c8dff}
+.sw-gold{background:#f0b429}
+.sw-white{background:#ffffff}
+.op-50{opacity:.5}
+/* classes composées */
+.legend-sq{display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);margin-right:4px;border:1px solid}
+.legend-sq.green{background:var(--green-d);border-color:var(--green)}.legend-sq.red{background:var(--red-d);border-color:var(--red)}.legend-sq.amber{background:var(--amber-d);border-color:var(--amber)}
+.center-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.span-2{grid-column:span 2}
+.row-wrap8{display:flex;gap:8px;flex-wrap:wrap}
+.mt-24{margin-top:24px}.mt-12{margin-top:12px}.mb-14{margin-bottom:14px}.text-left{text-align:left}
+.sep-top-14{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.sep-m14{margin:14px 0;padding-top:14px;border-top:1px solid var(--border)}
+#welcome-card{background:linear-gradient(155deg, color-mix(in srgb, var(--green) 7%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:22px 24px;margin-bottom:16px}
+#welcome-step3{font-size:11.5px;color:var(--txt3);line-height:1.5}
+#summary-banner{background:linear-gradient(155deg, color-mix(in srgb, var(--blue) 6%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--txt2)}
+#export-reminder{align-items:center;gap:14px;background:var(--amber-d);border:1px solid rgba(245,158,11,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px}
+#export-reminder-text{flex:1;font-size:12.5px;color:var(--txt2)}
+#import-reminder{align-items:center;gap:14px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px}
+#import-reminder-text{flex:1;font-size:12.5px;color:var(--txt2)}
+#dd-banner{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+#dd-date{background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none}
+#dd-status-badge{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:calc(var(--r) * .4);background:var(--bg3);color:var(--txt3)}
+#dd-amount{font-size:18px;font-weight:600;font-family:var(--mono);color:var(--txt)}
+#dd-limit-label{font-size:11px;font-family:var(--mono);color:var(--txt3)}
+#dd-edit-btn{background:none;border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt3);cursor:pointer;padding:3px 7px;font-size:11px;line-height:1}
+#dd-manual-row{align-items:center;gap:8px;margin-bottom:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);padding:8px 10px}
+#dd-manual-input{width:100px;background:var(--bg2);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
+#dd-bar{height:100%;width:0%;border-radius:calc(var(--r) * .5);transition:width .5s cubic-bezier(.4,0,.2,1),background .3s}
+#dd-warning-line{position:absolute;top:0;height:100%;width:1px;background:rgba(245,158,11,.6)}
+#dd-pct-label{font-size:11px;font-family:var(--mono);color:var(--txt3)}
+#dd-limit-pct{width:42px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .5);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:2px 4px;outline:none;text-align:center}
+#account-size{width:110px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:7px 28px 7px 10px;outline:none}
+#wrap-year-progress{height:260px}
+#wrap-underwater{height:92px}
+#asset-bars{min-height:120px}
+#wrap-r-distribution{height:210px}
+#wrap-radar{height:auto;overflow:visible}
+#edit-trade-banner{align-items:center;gap:10px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--blue)}
+#edit-trade-banner-text{flex:1}
+#distance-r-preview{font-size:11.5px;font-family:var(--mono);color:var(--green);margin-top:14px;padding:8px 12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)}
+#f-checklist{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+#f-mistakes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+#f-desc{min-height:120px}
+#f-review{min-height:70px}
+#filter-search{cursor:text;min-width:140px}
+#filter-date-from{cursor:pointer}
+#filter-date-to{cursor:pointer}
+#btn-group-day{padding:5px 12px;font-size:11px}
+#edge-finder-body{padding:18px}
+#checklist-analysis-body{padding:18px}
+#tilt-meter-body{padding:18px}
+#mistake-cost-body{padding:18px}
+#wrap-maemfe{height:260px}
+#wrap-rvr{height:260px}
+#sharpe-sortino-body{padding:18px}
+#coinflip-body{padding:18px}
+#mae-mfe-body{padding:18px}
+#whatif-body{padding:18px}
+#pf-enabled{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
+#pf-dd-type{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
+#pf-consistency-on{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
+#pf-consistency-pct{width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:6px 8px;outline:none}
+#sc-params-panel{margin-bottom:20px}
+#sc-zones-panel{margin-bottom:20px}
+#sc-table-panel{margin-bottom:20px}
+#sc-table{overflow-x:auto}
+#plan-notes{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:10px;resize:vertical;min-height:140px;outline:none;line-height:1.6}
+#calc-result{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#cal-monthly-stats{font-size:11px;font-family:var(--mono);color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px}
+#cal-month-label{font-family:var(--mono);font-size:13px;min-width:110px;text-align:center}
+#cal-grid{margin-bottom:20px}
+#cal-year-wrap{margin-bottom:20px}
+#cal-year-stats{font-size:12px;font-family:var(--mono);color:var(--txt2);margin-bottom:14px}
+#bilan-date-select{font-size:12px;padding:7px 12px}
+#csv-import-status{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px}
+#default-risk-eur{width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--amber);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
+#default-rr-win{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
+#default-rr-loss{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
+#tz-offset-hours{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center}
+#import-fx-rate{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center}
+#safety-snapshot-card{grid-column:span 2}
+#empty-trash-btn{padding:4px 10px;font-size:11px;margin-left:10px}
+#trash-list{margin-top:6px;text-align:left}
+#reset-backup-card{grid-column:span 2}
+#backup-fs-unsupported{font-size:11.5px;color:var(--amber);background:var(--amber-d);border:1px solid var(--amber);border-radius:var(--r);padding:10px 14px;margin:14px 0;line-height:1.6;text-align:left}
+#backup-slots-list{text-align:left;margin:14px 0;display:flex;flex-direction:column;gap:10px}
+#backup-weekday-select{font-size:12px;padding:6px 10px}
+#backup-last-run-info{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px;line-height:1.6}
+#theme-preset-grid{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+#custom-theme-grid{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+#glow-toggle{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+#texture-toggle{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+#autotheme-toggle{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+#radius-slider{width:100%;accent-color:var(--green)}
+#font-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--sans);font-size:13px;padding:8px 10px;outline:none}
+#font-mono-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:13px;padding:8px 10px;outline:none}
+#border-style-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
+#chart-line-style-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
+#heat-intensity-slider{width:100%;accent-color:var(--green)}
+#chart-intensity-slider{width:100%;accent-color:var(--green)}
+
 </style>
 </head>
 <body>
@@ -1238,8 +1436,8 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         <button class="jr-tab" data-journal="pf" role="tab" onclick="switchJournal('pf')">PropFirm</button>
       </div>
     </div>
-    <button onclick="openGlobalSearch()" style="display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:10px 10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--txt3);font-family:var(--sans);font-size:12px;cursor:pointer;text-align:left">
-      <span style="opacity:.6">🔍</span><span style="flex:1">Rechercher…</span><kbd style="background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px">⌘K</kbd>
+    <button class="sidebar-search-btn" onclick="openGlobalSearch()">
+      <span class="op-60">🔍</span><span class="flex-1">Rechercher…</span><kbd class="kbd">⌘K</kbd>
     </button>
     <nav class="nav">
       <button class="nav-item active" onclick="showPage('dashboard',this)" data-page="dashboard" data-navid="dashboard">
@@ -1326,47 +1524,47 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 
     <!-- ═══ DASHBOARD ═══ -->
     <div id="page-dashboard" class="page active">
-      <div id="welcome-card" style="display:none;background:linear-gradient(155deg, color-mix(in srgb, var(--green) 7%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:22px 24px;margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+      <div id="welcome-card" style="display:none">
+        <div class="welcome-head">
           <div>
-            <div style="font-size:16px;font-weight:600;margin-bottom:4px">👋 Bienvenue dans ton journal de trading</div>
-            <div style="font-size:12.5px;color:var(--txt3)">Quelques repères pour bien démarrer :</div>
+            <div class="welcome-title">👋 Bienvenue dans ton journal de trading</div>
+            <div class="welcome-sub">Quelques repères pour bien démarrer :</div>
           </div>
-          <button class="btn-ghost" onclick="dismissWelcome()" style="padding:6px 12px;font-size:11px;flex-shrink:0">J'ai compris</button>
+          <button class="btn-ghost btn-welcome-x" onclick="dismissWelcome()">J'ai compris</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px">
-          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-            <div style="font-size:12px;font-weight:600;margin-bottom:4px">1. Ajoute un trade</div>
-            <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">Remplis le formulaire ci-dessous, ou importe directement un CSV TradingView depuis Export/Import.</div>
+        <div class="welcome-steps">
+          <div class="wc-tip">
+            <div class="wc-tip-title">1. Ajoute un trade</div>
+            <div class="wc-tip-text">Remplis le formulaire ci-dessous, ou importe directement un CSV TradingView depuis Export/Import.</div>
           </div>
-          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-            <div style="font-size:12px;font-weight:600;margin-bottom:4px">2. Personnalise ton plan</div>
-            <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">Édite ta checklist, tes règles de risque et tes erreurs à suivre dans Plan de trading.</div>
+          <div class="wc-tip">
+            <div class="wc-tip-title">2. Personnalise ton plan</div>
+            <div class="wc-tip-text">Édite ta checklist, tes règles de risque et tes erreurs à suivre dans Plan de trading.</div>
           </div>
-          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-            <div style="font-size:12px;font-weight:600;margin-bottom:4px">3. Configure ton compte</div>
-            <div id="welcome-step3" style="font-size:11.5px;color:var(--txt3);line-height:1.5">Solde, limite de perte journalière, et challenge Prop Firm si tu en fais un.</div>
+          <div class="wc-tip">
+            <div class="wc-tip-title">3. Configure ton compte</div>
+            <div id="welcome-step3">Solde, limite de perte journalière, et challenge Prop Firm si tu en fais un.</div>
           </div>
-          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
-            <div style="font-size:12px;font-weight:600;margin-bottom:4px">4. Fais-le tien</div>
-            <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd style="background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
+          <div class="wc-tip">
+            <div class="wc-tip-title">4. Fais-le tien</div>
+            <div class="wc-tip-text">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd class="kbd">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
           </div>
         </div>
       </div>
-      <div id="summary-banner" style="display:none;background:linear-gradient(155deg, color-mix(in srgb, var(--blue) 6%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--txt2)">
-        <span style="margin-right:8px">📊</span><span id="summary-banner-text"></span>
+      <div id="summary-banner" style="display:none">
+        <span class="mr-8">📊</span><span id="summary-banner-text"></span>
       </div>
-      <div id="export-reminder" style="display:none;align-items:center;gap:14px;background:var(--amber-d);border:1px solid rgba(245,158,11,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px">
-        <span style="font-size:16px">💾</span>
-        <span id="export-reminder-text" style="flex:1;font-size:12.5px;color:var(--txt2)"></span>
-        <button class="btn-ghost" style="padding:7px 14px;font-size:11px;border-color:var(--amber);color:var(--amber)" onclick="showPage('export', document.querySelector('.nav-item[onclick*=export]'));exportData()">Exporter maintenant</button>
-        <button class="btn-ghost" style="padding:7px 10px;font-size:11px" onclick="dismissExportReminder()">Plus tard</button>
+      <div id="export-reminder" style="display:none">
+        <span class="fs-16">💾</span>
+        <span id="export-reminder-text"></span>
+        <button class="btn-ghost btn-amber" onclick="showPage('export', document.querySelector('.nav-item[onclick*=export]'));exportData()">Exporter maintenant</button>
+        <button class="btn-ghost btn-s7" onclick="dismissExportReminder()">Plus tard</button>
       </div>
-      <div id="import-reminder" style="display:none;align-items:center;gap:14px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px">
-        <span style="font-size:16px">🔄</span>
-        <span id="import-reminder-text" style="flex:1;font-size:12.5px;color:var(--txt2)"></span>
-        <button class="btn-ghost" style="padding:7px 14px;font-size:11px;border-color:var(--blue);color:var(--blue)" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'))">Importer maintenant</button>
-        <button class="btn-ghost" style="padding:7px 10px;font-size:11px" onclick="dismissImportReminder()">Plus tard</button>
+      <div id="import-reminder" style="display:none">
+        <span class="fs-16">🔄</span>
+        <span id="import-reminder-text"></span>
+        <button class="btn-ghost btn-blue" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'))">Importer maintenant</button>
+        <button class="btn-ghost btn-s7" onclick="dismissImportReminder()">Plus tard</button>
       </div>
       <div class="page-hdr">
         <div class="page-hdr-left">
@@ -1387,7 +1585,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       <div id="r-coverage"></div>
       <div class="kpi-grid kpi-grid-5">
         <div class="kpi k-green">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="row-between-top">
             <div class="kpi-label">Win rate</div>
             <span class="kpi-trend" id="k-wr-trend"></span>
           </div>
@@ -1396,7 +1594,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           <svg class="kpi-spark" id="k-wr-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
         </div>
         <div class="kpi k-blue">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="row-between-top">
             <div class="kpi-label">P&amp;L total (R)</div>
             <span class="kpi-trend" id="k-pnl-trend"></span>
           </div>
@@ -1405,7 +1603,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           <svg class="kpi-spark" id="k-pnl-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
         </div>
         <div class="kpi k-amber">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="row-between-top">
             <div class="kpi-label">Payoff moyen</div>
             <span class="kpi-trend" id="k-rr-trend"></span>
           </div>
@@ -1414,7 +1612,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           <svg class="kpi-spark" id="k-rr-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
         </div>
         <div class="kpi k-purple">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="row-between-top">
             <div class="kpi-label">Profit Factor</div>
             <span class="kpi-trend" id="k-pf-trend"></span>
           </div>
@@ -1431,52 +1629,52 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
 
       <!-- DD JOURNALIER INDICATOR -->
-      <div id="dd-banner" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-        <div style="flex:1;min-width:240px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3);">Drawdown journalier</span>
-              <input type="date" id="dd-date" onchange="renderDDBanner()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none">
-              <span id="dd-status-badge" style="font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:calc(var(--r) * .4);background:var(--bg3);color:var(--txt3)">—</span>
+      <div id="dd-banner">
+        <div class="dd-main">
+          <div class="dd-head">
+            <div class="dd-head-left">
+              <span class="mono-muted">Drawdown journalier</span>
+              <input type="date" id="dd-date" onchange="renderDDBanner()">
+              <span id="dd-status-badge">—</span>
             </div>
-            <div style="text-align:right;display:flex;align-items:center;gap:6px">
-              <span id="dd-amount" style="font-size:18px;font-weight:600;font-family:var(--mono);color:var(--txt)">—</span>
-              <span id="dd-limit-label" style="font-size:11px;font-family:var(--mono);color:var(--txt3)"></span>
-              <button id="dd-edit-btn" onclick="toggleDDManualInput()" title="Modifier à la main" style="background:none;border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt3);cursor:pointer;padding:3px 7px;font-size:11px;line-height:1">✎</button>
+            <div class="dd-head-right">
+              <span id="dd-amount">—</span>
+              <span id="dd-limit-label"></span>
+              <button id="dd-edit-btn" onclick="toggleDDManualInput()" title="Modifier à la main">✎</button>
             </div>
           </div>
-          <div id="dd-manual-row" style="display:none;align-items:center;gap:8px;margin-bottom:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);padding:8px 10px">
-            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">P&L du jour (€), à la main :</span>
-            <input type="number" id="dd-manual-input" step="1" placeholder="ex : -120" style="width:100px;background:var(--bg2);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none">
-            <button class="btn-ghost" style="padding:5px 10px;font-size:11px" onclick="saveDDManual()">Enregistrer</button>
-            <button class="btn-ghost" style="padding:5px 10px;font-size:11px" onclick="clearDDManual()">Revenir à l'auto</button>
+          <div id="dd-manual-row" style="display:none">
+            <span class="mono-muted">P&L du jour (€), à la main :</span>
+            <input type="number" id="dd-manual-input" step="1" placeholder="ex : -120">
+            <button class="btn-ghost btn-xs2" onclick="saveDDManual()">Enregistrer</button>
+            <button class="btn-ghost btn-xs2" onclick="clearDDManual()">Revenir à l'auto</button>
           </div>
-          <div style="height:10px;background:var(--bg4);border-radius:calc(var(--r) * .5);overflow:hidden;position:relative">
-            <div id="dd-bar" style="height:100%;width:0%;border-radius:calc(var(--r) * .5);transition:width .5s cubic-bezier(.4,0,.2,1),background .3s"></div>
-            <div id="dd-warning-line" style="position:absolute;top:0;height:100%;width:1px;background:rgba(245,158,11,.6);display:none"></div>
+          <div class="dd-bar">
+            <div id="dd-bar"></div>
+            <div id="dd-warning-line" style="display:none"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">0%</span>
-            <span id="dd-pct-label" style="font-size:11px;font-family:var(--mono);color:var(--txt3)">—</span>
-            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:flex;align-items:center;gap:4px">
+          <div class="dd-foot">
+            <span class="mono-muted">0%</span>
+            <span id="dd-pct-label">—</span>
+            <span class="dd-limit">
               Limite
-              <input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()" style="width:42px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .5);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:2px 4px;outline:none;text-align:center">%
+              <input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()">%
             </span>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-          <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);white-space:nowrap">Solde de départ</label>
-          <div style="position:relative">
+        <div class="dd-side">
+          <label class="dd-side-label">Solde de départ</label>
+          <div class="pos-rel">
             <input type="number" id="account-size" placeholder="10000" min="0" step="100"
-              style="width:110px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:7px 28px 7px 10px;outline:none"
+             
               oninput="saveAccountSize()" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'">
-            <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--txt3);pointer-events:none;font-family:var(--mono)">€</span>
+            <span class="input-suffix">€</span>
           </div>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-        <button class="btn-ghost" style="padding:6px 12px;font-size:11px" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
+      <div class="row-end-10">
+        <button class="btn-ghost btn-s6" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
       </div>
       <div class="dash-grid" id="dash-grid">
         <div class="dash-widget w-full" data-widget="year-progress">
@@ -1493,9 +1691,9 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               </span>
             </div>
             <div class="eq-stats" id="equity-stats"></div>
-            <div class="chart-wrap" id="wrap-year-progress" style="height:260px"><canvas id="yearProgressChart"></canvas></div>
+            <div class="chart-wrap" id="wrap-year-progress"><canvas id="yearProgressChart"></canvas></div>
             <div class="uw-head"><span>Drawdown depuis le plus haut</span><span id="drawdown-sub"></span></div>
-            <div class="chart-wrap" id="wrap-underwater" style="height:92px"><canvas id="underwaterChart"></canvas></div>
+            <div class="chart-wrap" id="wrap-underwater"><canvas id="underwaterChart"></canvas></div>
             <div class="widget-resize-handle"></div>
           </div>
         </div>
@@ -1520,7 +1718,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div class="asset-list" id="asset-bars" style="min-height:120px"><p class="empty-note">Aucun trade</p></div>
+            <div class="asset-list" id="asset-bars"><p class="empty-note">Aucun trade</p></div>
           </div>
         </div>
         <div class="dash-widget w-half" data-widget="r-distribution">
@@ -1533,7 +1731,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               </span>
             </div>
             <div class="eq-stats" id="r-distribution-stats"></div>
-            <div class="chart-wrap" id="wrap-r-distribution" style="height:210px"><canvas id="rDistChart"></canvas></div>
+            <div class="chart-wrap" id="wrap-r-distribution"><canvas id="rDistChart"></canvas></div>
             <div class="widget-resize-handle"></div>
           </div>
         </div>
@@ -1551,7 +1749,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               <div class="disc-meter"><div id="discipline-score-marker"></div></div>
             </div>
             <div id="discipline-note" class="disc-note"></div>
-            <div class="chart-wrap" id="wrap-radar" style="height:auto;overflow:visible"><div id="discipline-list"></div></div>
+            <div class="chart-wrap" id="wrap-radar"><div id="discipline-list"></div></div>
           </div>
         </div>
         <div class="dash-widget w-full" data-widget="heatmap-dh">
@@ -1581,9 +1779,9 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 
       <!-- Quick add form on dashboard -->
       <div class="form-card" id="trade-form-card">
-        <div id="edit-trade-banner" style="display:none;align-items:center;gap:10px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--blue)">
-          <span>✏️</span><span id="edit-trade-banner-text" style="flex:1">Modification d'un trade existant</span>
-          <button class="btn-ghost" onclick="cancelEditTrade()" style="padding:5px 10px;font-size:11px">Annuler</button>
+        <div id="edit-trade-banner" style="display:none">
+          <span>✏️</span><span id="edit-trade-banner-text">Modification d'un trade existant</span>
+          <button class="btn-ghost btn-xs2" onclick="cancelEditTrade()">Annuler</button>
         </div>
         <div class="form-title"><div class="form-title-dot"></div><span id="form-title-text">Nouveau trade</span></div>
 
@@ -1611,7 +1809,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             </select>
           </div>
         </div>
-        <div class="form-row f4" style="margin-bottom:20px">
+        <div class="form-row f4 mb-20">
           <div class="field"><label for="f-pnleur">P&amp;L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
           <div class="field"><label for="f-setup">Setup / stratégie</label><input type="text" id="f-setup" list="setup-list" placeholder="ex : OB + FVG" maxlength="60" autocomplete="off"><datalist id="setup-list"></datalist></div>
           <div class="field"><label for="f-rr">RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
@@ -1624,13 +1822,13 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             <span class="fs-icon">🎯</span><span class="fs-title">Prix & Stop Loss</span><span class="fs-hint">pour un R calculé exactement, pas estimé</span><span class="fs-chevron">▾</span>
           </button>
           <div class="form-section-body">
-            <div class="form-row f4" style="margin-bottom:0">
+            <div class="form-row f4 mb-0">
               <div class="field"><label>Prix d'entrée</label><input type="number" id="f-entry-price" placeholder="ex : 1.13661" step="any" oninput="updateDistanceRPreview()"></div>
               <div class="field"><label>Stop Loss (prix)</label><input type="number" id="f-sl-price" placeholder="ex : 1.13500" step="any" oninput="updateDistanceRPreview()"></div>
               <div class="field"><label>Take Profit (prix)</label><input type="number" id="f-tp-price" placeholder="ex : 1.14000" step="any" oninput="updateDistanceRPreview()"></div>
               <div class="field"><label>Prix de sortie réel</label><input type="number" id="f-exit-price" placeholder="ex : 1.13980" step="any" oninput="updateDistanceRPreview()"></div>
             </div>
-            <div id="distance-r-preview" style="display:none;font-size:11.5px;font-family:var(--mono);color:var(--green);margin-top:14px;padding:8px 12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)"></div>
+            <div id="distance-r-preview" style="display:none"></div>
           </div>
         </div>
 
@@ -1639,7 +1837,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             <span class="fs-icon">🕐</span><span class="fs-title">Contexte du trade</span><span class="fs-hint">timeframe, session, heures, taille</span><span class="fs-chevron">▾</span>
           </button>
           <div class="form-section-body">
-            <div class="form-row f4" style="margin-bottom:12px">
+            <div class="form-row f4 mb-12">
               <div class="field"><label>Timeframe</label>
                 <select id="f-tf">
                   <option value="">Sélectionner…</option>
@@ -1655,7 +1853,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
               <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
             </div>
-            <div class="form-row f3" style="margin-bottom:0">
+            <div class="form-row f3 mb-0">
               <div class="field"><label for="f-tags">Tags libres</label><input type="text" id="f-tags" placeholder="ex : news, contre-tendance" maxlength="200" autocomplete="off"></div>
               <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
               <div class="field"><label>Note émotionnelle</label>
@@ -1677,16 +1875,16 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             <span class="fs-icon">✅</span><span class="fs-title">Checklist & erreurs</span><span class="fs-hint">pour l'analyse Edge Finder et le coût des erreurs</span><span class="fs-chevron">▾</span>
           </button>
           <div class="form-section-body">
-            <div class="form-row" style="margin-bottom:16px">
-              <div class="field" style="width:100%">
+            <div class="form-row mb-16">
+              <div class="field w-100">
                 <label>Checklist d'entrée respectée pour ce trade</label>
-                <div id="f-checklist" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+                <div id="f-checklist"></div>
               </div>
             </div>
-            <div class="form-row" style="margin-bottom:0">
-              <div class="field" style="width:100%">
+            <div class="form-row mb-0">
+              <div class="field w-100">
                 <label>Erreurs commises sur ce trade</label>
-                <div id="f-mistakes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+                <div id="f-mistakes"></div>
               </div>
             </div>
           </div>
@@ -1697,7 +1895,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             <span class="fs-icon">📝</span><span class="fs-title">Notes & captures</span><span class="fs-hint">description, captures, note après coup</span><span class="fs-chevron">▾</span>
           </button>
           <div class="form-section-body">
-            <div class="form-row f2" style="margin-bottom:12px">
+            <div class="form-row f2 mb-12">
               <div class="field">
                 <label>Captures du trade (plusieurs possibles : avant, pendant, après)</label>
                 <div class="img-upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Ajouter des captures"
@@ -1708,16 +1906,16 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
                   onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('f-img').click()}">
                   <input type="file" id="f-img" accept="image/*" multiple onchange="handleImgSelect(this)">
                   <div id="upload-placeholder">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--txt3)" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 4px;display:block"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2 14l4-4 3 3 3-4 4 5"/></svg>
+                    <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--txt3)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2 14l4-4 3 3 3-4 4 5"/></svg>
                     <p>Clique, glisse ou colle (Ctrl+V) une ou plusieurs images</p>
                   </div>
                   <div id="upload-preview" class="thumbs" style="display:none"></div>
                 </div>
               </div>
-              <div class="field"><label for="f-desc">Description / setup / confluences</label><textarea id="f-desc" placeholder="Pourquoi ce trade ? Setup, confluences, raison d'entrée…" style="min-height:120px"></textarea></div>
+              <div class="field"><label for="f-desc">Description / setup / confluences</label><textarea id="f-desc" placeholder="Pourquoi ce trade ? Setup, confluences, raison d'entrée…"></textarea></div>
             </div>
-            <div class="form-row" style="margin-bottom:0">
-              <div class="field"><label for="f-review">Note après coup (revue)</label><textarea id="f-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" style="min-height:70px"></textarea></div>
+            <div class="form-row mb-0">
+              <div class="field"><label for="f-review">Note après coup (revue)</label><textarea id="f-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?"></textarea></div>
             </div>
           </div>
         </div>
@@ -1727,7 +1925,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg>
             <span id="trade-submit-btn-text">Enregistrer le trade</span>
           </button>
-          <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Sauvegarde automatique</span>
+          <span class="mono-muted">Sauvegarde automatique</span>
         </div>
       </div>
     </div>
@@ -1742,10 +1940,10 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
 
       <div class="tbl-card">
-        <div class="tbl-hdr" style="flex-wrap:wrap;gap:10px">
+        <div class="tbl-hdr tbl-hdr-wrap">
           <h3>Historique</h3>
-          <div class="tbl-controls" style="flex-wrap:wrap">
-            <input type="text" class="filter-select" id="filter-search" placeholder="🔍 Rechercher…" oninput="renderTable()" style="cursor:text;min-width:140px">
+          <div class="tbl-controls flex-wrap">
+            <input type="text" class="filter-select" id="filter-search" placeholder="🔍 Rechercher…" oninput="renderTable()">
             <select class="filter-select" id="filter-res" onchange="renderTable()">
               <option value="">Tous les résultats</option>
               <option value="TP">TP</option><option value="SL">SL</option>
@@ -1762,10 +1960,10 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               <option>Asie</option><option>Overlap Asie/Londres</option><option>Londres</option>
               <option>Overlap LDN/NY</option><option>New York</option><option>Hors session</option>
             </select>
-            <input type="date" class="filter-select" id="filter-date-from" onchange="renderTable()" style="cursor:pointer" title="Du">
-            <input type="date" class="filter-select" id="filter-date-to" onchange="renderTable()" style="cursor:pointer" title="Au">
-            <button class="btn-ghost" id="btn-group-day" onclick="toggleGroupByDay()" style="padding:5px 12px;font-size:11px">Grouper par jour</button>
-            <button class="btn-ghost" onclick="resetTradeFilters()" style="padding:5px 12px;font-size:11px">Réinitialiser</button>
+            <input type="date" class="filter-select" id="filter-date-from" onchange="renderTable()" title="Du">
+            <input type="date" class="filter-select" id="filter-date-to" onchange="renderTable()" title="Au">
+            <button class="btn-ghost" id="btn-group-day" onclick="toggleGroupByDay()">Grouper par jour</button>
+            <button class="btn-ghost btn-s5" onclick="resetTradeFilters()">Réinitialiser</button>
             <span class="tbl-count" id="tbl-count">0 trade</span>
           </div>
         </div>
@@ -1807,9 +2005,9 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
 
       <div class="subtab-panel active" data-subtab="overview">
-        <div class="panel" style="margin-bottom:20px;background:linear-gradient(155deg, color-mix(in srgb, var(--purple) 6%, var(--bg2)), var(--bg2) 70%)">
+        <div class="panel panel-glow">
           <div class="panel-hdr"><span>Edge Finder<small class="panel-sub">Scan automatique de tous tes axes d'analyse</small></span></div>
-          <div id="edge-finder-body" style="padding:18px"></div>
+          <div id="edge-finder-body"></div>
         </div>
         <div class="stats-grid">
           <div class="stat-section">
@@ -1825,9 +2023,9 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             <div id="stats-rr"></div>
           </div>
         </div>
-        <div class="panel" style="margin-bottom:20px">
+        <div class="panel mb-20">
           <div class="panel-hdr">Performance par asset</div>
-          <div style="overflow-x:auto">
+          <div class="scroll-x">
             <table>
               <thead><tr><th>Asset</th><th>Trades</th><th>TP</th><th>SL</th><th>BE</th><th>Win Rate</th><th>P&L (R)</th><th>RR Moyen</th></tr></thead>
               <tbody id="stats-assets-tbody"></tbody>
@@ -1836,7 +2034,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         </div>
         <div class="panel">
           <div class="panel-hdr">Performance par timeframe</div>
-          <div style="overflow-x:auto">
+          <div class="scroll-x">
             <table>
               <thead><tr><th>TF</th><th>Trades</th><th>Win Rate</th><th>P&L (R)</th></tr></thead>
               <tbody id="stats-tf-tbody"></tbody>
@@ -1846,10 +2044,10 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
 
       <div class="subtab-panel" data-subtab="timing">
-        <div class="charts-row" style="grid-template-columns:1fr 1fr">
+        <div class="charts-row cols-2">
           <div class="panel">
             <div class="panel-hdr">Meilleurs jours de la semaine</div>
-            <div style="overflow-x:auto">
+            <div class="scroll-x">
               <table>
                 <thead><tr><th>Jour</th><th>Trades</th><th>Win Rate</th><th>RR total</th></tr></thead>
                 <tbody id="stats-weekday-tbody"></tbody>
@@ -1858,7 +2056,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           </div>
           <div class="panel">
             <div class="panel-hdr">Meilleures heures pour trader (entrée)</div>
-            <div style="overflow-x:auto">
+            <div class="scroll-x">
               <table>
                 <thead><tr><th>Heure</th><th>Trades</th><th>Win Rate</th><th>RR total</th></tr></thead>
                 <tbody id="stats-hour-tbody"></tbody>
@@ -1869,22 +2067,22 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
 
       <div class="subtab-panel" data-subtab="behavior">
-        <div class="panel" style="margin-bottom:20px">
+        <div class="panel mb-20">
           <div class="panel-hdr"><span>Respect du plan vs résultats<small class="panel-sub">Checklist cochée à l'ajout du trade</small></span></div>
-          <div id="checklist-analysis-body" style="padding:18px"></div>
+          <div id="checklist-analysis-body"></div>
         </div>
-        <div class="panel" style="margin-bottom:20px">
+        <div class="panel mb-20">
           <div class="panel-hdr"><span>Tilt Meter<small class="panel-sub">Détection de revenge trading après une perte</small></span></div>
-          <div id="tilt-meter-body" style="padding:18px"></div>
+          <div id="tilt-meter-body"></div>
         </div>
         <div class="panel">
           <div class="panel-hdr"><span>Coût de tes erreurs<small class="panel-sub">€ perdus par type d'erreur taguée</small></span></div>
-          <div id="mistake-cost-body" style="padding:18px"></div>
+          <div id="mistake-cost-body"></div>
         </div>
       </div>
 
       <div class="subtab-panel" data-subtab="analyses">
-        <div class="panel" style="margin-bottom:12px">
+        <div class="panel mb-12">
           <div class="panel-hdr"><span>Simulation Monte-Carlo<small class="panel-sub" id="mc-sub">1 000 futurs possibles de ta courbe, tirés au hasard dans tes propres résultats</small></span>
             <span class="mc-controls">
               <label class="fb-label" for="mc-n">Trades simulés</label>
@@ -1894,19 +2092,19 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
             </span>
           </div>
           <div class="eq-stats" id="mc-stats"></div>
-          <div class="chart-wrap" style="height:280px"><canvas id="mcChart"></canvas></div>
-          <p class="ui-muted" style="margin-top:10px">Chaque simulation rejoue tes trades clos dans un ordre et une combinaison aléatoires (tirage avec remise). La zone foncée contient la moitié des scénarios, la zone claire 90 %. Ce n'est pas une prédiction : c'est la dispersion que ton edge actuel peut produire par simple malchance ou chance.</p>
+          <div class="chart-wrap h-280"><canvas id="mcChart"></canvas></div>
+          <p class="ui-muted mt-10">Chaque simulation rejoue tes trades clos dans un ordre et une combinaison aléatoires (tirage avec remise). La zone foncée contient la moitié des scénarios, la zone claire 90 %. Ce n'est pas une prédiction : c'est la dispersion que ton edge actuel peut produire par simple malchance ou chance.</p>
         </div>
-        <div class="charts-row" style="grid-template-columns:1fr 1fr">
+        <div class="charts-row cols-2">
           <div class="panel">
             <div class="panel-hdr"><span>Excursions MAE / MFE<small class="panel-sub">chaque point = un trade · plus bas = moins de chaleur encaissée, plus haut = plus de profit latent</small></span></div>
             <div class="eq-stats" id="maemfe-stats"></div>
-            <div class="chart-wrap" style="height:260px" id="wrap-maemfe"><canvas id="maeMfeChart"></canvas></div>
+            <div class="chart-wrap" id="wrap-maemfe"><canvas id="maeMfeChart"></canvas></div>
           </div>
           <div class="panel">
             <div class="panel-hdr"><span>R réalisé vs R visé<small class="panel-sub">trades avec prix d'entrée, stop, objectif et sortie</small></span></div>
             <div class="eq-stats" id="rvr-stats"></div>
-            <div class="chart-wrap" style="height:260px" id="wrap-rvr"><canvas id="rvrChart"></canvas></div>
+            <div class="chart-wrap" id="wrap-rvr"><canvas id="rvrChart"></canvas></div>
           </div>
         </div>
         <div class="panel">
@@ -1916,23 +2114,23 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
 
       <div class="subtab-panel" data-subtab="advanced">
-        <div class="charts-row" style="grid-template-columns:1fr 1fr">
+        <div class="charts-row cols-2">
           <div class="panel">
             <div class="panel-hdr"><span>Ratios ajustés au risque<small class="panel-sub">Sharpe / Sortino, sur P&L journalier</small></span></div>
-            <div id="sharpe-sortino-body" style="padding:18px"></div>
+            <div id="sharpe-sortino-body"></div>
           </div>
           <div class="panel">
             <div class="panel-hdr"><span>Coin Flip Distribution<small class="panel-sub">Ton edge est-il statistiquement réel ?</small></span></div>
-            <div id="coinflip-body" style="padding:18px"></div>
+            <div id="coinflip-body"></div>
           </div>
         </div>
-        <div class="panel" style="margin-bottom:20px">
+        <div class="panel mb-20">
           <div class="panel-hdr"><span>Analyse MAE / MFE<small class="panel-sub">Excursion adverse / favorable — trades importés de TradingView</small></span></div>
-          <div id="mae-mfe-body" style="padding:18px"></div>
+          <div id="mae-mfe-body"></div>
         </div>
         <div class="panel">
           <div class="panel-hdr"><span>Comparateur "et si"<small class="panel-sub">Simule un autre objectif de RR sur ton historique réel</small></span></div>
-          <div id="whatif-body" style="padding:18px"></div>
+          <div id="whatif-body"></div>
         </div>
       </div>
     </div>
@@ -1943,20 +2141,20 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         <div class="page-hdr-left"><h2>Prop Firm</h2><p>Suivi de conformité pour challenges et comptes financés</p></div>
       </div>
 
-      <div class="panel" style="margin-bottom:20px">
-        <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="panel mb-20">
+        <div class="panel-hdr hdr-between">
           <span>Paramètres du challenge</span>
-          <label style="display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono);color:var(--txt2);cursor:pointer;text-transform:none;letter-spacing:0">
-            <input type="checkbox" id="pf-enabled" onchange="savePfSetting('enabled', this.checked?1:0); renderPropFirm()" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer">
+          <label class="pf-toggle">
+            <input type="checkbox" id="pf-enabled" onchange="savePfSetting('enabled', this.checked?1:0); renderPropFirm()">
             Activer le suivi
           </label>
         </div>
-        <div style="padding:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+        <div class="pf-grid">
           <div class="field"><label>Objectif de profit (%)</label><input type="number" id="pf-target-pct" step="0.5" min="0" oninput="savePfSetting('target_pct', this.value); renderPropFirm()"></div>
           <div class="field"><label>Perte totale max (%)</label><input type="number" id="pf-maxdd-pct" step="0.5" min="0" oninput="savePfSetting('maxdd_pct', this.value); renderPropFirm()"></div>
           <div class="field">
             <label>Type de drawdown</label>
-            <select id="pf-dd-type" onchange="savePfSetting('dd_type', this.value); renderPropFirm()" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none">
+            <select id="pf-dd-type" onchange="savePfSetting('dd_type', this.value); renderPropFirm()">
               <option value="static">Statique (fixe)</option>
               <option value="trailing_eod">Trailing — fin de journée</option>
               <option value="trailing_intraday">Trailing — intrajournalier</option>
@@ -1964,15 +2162,15 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           </div>
           <div class="field"><label>Jours de trading min.</label><input type="number" id="pf-min-days" step="1" min="0" oninput="savePfSetting('min_days', this.value); renderPropFirm()"></div>
         </div>
-        <div style="padding:0 18px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px">
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt2);cursor:pointer">
-            <input type="checkbox" id="pf-consistency-on" onchange="savePfSetting('consistency_on', this.checked?1:0); renderPropFirm()" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer">
+        <div class="pf-options">
+          <label class="check-label">
+            <input type="checkbox" id="pf-consistency-on" onchange="savePfSetting('consistency_on', this.checked?1:0); renderPropFirm()">
             Règle de consistance — le meilleur jour ne doit pas dépasser
           </label>
-          <input type="number" id="pf-consistency-pct" step="1" min="1" max="100" oninput="savePfSetting('consistency_pct', this.value); renderPropFirm()" style="width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:6px 8px;outline:none">
-          <span style="font-size:12px;color:var(--txt2)">% du profit total</span>
-          <span style="flex:1"></span>
-          <span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Perte journalière max : réglée dans le bandeau DD du Dashboard (<span id="pf-daily-limit-echo">1</span>%)</span>
+          <input type="number" id="pf-consistency-pct" step="1" min="1" max="100" oninput="savePfSetting('consistency_pct', this.value); renderPropFirm()">
+          <span class="txt2-12">% du profit total</span>
+          <span class="flex-1"></span>
+          <span class="mono-muted">Perte journalière max : réglée dans le bandeau DD du Dashboard (<span id="pf-daily-limit-echo">1</span>%)</span>
         </div>
       </div>
 
@@ -1986,7 +2184,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         <div class="page-hdr-left"><h2>Scaling Account</h2><p>Repère les bons moments pour augmenter ta taille de position selon la taille de ton compte</p></div>
       </div>
 
-      <div class="panel sc-zones-panel" id="sc-params-panel" style="margin-bottom:20px">
+      <div class="panel sc-zones-panel" id="sc-params-panel">
         <div class="sc-zones-head" onclick="toggleScalingParamsPanel()">
           <span class="sc-zones-title">Paramètres<span class="sc-zones-count sc-sum" id="sc-params-summary"></span></span>
           <span class="sc-zones-actions"><span class="sc-zones-chevron"><span id="sc-params-hint">Déplier</span><span class="sc-zones-arrow">▾</span></span></span>
@@ -2020,15 +2218,15 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 
       <div class="sc-tiles" id="sc-tiles"></div>
 
-      <div class="panel" style="margin-bottom:20px">
-        <div class="panel-hdr" style="justify-content:space-between;flex-wrap:wrap;row-gap:6px">
+      <div class="panel mb-20">
+        <div class="panel-hdr hdr-wrap">
           <span>Frise des paliers</span>
-          <span style="font-size:11px;color:var(--txt3);text-transform:none;letter-spacing:0">Glisse sur la bande pointillée pour marquer une zone coussin</span>
+          <span class="hint-plain">Glisse sur la bande pointillée pour marquer une zone coussin</span>
         </div>
         <div class="sc-tl-wrap" id="sc-tl-wrap"><div class="sc-tl" id="sc-tl"></div></div>
       </div>
 
-      <div class="panel sc-zones-panel" id="sc-zones-panel" style="margin-bottom:20px">
+      <div class="panel sc-zones-panel" id="sc-zones-panel">
         <div class="sc-zones-head" onclick="toggleScalingZonesPanel()">
           <span class="sc-zones-title">Zones coussins de sécurité<span class="sc-zones-count" id="sc-zones-count"></span></span>
           <span class="sc-zones-actions">
@@ -2037,14 +2235,14 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           </span>
         </div>
         <div class="sc-zones-body">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-            <button class="btn-ghost" style="padding:6px 12px;font-size:11px" onclick="addScalingZone()">+ Ajouter une zone</button>
+          <div class="row-end-6">
+            <button class="btn-ghost btn-s6" onclick="addScalingZone()">+ Ajouter une zone</button>
           </div>
           <div id="sc-zones"></div>
         </div>
       </div>
 
-      <div class="panel sc-zones-panel" id="sc-table-panel" style="margin-bottom:20px">
+      <div class="panel sc-zones-panel" id="sc-table-panel">
         <div class="sc-zones-head" onclick="toggleScalingTablePanel()">
           <span class="sc-zones-title">Tableau des paliers<span class="sc-zones-count" id="sc-table-count"></span></span>
           <span class="sc-zones-actions">
@@ -2052,7 +2250,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           </span>
         </div>
         <div class="sc-zones-body">
-          <div id="sc-table" style="overflow-x:auto"></div>
+          <div id="sc-table"></div>
         </div>
       </div>
     </div>
@@ -2063,39 +2261,39 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       </div>
       <div class="plan-grid">
         <div class="plan-card">
-          <div class="plan-card-title"><div class="plan-dot" style="background:var(--green)"></div>Checklist d'entrée</div>
+          <div class="plan-card-title"><div class="plan-dot dot-green"></div>Checklist d'entrée</div>
           <div id="checklist-entry"></div>
         </div>
         <div class="plan-card">
-          <div class="plan-card-title"><div class="plan-dot" style="background:var(--red)"></div>Filtres — ne pas trader si…</div>
+          <div class="plan-card-title"><div class="plan-dot dot-red"></div>Filtres — ne pas trader si…</div>
           <div id="checklist-filters"></div>
         </div>
         <div class="plan-card">
-          <div class="plan-card-title"><div class="plan-dot" style="background:var(--amber)"></div>Gestion du risque</div>
+          <div class="plan-card-title"><div class="plan-dot dot-amber"></div>Gestion du risque</div>
           <div id="risk-rules"></div>
         </div>
         <div class="plan-card">
-          <div class="plan-card-title"><div class="plan-dot" style="background:var(--accent)"></div>Mes setups <span style="font-weight:normal;color:var(--txt3);font-size:11px">(proposés dans le formulaire et le filtre global)</span></div>
+          <div class="plan-card-title"><div class="plan-dot dot-accent"></div>Mes setups <span class="th-sub">(proposés dans le formulaire et le filtre global)</span></div>
           <div id="setups-editor"></div>
         </div>
         <div class="plan-card">
-          <div class="plan-card-title"><div class="plan-dot" style="background:#f472b6"></div>Erreurs à suivre <span style="font-weight:normal;color:var(--txt3);font-size:11px">(chiffrées en € dans Statistiques)</span></div>
+          <div class="plan-card-title"><div class="plan-dot dot-pink"></div>Erreurs à suivre <span class="th-sub">(chiffrées en € dans Statistiques)</span></div>
           <div id="mistake-tags"></div>
         </div>
         <div class="plan-card">
-          <div class="plan-card-title"><div class="plan-dot" style="background:var(--blue)"></div>Notes & rappels</div>
-          <textarea id="plan-notes" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:10px;resize:vertical;min-height:140px;outline:none;line-height:1.6" placeholder="Tes notes personnelles, observations de marché…" oninput="savePlanNotes()"></textarea>
+          <div class="plan-card-title"><div class="plan-dot dot-blue"></div>Notes & rappels</div>
+          <textarea id="plan-notes" placeholder="Tes notes personnelles, observations de marché…" oninput="savePlanNotes()"></textarea>
         </div>
-        <div class="plan-card" style="grid-column:span 2">
-          <div class="plan-card-title"><div class="plan-dot" style="background:var(--purple)"></div>Calculateur de taille de position (RR)</div>
-          <div class="form-row f4" style="margin-bottom:14px">
+        <div class="plan-card span-2">
+          <div class="plan-card-title"><div class="plan-dot dot-purple"></div>Calculateur de taille de position (RR)</div>
+          <div class="form-row f4 mb-14">
             <div class="field"><label>Solde (€)</label><input type="number" id="calc-balance" step="1" placeholder="ex : 10000" oninput="renderPositionCalc()"></div>
             <div class="field"><label>Risque par trade (%)</label><input type="number" id="calc-risk-pct" step="0.1" placeholder="ex : 0.5" oninput="renderPositionCalc()"></div>
             <div class="field"><label>Distance au stop (points/pips)</label><input type="number" id="calc-stop-dist" step="0.1" placeholder="ex : 20" oninput="renderPositionCalc()"></div>
             <div class="field"><label>Valeur par point/pip (€)</label><input type="number" id="calc-point-value" step="0.01" placeholder="ex : 10" oninput="renderPositionCalc()"></div>
           </div>
-          <div id="calc-result" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
-          <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px;line-height:1.6">
+          <div id="calc-result"></div>
+          <p class="note-mono">
             Risque en € = Solde × Risque%. Taille suggérée = Risque € ÷ (Distance au stop × Valeur du point). La valeur du point dépend de l'instrument et du courtier — vérifie-la dans la fiche produit de ta plateforme.
           </p>
         </div>
@@ -2114,17 +2312,17 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
     <div id="page-calendrier" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2>Calendrier</h2><p id="cal-subtitle">Vue mensuelle des trades</p></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <span id="cal-monthly-stats" style="font-size:11px;font-family:var(--mono);color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px"></span>
+        <div class="row-g8">
+          <span id="cal-monthly-stats"></span>
           <button class="btn-ghost" onclick="calPrev()">←</button>
-          <span id="cal-month-label" style="font-family:var(--mono);font-size:13px;min-width:110px;text-align:center"></span>
+          <span id="cal-month-label"></span>
           <button class="btn-ghost" onclick="calNext()">→</button>
           <button class="btn-ghost" onclick="calToday()">Ce mois-ci</button>
           <button class="btn-ghost" id="btn-cal-view" onclick="toggleCalView()">📅 Vue annuelle</button>
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+      <div class="row-g10">
         <select class="filter-select" id="cal-filter-asset" onchange="renderCalendrier()">
           <option value="">Tous les assets</option>
           <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
@@ -2138,30 +2336,30 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         </select>
       </div>
 
-      <div id="cal-grid" style="margin-bottom:20px"></div>
-      <div id="cal-year-wrap" style="display:none;margin-bottom:20px">
-        <div id="cal-year-stats" style="font-size:12px;font-family:var(--mono);color:var(--txt2);margin-bottom:14px"></div>
+      <div id="cal-grid"></div>
+      <div id="cal-year-wrap" style="display:none">
+        <div id="cal-year-stats"></div>
         <div id="cal-year-grid"></div>
       </div>
-      <div style="display:flex;gap:16px;font-size:11px;font-family:var(--mono);color:var(--txt3);flex-wrap:wrap">
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);background:var(--green-d);border:1px solid var(--green);margin-right:4px"></span>Jour profitable</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);background:var(--red-d);border:1px solid var(--red);margin-right:4px"></span>Jour en perte</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);background:var(--amber-d);border:1px solid var(--amber);margin-right:4px"></span>Break even</span>
+      <div class="legend-row">
+        <span><span class="legend-sq green"></span>Jour profitable</span>
+        <span><span class="legend-sq red"></span>Jour en perte</span>
+        <span><span class="legend-sq amber"></span>Break even</span>
         <span>🏆 Meilleur jour du mois</span>
         <span>⚠️ Jour le plus coûteux</span>
         <span>🔥 Série de gains · ❄️ Série de pertes (3+)</span>
       </div>
 
-      <div class="charts-row" style="grid-template-columns:1fr 1fr;margin-top:24px">
+      <div class="charts-row cols-2 mt-24">
         <div class="panel">
           <div class="panel-hdr">Total RR par semaine</div>
-          <div style="max-height:360px;overflow-y:auto">
+          <div class="scroll-360">
             <table class="rr-table" id="rr-week-table"></table>
           </div>
         </div>
         <div class="panel">
           <div class="panel-hdr">Total RR par mois</div>
-          <div style="max-height:360px;overflow-y:auto">
+          <div class="scroll-360">
             <table class="rr-table" id="rr-month-table"></table>
           </div>
         </div>
@@ -2174,14 +2372,14 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
     <div id="page-bilan" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Analyse détaillée par journée de trading</p></div>
-        <select id="bilan-date-select" class="filter-select" onchange="renderBilan()" style="font-size:12px;padding:7px 12px"></select>
+        <select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select>
       </div>
       <div id="bilan-content"></div>
-      <div class="panel" style="margin-top:20px">
+      <div class="panel mt-20">
         <div class="panel-hdr"><span>Résultat par heure d'entrée<small class="panel-sub" id="heatmap-sub">tous tes trades, toutes journées confondues</small></span></div>
         <div id="heatmap-wrap"></div>
       </div>
-      <div class="charts-row" style="grid-template-columns:1fr 1fr;margin-top:12px">
+      <div class="charts-row cols-2 mt-12">
         <div class="bars-panel">
           <div class="section-lbl">Performance par session<small class="panel-sub">win rate · trades · résultat net</small></div>
           <div id="session-bars" class="asset-list"></div>
@@ -2213,7 +2411,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
       <div class="page-hdr">
         <div class="page-hdr-left"><h2>Export / Import</h2><p>Sauvegarde et restauration de tes données</p></div>
       </div>
-      <div class="export-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:900px">
+      <div class="export-grid eg-2">
         <div class="export-card">
           <div class="export-icon">💾</div>
           <div class="export-title">Exporter mes trades</div>
@@ -2227,125 +2425,125 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
           <button class="btn-ghost" onclick="document.getElementById('import-file').click()">Choisir un fichier…</button>
         </div>
-        <div class="export-card" style="grid-column:span 2">
+        <div class="export-card span-2">
           <div class="export-icon">📊</div>
           <div class="export-title">Importer un ou plusieurs CSV (broker / TradingView)</div>
           <div class="export-desc">Sélectionne en une fois tous les fichiers exportés (liste des trades, ordres, solde, activité, positions…) — le journal reconnaît chaque type, n'utilise que ceux qui contiennent de vrais trades, ignore les doublons si tu réimportes un export plus récent, et calcule tout automatiquement.</div>
           <input type="file" id="csv-import-file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCsvImport(this)">
           <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
-          <p id="csv-import-status" style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px"></p>
-          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Risque € par trade (calcul du R réel = P&L € ÷ risque) :</span>
-              <input type="number" id="default-risk-eur" step="1" min="0" placeholder="ex : 50" style="width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--amber);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="saveDefaultRiskEur()">
-              <span style="font-size:11px;color:var(--amber)">€</span>
+          <p id="csv-import-status"></p>
+          <div class="sep-top-16">
+            <div class="center-row mb-14">
+              <span class="mono-muted">Risque € par trade (calcul du R réel = P&L € ÷ risque) :</span>
+              <input type="number" id="default-risk-eur" step="1" min="0" placeholder="ex : 50" oninput="saveDefaultRiskEur()">
+              <span class="amber-11">€</span>
             </div>
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Sinon, RR fixe par défaut :</span>
-              <span style="display:flex;align-items:center;gap:5px">
-                <span style="font-size:11px;color:var(--green)">Gagnant +</span>
-                <input type="number" id="default-rr-win" step="0.1" min="0.1" style="width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="saveDefaultRR()">
-                <span style="font-size:11px;color:var(--green)">R</span>
+            <div class="center-row">
+              <span class="mono-muted">Sinon, RR fixe par défaut :</span>
+              <span class="inline-row5">
+                <span class="green-11">Gagnant +</span>
+                <input type="number" id="default-rr-win" step="0.1" min="0.1" oninput="saveDefaultRR()">
+                <span class="green-11">R</span>
               </span>
-              <span style="display:flex;align-items:center;gap:5px">
-                <span style="font-size:11px;color:var(--red)">Perdant -</span>
-                <input type="number" id="default-rr-loss" step="0.1" min="0.1" style="width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="saveDefaultRR()">
-                <span style="font-size:11px;color:var(--red)">R</span>
+              <span class="inline-row5">
+                <span class="red-11">Perdant -</span>
+                <input type="number" id="default-rr-loss" step="0.1" min="0.1" oninput="saveDefaultRR()">
+                <span class="red-11">R</span>
               </span>
             </div>
-            <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:10px;text-align:center;line-height:1.6">
+            <p class="note-center">
               Si tu renseignes un risque €, le R de chaque trade importé sera calculé précisément (P&L réel ÷ risque), au lieu d'un R fixe identique pour tous les gagnants. Beaucoup plus fidèle à la réalité.
             </p>
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
-              <input type="number" id="tz-offset-hours" step="0.5" style="width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center" value="0" oninput="saveTZOffset()">
-              <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="recalcSessions()">Recalculer les sessions des trades déjà importés</button>
+            <div class="center-row sep-top-14">
+              <span class="mono-muted">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
+              <input type="number" id="tz-offset-hours" step="0.5" value="0" oninput="saveTZOffset()">
+              <button class="btn-ghost btn-xs" onclick="recalcSessions()">Recalculer les sessions des trades déjà importés</button>
             </div>
-            <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6">
+            <p class="note-center-8">
               Sans ce réglage, les stats par session (Asie/Londres/NY) peuvent être fausses : l'heure d'un export n'est pas forcément déjà dans ton fuseau.
             </p>
-            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Conversion des montants importés en devise étrangère (ex. « P&amp;L net USD » de TradingView) : 1 unité =</span>
-              <input type="number" id="import-fx-rate" step="0.0001" min="0.0001" style="width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center" value="1" oninput="saveImportFxRate()">
-              <span style="font-size:11px;color:var(--txt3)">€</span>
-              <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="reconvertImportedTrades()">Appliquer ce taux aux trades déjà importés</button>
+            <div class="center-row sep-top-14">
+              <span class="mono-muted">Conversion des montants importés en devise étrangère (ex. « P&amp;L net USD » de TradingView) : 1 unité =</span>
+              <input type="number" id="import-fx-rate" step="0.0001" min="0.0001" value="1" oninput="saveImportFxRate()">
+              <span class="muted-11">€</span>
+              <button class="btn-ghost btn-xs" onclick="reconvertImportedTrades()">Appliquer ce taux aux trades déjà importés</button>
             </div>
-            <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6">
+            <p class="note-center-8">
               Laisse 1 si ton compte de trading est déjà en euros. La devise est détectée dans l'en-tête du fichier (USD, GBP, CHF…) ; un fichier en EUR n'est jamais converti.
             </p>
           </div>
         </div>
-        <div class="export-card" style="grid-column:span 2">
+        <div class="export-card span-2">
           <div class="export-icon">🗄️</div>
           <div class="export-title">Espace de stockage</div>
           <div class="export-desc">Tes données sont stockées dans ton navigateur (IndexedDB) : plus de limite de 5 Mo, l'espace disponible se compte en centaines de Mo, partagé par Live, Backtest et PropFirm. Les captures sont réduites automatiquement à l'ajout ; tu peux aussi compresser celles déjà enregistrées.</div>
           <div id="storage-card-body"></div>
-          <button class="btn-ghost" style="margin-top:8px" onclick="recompressStoredImages()">Compresser les captures existantes</button>
+          <button class="btn-ghost mt-8" onclick="recompressStoredImages()">Compresser les captures existantes</button>
         </div>
-        <div class="export-card" id="safety-snapshot-card" style="grid-column:span 2;display:none">
+        <div class="export-card" id="safety-snapshot-card" style="display:none">
           <div class="export-icon">↩️</div>
           <div class="export-title">Annuler la dernière importation</div>
           <div class="export-desc" id="safety-snapshot-info"></div>
           <button class="btn-ghost" onclick="restoreSafetySnapshot()">Restaurer l'état d'avant</button>
-          <button class="btn-ghost" style="margin-left:6px" onclick="dismissSafetySnapshot()">Effacer cette copie</button>
+          <button class="btn-ghost ml-6" onclick="dismissSafetySnapshot()">Effacer cette copie</button>
         </div>
-        <div class="export-card" style="grid-column:span 2">
+        <div class="export-card span-2">
           <div class="export-icon">🩹</div>
           <div class="export-title">Corriger les trades déjà importés sans R</div>
           <div class="export-desc">Si des trades TP/SL affichent un P&L en R manquant (calendrier gris, dashboard incomplet), applique-leur rétroactivement le calcul de R ci-dessus.</div>
           <button class="btn-ghost" onclick="fixMissingRR()">Corriger maintenant</button>
         </div>
-        <div class="export-card" style="grid-column:span 2">
+        <div class="export-card span-2">
           <div class="export-icon">🎯</div>
           <div class="export-title">Corriger les R invraisemblables (stop remonté au break-even)</div>
           <div class="export-desc">Si un stop loss a été déplacé au break-even en cours de trade, l'historique d'ordres TradingView ne garde que sa position finale — le calcul par distance de prix peut alors donner un R absurde (ex : 58R). Ce correctif détecte ces cas (R > 15) et repasse sur le calcul de secours.</div>
           <button class="btn-ghost" onclick="fixImplausibleDistanceR()">Corriger maintenant</button>
         </div>
-        <div class="export-card" style="grid-column:span 2">
+        <div class="export-card span-2">
           <div class="export-icon">♻️</div>
-          <div class="export-title">Corbeille <button id="empty-trash-btn" class="btn-ghost" style="display:none;padding:4px 10px;font-size:11px;margin-left:10px" onclick="emptyTrash()">Vider</button></div>
+          <div class="export-title">Corbeille <button id="empty-trash-btn" class="btn-ghost" style="display:none" onclick="emptyTrash()">Vider</button></div>
           <div class="export-desc">Les 20 derniers trades supprimés restent récupérables ici.</div>
-          <div id="trash-list" style="margin-top:6px;text-align:left"></div>
+          <div id="trash-list"></div>
         </div>
-        <div id="reset-backup-card" class="export-card" style="grid-column:span 2;display:none">
+        <div id="reset-backup-card" class="export-card" style="display:none">
           <div class="export-icon">🛟</div>
           <div class="export-title">Sauvegarde avant dernière réinitialisation</div>
           <div class="export-desc" id="reset-backup-info"></div>
-          <div style="display:flex;gap:10px;justify-content:center">
+          <div class="center-row-10">
             <button class="btn-ghost" onclick="restoreResetBackup()">Restaurer</button>
             <button class="btn-ghost" onclick="dismissResetBackup()">Ignorer</button>
           </div>
         </div>
-        <div class="export-card" style="grid-column:span 2">
+        <div class="export-card span-2">
           <div class="export-icon">🗑️</div>
           <div class="export-title">Réinitialiser le journal</div>
           <div class="export-desc">Supprime tous les trades enregistrés. Une sauvegarde de secours reste disponible juste au-dessus.</div>
-          <button class="btn-danger" style="border-radius:var(--r);padding:10px 20px;font-family:var(--mono);font-size:12px;cursor:pointer;background:var(--red);color:#fff;border:none" onclick="confirmReset()">Réinitialiser</button>
+          <button class="btn-danger btn-danger-lg" onclick="confirmReset()">Réinitialiser</button>
         </div>
-        <div class="export-card" style="grid-column:span 2;text-align:left">
-          <div style="text-align:center">
+        <div class="export-card span-2 text-left">
+          <div class="text-center">
             <div class="export-icon">🗓️</div>
             <div class="export-title">Sauvegarde automatique hebdomadaire</div>
           </div>
-          <div class="export-desc" style="text-align:center">
+          <div class="export-desc text-center">
             Écrit chaque semaine une copie complète (tous les journaux + réglages) dans jusqu'à 3 dossiers séparés que tu choisis toi-même — utile pour garder une copie hors de cet ordinateur (clé USB, dossier synchronisé, etc.).
           </div>
-          <div id="backup-fs-unsupported" style="display:none;font-size:11.5px;color:var(--amber);background:var(--amber-d);border:1px solid var(--amber);border-radius:var(--r);padding:10px 14px;margin:14px 0;line-height:1.6;text-align:left">
+          <div id="backup-fs-unsupported" style="display:none">
             ⚠️ Ton navigateur ne permet pas d'écrire automatiquement dans un dossier (fonctionne avec <b>Chrome</b> ou <b>Edge</b> ; ne fonctionne pas dans Firefox/Safari, ni si le fichier est ouvert en double-clic — sers-le via un petit serveur local ou dépose-le sur <code>localhost</code>). En attendant, utilise le bouton « Télécharger le backup » plus haut.
           </div>
-          <div id="backup-slots-list" style="text-align:left;margin:14px 0;display:flex;flex-direction:column;gap:10px"></div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px 0;padding-top:14px;border-top:1px solid var(--border)">
-            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Jour de sauvegarde automatique (fin de semaine) :</span>
-            <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)" style="font-size:12px;padding:6px 10px">
+          <div id="backup-slots-list"></div>
+          <div class="center-row sep-m14">
+            <span class="mono-muted">Jour de sauvegarde automatique (fin de semaine) :</span>
+            <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)">
               <option value="5">Vendredi</option>
               <option value="6">Samedi</option>
               <option value="0">Dimanche</option>
             </select>
           </div>
-          <div style="text-align:center">
+          <div class="text-center">
             <button class="btn-primary" onclick="runBackupNow()">Sauvegarder maintenant dans les 3 dossiers</button>
           </div>
-          <p id="backup-last-run-info" style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px;text-align:center;line-height:1.6"></p>
+          <p id="backup-last-run-info"></p>
         </div>
       </div>
     </div>
@@ -2355,76 +2553,76 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         <div class="page-hdr-left"><h2>Paramètres</h2><p>Personnalise l'apparence comme tu veux — elle est commune aux trois journaux (Live, Backtest, PropFirm) et tout est sauvegardé localement</p></div>
       </div>
 
-      <div class="panel" style="margin-bottom:20px">
-        <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="panel mb-20">
+        <div class="panel-hdr hdr-between">
           <span>Thèmes rapides</span>
-          <button class="btn-danger" style="border-radius:var(--r);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;background:var(--red);color:#fff;border:none" onclick="resetTheme()">Réinitialiser tout</button>
+          <button class="btn-danger btn-danger-sm" onclick="resetTheme()">Réinitialiser tout</button>
         </div>
-        <div id="theme-preset-grid" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px"></div>
+        <div id="theme-preset-grid"></div>
       </div>
 
-      <div class="panel" style="margin-bottom:20px">
-        <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="panel mb-20">
+        <div class="panel-hdr hdr-between">
           <span>Mes thèmes</span>
-          <button class="btn-ghost" style="padding:7px 14px;font-size:11px" onclick="saveCurrentThemeAs()">💾 Enregistrer le thème actuel</button>
+          <button class="btn-ghost btn-s7-14" onclick="saveCurrentThemeAs()">💾 Enregistrer le thème actuel</button>
         </div>
-        <div id="custom-theme-grid" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px"></div>
+        <div id="custom-theme-grid"></div>
       </div>
 
-      <div class="panel" style="margin-bottom:20px">
+      <div class="panel mb-20">
         <div class="panel-hdr">Ambiance visuelle</div>
-        <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="grid-2-24">
           <div>
-            <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Style d'arrière-plan</label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="lbl-mono">Style d'arrière-plan</label>
+            <div class="row-wrap8">
               <button class="btn-ghost bg-style-btn" data-val="solid" onclick="onBgStyleChange('solid')">Uni</button>
               <button class="btn-ghost bg-style-btn" data-val="gradient" onclick="onBgStyleChange('gradient')">Dégradé</button>
               <button class="btn-ghost bg-style-btn" data-val="grid" onclick="onBgStyleChange('grid')">Grille</button>
             </div>
           </div>
           <div>
-            <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Style des cartes</label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="lbl-mono">Style des cartes</label>
+            <div class="row-wrap8">
               <button class="btn-ghost card-style-btn" data-val="flat" onclick="onCardStyleChange('flat')">Plat</button>
               <button class="btn-ghost card-style-btn" data-val="glass" onclick="onCardStyleChange('glass')">Verre</button>
               <button class="btn-ghost card-style-btn" data-val="elevated" onclick="onCardStyleChange('elevated')">Élevé</button>
             </div>
           </div>
-          <div style="grid-column:span 2;display:flex;align-items:center;gap:10px;padding-top:6px;border-top:1px solid var(--border)">
-            <input type="checkbox" id="glow-toggle" onchange="onGlowChange(this.checked)" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
-            <label for="glow-toggle" style="font-size:12px;color:var(--txt2);cursor:pointer">Lueur sur les accents (boutons actifs, chiffres positifs/négatifs)</label>
+          <div class="span2-sep">
+            <input type="checkbox" id="glow-toggle" onchange="onGlowChange(this.checked)">
+            <label class="check-label-plain" for="glow-toggle">Lueur sur les accents (boutons actifs, chiffres positifs/négatifs)</label>
           </div>
-          <div style="grid-column:span 2;display:flex;align-items:center;gap:10px">
-            <input type="checkbox" id="texture-toggle" onchange="onTextureChange(this.checked)" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
-            <label for="texture-toggle" style="font-size:12px;color:var(--txt2);cursor:pointer">Grain papier subtil sur le fond</label>
+          <div class="span2-row">
+            <input type="checkbox" id="texture-toggle" onchange="onTextureChange(this.checked)">
+            <label class="check-label-plain" for="texture-toggle">Grain papier subtil sur le fond</label>
           </div>
-          <div style="grid-column:span 2;display:flex;align-items:center;gap:10px">
-            <input type="checkbox" id="autotheme-toggle" onchange="onAutoThemeChange(this.checked)" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
-            <label for="autotheme-toggle" style="font-size:12px;color:var(--txt2);cursor:pointer">Suivre automatiquement le thème clair/sombre du système</label>
+          <div class="span2-row">
+            <input type="checkbox" id="autotheme-toggle" onchange="onAutoThemeChange(this.checked)">
+            <label class="check-label-plain" for="autotheme-toggle">Suivre automatiquement le thème clair/sombre du système</label>
           </div>
         </div>
       </div>
 
       <div id="settings-groups"></div>
 
-      <div class="panel" style="margin-bottom:20px">
+      <div class="panel mb-20">
         <div class="panel-hdr">Forme & typographie</div>
-        <div style="padding:18px">
-          <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Forme des cases</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+        <div class="pad-18">
+          <label class="lbl-mono">Forme des cases</label>
+          <div class="row-wrap8 mb-20">
             <button class="btn-ghost shape-preset-btn" data-r="0" onclick="onRadiusChange(0)">◻ Carré</button>
             <button class="btn-ghost shape-preset-btn" data-r="10" onclick="onRadiusChange(10)">▢ Arrondi</button>
             <button class="btn-ghost shape-preset-btn" data-r="20" onclick="onRadiusChange(20)">◯ Très arrondi</button>
             <button class="btn-ghost shape-preset-btn" data-r="999" onclick="onRadiusChange(999)">⬭ Pilule</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">
+          <div class="grid-2-center">
             <div>
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Arrondi précis — <span id="radius-val">10px</span></label>
-              <input type="range" id="radius-slider" min="0" max="30" step="1" oninput="onRadiusChange(this.value)" style="width:100%;accent-color:var(--green)">
+              <label class="lbl-mono">Arrondi précis — <span id="radius-val">10px</span></label>
+              <input type="range" id="radius-slider" min="0" max="30" step="1" oninput="onRadiusChange(this.value)">
             </div>
             <div>
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Police du texte</label>
-              <select id="font-select" onchange="onFontChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--sans);font-size:13px;padding:8px 10px;outline:none">
+              <label class="lbl-mono">Police du texte</label>
+              <select id="font-select" onchange="onFontChange(this.value)">
                 <option value="'Inter',system-ui,sans-serif">Inter (défaut)</option>
                 <option value="'Sora',sans-serif">Sora</option>
                 <option value="Georgia,'Times New Roman',serif">Georgia (serif)</option>
@@ -2434,8 +2632,8 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               </select>
             </div>
             <div>
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Police des données (chiffres)</label>
-              <select id="font-mono-select" onchange="onFontMonoChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:13px;padding:8px 10px;outline:none">
+              <label class="lbl-mono">Police des données (chiffres)</label>
+              <select id="font-mono-select" onchange="onFontMonoChange(this.value)">
                 <option value="'JetBrains Mono',ui-monospace,monospace">JetBrains Mono (défaut)</option>
                 <option value="'DM Mono',monospace">DM Mono</option>
                 <option value="'Space Mono',monospace">Space Mono</option>
@@ -2444,30 +2642,30 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
               </select>
             </div>
             <div>
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Style des bordures</label>
-              <select id="border-style-select" onchange="onBorderStyleChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none">
+              <label class="lbl-mono">Style des bordures</label>
+              <select id="border-style-select" onchange="onBorderStyleChange(this.value)">
                 <option value="solid">─── Continue</option>
                 <option value="dashed">╌╌╌ Tirets</option>
                 <option value="dotted">···· Pointillé</option>
               </select>
             </div>
             <div>
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Lignes des graphiques</label>
-              <select id="chart-line-style-select" onchange="onChartLineStyleChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none">
+              <label class="lbl-mono">Lignes des graphiques</label>
+              <select id="chart-line-style-select" onchange="onChartLineStyleChange(this.value)">
                 <option value="solid">─── Continue</option>
                 <option value="dashed">╌╌╌ Tirets</option>
                 <option value="dotted">···· Pointillé</option>
               </select>
             </div>
-            <div style="grid-column:span 2">
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Intensité de la heatmap du calendrier — <span id="heat-intensity-val">150%</span></label>
-              <input type="range" id="heat-intensity-slider" min="40" max="250" step="10" oninput="onHeatIntensityChange(this.value)" style="width:100%;accent-color:var(--green)">
-              <p style="font-size:11px;color:var(--txt3);margin-top:6px">Plus haut = les jours ressortent davantage (utile si les petits P&L sont difficiles à voir).</p>
+            <div class="span-2">
+              <label class="lbl-mono">Intensité de la heatmap du calendrier — <span id="heat-intensity-val">150%</span></label>
+              <input type="range" id="heat-intensity-slider" min="40" max="250" step="10" oninput="onHeatIntensityChange(this.value)">
+              <p class="hint-11">Plus haut = les jours ressortent davantage (utile si les petits P&L sont difficiles à voir).</p>
             </div>
-            <div style="grid-column:span 2">
-              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Intensité des graphiques (Dashboard) — <span id="chart-intensity-val">200%</span></label>
-              <input type="range" id="chart-intensity-slider" min="50" max="300" step="10" oninput="onChartIntensityChange(this.value)" style="width:100%;accent-color:var(--green)">
-              <p style="font-size:11px;color:var(--txt3);margin-top:6px">Plus haut = remplissage, lignes et grille plus marqués sur les courbes P&L et le radar de performance.</p>
+            <div class="span-2">
+              <label class="lbl-mono">Intensité des graphiques (Dashboard) — <span id="chart-intensity-val">200%</span></label>
+              <input type="range" id="chart-intensity-slider" min="50" max="300" step="10" oninput="onChartIntensityChange(this.value)">
+              <p class="hint-11">Plus haut = remplissage, lignes et grille plus marqués sur les courbes P&L et le radar de performance.</p>
             </div>
           </div>
         </div>
@@ -2498,18 +2696,18 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
     <button class="lb-btn" id="lb-prev" onclick="galleryStep(-1)" aria-label="Capture précédente">←</button>
     <span id="lb-counter" class="lb-counter">1 / 1</span>
     <button class="lb-btn" id="lb-next" onclick="galleryStep(1)" aria-label="Capture suivante">→</button>
-    <span style="flex:1"></span>
+    <span class="flex-1"></span>
     <button class="lb-btn" id="lb-annotate" onclick="startAnnotation()">✏️ Annoter</button>
     <span id="lb-annot-tools" class="lb-tools" style="display:none">
       <button class="lb-btn" data-annot-tool="rect" onclick="setAnnotTool('rect')" title="Rectangle">▭</button>
       <button class="lb-btn" data-annot-tool="arrow" onclick="setAnnotTool('arrow')" title="Flèche">↗</button>
       <button class="lb-btn" data-annot-tool="pen" onclick="setAnnotTool('pen')" title="Crayon">✎</button>
       <span class="lb-sep"></span>
-      <button class="lb-swatch" data-annot-color="#ef5350" style="background:#ef5350" onclick="setAnnotColor('#ef5350')" aria-label="Rouge"></button>
-      <button class="lb-swatch" data-annot-color="#26a69a" style="background:#26a69a" onclick="setAnnotColor('#26a69a')" aria-label="Vert"></button>
-      <button class="lb-swatch" data-annot-color="#4c8dff" style="background:#4c8dff" onclick="setAnnotColor('#4c8dff')" aria-label="Bleu"></button>
-      <button class="lb-swatch" data-annot-color="#f0b429" style="background:#f0b429" onclick="setAnnotColor('#f0b429')" aria-label="Jaune"></button>
-      <button class="lb-swatch" data-annot-color="#ffffff" style="background:#ffffff" onclick="setAnnotColor('#ffffff')" aria-label="Blanc"></button>
+      <button class="lb-swatch sw-red" data-annot-color="#ef5350" onclick="setAnnotColor('#ef5350')" aria-label="Rouge"></button>
+      <button class="lb-swatch sw-green" data-annot-color="#26a69a" onclick="setAnnotColor('#26a69a')" aria-label="Vert"></button>
+      <button class="lb-swatch sw-blue" data-annot-color="#4c8dff" onclick="setAnnotColor('#4c8dff')" aria-label="Bleu"></button>
+      <button class="lb-swatch sw-gold" data-annot-color="#f0b429" onclick="setAnnotColor('#f0b429')" aria-label="Jaune"></button>
+      <button class="lb-swatch sw-white" data-annot-color="#ffffff" onclick="setAnnotColor('#ffffff')" aria-label="Blanc"></button>
       <span class="lb-sep"></span>
       <button class="lb-btn" onclick="undoAnnotation()">↶ Annuler</button>
       <button class="lb-btn" onclick="cancelAnnotation()">Abandonner</button>
@@ -2568,7 +2766,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 <div class="search-overlay" id="search-overlay" onclick="if(event.target===this) closeGlobalSearch()">
   <div class="search-modal">
     <div class="search-input-row">
-      <span style="opacity:.5">🔍</span>
+      <span class="op-50">🔍</span>
       <input type="text" id="search-input" placeholder="Rechercher une page, une action, un trade…" oninput="renderGlobalSearchResults(this.value)" autocomplete="off">
       <kbd>Échap</kbd>
     </div>
