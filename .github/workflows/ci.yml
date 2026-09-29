@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Tests unitaires
+        run: npm run test:unit
+      - name: Build + tests de bout en bout
+        run: npm run test:e2e
+      - name: Le fichier livré est à jour avec src/
+        run: git diff --exit-code -- journal-complet.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: journal
+          path: dist/

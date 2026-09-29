@@ -3,8 +3,9 @@
 //   - Chart.js et les polices (Inter, JetBrains Mono) sont intégrés : le journal fonctionne entièrement hors ligne
 //   - sortie : dist/journal.html (+ manifest et service worker pour l'installation en application),
 //     recopiée en journal-complet.html à la racine pour un usage direct (double-clic).
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -40,12 +41,17 @@ export function build({ quiet } = {}) {
     body: readDirHtml('partials'),
     boot: safeScript(readDir('boot', '.js').join('\n')),
     scripts: safeScript(readDir('js', '.js').join('\n')),
+    favicon: 'data:image/svg+xml;base64,' + readFileSync(join(SRC, 'pwa', 'icon.svg')).toString('base64'),
   };
   // Remplacement par fonction : les « $ » du code ne doivent pas être interprétés.
   html = html.replace(/<!-- @(\w+) -->/g, (m, k) => { if (!(k in parts)) throw new Error('Emplacement inconnu : ' + k); return parts[k]; });
   mkdirSync(DIST, { recursive: true });
   writeFileSync(join(DIST, 'journal.html'), html);
-  for (const f of ['manifest.webmanifest', 'sw.js', 'icon.svg']) if (existsSync(join(SRC, 'pwa', f))) copyFileSync(join(SRC, 'pwa', f), join(DIST, f));
+  // Fichiers d'installation (servis en http(s) uniquement). Le cache du service worker porte l'empreinte du build :
+  // chaque nouvelle version remplace proprement l'ancienne chez l'utilisateur.
+  const hash = createHash('sha256').update(html).digest('hex').slice(0, 10);
+  for (const f of ['manifest.webmanifest', 'icon.svg']) copyFileSync(join(SRC, 'pwa', f), join(DIST, f));
+  writeFileSync(join(DIST, 'sw.js'), readFileSync(join(SRC, 'pwa', 'sw.js'), 'utf8').replace('__BUILD__', hash));
   writeFileSync(join(ROOT, 'journal-complet.html'), html);
   if (!quiet) console.log(`✓ dist/journal.html — ${(html.length / 1024).toFixed(0)} Ko (copié en journal-complet.html)`);
   return html;

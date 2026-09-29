@@ -44,6 +44,19 @@ const UI = {
     const txt = unit === 'R' ? (v > 0 ? '+' : '') + Number(v).toFixed(2) + 'R' : fmtEUR(v, true, 2);
     return html`<span class="${raw(cls)}">${txt}</span>`;
   },
+  // Tuile encadrée (analyses) : tone = green | red | amber | blue | purple | muted ; accent = liseré gauche coloré.
+  tile(label, value, opts = {}) {
+    const cls = ['ui-tile', opts.center && 'center', opts.accent && 'accent', opts.dim && 'dim', opts.size && 'sz-' + opts.size, opts.tone && 'tone-' + opts.tone].filter(Boolean).join(' ');
+    return html`<div class="${cls}"><div class="ui-tile-label">${label}</div><div class="ui-tile-val">${value}</div>${opts.sub ? html`<div class="ui-tile-sub">${opts.sub}</div>` : ''}</div>`;
+  },
+  grid(items, cols) { return html`<div class="ui-grid c${raw(cols || items.length)}">${items}</div>`; },
+  // Encadré d'explication (💡) ou d'avertissement (tone: 'warn').
+  note(content, tone) { return html`<div class="ui-note${tone ? ' ' + tone : ''}">${content}</div>`; },
+  hint(content, tone) { return html`<p class="ui-hint${tone ? ' tone-' + tone : ''}">${content}</p>`; },
+  // Texte coloré par ton (valeur mise en avant dans une phrase).
+  em(content, tone) { return html`<strong class="${tone ? 'tone-' + tone : ''}">${content}</strong>`; },
+  // Liste de lignes gauche / droite (classements, trades signalés).
+  rows(items) { return html`<div class="ui-rows">${items.map(r => html`<div class="ui-row">${r}</div>`)}</div>`; },
   chips(list, cls) { return html`${(list || []).map(x => html`<span class="chip ${raw(cls || '')}">${x}</span>`)}`; },
   // État vide illustré : icône, titre, explication, action optionnelle.
   empty(icon, title, text, action) {

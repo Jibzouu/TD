@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Journal de trading</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9Ijk2IiBmaWxsPSIjMGEwYzEwIi8+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik0xMDQgMzYwIEwyMDAgMjY0IEwyNjQgMzEyIEw0MDggMTYwIiBzdHJva2U9IiM0YzhkZmYiIHN0cm9rZS13aWR0aD0iMzYiLz4KICAgIDxwYXRoIGQ9Ik0zMzYgMTYwIEg0MDggVjIzMiIgc3Ryb2tlPSIjNGM4ZGZmIiBzdHJva2Utd2lkdGg9IjM2Ii8+CiAgPC9nPgogIDxnIGZpbGw9IiMyNmE2OWEiPjxyZWN0IHg9IjExMiIgeT0iMzkyIiB3aWR0aD0iNDAiIGhlaWdodD0iMjQiIHJ4PSI2Ii8+PHJlY3QgeD0iMTg0IiB5PSIzNzYiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjYiLz48cmVjdCB4PSIyNTYiIHk9IjM4NCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjMyIiByeD0iNiIvPjwvZz4KICA8ZyBmaWxsPSIjZWY1MzUwIj48cmVjdCB4PSIzMjgiIHk9IjM5NiIgd2lkdGg9IjQwIiBoZWlnaHQ9IjIwIiByeD0iNiIvPjwvZz4KPC9zdmc+Cg==">
 <!-- Polices optionnelles (Paramètres › Police) : chargées seulement si internet est disponible. Inter et JetBrains Mono sont intégrées. -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -956,6 +957,43 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
   body.printing-review textarea{display:none !important}
   body.printing-review .print-answer{display:block;white-space:pre-wrap;font-size:12px;line-height:1.5;border:1px solid #ddd;border-radius:6px;padding:8px;min-height:40px}
 }
+
+/* ── Composants d'analyse (tuiles, grilles, encadrés) ── */
+.tone-green{color:var(--green)!important}.tone-red{color:var(--red)!important}.tone-amber{color:var(--amber)!important}
+.tone-blue{color:var(--blue)!important}.tone-purple{color:var(--purple)!important}.tone-muted{color:var(--txt3)!important}
+.ui-grid{display:grid;gap:14px;margin-bottom:16px}
+.ui-grid:last-child{margin-bottom:0}
+.ui-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.ui-grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.ui-grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:720px){.ui-grid.c4,.ui-grid.c3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.ui-grid.c2,.ui-grid.c3,.ui-grid.c4{grid-template-columns:1fr}}
+.ui-tile{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;min-width:0}
+.ui-tile.center{text-align:center}
+.ui-tile.accent{border-left:3px solid currentColor}
+.ui-tile.dim{opacity:.75}
+.ui-tile-label{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:6px}
+.ui-tile-val{font-size:18px;font-weight:600;font-family:var(--mono);color:inherit;overflow-wrap:anywhere}
+.ui-tile.sz-l .ui-tile-val{font-size:24px;font-weight:700}
+.ui-tile-sub{font-size:11px;color:inherit;margin-top:4px;font-family:var(--mono)}
+.ui-tile.accent .ui-tile-label,.ui-tile.accent .ui-tile-sub{color:var(--txt3)}
+.ui-note{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:12.5px;line-height:1.7;color:var(--txt2);margin-top:12px}
+.ui-note > div + div{margin-top:6px}
+.ui-note strong{color:var(--txt)}
+.ui-note.warn{border-color:var(--amber);background:var(--amber-d);font-size:12px;line-height:1.55;margin:0 0 16px}
+.ui-hint{font-size:12px;color:var(--txt3);line-height:1.6;margin-top:12px}
+.ui-hint:first-child{margin-top:0}
+.ui-rows{display:flex;flex-direction:column}
+.ui-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono);color:var(--txt2)}
+.ui-row .sub{color:var(--txt3)}
+.ui-row.grid-bar{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:16px;font-family:var(--sans);font-size:12.5px;padding:8px 0}
+.ui-big{display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.ui-big-label{font-size:12px;color:var(--txt2);margin-bottom:4px}
+.ui-big-val{font-size:28px;font-weight:600;letter-spacing:-.02em;color:var(--txt)}
+.ui-big-val small{font-size:15px;color:var(--txt3);font-weight:500}
+.ui-big-side{flex:1;min-width:180px}
+.ui-big-side .meter{margin-bottom:10px}
+.ui-big-side .meter.with-ticks{margin:6px 0 30px}
+.ui-subtitle{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px}
+.ui-sep{border-top:1px solid var(--border);padding-top:14px}
 
 </style>
 </head>
@@ -2462,6 +2500,23 @@ window.addEventListener('pagehide', () => { DB.flush(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') DB.flush(); });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', __bootJournal); else __bootJournal();
 
+/* ═══ boot/zz-pwa.js ═══ */
+// ── APPLICATION INSTALLABLE (PWA) ─────────────────────────────────────
+// Uniquement quand le journal est servi en http(s) : ouvert par double-clic (file://),
+// il fonctionne déjà hors ligne et un service worker n'y est pas autorisé.
+(function () {
+  if (!/^https?:$/.test(location.protocol)) return;
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = 'manifest.webmanifest';
+  document.head.appendChild(link);
+  const theme = document.createElement('meta');
+  theme.name = 'theme-color'; theme.content = '#0a0c10';
+  document.head.appendChild(theme);
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker non enregistré :', err)));
+  }
+})();
+
 </script>
 <script type="text/plain" id="app-src">
 /* ═══ js/00-core.js ═══ */
@@ -2868,6 +2923,19 @@ const UI = {
     const txt = unit === 'R' ? (v > 0 ? '+' : '') + Number(v).toFixed(2) + 'R' : fmtEUR(v, true, 2);
     return html`<span class="${raw(cls)}">${txt}</span>`;
   },
+  // Tuile encadrée (analyses) : tone = green | red | amber | blue | purple | muted ; accent = liseré gauche coloré.
+  tile(label, value, opts = {}) {
+    const cls = ['ui-tile', opts.center && 'center', opts.accent && 'accent', opts.dim && 'dim', opts.size && 'sz-' + opts.size, opts.tone && 'tone-' + opts.tone].filter(Boolean).join(' ');
+    return html`<div class="${cls}"><div class="ui-tile-label">${label}</div><div class="ui-tile-val">${value}</div>${opts.sub ? html`<div class="ui-tile-sub">${opts.sub}</div>` : ''}</div>`;
+  },
+  grid(items, cols) { return html`<div class="ui-grid c${raw(cols || items.length)}">${items}</div>`; },
+  // Encadré d'explication (💡) ou d'avertissement (tone: 'warn').
+  note(content, tone) { return html`<div class="ui-note${tone ? ' ' + tone : ''}">${content}</div>`; },
+  hint(content, tone) { return html`<p class="ui-hint${tone ? ' tone-' + tone : ''}">${content}</p>`; },
+  // Texte coloré par ton (valeur mise en avant dans une phrase).
+  em(content, tone) { return html`<strong class="${tone ? 'tone-' + tone : ''}">${content}</strong>`; },
+  // Liste de lignes gauche / droite (classements, trades signalés).
+  rows(items) { return html`<div class="ui-rows">${items.map(r => html`<div class="ui-row">${r}</div>`)}</div>`; },
   chips(list, cls) { return html`${(list || []).map(x => html`<span class="chip ${raw(cls || '')}">${x}</span>`)}`; },
   // État vide illustré : icône, titre, explication, action optionnelle.
   empty(icon, title, text, action) {
@@ -5781,7 +5849,7 @@ function renderMaeMfeAnalysis() {
   if (!cont) return;
   const withData = trades.filter(t => (t.mfe!==null && t.mfe!==undefined) || (t.mae!==null && t.mae!==undefined));
   if (withData.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Aucune donnée d'excursion pour l'instant. Importe un export TradingView (colonnes "Excursion favorable/adverse USD") pour débloquer cette analyse.</p>`;
+    mount(cont, UI.hint('Aucune donnée d\'excursion pour l\'instant. Importe un export TradingView (colonnes "Excursion favorable/adverse USD") pour débloquer cette analyse.'));
     return;
   }
   const winners = withData.filter(t => t.res === 'TP');
@@ -5791,36 +5859,19 @@ function renderMaeMfeAnalysis() {
     return vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : null;
   }
   const wMfe = avg(winners,'mfe'), wMae = avg(winners,'mae'), lMfe = avg(losers,'mfe'), lMae = avg(losers,'mae');
-  function cell(label, val, color) {
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:6px">${label}</div>
-      <div style="font-size:18px;font-weight:600;font-family:var(--mono);color:${color}">${val===null?'—':val.toFixed(1)+' €'}</div>
-    </div>`;
-  }
-  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-    ${cell('Gagnants — MFE moyen', wMfe, 'var(--green)')}
-    ${cell('Gagnants — MAE moyen', wMae, 'var(--amber)')}
-    ${cell('Perdants — MFE moyen', lMfe, 'var(--blue)')}
-    ${cell('Perdants — MAE moyen', lMae, 'var(--red)')}
-  </div>`;
+  const cell = (label, val, tone) => UI.tile(label, val === null ? '—' : val.toFixed(1) + ' €', { center: true, tone });
 
   const insights = [];
   if (lMfe !== null && lMfe > 0) {
-    insights.push(`Tes trades perdants sont montés en moyenne à <strong style="color:var(--txt)">+${lMfe.toFixed(1)}€</strong> de profit latent avant de finir en perte. Un take-profit partiel ou un stop suiveur pourrait capturer une partie de ce gain.`);
+    insights.push(html`Tes trades perdants sont montés en moyenne à ${UI.em('+' + lMfe.toFixed(1) + '€')} de profit latent avant de finir en perte. Un take-profit partiel ou un stop suiveur pourrait capturer une partie de ce gain.`);
   }
   if (wMae !== null && lMae !== null) {
-    if (wMae >= lMae * 0.8) {
-      insights.push(`Tes gagnants encaissent presque autant de chaleur (MAE moyen ${wMae.toFixed(1)}€) que tes perdants (${lMae.toFixed(1)}€) avant de repartir — ton stop n'est probablement pas le problème principal.`);
-    } else {
-      insights.push(`Tes gagnants encaissent moins de chaleur (${wMae.toFixed(1)}€) que tes perdants (${lMae.toFixed(1)}€) — cohérent avec une bonne sélection d'entrées.`);
-    }
+    insights.push(wMae >= lMae * 0.8
+      ? html`Tes gagnants encaissent presque autant de chaleur (MAE moyen ${wMae.toFixed(1)}€) que tes perdants (${lMae.toFixed(1)}€) avant de repartir — ton stop n'est probablement pas le problème principal.`
+      : html`Tes gagnants encaissent moins de chaleur (${wMae.toFixed(1)}€) que tes perdants (${lMae.toFixed(1)}€) — cohérent avec une bonne sélection d'entrées.`);
   }
-  if (insights.length) {
-    html += `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-size:12.5px;line-height:1.7;color:var(--txt2)">
-      ${insights.map(i => `<div style="margin-bottom:6px">💡 ${i}</div>`).join('')}
-    </div>`;
-  }
-  cont.innerHTML = html;
+  mount(cont, html`${UI.grid([cell('Gagnants — MFE moyen', wMfe, 'green'), cell('Gagnants — MAE moyen', wMae, 'amber'), cell('Perdants — MFE moyen', lMfe, 'blue'), cell('Perdants — MAE moyen', lMae, 'red')], 4)}
+    ${insights.length ? UI.note(insights.map(i => html`<div>💡 ${i}</div>`)) : ''}`);
 }
 
 // ── STATS : respect de la checklist vs résultats ────────────────────
@@ -5831,7 +5882,7 @@ function renderChecklistAnalysis() {
   const total = getEntryItems().length;
   const withChecklist = trades.filter(tradeHasChecklist);
   if (total === 0 || withChecklist.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Coche la checklist en ajoutant tes trades (Dashboard → Nouveau trade) pour voir si respecter ton plan améliore vraiment tes résultats.</p>`;
+    mount(cont, UI.hint('Coche la checklist en ajoutant tes trades (Dashboard → Nouveau trade) pour voir si respecter ton plan améliore vraiment tes résultats.'));
     return;
   }
   const full = withChecklist.filter(tradeChecklistComplete);
@@ -5845,30 +5896,18 @@ function renderChecklistAnalysis() {
     return { n: arr.length, wr, avgRR };
   }
   const fs = stats(full), ps = stats(partial);
-  function card(label, s, color) {
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:16px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:10px">${label} <span style="color:var(--txt2)">(${s.n} trades)</span></div>
-      <div style="display:flex;gap:24px">
-        <div><div style="font-size:11px;color:var(--txt3)">win rate</div><div style="font-size:20px;font-weight:600;font-family:var(--mono);color:${color}">${s.wr.toFixed(0)}%</div></div>
-        <div><div style="font-size:11px;color:var(--txt3)">RR moyen</div><div style="font-size:20px;font-weight:600;font-family:var(--mono);color:${s.avgRR===null?'var(--txt3)':(s.avgRR>=0?'var(--green)':'var(--red)')}">${s.avgRR===null?'—':(s.avgRR>=0?'+':'')+s.avgRR.toFixed(2)+'R'}</div></div>
-      </div>
-    </div>`;
-  }
-  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-    ${card('✓ Checklist complète', fs, 'var(--green)')}
-    ${card('✗ Checklist incomplète', ps, 'var(--amber)')}
-  </div>`;
+  const card = (label, s, tone) => html`<div class="ui-tile"><div class="ui-tile-label">${label} <span class="ui-muted">(${s.n} trades)</span></div>
+    <div class="ui-grid c2" style="margin:0">${UI.stat('win rate', s.wr.toFixed(0) + '%', { compact: true, color: `var(--${tone})` })}${UI.stat('RR moyen', s.avgRR === null ? '—' : (s.avgRR >= 0 ? '+' : '') + s.avgRR.toFixed(2) + 'R', { compact: true, color: s.avgRR === null ? 'var(--txt3)' : s.avgRR >= 0 ? 'var(--green)' : 'var(--red)' })}</div></div>`;
+  let conclusion = '';
   if (fs.n >= 3 && ps.n >= 3) {
     const diff = fs.wr - ps.wr;
-    if (Math.abs(diff) >= 5) {
-      html += `<div style="margin-top:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-size:12.5px;color:var(--txt2)">
-        💡 ${diff>0 ? `Respecter ta checklist en entier fait une vraie différence : <strong style="color:var(--green)">+${diff.toFixed(0)} points</strong> de win rate par rapport aux trades où tu as sauté des critères.` : `Étonnant : tes trades avec checklist incomplète font <strong style="color:var(--amber)">mieux</strong> (+${Math.abs(diff).toFixed(0)} points) que ceux avec checklist complète. Vérifie si un critère de ta checklist te fait plus de mal que de bien.`}
-      </div>`;
-    }
+    if (Math.abs(diff) >= 5) conclusion = UI.note(diff > 0
+      ? html`💡 Respecter ta checklist en entier fait une vraie différence : ${UI.em('+' + diff.toFixed(0) + ' points', 'green')} de win rate par rapport aux trades où tu as sauté des critères.`
+      : html`💡 Étonnant : tes trades avec checklist incomplète font ${UI.em('mieux', 'amber')} (+${Math.abs(diff).toFixed(0)} points) que ceux avec checklist complète. Vérifie si un critère de ta checklist te fait plus de mal que de bien.`);
   } else {
-    html += `<p style="margin-top:12px;font-size:11px;color:var(--txt3)">Encore trop peu de trades dans un des deux groupes pour tirer une conclusion fiable.</p>`;
+    conclusion = UI.hint('Encore trop peu de trades dans un des deux groupes pour tirer une conclusion fiable.');
   }
-  cont.innerHTML = html;
+  mount(cont, html`${UI.grid([card('✓ Checklist complète', fs, 'green'), card('✗ Checklist incomplète', ps, 'amber')], 2)}${conclusion}`);
 }
 
 // ── TILT METER : détection de revenge trading ───────────────────────
@@ -5910,39 +5949,23 @@ function renderTiltMeter() {
   if (!cont) return;
   const { flagged, lossesWithFollowup } = computeTiltTrades();
   if (lossesWithFollowup === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Pas assez de trades avec heure d'entrée à la suite d'une perte pour détecter un pattern de revenge trading.</p>`;
+    mount(cont, UI.hint('Pas assez de trades avec heure d\'entrée à la suite d\'une perte pour détecter un pattern de revenge trading.'));
     return;
   }
   const tiltPct = Math.round((flagged.length / lossesWithFollowup) * 100);
   const calmScore = 100 - tiltPct;
   const col = calmScore >= 70 ? 'var(--green)' : calmScore >= 40 ? 'var(--amber)' : 'var(--red)';
-
-  let html = `<div style="display:flex;gap:28px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
-    <div>
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">Score de sang-froid</div>
-      <div style="font-size:30px;font-weight:600;letter-spacing:-.02em;color:var(--txt)">${calmScore}<span style="font-size:15px;color:var(--txt3)"> / 100</span></div>
-    </div>
-    <div style="flex:1;min-width:180px">
-      <div class="meter" style="margin-bottom:10px"><div class="meter-fill" style="width:${calmScore}%;background:${col}"></div></div>
-      <div style="font-size:11px;color:var(--txt2)">${flagged.length} trade(s) suspect(s) sur ${lossesWithFollowup} perte(s) suivies d'un autre trade le même jour (${tiltPct}%).</div>
-    </div>
+  const head = html`<div class="ui-big">
+    <div><div class="ui-big-label">Score de sang-froid</div><div class="ui-big-val">${calmScore}<small> / 100</small></div></div>
+    <div class="ui-big-side">${UI.meter(calmScore, col, { label: 'Score de sang-froid ' + calmScore + ' sur 100' })}
+      <div class="ui-muted">${flagged.length} trade(s) suspect(s) sur ${lossesWithFollowup} perte(s) suivies d'un autre trade le même jour (${tiltPct}%).</div></div>
   </div>`;
-
-  if (flagged.length > 0) {
-    html += `<div style="border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:10px">Trades signalés</div>` +
-      flagged.slice(0,10).map(f => `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)">
-          <span style="color:var(--txt2)">${esc(f.trade.date)} · ${esc(f.trade.entry)} · ${esc(f.trade.asset||'—')}</span>
-          <span style="color:var(--amber)">${f.reasons.join(' · ')}</span>
-          <span class="badge b-${esc((f.trade.res||'').toLowerCase())}">${esc(f.trade.res||'—')}</span>
-        </div>`).join('') +
-      (flagged.length > 10 ? `<p style="font-size:11px;color:var(--txt3);margin-top:8px">+ ${flagged.length-10} autre(s)</p>` : '') +
-      `</div>`;
-  } else {
-    html += `<p style="font-size:12px;color:var(--green)">✓ Aucun pattern de revenge trading détecté sur tes trades actuels.</p>`;
-  }
-  cont.innerHTML = html;
+  const list = flagged.length > 0
+    ? html`<div class="ui-sep"><div class="ui-subtitle">Trades signalés</div>
+        ${UI.rows(flagged.slice(0, 10).map(f => html`<span>${f.trade.date} · ${f.trade.entry} · ${f.trade.asset || '—'}</span><span class="tone-amber">${f.reasons.join(' · ')}</span>${UI.badgeRes(f.trade.res || '—')}`))}
+        ${flagged.length > 10 ? UI.hint('+ ' + (flagged.length - 10) + ' autre(s)') : ''}</div>`
+    : UI.hint('✓ Aucun pattern de revenge trading détecté sur tes trades actuels.', 'green');
+  mount(cont, html`${head}${list}`);
 }
 
 // ── EDGE FINDER ──────────────────────────────────────────────────────
@@ -5970,7 +5993,7 @@ function renderEdgeFinder() {
   if (!cont) return;
   const closedCount = trades.filter(t => ['TP','SL','BE'].includes(t.res)).length;
   if (closedCount < 10) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Encore trop peu de trades fermés (${closedCount}) pour un scan fiable — reviens à partir d'une trentaine de trades.</p>`;
+    mount(cont, UI.hint(`Encore trop peu de trades fermés (${closedCount}) pour un scan fiable — reviens à partir d'une trentaine de trades.`));
     return;
   }
   const WD_NAMES = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'};
@@ -5987,7 +6010,7 @@ function renderEdgeFinder() {
   dims.forEach(dim => dim.segs.forEach(s => all.push({ dimension: dim.label, key:s.key, n:s.n, totalR:s.totalR, avgR:s.avgR, winRate:s.winRate, reliable:s.reliable, score: s.avgR * Math.sqrt(s.n) })));
 
   if (all.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Pas assez de segments avec au moins 3 trades pour dégager un edge fiable — renseigne asset, heure, session ou stratégie sur tes trades.</p>`;
+    mount(cont, UI.hint('Pas assez de segments avec au moins 3 trades pour dégager un edge fiable — renseigne asset, heure, session ou stratégie sur tes trades.'));
     return;
   }
 
@@ -5997,42 +6020,19 @@ function renderEdgeFinder() {
   const ranked = all.slice().sort((a,b) => b.score - a.score);
   const best = rankedReliable[0] || ranked[0];
   const worst = (rankedReliable.length ? rankedReliable[rankedReliable.length-1] : ranked[ranked.length-1]);
+  const signedR = v => (v >= 0 ? '+' : '') + v.toFixed(1) + 'R';
 
-  function heroCard(label, seg, isGood) {
-    const col = isGood ? 'var(--green)' : 'var(--red)';
-    const provisional = !seg.reliable;
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-left:3px solid ${col};border-radius:var(--r);padding:16px;${provisional?'opacity:.75':''}">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">${label}${provisional ? ' <span style="color:var(--amber);text-transform:none;letter-spacing:0">(provisoire, n<10)</span>' : ''}</div>
-      <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:${col}">${esc(seg.key)}</div>
-      <div style="font-size:11px;color:var(--txt3);font-family:var(--mono);margin-top:4px">${seg.dimension} · ${seg.n} trades · ${seg.winRate.toFixed(0)}% win · ${seg.totalR>=0?'+':''}${seg.totalR.toFixed(1)}R total</div>
-    </div>`;
-  }
+  const heroCard = (label, seg, isGood) => UI.tile(
+    html`${label}${!seg.reliable ? html` <span class="tone-amber">(provisoire, n&lt;10)</span>` : ''}`, seg.key,
+    { tone: isGood ? 'green' : 'red', accent: true, dim: !seg.reliable, sub: `${seg.dimension} · ${seg.n} trades · ${seg.winRate.toFixed(0)}% win · ${signedR(seg.totalR)} total` });
+  const miniTable = (title, list) => html`<div><div class="ui-subtitle">${title}</div>
+    ${UI.rows(list.map(s => html`<span>${s.key} <span class="sub">· ${s.dimension}</span></span><span class="${s.totalR >= 0 ? 'tone-green' : 'tone-red'}">${signedR(s.totalR)}</span>`))}</div>`;
 
-  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
-    ${heroCard('💪 Ton edge le plus fort', best, true)}
-    ${heroCard('⚠️ Ton plus gros point faible', worst, false)}
-  </div>`;
-  if (reliableAll.length === 0) {
-    html += `<div style="margin-bottom:18px;padding:10px 14px;border:1px solid var(--amber);background:var(--amber-d);border-radius:var(--r);font-size:12px;color:var(--txt2)">⚠️ Aucun segment n'atteint 10 trades : tout ce qui suit est provisoire, à confirmer avec plus de données.</div>`;
-  }
-
-  const top5 = ranked.slice(0,5);
-  const bottom5 = ranked.slice(-5).reverse();
-  function miniTable(title, list) {
-    return `<div>
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">${title}</div>
-      ${list.map(s => `<div style="display:flex;justify-content:space-between;font-size:12px;font-family:var(--mono);padding:6px 0;border-bottom:1px solid var(--border)">
-        <span style="color:var(--txt2)">${esc(s.key)} <span style="color:var(--txt3)">· ${esc(s.dimension)}</span></span>
-        <span style="color:${s.totalR>=0?'var(--green)':'var(--red)'}">${s.totalR>=0?'+':''}${s.totalR.toFixed(1)}R</span>
-      </div>`).join('')}
-    </div>`;
-  }
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-    ${miniTable('Top 5 segments', top5)}
-    ${miniTable('5 segments les plus coûteux', bottom5)}
-  </div>`;
-  html += `<p style="margin-top:16px;font-size:11px;color:var(--txt3);line-height:1.6">Ce scan teste ${all.length} segments à la fois sur 6 dimensions : avec autant de comparaisons, un résultat qui a l'air fort peut être dû au hasard (« data dredging »). Un segment avec n < 10 est provisoire ; vérifie surtout qu'un edge se reproduit dans le temps avant d'en faire une règle.</p>`;
-  cont.innerHTML = html;
+  mount(cont, html`
+    ${UI.grid([heroCard('💪 Ton edge le plus fort', best, true), heroCard('⚠️ Ton plus gros point faible', worst, false)], 2)}
+    ${reliableAll.length === 0 ? UI.note('⚠️ Aucun segment n\'atteint 10 trades : tout ce qui suit est provisoire, à confirmer avec plus de données.', 'warn') : ''}
+    ${UI.grid([miniTable('Top 5 segments', ranked.slice(0, 5)), miniTable('5 segments les plus coûteux', ranked.slice(-5).reverse())], 2)}
+    ${UI.hint(`Ce scan teste ${all.length} segments à la fois sur 6 dimensions : avec autant de comparaisons, un résultat qui a l'air fort peut être dû au hasard (« data dredging »). Un segment avec n < 10 est provisoire ; vérifie surtout qu'un edge se reproduit dans le temps avant d'en faire une règle.`)}`);
 }
 
 // ── SHARPE / SORTINO ─────────────────────────────────────────────────
@@ -6048,7 +6048,7 @@ function renderSharpeSortino() {
   if (!cont) return;
   const returns = computeDailyReturns();
   if (returns.length < 10) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Encore trop peu de journées tradées (${returns.length}) — ces ratios ont besoin d'au moins une dizaine de jours pour être lisibles.</p>`;
+    mount(cont, UI.hint(`Encore trop peu de journées tradées (${returns.length}) — ces ratios ont besoin d'au moins une dizaine de jours pour être lisibles.`));
     return;
   }
   const mean = returns.reduce((a,b)=>a+b,0) / returns.length;
@@ -6061,30 +6061,18 @@ function renderSharpeSortino() {
   const sortino = downsideDev > 0 ? (mean/downsideDev) * sqrtN : null;
 
   function verdict(val) {
-    if (val === null) return { txt: 'non calculable', col: 'var(--txt3)' };
-    if (val < 0) return { txt: 'stratégie perdante', col: 'var(--red)' };
-    if (val < 0.5) return { txt: 'faible', col: 'var(--red)' };
-    if (val < 1) return { txt: 'acceptable', col: 'var(--amber)' };
-    if (val < 2) return { txt: 'bon', col: 'var(--green)' };
-    if (val < 3) return { txt: 'très bon', col: 'var(--green)' };
-    return { txt: "exceptionnel — vérifie l'échantillon", col: 'var(--purple)' };
+    if (val === null) return { txt: 'non calculable', tone: 'muted' };
+    if (val < 0) return { txt: 'stratégie perdante', tone: 'red' };
+    if (val < 0.5) return { txt: 'faible', tone: 'red' };
+    if (val < 1) return { txt: 'acceptable', tone: 'amber' };
+    if (val < 2) return { txt: 'bon', tone: 'green' };
+    if (val < 3) return { txt: 'très bon', tone: 'green' };
+    return { txt: "exceptionnel — vérifie l'échantillon", tone: 'purple' };
   }
-  const sv = verdict(sharpe), tv = verdict(sortino);
-
-  cont.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">Sharpe (annualisé)</div>
-      <div style="font-size:26px;font-weight:700;font-family:var(--mono);color:${sv.col}">${sharpe===null?'—':sharpe.toFixed(2)}</div>
-      <div style="font-size:11px;color:${sv.col};margin-top:4px">${sv.txt}</div>
-    </div>
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px">Sortino (annualisé)</div>
-      <div style="font-size:26px;font-weight:700;font-family:var(--mono);color:${tv.col}">${sortino===null?'—':sortino.toFixed(2)}</div>
-      <div style="font-size:11px;color:${tv.col};margin-top:4px">${tv.txt}</div>
-    </div>
-  </div>
-  ${returns.length < 30 ? '<p style="font-size:11px;color:var(--amber);margin-top:12px;line-height:1.6">⚠️ Annualisé sur seulement ' + returns.length + ' journée(s) : ces ratios deviennent fiables à partir d\'une trentaine de jours. En dessous, prends-les comme un indice, pas une conclusion.</p>' : ''}
-  <p style="font-size:11px;color:var(--txt3);margin-top:12px;line-height:1.6">Calculés sur ${returns.length} journée(s) de trading, en % de ton solde de départ (${(accountSize||10000).toFixed(0)} €). Le Sharpe pénalise toute volatilité, le Sortino uniquement les jours négatifs. À prendre avec prudence sous 30 jours de données.</p>`;
+  const tile = (label, val) => { const v = verdict(val); return UI.tile(label, val === null ? '—' : val.toFixed(2), { center: true, size: 'l', tone: v.tone, sub: v.txt }); };
+  mount(cont, html`${UI.grid([tile('Sharpe (annualisé)', sharpe), tile('Sortino (annualisé)', sortino)], 2)}
+    ${returns.length < 30 ? UI.hint(`⚠️ Annualisé sur seulement ${returns.length} journée(s) : ces ratios deviennent fiables à partir d'une trentaine de jours. En dessous, prends-les comme un indice, pas une conclusion.`, 'amber') : ''}
+    ${UI.hint(`Calculés sur ${returns.length} journée(s) de trading, en % de ton solde de départ (${(accountSize||10000).toFixed(0)} €). Le Sharpe pénalise toute volatilité, le Sortino uniquement les jours négatifs. À prendre avec prudence sous 30 jours de données.`)}`);
 }
 
 // ── COIN FLIP DISTRIBUTION ───────────────────────────────────────────
@@ -6104,7 +6092,7 @@ function renderCoinFlip() {
   const be = trades.filter(t => t.res === 'BE').length;
   const n = wins + losses + be;
   if (n < 20) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Il te faut au moins 20 trades fermés pour un test crédible (tu en as ${n}). En dessous de 50-100 trades, prends le résultat avec des pincettes.</p>`;
+    mount(cont, UI.hint(`Il te faut au moins 20 trades fermés pour un test crédible (tu en as ${n}). En dessous de 50-100 trades, prends le résultat avec des pincettes.`));
     return;
   }
   // Seuil de rentabilité réel : compte tenu de ton payoff (gain moyen / perte moyenne en €), le seuil pour être rentable
@@ -6121,27 +6109,19 @@ function renderCoinFlip() {
   const significant = pValue < 0.05;
   const barPct = Math.min(Math.max(winRate*100,0),100);
   const p0Pct = Math.round(p0*100);
+  const fill = significant ? (winRate >= p0 ? 'var(--green)' : 'var(--red)') : 'var(--amber)';
+  // Jauge à deux repères (50 % et seuil réel) : positions calculées, seules valeurs de style laissées en ligne.
+  const ticks = raw(`<div class="meter-tick" style="left:calc(50% - 1px);background:var(--txt3)"></div><div class="meter-tick-lbl" style="left:50%;color:var(--txt3)">50 %</div>`
+    + (hasPayoff && Math.abs(p0Pct - 50) >= 4 ? `<div class="meter-tick" style="left:calc(${p0Pct}% - 1px)"></div><div class="meter-tick-lbl" style="left:${Math.max(8, p0Pct)}%">seuil ${p0Pct} %</div>` : ''));
 
-  cont.innerHTML = `
-    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:14px">
-      <div>
-        <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">Ton win rate</div>
-        <div style="font-size:28px;font-weight:600;letter-spacing:-.02em">${(winRate*100).toFixed(1).replace('.', ',')} %</div>
-      </div>
-      <div style="flex:1;min-width:180px">
-        <div class="meter" style="margin:6px 0 30px">
-          <div class="meter-fill" style="width:${barPct}%;background:${significant ? (winRate >= p0 ? 'var(--green)' : 'var(--red)') : 'var(--amber)'}"></div>
-          <div class="meter-tick" style="left:calc(50% - 1px);background:var(--txt3)"></div><div class="meter-tick-lbl" style="left:50%;color:var(--txt3)">50 %</div>
-          ${hasPayoff && Math.abs(p0Pct-50) >= 4 ? `<div class="meter-tick" style="left:calc(${p0Pct}% - 1px)"></div><div class="meter-tick-lbl" style="left:${Math.max(8, p0Pct)}%">seuil ${p0Pct} %</div>` : ''}
-        </div>
-      </div>
+  mount(cont, html`<div class="ui-big">
+      <div><div class="ui-big-label">Ton win rate</div><div class="ui-big-val">${(winRate*100).toFixed(1).replace('.', ',')} %</div></div>
+      <div class="ui-big-side"><div class="meter with-ticks" role="img" aria-label="Win rate ${Math.round(barPct)} %, seuil de rentabilité ${p0Pct} %"><div class="meter-fill" style="width:${raw(barPct.toFixed(1))}%;background:${raw(fill)}"></div>${ticks}</div></div>
     </div>
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-size:12.5px;line-height:1.7;color:var(--txt2)">
-      ${hasPayoff ? `Compte tenu de ton payoff (gain moyen ${fmtEUR(avgWinE,false,0)} / perte moyenne ${fmtEUR(avgLossE,false,0)}), ton seuil de rentabilité réel est <strong>${p0Pct}%</strong> — pas 50 %. ` : ''}
+    ${UI.note(html`${hasPayoff ? html`Compte tenu de ton payoff (gain moyen ${fmtEUR(avgWinE,false,0)} / perte moyenne ${fmtEUR(avgLossE,false,0)}), ton seuil de rentabilité réel est ${UI.em(p0Pct + '%')} — pas 50 %. ` : ''}
       ${significant
-        ? `✅ Avec ${n} trades, ton win rate est <strong style="color:var(--green)">statistiquement différent</strong> de ce seuil (p = ${pValue.toFixed(3)}). Ce n'est probablement pas de la chance.`
-        : `⚠️ Avec ${n} trades, on ne peut <strong style="color:var(--amber)">pas encore exclure</strong> que ton win rate soit dû au hasard par rapport à ce seuil (p = ${pValue.toFixed(3)}). Continue à journaliser${n<100?' — vise au moins 50-100 trades':''}.`}
-    </div>`;
+        ? html`✅ Avec ${n} trades, ton win rate est ${UI.em('statistiquement différent', 'green')} de ce seuil (p = ${pValue.toFixed(3)}). Ce n'est probablement pas de la chance.`
+        : html`⚠️ Avec ${n} trades, on ne peut ${UI.em('pas encore exclure', 'amber')} que ton win rate soit dû au hasard par rapport à ce seuil (p = ${pValue.toFixed(3)}). Continue à journaliser${n < 100 ? ' — vise au moins 50-100 trades' : ''}.`}`)}`);
 }
 
 // ── COÛT DES ERREURS ─────────────────────────────────────────────────
@@ -6151,7 +6131,7 @@ function renderMistakeCostReport() {
   if (!cont) return;
   const withMistakes = trades.filter(t => Array.isArray(t.mistakes) && t.mistakes.length);
   if (withMistakes.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Tague les erreurs sur tes trades (Dashboard → Nouveau trade) pour voir leur coût réel ici. Les erreurs suivies sont éditables dans Plan de trading.</p>`;
+    mount(cont, UI.hint('Tague les erreurs sur tes trades (Dashboard → Nouveau trade) pour voir leur coût réel ici. Les erreurs suivies sont éditables dans Plan de trading.'));
     return;
   }
   const map = {};
@@ -6165,14 +6145,9 @@ function renderMistakeCostReport() {
   });
   const rows = Object.entries(map).sort((a,b) => a[1].costEur - b[1].costEur);
   const totalCost = rows.reduce((s,[,v]) => s + (v.costEur<0?v.costEur:0), 0);
-
-  let html = `<div style="margin-bottom:12px;font-size:13px;color:var(--txt2)">Coût total estimé de tes erreurs taguées : <strong style="color:var(--red)">${totalCost.toFixed(0)} €</strong></div>`;
   const maxAbs = Math.max(...rows.map(([, v]) => Math.abs(v.costEur)), 1e-9);
-  html += rows.map(([label,v]) => `<div style="display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px">
-      <span style="color:var(--txt)">${esc(label)} <span style="color:var(--txt3);font-family:var(--mono)">${v.n}×</span></span>
-      ${divBarCell(v.costEur, maxAbs, (v.costEur>=0?'+':'') + v.costEur.toFixed(0) + ' € · ' + (v.costR>=0?'+':'') + v.costR.toFixed(1) + 'R')}
-    </div>`).join('');
-  cont.innerHTML = html;
+  mount(cont, html`<div class="ui-big-label" style="font-size:13px;margin-bottom:12px">Coût total estimé de tes erreurs taguées : ${UI.em(totalCost.toFixed(0) + ' €', 'red')}</div>
+    <div class="ui-rows">${rows.map(([label, v]) => html`<div class="ui-row grid-bar"><span>${label} <span class="sub">${v.n}×</span></span>${raw(divBarCell(v.costEur, maxAbs, (v.costEur>=0?'+':'') + v.costEur.toFixed(0) + ' € · ' + (v.costR>=0?'+':'') + v.costR.toFixed(1) + 'R'))}</div>`)}</div>`);
 }
 
 // ── COMPARATEUR "ET SI" ───────────────────────────────────────────────
