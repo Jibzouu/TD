@@ -31,6 +31,8 @@ const STATES = [
   ['saisie-rapide', `showPage('dashboard', null); openQuickAdd()`, false],
   ['raccourcis', `openShortcutsHelp()`, false],
   ['edition', `showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); startEditTrade(89)`, false],
+  ['corbeille', `saveTrash([{ trade: trades[0], deletedAt: Date.parse('2026-06-16') }, { trade: trades[1], deletedAt: Date.parse('2026-06-16') }]); showPage('export', document.querySelector('.nav-item[data-page="export"]'))`],
+  ['alertes', `window.__su = storageUsage; storageUsage = () => Object.assign(__su(), { pct: 95 }); showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); renderStorageWarning(); setRMode('strict'); reportStorageError(new Error('test')); storageUsage = __su;`, false],
 ];
 const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:behavior', 'stats:advanced', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'watchlist', 'export', 'parametres'];
 const b = await chromium.launch();

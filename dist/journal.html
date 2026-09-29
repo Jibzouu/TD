@@ -1164,6 +1164,40 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .color-item-label{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .color-item-val{font-size:11px;font-family:var(--mono);color:var(--txt3)}
 
+/* Plan de trading, watchlist */
+.risk-row.tight,.checklist-item.tight{gap:8px}
+.watch-input.grow{flex:1;font-size:12.5px}
+/* même spécificité que la charte (.risk-row .watch-input:first-child, #mistake-tags .watch-input) qu'écrasait le style en ligne */
+#mistake-tags .risk-row .watch-input.grow.sm{font-size:12px}
+.risk-row .watch-input.grow-13:first-child{flex:1.3;font-size:12px}
+.watch-input.rule-val{flex:1;text-align:right;color:var(--amber);font-weight:600;font-family:var(--mono)}
+.nowrap{white-space:nowrap}
+.btn-ghost.btn-add{margin-top:10px;width:100%}
+.mistake-chip{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer}
+.mistake-chip input{accent-color:#f472b6;cursor:pointer}
+
+/* Stockage (alertes, jauge) et couverture du R */
+.storage-error{position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.storage-error-msg{flex:1;min-width:240px}
+.storage-error .btn-ghost,.storage-error .btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+.storage-warn{margin-bottom:14px;padding:11px 16px;border-radius:var(--r);font-size:12.5px;line-height:1.5;cursor:pointer;border:1px solid var(--amber);background:var(--amber-d);color:var(--txt)}
+.storage-warn.red{border-color:var(--red);background:var(--red-d)}
+.stor-bar{height:10px;background:var(--bg4);border-radius:99px;overflow:hidden;margin:10px 0 8px}
+.stor-bar > div{height:100%}
+.stor-txt{font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7}
+.rcov{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);font-size:12px;line-height:1.5}
+.rcov.warn{border-color:var(--amber);background:var(--amber-d)}
+.rcov-select{background:var(--bg3);color:var(--txt);border:1px solid var(--border2);border-radius:var(--r);padding:4px 8px;font-size:11px}
+.btn-ghost.btn-xs{padding:4px 10px;font-size:11px}
+.rcov-note{color:var(--txt3);font-size:11px;flex-basis:100%}
+
+/* Export : dossiers de sauvegarde, corbeille */
+.bk-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;flex-wrap:wrap}
+.bk-slot-lbl{font-size:11.5px;font-family:var(--mono)}
+.bk-slot-btns{display:flex;gap:6px}
+.btn-ghost.btn-xs2{padding:5px 10px;font-size:11px}
+.trash-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)}
+
 </style>
 </head>
 <body>
@@ -3545,14 +3579,13 @@ function reportStorageError(e) {
   console.error('Écriture impossible dans le stockage :', e);
   let el = document.getElementById('storage-error');
   if (!el) {
-    el = document.createElement('div'); el.id = 'storage-error'; el.setAttribute('role', 'alert');
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 18px rgba(0,0,0,.5)';
+    el = document.createElement('div'); el.id = 'storage-error'; el.className = 'storage-error'; el.setAttribute('role', 'alert');
     document.body.appendChild(el);
   }
-  el.innerHTML = '<span style="flex:1;min-width:240px"><b>⚠️ Stockage plein — ta dernière modification n\'a PAS été enregistrée.</b> Libère de la place (compresse ou supprime des captures) ou exporte un backup, puis recommence.</span>' +
-    '<button class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="exportData()">Exporter un backup</button>' +
-    '<button class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="document.getElementById(\'storage-error\').remove();showPage(\'export\',document.querySelector(\'.nav-item[data-page=export]\'))">Libérer de la place</button>' +
-    '<button class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="document.getElementById(\'storage-error\').remove()">Fermer</button>';
+  mount(el, html`<span class="storage-error-msg"><b>⚠️ Stockage plein — ta dernière modification n'a PAS été enregistrée.</b> Libère de la place (compresse ou supprime des captures) ou exporte un backup, puis recommence.</span>
+    <button class="btn-ghost" onclick="exportData()">Exporter un backup</button>
+    <button class="btn-ghost" onclick="document.getElementById('storage-error').remove();showPage('export',document.querySelector('.nav-item[data-page=export]'))">Libérer de la place</button>
+    <button class="btn-ghost" onclick="document.getElementById('storage-error').remove()">Fermer</button>`);
 }
 function renderStorageWarning() {
   const u = storageUsage();
@@ -3562,9 +3595,9 @@ function renderStorageWarning() {
   if (!host || !host.parentNode) return;
   if (!el) { el = document.createElement('div'); el.id = 'storage-warn'; host.parentNode.insertBefore(el, host); }
   const red = u.pct >= 92;
-  el.style.cssText = 'margin-bottom:14px;padding:11px 16px;border-radius:var(--r);font-size:12.5px;line-height:1.5;cursor:pointer;border:1px solid ' + (red ? 'var(--red)' : 'var(--amber)') + ';background:' + (red ? 'var(--red-d)' : 'var(--amber-d)') + ';color:var(--txt)';
+  el.className = 'storage-warn' + (red ? ' red' : '');
   el.onclick = () => showPage('export', document.querySelector('.nav-item[data-page=export]'));
-  el.innerHTML = (red ? '🛑 ' : '⚠️ ') + '<b>Stockage utilisé à ' + u.pct.toFixed(0) + ' %</b> (partagé par les 3 journaux). ' + (red ? 'Les prochains enregistrements peuvent échouer. ' : '') + '<u>Libérer de la place →</u>';
+  mount(el, html`${red ? '🛑 ' : '⚠️ '}<b>Stockage utilisé à ${u.pct.toFixed(0)} %</b> (partagé par les 3 journaux). ${red ? 'Les prochains enregistrements peuvent échouer. ' : ''}<u>Libérer de la place →</u>`);
 }
 
 // Images : réduites (1400 px max) et recompressées en JPEG avant stockage : ~100–200 Ko au lieu de plusieurs Mo.
@@ -3627,10 +3660,11 @@ function dismissSafetySnapshot() { DB.removeItem((JP + 'safety_snapshot')); rend
 function renderStorageCard() {
   const el = document.getElementById('storage-card-body');
   if (!el) return;
-  const u = storageUsage(), col = u.pct >= 92 ? 'var(--red)' : (u.pct >= 80 ? 'var(--amber)' : 'var(--green)');
+  const u = storageUsage(), tone = u.pct >= 92 ? 'red' : (u.pct >= 80 ? 'amber' : 'green');
   const kb = n => Math.round(n / 1024).toLocaleString('fr-FR') + ' Ko';
-  el.innerHTML = '<div style="height:10px;background:var(--bg4);border-radius:99px;overflow:hidden;margin:10px 0 8px"><div style="height:100%;width:' + Math.min(100, u.pct).toFixed(1) + '%;background:' + col + '"></div></div>' +
-    '<div style="font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7"><b style="color:' + col + '">' + u.pct.toFixed(1) + ' %</b> utilisé · ' + kb(u.total) + ' sur ' + (u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit)) + ' disponibles · ' + (u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)') + ' · partagé par les 3 journaux<br>Ce journal : ' + kb(u.mine) + ' · dont ' + u.imgCount + ' capture(s) = ' + kb(u.images) + '</div>';
+  const limit = u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit);
+  mount(el, html`<div class="stor-bar"><div class="fill-${raw(tone)}" style="${raw('width:' + Math.min(100, u.pct).toFixed(1) + '%')}"></div></div>
+    <div class="stor-txt"><b class="tone-${raw(tone)}">${u.pct.toFixed(1)} %</b> utilisé · ${kb(u.total)} sur ${limit} disponibles · ${u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)'} · partagé par les 3 journaux<br>Ce journal : ${kb(u.mine)} · dont ${u.imgCount} capture(s) = ${kb(u.images)}</div>`);
 }
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────
@@ -3702,7 +3736,7 @@ function renderRCoverage() {
   const c = { prix: 0, manuel: 0, risque: 0, defaut: 0, aucun: 0 };
   closed.forEach(t => { c[rSource(t)]++; });
   const used = closed.filter(rUsable).length;
-  if (!closed.length || (R_MODE === 'usable' && c.defaut === 0 && c.aucun === 0)) { el.innerHTML = ''; return; }
+  if (!closed.length || (R_MODE === 'usable' && c.defaut === 0 && c.aucun === 0)) { mount(el, ''); return; }
   const parts = [];
   if (c.prix) parts.push(c.prix + ' exact' + (c.prix > 1 ? 's' : ''));
   if (c.manuel) parts.push(c.manuel + ' saisi' + (c.manuel > 1 ? 's' : ''));
@@ -3711,12 +3745,12 @@ function renderRCoverage() {
   if (c.aucun) parts.push(c.aucun + ' sans R');
   const losses = closed.filter(t => t.res === 'SL' && t.pnlEur < 0);
   const est = losses.length >= 3 ? Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length)) : 0;
-  const sel = '<select id="r-mode-select" onchange="setRMode(this.value)" style="background:var(--bg3);color:var(--txt);border:1px solid var(--border2);border-radius:var(--r);padding:4px 8px;font-size:11px">' +
-    [['strict', 'R exact seulement'], ['usable', 'R exact + estimé'], ['all', 'Tout (y compris R fictifs)']].map(o => '<option value="' + o[0] + '"' + (R_MODE === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>';
-  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px;padding:10px 14px;border:1px solid ' + (c.defaut ? 'var(--amber)' : 'var(--border2)') + ';border-radius:var(--r);background:' + (c.defaut ? 'var(--amber-d)' : 'var(--bg3)') + ';font-size:12px;line-height:1.5">' +
-    '<span><b>R pris en compte : ' + used + ' / ' + closed.length + ' trades</b> <span style="color:var(--txt3)">(' + parts.join(' · ') + ')</span></span>' + sel +
-    (c.defaut && DEFAULT_RISK_EUR === 0 && est ? '<button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="estimateRFromLosses()">Estimer le R des ' + c.defaut + ' trades sans stop avec ' + est + ' € de risque</button>' : '') +
-    '<span style="color:var(--txt3);font-size:11px;flex-basis:100%">Les montants en € sont toujours exacts. Le R « fictif » (RR par défaut) n\'a aucune base réelle : il est exclu des statistiques en R tant que tu ne le rends pas explicite.</span></div>';
+  const modes = [['strict', 'R exact seulement'], ['usable', 'R exact + estimé'], ['all', 'Tout (y compris R fictifs)']];
+  mount(el, html`<div class="rcov${raw(c.defaut ? ' warn' : '')}">
+    <span><b>R pris en compte : ${used} / ${closed.length} trades</b> <span class="tone-muted">(${parts.join(' · ')})</span></span>
+    <select id="r-mode-select" class="rcov-select" onchange="setRMode(this.value)">${modes.map(o => html`<option value="${o[0]}"${raw(R_MODE === o[0] ? ' selected' : '')}>${o[1]}</option>`)}</select>
+    ${c.defaut && DEFAULT_RISK_EUR === 0 && est ? html`<button class="btn-ghost btn-xs" onclick="estimateRFromLosses()">Estimer le R des ${c.defaut} trades sans stop avec ${est} € de risque</button>` : ''}
+    <span class="rcov-note">Les montants en € sont toujours exacts. Le R « fictif » (RR par défaut) n'a aucune base réelle : il est exclu des statistiques en R tant que tu ne le rends pas explicite.</span></div>`);
 }
 function estimateRFromLosses() {
   const losses = trades.filter(t => t.res === 'SL' && t.pnlEur < 0);
@@ -6865,11 +6899,11 @@ function initPlan() {
 function renderSetupsEditor() {
   const cont = document.getElementById('setups-editor'); if (!cont) return;
   if (!Array.isArray(planData.setups)) planData.setups = [...new Set(trades.map(t => t.setup).filter(Boolean))].sort();
-  mount(cont, html`${planData.setups.map((s, i) => html`<div class="risk-row" style="gap:8px">
-      <input class="watch-input" style="flex:1;font-size:12.5px" value="${s}" onfocus="this.dataset.orig=this.value" onchange="renameSetup(${raw(i)}, this.dataset.orig, this.value)" placeholder="Nom du setup" aria-label="Nom du setup">
-      <span class="ui-muted" style="white-space:nowrap">${trades.filter(t => t.setup === s).length} trade(s)</span>
+  mount(cont, html`${planData.setups.map((s, i) => html`<div class="risk-row tight">
+      <input class="watch-input grow" value="${s}" onfocus="this.dataset.orig=this.value" onchange="renameSetup(${raw(i)}, this.dataset.orig, this.value)" placeholder="Nom du setup" aria-label="Nom du setup">
+      <span class="ui-muted nowrap">${trades.filter(t => t.setup === s).length} trade(s)</span>
       <button class="del-btn" onclick="removeSetup(${raw(i)})" title="Retirer de la liste" aria-label="Retirer ce setup">×</button></div>`)}
-    <button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addSetup()">+ Ajouter un setup</button>`);
+    <button class="btn-ghost btn-add" onclick="addSetup()">+ Ajouter un setup</button>`);
 }
 function savePlanData() { try { DB.setItem((JP + 'plan'), JSON.stringify(planData)); } catch (e) { reportStorageError(e); } }
 function addSetup() { planData.setups.push('Nouveau setup'); savePlanData(); renderSetupsEditor(); refreshSetupList(); }
@@ -6886,12 +6920,11 @@ function renderMistakeTagsEditor() {
   const cont = document.getElementById('mistake-tags');
   if (!cont) return;
   const items = planData.mistakeTags || [];
-  cont.innerHTML = items.map((text, i) => `
-    <div class="risk-row" style="gap:8px">
-      <input class="watch-input" style="flex:1;font-size:12px" value="${esc(text)}" onfocus="this.dataset.orig=this.value" oninput="updateMistakeTag(${i},this.value)" onchange="renameLabelInTrades('mistakes',this.dataset.orig,this.value);this.dataset.orig=this.value" placeholder="Erreur">
-      <button class="del-btn" onclick="removeMistakeTag(${i})" title="Supprimer">×</button>
-    </div>`).join('')
-    + `<button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addMistakeTag()">+ Ajouter une erreur à suivre</button>`;
+  mount(cont, html`${items.map((text, i) => html`
+    <div class="risk-row tight">
+      <input class="watch-input grow sm" value="${text}" onfocus="this.dataset.orig=this.value" oninput="updateMistakeTag(${raw(i)},this.value)" onchange="renameLabelInTrades('mistakes',this.dataset.orig,this.value);this.dataset.orig=this.value" placeholder="Erreur">
+      <button class="del-btn" onclick="removeMistakeTag(${raw(i)})" title="Supprimer">×</button>
+    </div>`)}<button class="btn-ghost btn-add" onclick="addMistakeTag()">+ Ajouter une erreur à suivre</button>`);
 }
 function updateMistakeTag(i, val) {
   planData.mistakeTags[i] = val;
@@ -6914,11 +6947,11 @@ function renderTradeMistakes() {
   const cont = document.getElementById('f-mistakes');
   if (!cont) return;
   const items = getMistakeTags();
-  cont.innerHTML = items.map((item, i) => `
-    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer">
-      <input type="checkbox" class="f-mistake-item" value="${esc(item)}" style="accent-color:#f472b6;cursor:pointer">
-      ${esc(item)}
-    </label>`).join('');
+  mount(cont, html`${items.map(item => html`
+    <label class="mistake-chip">
+      <input type="checkbox" class="f-mistake-item" value="${item}">
+      ${item}
+    </label>`)}`);
 }
 
 function renderChecklistGroup(key, groupKey) {
@@ -6927,14 +6960,14 @@ function renderChecklistGroup(key, groupKey) {
   if (!cont) return;
   const items = planData[key] || [];
   const checkedArr = planData[groupKey] || [];
-  cont.innerHTML = items.map((text, i) => {
+  mount(cont, html`${items.map((text, i) => {
     const checked = checkedArr.includes(i);
-    return `<div class="checklist-item" style="gap:8px">
-      <div class="check-box ${checked?'checked':''}" onclick="toggleCheck('${groupKey}',${i},this)"></div>
-      <input class="watch-input" style="flex:1;font-size:12.5px" value="${esc(text)}" onfocus="this.dataset.orig=this.value" oninput="updateChecklistItem('${key}',${i},this.value)" ${key === 'entryItems' ? `onchange="renameLabelInTrades('checklistLabels',this.dataset.orig,this.value);this.dataset.orig=this.value"` : ''} placeholder="Critère">
-      <button class="del-btn" onclick="removeChecklistItem('${key}',${i},'${groupKey}')" title="Supprimer">×</button>
+    return html`<div class="checklist-item tight">
+      <div class="check-box ${raw(checked ? 'checked' : '')}" onclick="toggleCheck('${groupKey}',${raw(i)},this)"></div>
+      <input class="watch-input grow" value="${text}" onfocus="this.dataset.orig=this.value" oninput="updateChecklistItem('${key}',${raw(i)},this.value)" ${raw(key === 'entryItems' ? `onchange="renameLabelInTrades('checklistLabels',this.dataset.orig,this.value);this.dataset.orig=this.value"` : '')} placeholder="Critère">
+      <button class="del-btn" onclick="removeChecklistItem('${key}',${raw(i)},'${groupKey}')" title="Supprimer">×</button>
     </div>`;
-  }).join('') + `<button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addChecklistItem('${key}')">+ Ajouter un critère</button>`;
+  })}<button class="btn-ghost btn-add" onclick="addChecklistItem('${key}')">+ Ajouter un critère</button>`);
 }
 
 function updateChecklistItem(key, idx, val) {
@@ -6962,13 +6995,12 @@ function removeChecklistItem(key, idx, groupKey) {
 function renderRiskRules() {
   const cont = document.getElementById('risk-rules');
   if (!cont) return;
-  cont.innerHTML = planData.risk.map((row, i) => `
-    <div class="risk-row" style="gap:8px">
-      <input class="watch-input" style="flex:1.3;font-size:12px" value="${esc(row[0])}" oninput="updateRiskRule(${i},0,this.value)" placeholder="Règle">
-      <input class="watch-input" style="flex:1;text-align:right;color:var(--amber);font-weight:600;font-family:var(--mono)" value="${esc(row[1])}" oninput="updateRiskRule(${i},1,this.value)" placeholder="Valeur">
-      <button class="del-btn" onclick="removeRiskRule(${i})" title="Supprimer">×</button>
-    </div>`).join('')
-    + `<button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addRiskRule()">+ Ajouter une règle</button>`;
+  mount(cont, html`${planData.risk.map((row, i) => html`
+    <div class="risk-row tight">
+      <input class="watch-input grow-13" value="${row[0]}" oninput="updateRiskRule(${raw(i)},0,this.value)" placeholder="Règle">
+      <input class="watch-input rule-val" value="${row[1]}" oninput="updateRiskRule(${raw(i)},1,this.value)" placeholder="Valeur">
+      <button class="del-btn" onclick="removeRiskRule(${raw(i)})" title="Supprimer">×</button>
+    </div>`)}<button class="btn-ghost btn-add" onclick="addRiskRule()">+ Ajouter une règle</button>`);
 }
 
 function updateRiskRule(i, col, val) {
@@ -7018,7 +7050,7 @@ function initWatchlist() {
 
 function renderWatchlist() {
   const grid = document.getElementById('watchlist-grid');
-  grid.innerHTML = Object.entries(WATCH_DEFAULTS).map(([section, assets]) => `
+  mount(grid, html`${Object.entries(WATCH_DEFAULTS).map(([section, assets]) => html`
     <div class="watch-section">
       <div class="watch-section-hdr">${section}</div>
       <table class="watch-table">
@@ -7026,23 +7058,24 @@ function renderWatchlist() {
         <tbody>${assets.map(asset => {
           const d = watchData[asset] || {};
           const bCls = d.biais==='Bullish'?'biais-bull':d.biais==='Bearish'?'biais-bear':'biais-neu';
-          return `<tr>
-            <td style="font-weight:500">${asset}</td>
+          const sel = v => raw(d.biais === v ? ' selected' : '');
+          return html`<tr>
+            <td class="fw-500">${asset}</td>
             <td>
-              <select class="watch-select ${bCls}" onchange="saveWatch('${asset}','biais',this.value);this.className='watch-select '+(this.value==='Bullish'?'biais-bull':this.value==='Bearish'?'biais-bear':'biais-neu')">
+              <select class="watch-select ${raw(bCls)}" onchange="saveWatch('${asset}','biais',this.value);this.className='watch-select '+(this.value==='Bullish'?'biais-bull':this.value==='Bearish'?'biais-bear':'biais-neu')">
                 <option value="">—</option>
-                <option ${d.biais==='Bullish'?'selected':''}>Bullish</option>
-                <option ${d.biais==='Bearish'?'selected':''}>Bearish</option>
-                <option ${d.biais==='Neutre'?'selected':''}>Neutre</option>
+                <option${sel('Bullish')}>Bullish</option>
+                <option${sel('Bearish')}>Bearish</option>
+                <option${sel('Neutre')}>Neutre</option>
               </select>
             </td>
-            <td><input class="watch-input" value="${esc(d.niveaux||'')}" placeholder="1.0850, 1.0920…" onchange="saveWatch('${asset}','niveaux',this.value)"></td>
-            <td><input class="watch-input" value="${esc(d.notes||'')}" placeholder="notes…" onchange="saveWatch('${asset}','notes',this.value)"></td>
+            <td><input class="watch-input" value="${d.niveaux || ''}" placeholder="1.0850, 1.0920…" onchange="saveWatch('${asset}','niveaux',this.value)"></td>
+            <td><input class="watch-input" value="${d.notes || ''}" placeholder="notes…" onchange="saveWatch('${asset}','notes',this.value)"></td>
           </tr>`;
-        }).join('')}</tbody>
+        })}</tbody>
       </table>
     </div>`
-  ).join('');
+  )}`);
 }
 
 function saveWatch(asset, field, val) {
@@ -7233,19 +7266,19 @@ async function renderBackupSettings() {
   if (sel) sel.value = String(getBackupDay());
   const handles = await Promise.all(BACKUP_SLOTS.map(s => backupIdbGet('slot' + s)));
   const perms = await Promise.all(handles.map(h => h ? h.queryPermission({ mode: 'readwrite' }).catch(() => 'denied') : null));
-  list.innerHTML = BACKUP_SLOTS.map((slot, i) => {
+  mount(list, html`${BACKUP_SLOTS.map((slot, i) => {
     const h = handles[i], perm = perms[i];
-    const status = !h ? '<span style="color:var(--txt3)">non configuré</span>'
-      : perm === 'granted' ? '<span style="color:var(--green)">✓ « ' + esc(h.name) + ' »</span>'
-      : '<span style="color:var(--amber)">⚠️ « ' + esc(h.name) + ' » — autorisation à renouveler</span>';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;flex-wrap:wrap">
-      <span style="font-size:11.5px;font-family:var(--mono)">Dossier ${slot} : ${status}</span>
-      <span style="display:flex;gap:6px">
-        <button class="btn-ghost" style="padding:5px 10px;font-size:11px" ${FS_ACCESS_SUPPORTED ? '' : 'disabled'} onclick="chooseBackupFolder(${slot})">${h ? 'Changer' : 'Choisir un dossier…'}</button>
-        ${h ? `<button class="btn-ghost" style="padding:5px 10px;font-size:11px" onclick="forgetBackupFolder(${slot})">Oublier</button>` : ''}
+    const status = !h ? html`<span class="tone-muted">non configuré</span>`
+      : perm === 'granted' ? html`<span class="tone-green">✓ « ${h.name} »</span>`
+      : html`<span class="tone-amber">⚠️ « ${h.name} » — autorisation à renouveler</span>`;
+    return html`<div class="bk-slot">
+      <span class="bk-slot-lbl">Dossier ${slot} : ${status}</span>
+      <span class="bk-slot-btns">
+        <button class="btn-ghost btn-xs2" ${raw(FS_ACCESS_SUPPORTED ? '' : 'disabled')} onclick="chooseBackupFolder(${raw(slot)})">${h ? 'Changer' : 'Choisir un dossier…'}</button>
+        ${h ? html`<button class="btn-ghost btn-xs2" onclick="forgetBackupFolder(${raw(slot)})">Oublier</button>` : ''}
       </span>
     </div>`;
-  }).join('');
+  })}`);
   const info = document.getElementById('backup-last-run-info');
   if (info) {
     const last = parseInt(DB.getItem((GP + 'last_backup_run')));
@@ -7395,17 +7428,16 @@ function renderTrashUI() {
   const emptyBtn = document.getElementById('empty-trash-btn');
   if (emptyBtn) emptyBtn.style.display = trash.length ? 'inline-flex' : 'none';
   if (trash.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Corbeille vide.</p>`;
+    mount(cont, html`<p class="empty-note">Corbeille vide.</p>`);
     return;
   }
-  cont.innerHTML = trash.map((entry, i) => {
+  mount(cont, html`${trash.map((entry, i) => {
     const t = entry.trade;
-    const col = t.res === 'TP' ? 'var(--green)' : t.res === 'SL' ? 'var(--red)' : 'var(--txt2)';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)">
-      <span style="color:var(--txt2)">${esc(t.date||'—')} · ${esc(t.asset||'—')} <span style="color:${col}">${esc(t.res||'')}</span></span>
-      <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="restoreTrashItem(${i})">Restaurer</button>
+    return html`<div class="trash-row">
+      <span class="tone-txt2">${t.date || '—'} · ${t.asset || '—'} <span class="tone-${raw(t.res === 'TP' ? 'green' : t.res === 'SL' ? 'red' : 'txt2')}">${t.res || ''}</span></span>
+      <button class="btn-ghost btn-xs" onclick="restoreTrashItem(${raw(i)})">Restaurer</button>
     </div>`;
-  }).join('');
+  })}`);
 }
 
 // ── RAPPEL D'EXPORT ──────────────────────────────────────────────────

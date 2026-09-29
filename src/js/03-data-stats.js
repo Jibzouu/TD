@@ -46,14 +46,13 @@ function reportStorageError(e) {
   console.error('Écriture impossible dans le stockage :', e);
   let el = document.getElementById('storage-error');
   if (!el) {
-    el = document.createElement('div'); el.id = 'storage-error'; el.setAttribute('role', 'alert');
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 18px rgba(0,0,0,.5)';
+    el = document.createElement('div'); el.id = 'storage-error'; el.className = 'storage-error'; el.setAttribute('role', 'alert');
     document.body.appendChild(el);
   }
-  el.innerHTML = '<span style="flex:1;min-width:240px"><b>⚠️ Stockage plein — ta dernière modification n\'a PAS été enregistrée.</b> Libère de la place (compresse ou supprime des captures) ou exporte un backup, puis recommence.</span>' +
-    '<button class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="exportData()">Exporter un backup</button>' +
-    '<button class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="document.getElementById(\'storage-error\').remove();showPage(\'export\',document.querySelector(\'.nav-item[data-page=export]\'))">Libérer de la place</button>' +
-    '<button class="btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.5)" onclick="document.getElementById(\'storage-error\').remove()">Fermer</button>';
+  mount(el, html`<span class="storage-error-msg"><b>⚠️ Stockage plein — ta dernière modification n'a PAS été enregistrée.</b> Libère de la place (compresse ou supprime des captures) ou exporte un backup, puis recommence.</span>
+    <button class="btn-ghost" onclick="exportData()">Exporter un backup</button>
+    <button class="btn-ghost" onclick="document.getElementById('storage-error').remove();showPage('export',document.querySelector('.nav-item[data-page=export]'))">Libérer de la place</button>
+    <button class="btn-ghost" onclick="document.getElementById('storage-error').remove()">Fermer</button>`);
 }
 function renderStorageWarning() {
   const u = storageUsage();
@@ -63,9 +62,9 @@ function renderStorageWarning() {
   if (!host || !host.parentNode) return;
   if (!el) { el = document.createElement('div'); el.id = 'storage-warn'; host.parentNode.insertBefore(el, host); }
   const red = u.pct >= 92;
-  el.style.cssText = 'margin-bottom:14px;padding:11px 16px;border-radius:var(--r);font-size:12.5px;line-height:1.5;cursor:pointer;border:1px solid ' + (red ? 'var(--red)' : 'var(--amber)') + ';background:' + (red ? 'var(--red-d)' : 'var(--amber-d)') + ';color:var(--txt)';
+  el.className = 'storage-warn' + (red ? ' red' : '');
   el.onclick = () => showPage('export', document.querySelector('.nav-item[data-page=export]'));
-  el.innerHTML = (red ? '🛑 ' : '⚠️ ') + '<b>Stockage utilisé à ' + u.pct.toFixed(0) + ' %</b> (partagé par les 3 journaux). ' + (red ? 'Les prochains enregistrements peuvent échouer. ' : '') + '<u>Libérer de la place →</u>';
+  mount(el, html`${red ? '🛑 ' : '⚠️ '}<b>Stockage utilisé à ${u.pct.toFixed(0)} %</b> (partagé par les 3 journaux). ${red ? 'Les prochains enregistrements peuvent échouer. ' : ''}<u>Libérer de la place →</u>`);
 }
 
 // Images : réduites (1400 px max) et recompressées en JPEG avant stockage : ~100–200 Ko au lieu de plusieurs Mo.
@@ -128,10 +127,11 @@ function dismissSafetySnapshot() { DB.removeItem((JP + 'safety_snapshot')); rend
 function renderStorageCard() {
   const el = document.getElementById('storage-card-body');
   if (!el) return;
-  const u = storageUsage(), col = u.pct >= 92 ? 'var(--red)' : (u.pct >= 80 ? 'var(--amber)' : 'var(--green)');
+  const u = storageUsage(), tone = u.pct >= 92 ? 'red' : (u.pct >= 80 ? 'amber' : 'green');
   const kb = n => Math.round(n / 1024).toLocaleString('fr-FR') + ' Ko';
-  el.innerHTML = '<div style="height:10px;background:var(--bg4);border-radius:99px;overflow:hidden;margin:10px 0 8px"><div style="height:100%;width:' + Math.min(100, u.pct).toFixed(1) + '%;background:' + col + '"></div></div>' +
-    '<div style="font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7"><b style="color:' + col + '">' + u.pct.toFixed(1) + ' %</b> utilisé · ' + kb(u.total) + ' sur ' + (u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit)) + ' disponibles · ' + (u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)') + ' · partagé par les 3 journaux<br>Ce journal : ' + kb(u.mine) + ' · dont ' + u.imgCount + ' capture(s) = ' + kb(u.images) + '</div>';
+  const limit = u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit);
+  mount(el, html`<div class="stor-bar"><div class="fill-${raw(tone)}" style="${raw('width:' + Math.min(100, u.pct).toFixed(1) + '%')}"></div></div>
+    <div class="stor-txt"><b class="tone-${raw(tone)}">${u.pct.toFixed(1)} %</b> utilisé · ${kb(u.total)} sur ${limit} disponibles · ${u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)'} · partagé par les 3 journaux<br>Ce journal : ${kb(u.mine)} · dont ${u.imgCount} capture(s) = ${kb(u.images)}</div>`);
 }
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────
@@ -203,7 +203,7 @@ function renderRCoverage() {
   const c = { prix: 0, manuel: 0, risque: 0, defaut: 0, aucun: 0 };
   closed.forEach(t => { c[rSource(t)]++; });
   const used = closed.filter(rUsable).length;
-  if (!closed.length || (R_MODE === 'usable' && c.defaut === 0 && c.aucun === 0)) { el.innerHTML = ''; return; }
+  if (!closed.length || (R_MODE === 'usable' && c.defaut === 0 && c.aucun === 0)) { mount(el, ''); return; }
   const parts = [];
   if (c.prix) parts.push(c.prix + ' exact' + (c.prix > 1 ? 's' : ''));
   if (c.manuel) parts.push(c.manuel + ' saisi' + (c.manuel > 1 ? 's' : ''));
@@ -212,12 +212,12 @@ function renderRCoverage() {
   if (c.aucun) parts.push(c.aucun + ' sans R');
   const losses = closed.filter(t => t.res === 'SL' && t.pnlEur < 0);
   const est = losses.length >= 3 ? Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length)) : 0;
-  const sel = '<select id="r-mode-select" onchange="setRMode(this.value)" style="background:var(--bg3);color:var(--txt);border:1px solid var(--border2);border-radius:var(--r);padding:4px 8px;font-size:11px">' +
-    [['strict', 'R exact seulement'], ['usable', 'R exact + estimé'], ['all', 'Tout (y compris R fictifs)']].map(o => '<option value="' + o[0] + '"' + (R_MODE === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>';
-  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px;padding:10px 14px;border:1px solid ' + (c.defaut ? 'var(--amber)' : 'var(--border2)') + ';border-radius:var(--r);background:' + (c.defaut ? 'var(--amber-d)' : 'var(--bg3)') + ';font-size:12px;line-height:1.5">' +
-    '<span><b>R pris en compte : ' + used + ' / ' + closed.length + ' trades</b> <span style="color:var(--txt3)">(' + parts.join(' · ') + ')</span></span>' + sel +
-    (c.defaut && DEFAULT_RISK_EUR === 0 && est ? '<button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="estimateRFromLosses()">Estimer le R des ' + c.defaut + ' trades sans stop avec ' + est + ' € de risque</button>' : '') +
-    '<span style="color:var(--txt3);font-size:11px;flex-basis:100%">Les montants en € sont toujours exacts. Le R « fictif » (RR par défaut) n\'a aucune base réelle : il est exclu des statistiques en R tant que tu ne le rends pas explicite.</span></div>';
+  const modes = [['strict', 'R exact seulement'], ['usable', 'R exact + estimé'], ['all', 'Tout (y compris R fictifs)']];
+  mount(el, html`<div class="rcov${raw(c.defaut ? ' warn' : '')}">
+    <span><b>R pris en compte : ${used} / ${closed.length} trades</b> <span class="tone-muted">(${parts.join(' · ')})</span></span>
+    <select id="r-mode-select" class="rcov-select" onchange="setRMode(this.value)">${modes.map(o => html`<option value="${o[0]}"${raw(R_MODE === o[0] ? ' selected' : '')}>${o[1]}</option>`)}</select>
+    ${c.defaut && DEFAULT_RISK_EUR === 0 && est ? html`<button class="btn-ghost btn-xs" onclick="estimateRFromLosses()">Estimer le R des ${c.defaut} trades sans stop avec ${est} € de risque</button>` : ''}
+    <span class="rcov-note">Les montants en € sont toujours exacts. Le R « fictif » (RR par défaut) n'a aucune base réelle : il est exclu des statistiques en R tant que tu ne le rends pas explicite.</span></div>`);
 }
 function estimateRFromLosses() {
   const losses = trades.filter(t => t.res === 'SL' && t.pnlEur < 0);

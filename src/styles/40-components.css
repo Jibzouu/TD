@@ -157,3 +157,37 @@
 .color-item-txt{min-width:0}
 .color-item-label{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .color-item-val{font-size:11px;font-family:var(--mono);color:var(--txt3)}
+
+/* Plan de trading, watchlist */
+.risk-row.tight,.checklist-item.tight{gap:8px}
+.watch-input.grow{flex:1;font-size:12.5px}
+/* même spécificité que la charte (.risk-row .watch-input:first-child, #mistake-tags .watch-input) qu'écrasait le style en ligne */
+#mistake-tags .risk-row .watch-input.grow.sm{font-size:12px}
+.risk-row .watch-input.grow-13:first-child{flex:1.3;font-size:12px}
+.watch-input.rule-val{flex:1;text-align:right;color:var(--amber);font-weight:600;font-family:var(--mono)}
+.nowrap{white-space:nowrap}
+.btn-ghost.btn-add{margin-top:10px;width:100%}
+.mistake-chip{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer}
+.mistake-chip input{accent-color:#f472b6;cursor:pointer}
+
+/* Stockage (alertes, jauge) et couverture du R */
+.storage-error{position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.storage-error-msg{flex:1;min-width:240px}
+.storage-error .btn-ghost,.storage-error .btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+.storage-warn{margin-bottom:14px;padding:11px 16px;border-radius:var(--r);font-size:12.5px;line-height:1.5;cursor:pointer;border:1px solid var(--amber);background:var(--amber-d);color:var(--txt)}
+.storage-warn.red{border-color:var(--red);background:var(--red-d)}
+.stor-bar{height:10px;background:var(--bg4);border-radius:99px;overflow:hidden;margin:10px 0 8px}
+.stor-bar > div{height:100%}
+.stor-txt{font-size:12px;font-family:var(--mono);color:var(--txt2);line-height:1.7}
+.rcov{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);font-size:12px;line-height:1.5}
+.rcov.warn{border-color:var(--amber);background:var(--amber-d)}
+.rcov-select{background:var(--bg3);color:var(--txt);border:1px solid var(--border2);border-radius:var(--r);padding:4px 8px;font-size:11px}
+.btn-ghost.btn-xs{padding:4px 10px;font-size:11px}
+.rcov-note{color:var(--txt3);font-size:11px;flex-basis:100%}
+
+/* Export : dossiers de sauvegarde, corbeille */
+.bk-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;flex-wrap:wrap}
+.bk-slot-lbl{font-size:11.5px;font-family:var(--mono)}
+.bk-slot-btns{display:flex;gap:6px}
+.btn-ghost.btn-xs2{padding:5px 10px;font-size:11px}
+.trash-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)}

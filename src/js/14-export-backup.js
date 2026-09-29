@@ -178,19 +178,19 @@ async function renderBackupSettings() {
   if (sel) sel.value = String(getBackupDay());
   const handles = await Promise.all(BACKUP_SLOTS.map(s => backupIdbGet('slot' + s)));
   const perms = await Promise.all(handles.map(h => h ? h.queryPermission({ mode: 'readwrite' }).catch(() => 'denied') : null));
-  list.innerHTML = BACKUP_SLOTS.map((slot, i) => {
+  mount(list, html`${BACKUP_SLOTS.map((slot, i) => {
     const h = handles[i], perm = perms[i];
-    const status = !h ? '<span style="color:var(--txt3)">non configuré</span>'
-      : perm === 'granted' ? '<span style="color:var(--green)">✓ « ' + esc(h.name) + ' »</span>'
-      : '<span style="color:var(--amber)">⚠️ « ' + esc(h.name) + ' » — autorisation à renouveler</span>';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;flex-wrap:wrap">
-      <span style="font-size:11.5px;font-family:var(--mono)">Dossier ${slot} : ${status}</span>
-      <span style="display:flex;gap:6px">
-        <button class="btn-ghost" style="padding:5px 10px;font-size:11px" ${FS_ACCESS_SUPPORTED ? '' : 'disabled'} onclick="chooseBackupFolder(${slot})">${h ? 'Changer' : 'Choisir un dossier…'}</button>
-        ${h ? `<button class="btn-ghost" style="padding:5px 10px;font-size:11px" onclick="forgetBackupFolder(${slot})">Oublier</button>` : ''}
+    const status = !h ? html`<span class="tone-muted">non configuré</span>`
+      : perm === 'granted' ? html`<span class="tone-green">✓ « ${h.name} »</span>`
+      : html`<span class="tone-amber">⚠️ « ${h.name} » — autorisation à renouveler</span>`;
+    return html`<div class="bk-slot">
+      <span class="bk-slot-lbl">Dossier ${slot} : ${status}</span>
+      <span class="bk-slot-btns">
+        <button class="btn-ghost btn-xs2" ${raw(FS_ACCESS_SUPPORTED ? '' : 'disabled')} onclick="chooseBackupFolder(${raw(slot)})">${h ? 'Changer' : 'Choisir un dossier…'}</button>
+        ${h ? html`<button class="btn-ghost btn-xs2" onclick="forgetBackupFolder(${raw(slot)})">Oublier</button>` : ''}
       </span>
     </div>`;
-  }).join('');
+  })}`);
   const info = document.getElementById('backup-last-run-info');
   if (info) {
     const last = parseInt(DB.getItem((GP + 'last_backup_run')));
@@ -340,17 +340,16 @@ function renderTrashUI() {
   const emptyBtn = document.getElementById('empty-trash-btn');
   if (emptyBtn) emptyBtn.style.display = trash.length ? 'inline-flex' : 'none';
   if (trash.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Corbeille vide.</p>`;
+    mount(cont, html`<p class="empty-note">Corbeille vide.</p>`);
     return;
   }
-  cont.innerHTML = trash.map((entry, i) => {
+  mount(cont, html`${trash.map((entry, i) => {
     const t = entry.trade;
-    const col = t.res === 'TP' ? 'var(--green)' : t.res === 'SL' ? 'var(--red)' : 'var(--txt2)';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)">
-      <span style="color:var(--txt2)">${esc(t.date||'—')} · ${esc(t.asset||'—')} <span style="color:${col}">${esc(t.res||'')}</span></span>
-      <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="restoreTrashItem(${i})">Restaurer</button>
+    return html`<div class="trash-row">
+      <span class="tone-txt2">${t.date || '—'} · ${t.asset || '—'} <span class="tone-${raw(t.res === 'TP' ? 'green' : t.res === 'SL' ? 'red' : 'txt2')}">${t.res || ''}</span></span>
+      <button class="btn-ghost btn-xs" onclick="restoreTrashItem(${raw(i)})">Restaurer</button>
     </div>`;
-  }).join('');
+  })}`);
 }
 
 // ── RAPPEL D'EXPORT ──────────────────────────────────────────────────
