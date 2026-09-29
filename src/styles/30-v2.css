@@ -22,12 +22,20 @@ html:not(.app-ready) .main{opacity:0}
 .fb-spacer{flex:1}
 .fb-summary{font-family:var(--mono);font-size:12px;color:var(--txt2);align-self:center}
 .fb-reset{padding:6px 12px !important;font-size:11.5px !important;align-self:center}
+.fb-toggle{display:none}
+.fb-count{display:inline-block;min-width:16px;margin-left:6px;padding:0 5px;border-radius:8px;background:var(--accent);color:#fff;font:600 10.5px/16px var(--mono);text-align:center}
+.fb-count:empty{display:none}
 @media (max-width: 860px){
-  .filter-bar{padding:58px 16px 10px;gap:8px}
+  /* Mobile : la période et un bouton « Filtres » tiennent sur la ligne du menu ; le reste se déplie à la demande. */
+  .filter-bar{padding:14px 16px 10px 58px;gap:8px}
   .fb-group{flex:1 1 44%}
-  .fb-group:first-child{flex-basis:100%}
+  .fb-group:first-child{flex:1 1 calc(100% - 110px);min-width:0}
   .fb-select{min-width:0;width:100%}
   .fb-spacer{display:none}
+  .fb-toggle{display:inline-flex;align-items:center;padding:6px 12px !important;font-size:12px !important}
+  .filter-bar:not(.expanded) .fb-group:not(:first-child),.filter-bar:not(.expanded) .fb-summary{display:none}
+  .fb-summary{flex-basis:100%}
+  .page{padding-top:22px !important}   /* le bouton menu tient désormais dans la barre de filtre */
 }
 
 /* ── Galerie de captures (formulaire) ── */
@@ -168,7 +176,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
   .rv-grid,.rv-questions{grid-template-columns:1fr}
   .dw-stats{grid-template-columns:1fr 1fr}
   .sm-grid{grid-template-columns:1fr}
-  .revue-week{min-width:0}
+  .revue-week{min-width:0;order:-1;flex-basis:100%;text-align:left}
 }
 
 /* ── Impression / export PDF de la revue ── */

@@ -100,6 +100,7 @@
           <input type="date" id="gf-to" class="fb-select" aria-label="Au" onchange="setGlobalFilter({ period: 'custom', from: document.getElementById('gf-from').value, to: this.value })">
         </span>
       </div>
+      <button type="button" class="btn-ghost fb-toggle" id="gf-toggle" aria-expanded="false" onclick="toggleFilterBar()">Filtres<span class="fb-count" id="gf-count"></span></button>
       <div class="fb-group"><label class="fb-label" for="gf-asset">Actif</label><select id="gf-asset" class="fb-select" onchange="setGlobalFilter({ asset: this.value })"></select></div>
       <div class="fb-group"><label class="fb-label" for="gf-session">Session</label><select id="gf-session" class="fb-select" onchange="setGlobalFilter({ session: this.value })"></select></div>
       <div class="fb-group"><label class="fb-label" for="gf-setup">Setup</label><select id="gf-setup" class="fb-select" onchange="setGlobalFilter({ setup: this.value })"></select></div>

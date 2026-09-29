@@ -83,6 +83,14 @@ function renderFilterBar() {
   if (sum) sum.textContent = on ? n + ' trade' + (n > 1 ? 's' : '') + ' sur ' + trades.length : trades.length + ' trade' + (trades.length > 1 ? 's' : '');
   const reset = document.getElementById('gf-reset'); if (reset) reset.style.display = on ? '' : 'none';
   bar.classList.toggle('active', on);
+  const cnt = document.getElementById('gf-count');
+  if (cnt) { const k = ['asset', 'session', 'setup', 'dir'].filter(x => FILTER[x]).length; cnt.textContent = k ? String(k) : ''; }
+}
+// Mobile : déplie / replie les filtres secondaires (actif, session, setup, sens).
+function toggleFilterBar() {
+  const bar = document.getElementById('filter-bar'), btn = document.getElementById('gf-toggle');
+  const open = bar.classList.toggle('expanded');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
 // ── Rendu ciblé : seule la page affichée est recalculée ; les autres sont marquées « à redessiner »
