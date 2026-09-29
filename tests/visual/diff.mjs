@@ -27,6 +27,7 @@ for (const f of readdirSync(A).filter(f => f.endsWith('.png')).sort()) {
     return { n, minY, maxY, img: n ? cv.toDataURL('image/png').split(',')[1] : null };
   }, [a, c]);
   if (r.size) { console.log('TAILLE', f, r.size); bad++; }
+  else if (r.n && r.n <= 4) console.log('bruit', f, r.n, 'px (anti-crénelage, ignoré)');
   else if (r.n) { console.log('DIFF', f, r.n, 'px', `y ${r.minY}–${r.maxY}`); bad++; if (D) writeFileSync(join(D, f), Buffer.from(r.img, 'base64')); }
 }
 await b.close();

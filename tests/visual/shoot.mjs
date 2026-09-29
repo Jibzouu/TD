@@ -25,7 +25,7 @@ for (let i = 0; i < 90; i++) {
 }
 tr.reverse();
 
-const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:behavior', 'stats:advanced', 'stats:analyses', 'calendrier', 'bilan', 'revue', 'scaling', 'plan', 'watchlist', 'export', 'parametres'];
+const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:behavior', 'stats:advanced', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'watchlist', 'export', 'parametres'];
 const b = await chromium.launch();
 async function run(journal, pages, vp, tag, data = tr) {
   const ctx = await b.newContext({ viewport: vp, timezoneId: 'Europe/Paris', reducedMotion: 'reduce' });
@@ -42,9 +42,10 @@ async function run(journal, pages, vp, tag, data = tr) {
   }, { tr: data, journal });
   await page.goto(URL);
   await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await page.addStyleTag({ content: '*{caret-color:transparent!important}' });   // curseur clignotant
   for (const p of pages) {
     const [id, sub] = p.split(':');
-    await page.evaluate(([id, sub]) => { showPage(id, document.querySelector('.nav-item[data-page="' + id + '"]')); if (sub) showStatsSubtab(sub); }, [id, sub]);
+    await page.evaluate(([id, sub]) => { showPage(id, document.querySelector('.nav-item[data-page="' + id + '"]')); if (id === 'calendrier' && (sub === 'year') !== (calViewMode === 'year')) toggleCalView(); else if (sub) showStatsSubtab(sub); }, [id, sub]);
     await page.waitForTimeout(250);
     await page.screenshot({ path: join(OUT, `${tag}-${p.replace(':', '-')}.png`), fullPage: true });
   }

@@ -1059,6 +1059,45 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .dc-val{font-family:var(--mono);color:var(--txt)}
 .bl-empty{color:var(--txt3);font-size:13px}
 
+/* Calendrier */
+.fw-600{font-weight:600}
+.cal-row{display:grid;grid-template-columns:repeat(7,1fr) 130px;gap:6px;margin-bottom:6px}
+.cal-dow{text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:4px 0}
+.cal-day{position:relative;background:var(--c-bg,var(--bg3));border:1px solid var(--c-bd,var(--border));border-radius:var(--r);padding:8px 7px;min-height:80px;cursor:default;transition:transform .12s}
+.cal-day.today{border:2px solid var(--blue)}
+.cal-day.has{cursor:pointer}
+.cal-day.has:hover{transform:translateY(-2px)}
+.cal-dnum{font-size:12px;font-weight:500;font-family:var(--mono);color:var(--txt)}
+.cal-day.today .cal-dnum{color:var(--blue)}
+.cal-day.strong .cal-dnum{font-weight:700;color:var(--c-on)}
+.cal-eur{font-size:11px;font-weight:600;margin-top:2px;font-family:var(--mono)}
+.cal-eur .pos{color:var(--green)}.cal-eur .neg{color:var(--red)}
+.cal-day.strong .cal-eur span{color:var(--c-on)}
+.cal-r{font-size:11px;margin-top:2px;font-family:var(--mono);color:var(--c-tx,var(--txt3))}
+.cal-win{font-size:11px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
+.cal-day.strong .cal-win{color:var(--c-on);opacity:.8}
+.cal-badge{position:absolute;top:4px;right:5px;font-size:11px}
+.cal-badge.streak{top:auto;bottom:4px;font-family:var(--mono);color:var(--txt3)}
+.cal-week{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;justify-content:center}
+.cal-week.empty{opacity:.5}
+.cal-week-lbl{font-size:11px;font-family:var(--mono);color:var(--txt3)}
+.cal-week-val{font-size:15px;font-weight:600;font-family:var(--mono);margin-top:4px}
+.cal-week-sub{font-size:11px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
+.cal-year-months{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px}
+.cal-year-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-year-sq{background:var(--bg4);cursor:default}
+.cal-year-sq.has{cursor:pointer}
+.ct-head{font-weight:600;color:var(--txt);margin-bottom:6px}
+.ct-row{display:flex;justify-content:space-between;gap:14px}
+.ct-more{color:var(--txt3);margin-top:4px}
+.rr-table{width:100%;border-collapse:collapse}
+.rr-table th{text-align:left;padding:8px 14px;font-size:11px;color:var(--txt3);border-bottom:1px solid var(--border)}
+.rr-table td,.rr-table tr:last-child td{border-bottom:1px solid var(--border);padding:8px 14px;font-size:12px;font-family:var(--mono)}
+.rr-table .r{text-align:right}
+.rr-table td.c2{color:var(--txt2)}
+.rr-table td.strong{font-weight:600}
+.rr-table td.rr-empty,.rr-table tr:last-child td.rr-empty{padding:16px;color:var(--txt3);font-size:12px;font-family:inherit;border-bottom:none}
+
 </style>
 </head>
 <body>
@@ -2006,13 +2045,13 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
         <div class="panel">
           <div class="panel-hdr">Total RR par semaine</div>
           <div style="max-height:360px;overflow-y:auto">
-            <table style="width:100%;border-collapse:collapse" id="rr-week-table"></table>
+            <table class="rr-table" id="rr-week-table"></table>
           </div>
         </div>
         <div class="panel">
           <div class="panel-hdr">Total RR par mois</div>
           <div style="max-height:360px;overflow-y:auto">
-            <table style="width:100%;border-collapse:collapse" id="rr-month-table"></table>
+            <table class="rr-table" id="rr-month-table"></table>
           </div>
         </div>
       </div>
@@ -7523,12 +7562,8 @@ function showCalTooltip(e, dateStr) {
   const tip = document.getElementById('cal-tooltip');
   const data = calDayDataCache[dateStr];
   if (!tip || !data || !data.dayTrades.length) return;
-  const rows = data.dayTrades.slice(0,5).map(t => {
-    const col = t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--txt3)';
-    return `<div style="display:flex;justify-content:space-between;gap:14px"><span>${esc(t.asset||'\u2014')} ${esc(t.res||'')}</span><span style="color:${col}">${t.pnl != null?((rSource(t)==='defaut'||rSource(t)==='risque')?'≈':'')+(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':'\u2014'}</span></div>`;
-  }).join('');
-  const more = data.dayTrades.length > 5 ? `<div style="color:var(--txt3);margin-top:4px">+ ${data.dayTrades.length-5} autre(s)</div>` : '';
-  tip.innerHTML = `<div style="font-weight:600;color:var(--txt);margin-bottom:6px">${esc(dateStr)} \u00b7 ${fmtEUR(data.pnlEurSum,true)}</div>${rows}${more}`;
+  const rows = data.dayTrades.slice(0, 5).map(t => html`<div class="ct-row"><span>${t.asset || '—'} ${t.res || ''}</span><span class="tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? ((rSource(t) === 'defaut' || rSource(t) === 'risque') ? '≈' : '') + (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : '—'}</span></div>`);
+  mount(tip, html`<div class="ct-head">${dateStr} · ${fmtEUR(data.pnlEurSum, true)}</div>${rows}${data.dayTrades.length > 5 ? html`<div class="ct-more">+ ${data.dayTrades.length - 5} autre(s)</div>` : ''}`);
   tip.classList.add('show');
   positionCalTooltip(e);
 }
@@ -7618,82 +7653,54 @@ function renderCalendrier() {
   const streakMap = computeCalStreaks(chronoEntries);
   const hasBestWorst = monthDates.filter(d => calDayDataCache[d].dayTrades.length > 0).length >= 2;
 
-  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr) 130px;gap:6px;margin-bottom:6px">`;
-  DAYS_FR.forEach(d => { html += `<div style="text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:4px 0">${d}</div>`; });
-  html += `<div></div></div>`;
-
   let monthTotalEur = 0, monthTradingDays = 0;
-  const shape = getComputedStyle(document.documentElement).getPropertyValue('--r').trim() || '8px';
-
+  const weeks = [];
   for (let w = 0; w < cells.length / 7; w++) {
-    html += `<div style="display:grid;grid-template-columns:repeat(7,1fr) 130px;gap:6px;margin-bottom:6px">`;
     let weekEur = 0, weekDays = 0;
+    const days = [];
     for (let i = 0; i < 7; i++) {
-      const dateStr = cells[w*7 + i];
-      if (!dateStr) { html += `<div></div>`; continue; }
+      const dateStr = cells[w * 7 + i];
+      if (!dateStr) { days.push(html`<div></div>`); continue; }
       const d = parseInt(dateStr.slice(-2), 10);
       const data = calDayDataCache[dateStr];
-      const isToday = dateStr === todayStr;
-
-      let bg = 'var(--bg3)', border = 'var(--border)', txtC = 'var(--txt3)', onFill = null;
-      if (data.dayTrades.length > 0) {
+      const has = data.dayTrades.length > 0;
+      // Couleurs de la case : calculées selon le résultat du jour (intensité continue), passées en variables CSS.
+      let vars = '', strong = false;
+      if (has) {
         weekDays++; monthTradingDays++;
         weekEur += data.pnlEurSum; monthTotalEur += data.pnlEurSum;
         const hc = heatColors(data.net, data.hasEur ? maxAbs : maxAbsR);
-        bg = hc.bg; border = hc.border; txtC = hc.txt;
-        if (hc.strong) onFill = hc.onFill;
+        strong = hc.strong;
+        vars = `--c-bg:${hc.bg};--c-bd:${hc.border};--c-tx:${hc.txt}` + (strong ? `;--c-on:${hc.onFill}` : '');
       }
-      const todayBorder = isToday ? '2px solid var(--blue)' : `1px solid ${border}`;
-      const pnlDisp = data.dayTrades.length>0 && data.pnlSum!==0 ? `<div style="font-size:11px;margin-top:2px;font-family:var(--mono);color:${txtC}">${data.pnlSum>=0?'+':''}${data.pnlSum.toFixed(1)}R</div>` : '';
-      const eurParts = [];
-      if (data.gainsEur > 0) eurParts.push(`<span style="color:${onFill || 'var(--green)'}">${fmtEUR(data.gainsEur, true)}</span>`);
-      if (data.lossesEur < 0) eurParts.push(`<span style="color:${onFill || 'var(--red)'}">${fmtEUR(data.lossesEur)}</span>`);
-      const eurDisp = eurParts.length ? `<div style="font-size:11px;font-weight:600;margin-top:2px;font-family:var(--mono)">${eurParts.join(' ')}</div>` : '';
-      const winDisp = data.dayTrades.length>0 ? `<div style="font-size:11px;color:${onFill || 'var(--txt3)'};${onFill ? 'opacity:.8;' : ''}font-family:var(--mono);margin-top:2px">${data.tp}\u2713 ${data.sl}\u2717 \u00b7 ${data.winPct}%</div>` : '';
-
-      let badges = '';
-      if (hasBestWorst && dateStr === bestDate && bestVal > 0) badges += `<span style="position:absolute;top:4px;right:5px;font-size:11px" title="Meilleur jour du mois">\ud83c\udfc6</span>`;
-      if (hasBestWorst && dateStr === worstDate && worstVal < 0) badges += `<span style="position:absolute;top:4px;right:5px;font-size:11px" title="Jour le plus co\u00fbteux">\u26a0\ufe0f</span>`;
+      const cls = 'cal-day' + (has ? ' has' : '') + (dateStr === todayStr ? ' today' : '') + (strong ? ' strong' : '');
+      const eur = [data.gainsEur > 0 ? html`<span class="pos">${fmtEUR(data.gainsEur, true)}</span>` : '', data.lossesEur < 0 ? html`<span class="neg">${fmtEUR(data.lossesEur)}</span>` : ''].filter(Boolean);
       const streak = streakMap[dateStr];
-      if (streak) badges += `<span style="position:absolute;bottom:4px;right:5px;font-size:11px;font-family:var(--mono);color:var(--txt3)" title="${streak.length} jours ${streak.type==='win'?'gagnants':'perdants'} d\'affil\u00e9e">${streak.type==='win'?'\ud83d\udd25':'\u2744\ufe0f'}${streak.length}</span>`;
-
-      html += `<div style="position:relative;background:${bg};border:${todayBorder};border-radius:${shape};padding:8px 7px;min-height:80px;cursor:${data.dayTrades.length>0?'pointer':'default'};transition:transform .12s" onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip();if(${data.dayTrades.length}>0)this.style.transform='translateY(0)'" onmouseover="if(${data.dayTrades.length}>0)this.style.transform='translateY(-2px)'" onclick="${data.dayTrades.length>0?`selectBilanDate('${dateStr}')`:''}">
-        ${badges}
-        <div style="font-size:12px;font-weight:${onFill ? 700 : 500};font-family:var(--mono);color:${onFill ? onFill : (isToday?'var(--blue)':'var(--txt)')}">${d}</div>
-        ${eurDisp}${pnlDisp}${winDisp}
-      </div>`;
+      days.push(html`<div class="${cls}"${raw(vars ? ` style="${vars}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}>
+        ${hasBestWorst && dateStr === bestDate && bestVal > 0 ? html`<span class="cal-badge" title="Meilleur jour du mois">🏆</span>` : ''}${hasBestWorst && dateStr === worstDate && worstVal < 0 ? html`<span class="cal-badge" title="Jour le plus coûteux">⚠️</span>` : ''}${streak ? html`<span class="cal-badge streak" title="${streak.length} jours ${streak.type === 'win' ? 'gagnants' : 'perdants'} d'affilée">${streak.type === 'win' ? '🔥' : '❄️'}${streak.length}</span>` : ''}
+        <div class="cal-dnum">${d}</div>
+        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${data.pnlSum >= 0 ? '+' : ''}${data.pnlSum.toFixed(1)}R</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗ · ${data.winPct}%</div>` : ''}
+      </div>`);
     }
-    if (weekDays > 0) {
-      const col = weekEur > 0 ? 'var(--green)' : weekEur < 0 ? 'var(--red)' : 'var(--txt2)';
-      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:${shape};padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);">Semaine ${w+1}</div>
-        <div style="font-size:15px;font-weight:600;font-family:var(--mono);color:${col};margin-top:4px">${fmtEUR(weekEur, true)}</div>
-        <div style="font-size:11px;color:var(--txt3);font-family:var(--mono);margin-top:2px">${weekDays} jour(s)</div>
-      </div>`;
-    } else {
-      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:${shape};padding:10px 12px;display:flex;flex-direction:column;justify-content:center;opacity:.5">
-        <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);">Semaine ${w+1}</div>
-        <div style="font-size:15px;font-weight:600;font-family:var(--mono);color:var(--txt3);margin-top:4px">0 \u20ac</div>
-        <div style="font-size:11px;color:var(--txt3);font-family:var(--mono);margin-top:2px">0 jour</div>
-      </div>`;
-    }
-    html += `</div>`;
+    const week = weekDays > 0
+      ? html`<div class="cal-week"><div class="cal-week-lbl">Semaine ${w + 1}</div><div class="cal-week-val tone-${raw(weekEur > 0 ? 'green' : weekEur < 0 ? 'red' : 'txt2')}">${fmtEUR(weekEur, true)}</div><div class="cal-week-sub">${weekDays} jour(s)</div></div>`
+      : html`<div class="cal-week empty"><div class="cal-week-lbl">Semaine ${w + 1}</div><div class="cal-week-val tone-muted">0 €</div><div class="cal-week-sub">0 jour</div></div>`;
+    weeks.push(html`<div class="cal-row">${days}${week}</div>`);
   }
-
-  document.getElementById('cal-grid').innerHTML = html;
+  mount('cal-grid', html`<div class="cal-row">${DAYS_FR.map(d => html`<div class="cal-dow">${d}</div>`)}<div></div></div>${weeks}`);
 
   const statsBadge = document.getElementById('cal-monthly-stats');
   if (statsBadge) {
-    const col = monthTotalEur > 0 ? 'var(--green)' : monthTotalEur < 0 ? 'var(--red)' : 'var(--txt2)';
+    const tone = monthTotalEur > 0 ? 'green' : monthTotalEur < 0 ? 'red' : 'txt2';
     if (monthTradingDays > 0) {
       let prevMonth = calMonth - 1, prevYear = calYear;
       if (prevMonth < 0) { prevMonth = 11; prevYear--; }
       const prevTotal = computeMonthTotalEur(prevYear, prevMonth, filteredTrades);
       const diff = monthTotalEur - prevTotal;
-      const trendTxt = Math.abs(diff) < 0.005 ? '' : ` <span style="color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'\u25b2':'\u25bc'} ${fmtEUR(Math.abs(diff))} vs mois dernier</span>`;
-      statsBadge.innerHTML = `Ce mois : <span style="color:${col};font-weight:600">${fmtEUR(monthTotalEur, true)}</span> \u00b7 ${monthTradingDays} jour(s) tradé(s)${trendTxt}`;
+      const trend = Math.abs(diff) < 0.005 ? '' : html` <span class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${diff >= 0 ? '▲' : '▼'} ${fmtEUR(Math.abs(diff))} vs mois dernier</span>`;
+      mount(statsBadge, html`Ce mois : <span class="fw-600 tone-${raw(tone)}">${fmtEUR(monthTotalEur, true)}</span> · ${monthTradingDays} jour(s) tradé(s)${trend}`);
     } else {
-      statsBadge.innerHTML = `Aucun trade ce mois-ci`;
+      statsBadge.textContent = 'Aucun trade ce mois-ci';
     }
   }
 
@@ -7717,29 +7724,25 @@ function renderYearlyCalendar() {
   });
 
   let yearTotal = 0, yearDays = 0;
-  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px">`;
-  for (let m = 0; m < 12; m++) {
-    const firstDay = new Date(calYear, m, 1);
-    const lastDay = new Date(calYear, m+1, 0);
-    let startDow = firstDay.getDay(); startDow = startDow===0?6:startDow-1;
-    let monthHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
-    for (let i=0;i<startDow;i++) monthHtml += `<div></div>`;
-    for (let d=1; d<=lastDay.getDate(); d++) {
-      const dateStr = calYear+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  const months = MONTHS_FR.map((name, m) => {
+    let startDow = new Date(calYear, m, 1).getDay(); startDow = startDow === 0 ? 6 : startDow - 1;
+    const last = new Date(calYear, m + 1, 0).getDate();
+    const sq = [];
+    for (let i = 0; i < startDow; i++) sq.push(html`<div></div>`);
+    for (let d = 1; d <= last; d++) {
+      const dateStr = calYear + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       const data = dayMap[dateStr] ? computeDayData(dateStr, dayMap) : null;
-      let sq = 'var(--bg4)';
-      if (data && data.dayTrades.length) {
+      const has = !!(data && data.dayTrades.length);
+      let bg = '';
+      if (has) {
         yearTotal += data.pnlEurSum; yearDays++;
-        const hc = heatColors(data.net, data.hasEur ? yearMaxAbs : yearMaxAbsR);
-        sq = hc.bg;
+        bg = heatColors(data.net, data.hasEur ? yearMaxAbs : yearMaxAbsR).bg;
       }
-      monthHtml += `<div class="cal-year-sq" style="background:${sq};cursor:${data&&data.dayTrades.length?'pointer':'default'}" onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()" onclick="${data&&data.dayTrades.length?`selectBilanDate('${dateStr}')`:''}"></div>`;
+      sq.push(html`<div class="cal-year-sq${raw(has ? ' has' : '')}"${raw(bg ? ` style="background:${bg}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}></div>`);
     }
-    monthHtml += `</div>`;
-    html += `<div><div class="cal-year-month-label">${MONTHS_FR[m]}</div>${monthHtml}</div>`;
-  }
-  html += `</div>`;
-  cont.innerHTML = html;
+    return html`<div><div class="cal-year-month-label">${name}</div><div class="cal-year-days">${sq}</div></div>`;
+  });
+  mount(cont, html`<div class="cal-year-months">${months}</div>`);
 
   const statsEl = document.getElementById('cal-year-stats');
   if (statsEl) {
@@ -7782,44 +7785,16 @@ function renderRRTables() {
 
   const weekKeys = Object.keys(weekMap).sort().reverse();
   const monthKeys = Object.keys(monthMap).sort().reverse();
-  const th = 'text-align:right;padding:8px 14px;font-size:11px;color:var(--txt3);border-bottom:1px solid var(--border)';
-  const thL = th.replace('text-align:right','text-align:left');
-  const td = 'border-bottom:1px solid var(--border);padding:8px 14px;font-size:12px;font-family:var(--mono)';
-
-  const weekTbl = document.getElementById('rr-week-table');
-  if (weekTbl) {
-    weekTbl.innerHTML = weekKeys.length === 0
-      ? `<tr><td style="padding:16px;color:var(--txt3);font-size:12px">Aucun trade daté pour le moment.</td></tr>`
-      : `<thead><tr><th style="${thL}">Semaine</th><th style="${th}">Trades</th><th style="${th}">RR total</th></tr></thead><tbody>` +
-        weekKeys.map(k => {
-          const v = weekMap[k];
-          const col = v.rr > 0 ? 'var(--green)' : v.rr < 0 ? 'var(--red)' : 'var(--txt2)';
-          const wNum = k.split('-W')[1];
-          return `<tr>
-            <td style="${td}">S${wNum} <span style="color:var(--txt3)">· dès le ${v.monday}</span></td>
-            <td style="${td};text-align:right;color:var(--txt2)">${v.n} <span style="color:var(--txt3)">(${v.tp}✓ ${v.sl}✗${v.be?' '+v.be+'be':''})</span></td>
-            <td style="${td};text-align:right;color:${col};font-weight:600">${v.rr>=0?'+':''}${v.rr.toFixed(2)}R</td>
-          </tr>`;
-        }).join('') + '</tbody>';
-  }
-
-  const monthTbl = document.getElementById('rr-month-table');
-  if (monthTbl) {
-    monthTbl.innerHTML = monthKeys.length === 0
-      ? `<tr><td style="padding:16px;color:var(--txt3);font-size:12px">Aucun trade daté pour le moment.</td></tr>`
-      : `<thead><tr><th style="${thL}">Mois</th><th style="${th}">Trades</th><th style="${th}">RR total</th></tr></thead><tbody>` +
-        monthKeys.map(k => {
-          const v = monthMap[k];
-          const col = v.rr > 0 ? 'var(--green)' : v.rr < 0 ? 'var(--red)' : 'var(--txt2)';
-          const [y, m] = k.split('-');
-          const label = MONTHS_FR[parseInt(m,10)-1] + ' ' + y;
-          return `<tr>
-            <td style="${td}">${label}</td>
-            <td style="${td};text-align:right;color:var(--txt2)">${v.n} <span style="color:var(--txt3)">(${v.tp}✓ ${v.sl}✗${v.be?' '+v.be+'be':''})</span></td>
-            <td style="${td};text-align:right;color:${col};font-weight:600">${v.rr>=0?'+':''}${v.rr.toFixed(2)}R</td>
-          </tr>`;
-        }).join('') + '</tbody>';
-  }
+  const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? ' ' + v.be + 'be' : ''})</span>`;
+  const rrCell = v => html`<td class="r strong tone-${raw(v.rr > 0 ? 'green' : v.rr < 0 ? 'red' : 'txt2')}">${v.rr >= 0 ? '+' : ''}${v.rr.toFixed(2)}R</td>`;
+  const table = (el, first, keys, label, map) => {
+    if (!el) return;
+    mount(el, keys.length === 0
+      ? html`<tr><td class="rr-empty">Aucun trade daté pour le moment.</td></tr>`
+      : html`<thead><tr><th>${first}</th><th class="r">Trades</th><th class="r">RR total</th></tr></thead><tbody>${keys.map(k => html`<tr><td>${label(k, map[k])}</td><td class="r c2">${counts(map[k])}</td>${rrCell(map[k])}</tr>`)}</tbody>`);
+  };
+  table(document.getElementById('rr-week-table'), 'Semaine', weekKeys, (k, v) => html`S${k.split('-W')[1]} <span class="tone-muted">· dès le ${v.monday}</span>`, weekMap);
+  table(document.getElementById('rr-month-table'), 'Mois', monthKeys, k => { const [y, m] = k.split('-'); return MONTHS_FR[parseInt(m, 10) - 1] + ' ' + y; }, monthMap);
 }
 
 function selectBilanDate(date) {
