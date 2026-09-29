@@ -471,3 +471,53 @@ function renderAssetBars() {
 function esItem(label, value, tone) {
   return html`<div class="es-item"><span class="es-label">${label}</span><span class="es-val${raw(tone ? ' tone-' + tone : '')}">${value}</span></div>`;
 }
+
+// ── DONUTS : part de gagnants par trade, par journée, par semaine ──────
+// Même lecture à trois échelles : un bon win rate par trade qui ne se retrouve pas en journées/semaines gagnantes
+// signale des pertes concentrées (grosses journées rouges) — c'est l'intérêt de les voir côte à côte.
+let donutInsts = {};
+function renderWinDonuts() {
+  if (!document.getElementById('donut-row')) return;
+  const list = viewTrades();   // vue filtrée (filtre global)
+  const W = winStats(list), be = breakevenWinRate();
+  const days = Object.entries(dayNet(list));
+  const dayCount = v => ({ w: v.filter(x => x > 1e-6).length, l: v.filter(x => x < -1e-6).length, n: v.length });
+  const dC = dayCount(days.map(([, v]) => v));
+  const weeks = {};
+  days.forEach(([d, v]) => { const dt = new Date(d + 'T00:00:00'); if (isNaN(dt)) return; const k = getISOWeek(dt); const key = k.year + '-' + k.week; weeks[key] = (weeks[key] || 0) + v; });
+  const wC = dayCount(Object.values(weeks));
+  const pct = (a, n) => n ? Math.round(a / n * 100) : null;
+  const fmtP = p => p === null ? '—' : p + ' %';
+
+  drawDonut('trades', [['Gagnants', W.wins, 'green'], ['Perdants', W.losses, 'red'], ['Break-even', W.be, 'muted']],
+    W.n ? (W.rate * 100).toFixed(0).replace('.', ',') + ' %' : '—', 'gagnants',
+    W.n ? (be !== null ? html`seuil <b class="tone-${raw(W.rate >= be ? 'green' : 'red')}">${Math.round(be * 100)} %</b>` : W.n + ' trades clos') : 'aucun trade clos',
+    W.n ? fmtWinLine(W) + ' · ' + fmtCI(W) + (be !== null ? ' · seuil de rentabilité ' + Math.round(be * 100) + ' %' : '') : '');
+  drawDonut('days', [['Gagnantes', dC.w, 'green'], ['Perdantes', dC.l, 'red'], ['Neutres', dC.n - dC.w - dC.l, 'muted']],
+    fmtP(pct(dC.w, dC.n)), 'gagnantes', dC.n ? dC.n + ' jour' + (dC.n > 1 ? 's' : '') + ' tradé' + (dC.n > 1 ? 's' : '') : 'aucune journée', 'Journée gagnante = résultat net du jour positif');
+  drawDonut('weeks', [['Gagnantes', wC.w, 'green'], ['Perdantes', wC.l, 'red'], ['Neutres', wC.n - wC.w - wC.l, 'muted']],
+    fmtP(pct(wC.w, wC.n)), 'gagnantes', wC.n ? wC.n + ' semaine' + (wC.n > 1 ? 's' : '') : 'aucune semaine', 'Semaine gagnante = résultat net de la semaine (lundi → dimanche) positif');
+}
+function drawDonut(key, parts, center, centerLbl, sub, title) {
+  const total = parts.reduce((s, p) => s + p[1], 0);
+  const t = chartTokens(), col = { green: t.green, red: t.red, muted: withAlpha(t.txt3, .55) };
+  const set = (id, fn) => { const el = document.getElementById('dn-' + key + '-' + id); if (el) fn(el); };
+  set('pct', el => { el.textContent = center; });
+  set('lbl', el => { el.textContent = total ? centerLbl : ''; });
+  set('sub', el => mount(el, html`${sub}`));
+  const card = document.getElementById('dn-' + key + '-chart');
+  if (card) card.closest('.donut-card').title = title || '';
+  set('legend', el => mount(el, html`${parts.filter(p => p[1] > 0 || p[2] !== 'muted').map(([lbl, n, tone]) => html`<li><i class="dn-dot fill-${raw(tone)}" aria-hidden="true"></i><span class="dn-l">${lbl}</span><b>${n}</b><span class="dn-p">${total ? Math.round(n / total * 100) + ' %' : ''}</span></li>`)}`));
+  if (donutInsts[key]) { donutInsts[key].destroy(); delete donutInsts[key]; }
+  if (!card || !chartsAvailable('dn-' + key + '-chart')) return;
+  const shown = total ? parts.filter(p => p[1] > 0) : [['', 1, 'empty']];
+  donutInsts[key] = new Chart(card.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: shown.map(p => p[0]), datasets: [{ data: shown.map(p => p[1]), backgroundColor: shown.map(p => p[2] === 'empty' ? t.border : col[p[2]]),
+      borderColor: t.bg2, borderWidth: shown.length > 1 ? 2 : 0, hoverOffset: total ? 4 : 0, borderRadius: shown.length > 1 ? 2 : 0 }] },
+    options: {
+      responsive: false, cutout: '74%', animation: { duration: 400 }, layout: { padding: 4 },
+      plugins: { legend: { display: false }, tooltip: total ? proTooltip({ displayColors: false, callbacks: { title: () => '', label: c => c.label + ' : ' + c.raw + ' (' + Math.round(c.raw / total * 100) + ' %)' } }) : { enabled: false } }
+    }
+  });
+}

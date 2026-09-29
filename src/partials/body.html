@@ -244,6 +244,31 @@
         </div>
       </div>
 
+      <!-- ═══ DONUTS : part de gagnants par trade, par journée, par semaine ═══ -->
+      <div class="donut-row" id="donut-row">
+        <section class="donut-card" aria-labelledby="dn-trades-t">
+          <div class="donut-head"><h3 id="dn-trades-t">Trades</h3><span class="donut-sub" id="dn-trades-sub"></span></div>
+          <div class="donut-body">
+            <div class="donut-ring"><canvas id="dn-trades-chart" width="128" height="128" role="img" aria-label="Trades"></canvas><div class="donut-center"><b id="dn-trades-pct">—</b><span id="dn-trades-lbl">gagnants</span></div></div>
+            <ul class="donut-legend" id="dn-trades-legend"></ul>
+          </div>
+        </section>
+        <section class="donut-card" aria-labelledby="dn-days-t">
+          <div class="donut-head"><h3 id="dn-days-t">Journées</h3><span class="donut-sub" id="dn-days-sub"></span></div>
+          <div class="donut-body">
+            <div class="donut-ring"><canvas id="dn-days-chart" width="128" height="128" role="img" aria-label="Journées"></canvas><div class="donut-center"><b id="dn-days-pct">—</b><span id="dn-days-lbl">gagnants</span></div></div>
+            <ul class="donut-legend" id="dn-days-legend"></ul>
+          </div>
+        </section>
+        <section class="donut-card" aria-labelledby="dn-weeks-t">
+          <div class="donut-head"><h3 id="dn-weeks-t">Semaines</h3><span class="donut-sub" id="dn-weeks-sub"></span></div>
+          <div class="donut-body">
+            <div class="donut-ring"><canvas id="dn-weeks-chart" width="128" height="128" role="img" aria-label="Semaines"></canvas><div class="donut-center"><b id="dn-weeks-pct">—</b><span id="dn-weeks-lbl">gagnants</span></div></div>
+            <ul class="donut-legend" id="dn-weeks-legend"></ul>
+          </div>
+        </section>
+      </div>
+
       <div class="dash-grid" id="dash-grid">
         <div class="dash-widget w-full dash-section" data-widget="sec-perf" data-no-resize="1"><h3 class="dash-sec-title">Performance<small>résultats, régularité, distribution</small></h3></div>
         <div class="dash-widget w-full" data-widget="year-progress">

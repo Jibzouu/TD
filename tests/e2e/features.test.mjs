@@ -229,3 +229,22 @@ test('constat « meilleur jour » : pertes soustraites, cumul de tous les mardis
   assert.match(await chip.getAttribute('title'), /\+9,1R de gains -3,0R de pertes = \+6,1R · 5 trades/);
   await ctx.close();
 });
+
+test('donuts du Dashboard : trades, journées et semaines gagnants, filtre global appliqué', async () => {
+  const mk = (id, date, res, eur) => T({ id, date, res, pnl: res === 'TP' ? 2 : res === 'SL' ? -1 : 0, pnlEur: eur });
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [
+    mk(1, '2026-06-15', 'TP', 100), mk(2, '2026-06-15', 'SL', -50),          // lundi : +50  (semaine 25)
+    mk(3, '2026-06-16', 'SL', -60), mk(4, '2026-06-16', 'BE', 0),            // mardi : -60  (semaine 25 → net -10)
+    mk(5, '2026-06-09', 'TP', 80),                                            // semaine 24 : +80
+  ] } });
+  const txt = id => page.locator(id).textContent();
+  assert.equal(await txt('#dn-trades-pct'), '40 %', '2 gagnants sur 5 trades clos');
+  assert.equal(await txt('#dn-days-pct'), '67 %', '2 journées gagnantes sur 3');
+  assert.equal(await txt('#dn-weeks-pct'), '50 %', 'semaine 24 gagnante, semaine 25 perdante');
+  assert.match(await page.locator('#dn-trades-legend').innerText(), /Break-even\s+1/);
+  assert.ok(await page.evaluate(() => Object.keys(donutInsts).length === 3), '3 graphiques dessinés');
+  await page.selectOption('#gf-asset', 'EUR/USD');
+  assert.equal(await txt('#dn-trades-pct'), '40 %');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
