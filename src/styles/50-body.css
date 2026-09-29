@@ -169,9 +169,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #cal-year-stats{font-size:12px;font-family:var(--mono);color:var(--txt2);margin-bottom:14px}
 #bilan-date-select{font-size:12px;padding:7px 12px}
 #csv-import-status{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px}
-#default-risk-eur{width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--amber);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
-#default-rr-win{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
-#default-rr-loss{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
 #tz-offset-hours{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center}
 #import-fx-rate{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center}
 #safety-snapshot-card{grid-column:span 2}

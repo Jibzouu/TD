@@ -152,32 +152,34 @@ function dayNet(list) {
 }
 
 // ── ORIGINE DU R ─────────────────────────────────────────────────────────────────────
-// prix = distance de prix (exact) · manuel = saisi · risque = P&L € ÷ risque configuré (estimé) · defaut = RR fixe sans base réelle (FICTIF)
-const R_SRC_LABELS = { prix: 'R exact (distance de prix)', manuel: 'R saisi', risque: 'R estimé (P&L € ÷ risque configuré)', defaut: 'R fictif (RR par défaut, aucune base réelle)', aucun: 'pas de R' };
-let R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
+// prix = distance de prix (exact) · manuel = saisi · risque = ancien R estimé (P&L € ÷ risque, conservé tel quel)
+// Un trade sans prix ni R saisi n'a pas de R : son P&L en € reste compté partout.
+const R_SRC_LABELS = { prix: 'R exact (distance de prix)', manuel: 'R saisi', risque: 'R estimé (P&L € ÷ risque)', aucun: 'pas de R' };
+let R_MODE = DB.getItem((JP + 'r_mode')) === 'strict' ? 'strict' : 'usable';
+// Ancien réglage « risque € par trade » (supprimé) : lu une dernière fois pour classer les très anciens imports.
+const LEGACY_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0') || 0;
 function computeRWithSource(pnlEur, res, priceCtx) {
   if (priceCtx) {
     const d = computeDistanceR(priceCtx.entryPrice, priceCtx.slPrice, priceCtx.exitPrice, priceCtx.dir);
     if (d !== null) return { r: d, src: 'prix' };
   }
   if (res === 'BE') return { r: 0, src: 'manuel' };
-  if (DEFAULT_RISK_EUR > 0 && pnlEur !== null && pnlEur !== undefined && !isNaN(pnlEur)) return { r: Math.round((pnlEur / DEFAULT_RISK_EUR) * 100) / 100, src: 'risque' };
-  return { r: res === 'TP' ? DEFAULT_RR_WIN : (res === 'SL' ? DEFAULT_RR_LOSS : 0), src: 'defaut' };
+  return { r: null, src: undefined };
 }
 function rSource(t) {
   if (t.pnl === null || t.pnl === undefined) return 'aucun';
   if (t.rSrc && R_SRC_LABELS[t.rSrc]) return t.rSrc;
   if (t.res === 'BE') return 'manuel';
   if (t.entryPrice != null && t.slPrice != null && t.exitPrice != null && computeDistanceR(t.entryPrice, t.slPrice, t.exitPrice, t.dir) !== null) return 'prix';
-  if (t.tvKey) return DEFAULT_RISK_EUR > 0 ? 'risque' : 'defaut';
+  if (t.rSrc === 'defaut') return 'defaut';   // ancien R fictif (RR par défaut) : effacé au démarrage, jamais compté
+  if (t.tvKey) return LEGACY_RISK_EUR > 0 ? 'risque' : 'defaut';   // très anciens imports sans origine enregistrée
   return 'manuel';
 }
-// mode « exact » : prix + saisi · « utilisable » (défaut) : + estimé par le risque · « tout » : + R fictifs
+// mode « exact » : prix + saisi · « utilisable » (défaut) : + anciens R estimés par le risque
 function rUsable(t) {
   const src = rSource(t);
-  if (src === 'aucun') return false;
+  if (src === 'aucun' || src === 'defaut') return false;
   if (R_MODE === 'strict') return src === 'prix' || src === 'manuel';
-  if (R_MODE === 'usable') return src !== 'defaut';
   return true;
 }
 // Vue « analyse » : mêmes trades, mais le R non retenu est masqué (les montants en € ne changent JAMAIS).
@@ -186,7 +188,7 @@ function analysisTrades() {
   return _atCache;
 }
 function setRMode(m) {
-  R_MODE = m; DB.setItem((JP + 'r_mode'), m); invalidateViews();
+  R_MODE = m === 'strict' ? 'strict' : 'usable'; DB.setItem((JP + 'r_mode'), R_MODE); invalidateViews();
   renderAll();
 }
 function migrateRSources() {
@@ -196,6 +198,26 @@ function migrateRSources() {
   if (changed) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
   DB.setItem((JP + 'rsrc_v1'), '1');
 }
+// Nettoyage unique des R hérités des anciennes versions (remplace les boutons « Corriger » de la page Export) :
+//  · R fictifs (RR fixe par défaut, sans base réelle) → effacés, le trade garde son P&L en € ;
+//  · R par distance invraisemblable (> 15R : stop remonté au break-even avant l'export) → effacés avec ce stop ;
+//  · trades clos sans R mais avec leurs prix → R exact recalculé.
+function cleanupLegacyR() {
+  if (DB.getItem((JP + 'r_cleanup_v1'))) return;
+  const before = JSON.stringify(trades);
+  let n = 0;
+  trades.forEach(t => {
+    if (t.pnl != null && rSource(t) === 'defaut') { t.pnl = null; t.rr = null; delete t.rSrc; n++; return; }
+    if (t.pnl != null && Math.abs(t.pnl) > 15 && t.entryPrice != null && t.slPrice != null) { t.pnl = null; t.rr = null; t.slPrice = null; delete t.rSrc; n++; return; }
+    if ((t.pnl === null || t.pnl === undefined) && ['TP', 'SL', 'BE'].includes(t.res)) {
+      const cr = computeRWithSource(t.pnlEur, t.res, { entryPrice: t.entryPrice, slPrice: t.slPrice, exitPrice: t.exitPrice, dir: t.dir });
+      if (cr.r !== null) { t.pnl = cr.r; t.rSrc = cr.src; if (t.rr === null || t.rr === undefined) t.rr = Math.abs(cr.r) || null; n++; }
+    }
+  });
+  if (n) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { trades = JSON.parse(before); return; } }
+  ['default_rr_win', 'default_rr_loss', 'default_risk_eur'].forEach(k => DB.removeItem(JP + k));
+  DB.setItem((JP + 'r_cleanup_v1'), '1');
+}
 function renderRCoverage() {
   const el = document.getElementById('r-coverage');
   if (!el) return;
@@ -203,38 +225,21 @@ function renderRCoverage() {
   const c = { prix: 0, manuel: 0, risque: 0, defaut: 0, aucun: 0 };
   closed.forEach(t => { c[rSource(t)]++; });
   const used = closed.filter(rUsable).length;
-  if (!closed.length || (R_MODE === 'usable' && c.defaut === 0 && c.aucun === 0)) { mount(el, ''); return; }
+  // Visible s'il manque des R, ou pour choisir d'exclure les anciens R estimés.
+  if (!closed.length || (c.aucun + c.defaut === 0 && (R_MODE === 'usable' || c.risque === 0))) { mount(el, ''); return; }
   const parts = [];
   if (c.prix) parts.push(c.prix + ' exact' + (c.prix > 1 ? 's' : ''));
   if (c.manuel) parts.push(c.manuel + ' saisi' + (c.manuel > 1 ? 's' : ''));
   if (c.risque) parts.push(c.risque + ' estimé' + (c.risque > 1 ? 's' : ''));
-  if (c.defaut) parts.push(c.defaut + ' par défaut (fictif' + (c.defaut > 1 ? 's' : '') + ')');
-  if (c.aucun) parts.push(c.aucun + ' sans R');
-  const losses = closed.filter(t => t.res === 'SL' && t.pnlEur < 0);
-  const est = losses.length >= 3 ? Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length)) : 0;
-  const modes = [['strict', 'R exact seulement'], ['usable', 'R exact + estimé'], ['all', 'Tout (y compris R fictifs)']];
-  mount(el, html`<div class="rcov${raw(c.defaut ? ' warn' : '')}">
+  if (c.aucun + c.defaut) parts.push((c.aucun + c.defaut) + ' sans R');
+  const modes = [['strict', 'R exact seulement'], ['usable', 'R exact + estimé']];
+  mount(el, html`<div class="rcov">
     <span><b>R pris en compte : ${used} / ${closed.length} trades</b> <span class="tone-muted">(${parts.join(' · ')})</span></span>
-    <select id="r-mode-select" class="rcov-select" onchange="setRMode(this.value)">${modes.map(o => html`<option value="${o[0]}"${raw(R_MODE === o[0] ? ' selected' : '')}>${o[1]}</option>`)}</select>
-    ${c.defaut && DEFAULT_RISK_EUR === 0 && est ? html`<button class="btn-ghost btn-xs" onclick="estimateRFromLosses()">Estimer le R des ${c.defaut} trades sans stop avec ${est} € de risque</button>` : ''}
-    <span class="rcov-note">Les montants en € sont toujours exacts. Le R « fictif » (RR par défaut) n'a aucune base réelle : il est exclu des statistiques en R tant que tu ne le rends pas explicite.</span></div>`);
-}
-function estimateRFromLosses() {
-  const losses = trades.filter(t => t.res === 'SL' && t.pnlEur < 0);
-  if (losses.length < 3) { showToast('Pas assez de pertes pour estimer un risque', 'error'); return; }
-  const avg = Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length));
-  openModal('Estimer le R avec ' + avg + ' € de risque ?', 'Le R des trades sans stop-loss sera calculé comme P&L € ÷ ' + avg + ' € (ta perte moyenne). Ces R sont marqués « estimés » et restent exclus si tu choisis « R exact seulement ».', () => {
-    DEFAULT_RISK_EUR = avg; DB.setItem((JP + 'default_risk_eur'), avg);
-    let k = 0;
-    const before = JSON.stringify(trades);
-    trades.forEach(t => { if (rSource(t) === 'defaut') { const cr = computeRWithSource(t.pnlEur, t.res); t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src; k++; } });
-    if (!save()) { trades = JSON.parse(before); return; }
-    const inp = document.getElementById('default-risk-eur'); if (inp) inp.value = DEFAULT_RISK_EUR;
-    renderAll();
-    showToast('R estimé pour ' + k + ' trade(s) avec ' + avg + ' € de risque', 'success');
-  });
+    ${c.risque ? html`<select id="r-mode-select" class="rcov-select" onchange="setRMode(this.value)">${modes.map(o => html`<option value="${o[0]}"${raw(R_MODE === o[0] ? ' selected' : '')}>${o[1]}</option>`)}</select>` : ''}
+    <span class="rcov-note">Les montants en € sont toujours exacts et comptés partout. Un trade n'a de R que si ses prix (entrée, stop, sortie) ou son R sont renseignés.</span></div>`);
 }
 migrateRSources();
+cleanupLegacyR();
 
 // ── CHECKLIST : historique indépendant des modifications du plan ─────────────────────
 // Chaque trade garde le TEXTE des critères cochés (checklistLabels) et le nombre de critères que comptait la checklist

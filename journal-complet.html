@@ -1381,9 +1381,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #cal-year-stats{font-size:12px;font-family:var(--mono);color:var(--txt2);margin-bottom:14px}
 #bilan-date-select{font-size:12px;padding:7px 12px}
 #csv-import-status{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px}
-#default-risk-eur{width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--amber);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
-#default-rr-win{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
-#default-rr-loss{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none}
 #tz-offset-hours{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center}
 #import-fx-rate{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center}
 #safety-snapshot-card{grid-column:span 2}
@@ -2433,28 +2430,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
           <p id="csv-import-status"></p>
           <div class="sep-top-16">
-            <div class="center-row mb-14">
-              <span class="mono-muted">Risque € par trade (calcul du R réel = P&L € ÷ risque) :</span>
-              <input type="number" id="default-risk-eur" step="1" min="0" placeholder="ex : 50" oninput="saveDefaultRiskEur()">
-              <span class="amber-11">€</span>
-            </div>
             <div class="center-row">
-              <span class="mono-muted">Sinon, RR fixe par défaut :</span>
-              <span class="inline-row5">
-                <span class="green-11">Gagnant +</span>
-                <input type="number" id="default-rr-win" step="0.1" min="0.1" oninput="saveDefaultRR()">
-                <span class="green-11">R</span>
-              </span>
-              <span class="inline-row5">
-                <span class="red-11">Perdant -</span>
-                <input type="number" id="default-rr-loss" step="0.1" min="0.1" oninput="saveDefaultRR()">
-                <span class="red-11">R</span>
-              </span>
-            </div>
-            <p class="note-center">
-              Si tu renseignes un risque €, le R de chaque trade importé sera calculé précisément (P&L réel ÷ risque), au lieu d'un R fixe identique pour tous les gagnants. Beaucoup plus fidèle à la réalité.
-            </p>
-            <div class="center-row sep-top-14">
               <span class="mono-muted">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
               <input type="number" id="tz-offset-hours" step="0.5" value="0" oninput="saveTZOffset()">
               <button class="btn-ghost btn-xs" onclick="recalcSessions()">Recalculer les sessions des trades déjà importés</button>
@@ -2486,18 +2462,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           <div class="export-desc" id="safety-snapshot-info"></div>
           <button class="btn-ghost" onclick="restoreSafetySnapshot()">Restaurer l'état d'avant</button>
           <button class="btn-ghost ml-6" onclick="dismissSafetySnapshot()">Effacer cette copie</button>
-        </div>
-        <div class="export-card span-2">
-          <div class="export-icon">🩹</div>
-          <div class="export-title">Corriger les trades déjà importés sans R</div>
-          <div class="export-desc">Si des trades TP/SL affichent un P&L en R manquant (calendrier gris, dashboard incomplet), applique-leur rétroactivement le calcul de R ci-dessus.</div>
-          <button class="btn-ghost" onclick="fixMissingRR()">Corriger maintenant</button>
-        </div>
-        <div class="export-card span-2">
-          <div class="export-icon">🎯</div>
-          <div class="export-title">Corriger les R invraisemblables (stop remonté au break-even)</div>
-          <div class="export-desc">Si un stop loss a été déplacé au break-even en cours de trade, l'historique d'ordres TradingView ne garde que sa position finale — le calcul par distance de prix peut alors donner un R absurde (ex : 58R). Ce correctif détecte ces cas (R > 15) et repasse sur le calcul de secours.</div>
-          <button class="btn-ghost" onclick="fixImplausibleDistanceR()">Corriger maintenant</button>
         </div>
         <div class="export-card span-2">
           <div class="export-icon">♻️</div>
@@ -3046,10 +3010,6 @@ let watchData = loadJSON(JP + 'watch', null);
 let planData = loadJSON(JP + 'plan', null);
 let accountSize = parseFloat(DB.getItem((JP + 'account')) || '10000');
 
-// Default R multiples applied to imported trades when the source file only
-// gives a €/$ P&L and no real R value (e.g. TradingView's "List of trades" export).
-// Adjustable from the Export / Import page.
-let DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2');
 // Décalage (en heures) entre l'heure de tes exports et ton propre fuseau — sinon les sessions (Asie/Londres/NY) sont calculées sur la mauvaise heure.
 let TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0');
 function saveTZOffset() {
@@ -3075,18 +3035,6 @@ function recalcSessions() {
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
-let DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1'));
-function saveDefaultRR() {
-  const w = parseFloat(document.getElementById('default-rr-win').value);
-  const l = parseFloat(document.getElementById('default-rr-loss').value);
-  if (!isNaN(w) && w > 0) { DEFAULT_RR_WIN = w; DB.setItem((JP + 'default_rr_win'), w); }
-  if (!isNaN(l) && l > 0) { DEFAULT_RR_LOSS = -Math.abs(l); DB.setItem((JP + 'default_rr_loss'), l); }
-}
-
-// Real risk per trade in €. When set, imported R multiples are computed as
-// (real €P&L ÷ risk€) instead of a flat default — a much truer picture than
-// assuming every winner is worth exactly the same R.
-let DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0');
 // Taux appliqué aux montants importés dans une autre devise que l'euro (1 unité étrangère = IMPORT_FX_RATE €).
 let IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
 function saveImportFxRate() {
@@ -3119,17 +3067,13 @@ function reconvertImportedTrades() {
       t.pnlEur = conv(t.pnlEur); t.mfe = conv(t.mfe); t.mae = conv(t.mae);
       if (!t.ccy) t.ccy = 'USD';
       t.fxRate = rate;
-      if (rSource(t) === 'risque' && DEFAULT_RISK_EUR > 0) { t.pnl = Math.round(t.pnlEur / DEFAULT_RISK_EUR * 100) / 100; t.rr = t.pnl; }
+      // R estimé à partir du P&L € (ancien réglage « risque € ») : il suit la conversion dans la même proportion.
+      if (rSource(t) === 'risque' && t.pnl != null) { t.pnl = Math.round(t.pnl / old * rate * 100) / 100; t.rr = t.pnl; }
     });
     if (!save()) { trades = JSON.parse(before); return; }
     renderAll();
     showToast((known.length + legacy.length) + ' trade(s) convertis ✓', 'success');
   });
-}
-function saveDefaultRiskEur() {
-  const v = parseFloat(document.getElementById('default-risk-eur').value);
-  DEFAULT_RISK_EUR = (!isNaN(v) && v > 0) ? v : 0;
-  DB.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
 }
 function computeRealR(pnlEur, res, priceCtx) { return computeRWithSource(pnlEur, res, priceCtx).r; }
 
@@ -3893,32 +3837,34 @@ function dayNet(list) {
 }
 
 // ── ORIGINE DU R ─────────────────────────────────────────────────────────────────────
-// prix = distance de prix (exact) · manuel = saisi · risque = P&L € ÷ risque configuré (estimé) · defaut = RR fixe sans base réelle (FICTIF)
-const R_SRC_LABELS = { prix: 'R exact (distance de prix)', manuel: 'R saisi', risque: 'R estimé (P&L € ÷ risque configuré)', defaut: 'R fictif (RR par défaut, aucune base réelle)', aucun: 'pas de R' };
-let R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
+// prix = distance de prix (exact) · manuel = saisi · risque = ancien R estimé (P&L € ÷ risque, conservé tel quel)
+// Un trade sans prix ni R saisi n'a pas de R : son P&L en € reste compté partout.
+const R_SRC_LABELS = { prix: 'R exact (distance de prix)', manuel: 'R saisi', risque: 'R estimé (P&L € ÷ risque)', aucun: 'pas de R' };
+let R_MODE = DB.getItem((JP + 'r_mode')) === 'strict' ? 'strict' : 'usable';
+// Ancien réglage « risque € par trade » (supprimé) : lu une dernière fois pour classer les très anciens imports.
+const LEGACY_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0') || 0;
 function computeRWithSource(pnlEur, res, priceCtx) {
   if (priceCtx) {
     const d = computeDistanceR(priceCtx.entryPrice, priceCtx.slPrice, priceCtx.exitPrice, priceCtx.dir);
     if (d !== null) return { r: d, src: 'prix' };
   }
   if (res === 'BE') return { r: 0, src: 'manuel' };
-  if (DEFAULT_RISK_EUR > 0 && pnlEur !== null && pnlEur !== undefined && !isNaN(pnlEur)) return { r: Math.round((pnlEur / DEFAULT_RISK_EUR) * 100) / 100, src: 'risque' };
-  return { r: res === 'TP' ? DEFAULT_RR_WIN : (res === 'SL' ? DEFAULT_RR_LOSS : 0), src: 'defaut' };
+  return { r: null, src: undefined };
 }
 function rSource(t) {
   if (t.pnl === null || t.pnl === undefined) return 'aucun';
   if (t.rSrc && R_SRC_LABELS[t.rSrc]) return t.rSrc;
   if (t.res === 'BE') return 'manuel';
   if (t.entryPrice != null && t.slPrice != null && t.exitPrice != null && computeDistanceR(t.entryPrice, t.slPrice, t.exitPrice, t.dir) !== null) return 'prix';
-  if (t.tvKey) return DEFAULT_RISK_EUR > 0 ? 'risque' : 'defaut';
+  if (t.rSrc === 'defaut') return 'defaut';   // ancien R fictif (RR par défaut) : effacé au démarrage, jamais compté
+  if (t.tvKey) return LEGACY_RISK_EUR > 0 ? 'risque' : 'defaut';   // très anciens imports sans origine enregistrée
   return 'manuel';
 }
-// mode « exact » : prix + saisi · « utilisable » (défaut) : + estimé par le risque · « tout » : + R fictifs
+// mode « exact » : prix + saisi · « utilisable » (défaut) : + anciens R estimés par le risque
 function rUsable(t) {
   const src = rSource(t);
-  if (src === 'aucun') return false;
+  if (src === 'aucun' || src === 'defaut') return false;
   if (R_MODE === 'strict') return src === 'prix' || src === 'manuel';
-  if (R_MODE === 'usable') return src !== 'defaut';
   return true;
 }
 // Vue « analyse » : mêmes trades, mais le R non retenu est masqué (les montants en € ne changent JAMAIS).
@@ -3927,7 +3873,7 @@ function analysisTrades() {
   return _atCache;
 }
 function setRMode(m) {
-  R_MODE = m; DB.setItem((JP + 'r_mode'), m); invalidateViews();
+  R_MODE = m === 'strict' ? 'strict' : 'usable'; DB.setItem((JP + 'r_mode'), R_MODE); invalidateViews();
   renderAll();
 }
 function migrateRSources() {
@@ -3937,6 +3883,26 @@ function migrateRSources() {
   if (changed) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
   DB.setItem((JP + 'rsrc_v1'), '1');
 }
+// Nettoyage unique des R hérités des anciennes versions (remplace les boutons « Corriger » de la page Export) :
+//  · R fictifs (RR fixe par défaut, sans base réelle) → effacés, le trade garde son P&L en € ;
+//  · R par distance invraisemblable (> 15R : stop remonté au break-even avant l'export) → effacés avec ce stop ;
+//  · trades clos sans R mais avec leurs prix → R exact recalculé.
+function cleanupLegacyR() {
+  if (DB.getItem((JP + 'r_cleanup_v1'))) return;
+  const before = JSON.stringify(trades);
+  let n = 0;
+  trades.forEach(t => {
+    if (t.pnl != null && rSource(t) === 'defaut') { t.pnl = null; t.rr = null; delete t.rSrc; n++; return; }
+    if (t.pnl != null && Math.abs(t.pnl) > 15 && t.entryPrice != null && t.slPrice != null) { t.pnl = null; t.rr = null; t.slPrice = null; delete t.rSrc; n++; return; }
+    if ((t.pnl === null || t.pnl === undefined) && ['TP', 'SL', 'BE'].includes(t.res)) {
+      const cr = computeRWithSource(t.pnlEur, t.res, { entryPrice: t.entryPrice, slPrice: t.slPrice, exitPrice: t.exitPrice, dir: t.dir });
+      if (cr.r !== null) { t.pnl = cr.r; t.rSrc = cr.src; if (t.rr === null || t.rr === undefined) t.rr = Math.abs(cr.r) || null; n++; }
+    }
+  });
+  if (n) { try { DB.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { trades = JSON.parse(before); return; } }
+  ['default_rr_win', 'default_rr_loss', 'default_risk_eur'].forEach(k => DB.removeItem(JP + k));
+  DB.setItem((JP + 'r_cleanup_v1'), '1');
+}
 function renderRCoverage() {
   const el = document.getElementById('r-coverage');
   if (!el) return;
@@ -3944,38 +3910,21 @@ function renderRCoverage() {
   const c = { prix: 0, manuel: 0, risque: 0, defaut: 0, aucun: 0 };
   closed.forEach(t => { c[rSource(t)]++; });
   const used = closed.filter(rUsable).length;
-  if (!closed.length || (R_MODE === 'usable' && c.defaut === 0 && c.aucun === 0)) { mount(el, ''); return; }
+  // Visible s'il manque des R, ou pour choisir d'exclure les anciens R estimés.
+  if (!closed.length || (c.aucun + c.defaut === 0 && (R_MODE === 'usable' || c.risque === 0))) { mount(el, ''); return; }
   const parts = [];
   if (c.prix) parts.push(c.prix + ' exact' + (c.prix > 1 ? 's' : ''));
   if (c.manuel) parts.push(c.manuel + ' saisi' + (c.manuel > 1 ? 's' : ''));
   if (c.risque) parts.push(c.risque + ' estimé' + (c.risque > 1 ? 's' : ''));
-  if (c.defaut) parts.push(c.defaut + ' par défaut (fictif' + (c.defaut > 1 ? 's' : '') + ')');
-  if (c.aucun) parts.push(c.aucun + ' sans R');
-  const losses = closed.filter(t => t.res === 'SL' && t.pnlEur < 0);
-  const est = losses.length >= 3 ? Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length)) : 0;
-  const modes = [['strict', 'R exact seulement'], ['usable', 'R exact + estimé'], ['all', 'Tout (y compris R fictifs)']];
-  mount(el, html`<div class="rcov${raw(c.defaut ? ' warn' : '')}">
+  if (c.aucun + c.defaut) parts.push((c.aucun + c.defaut) + ' sans R');
+  const modes = [['strict', 'R exact seulement'], ['usable', 'R exact + estimé']];
+  mount(el, html`<div class="rcov">
     <span><b>R pris en compte : ${used} / ${closed.length} trades</b> <span class="tone-muted">(${parts.join(' · ')})</span></span>
-    <select id="r-mode-select" class="rcov-select" onchange="setRMode(this.value)">${modes.map(o => html`<option value="${o[0]}"${raw(R_MODE === o[0] ? ' selected' : '')}>${o[1]}</option>`)}</select>
-    ${c.defaut && DEFAULT_RISK_EUR === 0 && est ? html`<button class="btn-ghost btn-xs" onclick="estimateRFromLosses()">Estimer le R des ${c.defaut} trades sans stop avec ${est} € de risque</button>` : ''}
-    <span class="rcov-note">Les montants en € sont toujours exacts. Le R « fictif » (RR par défaut) n'a aucune base réelle : il est exclu des statistiques en R tant que tu ne le rends pas explicite.</span></div>`);
-}
-function estimateRFromLosses() {
-  const losses = trades.filter(t => t.res === 'SL' && t.pnlEur < 0);
-  if (losses.length < 3) { showToast('Pas assez de pertes pour estimer un risque', 'error'); return; }
-  const avg = Math.round(Math.abs(losses.reduce((n, t) => n + t.pnlEur, 0) / losses.length));
-  openModal('Estimer le R avec ' + avg + ' € de risque ?', 'Le R des trades sans stop-loss sera calculé comme P&L € ÷ ' + avg + ' € (ta perte moyenne). Ces R sont marqués « estimés » et restent exclus si tu choisis « R exact seulement ».', () => {
-    DEFAULT_RISK_EUR = avg; DB.setItem((JP + 'default_risk_eur'), avg);
-    let k = 0;
-    const before = JSON.stringify(trades);
-    trades.forEach(t => { if (rSource(t) === 'defaut') { const cr = computeRWithSource(t.pnlEur, t.res); t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src; k++; } });
-    if (!save()) { trades = JSON.parse(before); return; }
-    const inp = document.getElementById('default-risk-eur'); if (inp) inp.value = DEFAULT_RISK_EUR;
-    renderAll();
-    showToast('R estimé pour ' + k + ' trade(s) avec ' + avg + ' € de risque', 'success');
-  });
+    ${c.risque ? html`<select id="r-mode-select" class="rcov-select" onchange="setRMode(this.value)">${modes.map(o => html`<option value="${o[0]}"${raw(R_MODE === o[0] ? ' selected' : '')}>${o[1]}</option>`)}</select>` : ''}
+    <span class="rcov-note">Les montants en € sont toujours exacts et comptés partout. Un trade n'a de R que si ses prix (entrée, stop, sortie) ou son R sont renseignés.</span></div>`);
 }
 migrateRSources();
+cleanupLegacyR();
 
 // ── CHECKLIST : historique indépendant des modifications du plan ─────────────────────
 // Chaque trade garde le TEXTE des critères cochés (checklistLabels) et le nombre de critères que comptait la checklist
@@ -4552,9 +4501,6 @@ onReady(() => {
   document.getElementById('account-size').value = accountSize;
   document.getElementById('dd-date').value = localDateStr();
   document.getElementById('dd-limit-pct').value = loadDDLimitPct();
-  document.getElementById('default-rr-win').value = DEFAULT_RR_WIN;
-  document.getElementById('default-rr-loss').value = Math.abs(DEFAULT_RR_LOSS);
-  document.getElementById('default-risk-eur').value = DEFAULT_RISK_EUR || '';
   const tzInp = document.getElementById('tz-offset-hours'); if (tzInp) tzInp.value = TZ_OFFSET_HOURS;
   const fxInp = document.getElementById('import-fx-rate'); if (fxInp) fxInp.value = IMPORT_FX_RATE;
   [renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, initPlan, initWatchlist, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));
@@ -5247,8 +5193,7 @@ function addTrade() {
   let rSrc = pnl !== null ? 'manuel' : undefined;
   const distR = computeDistanceR(entryPrice, slPrice, exitPrice, dir || 'Long');
   if (distR !== null) { pnl = distR; rr = Math.abs(distR) || rr; rSrc = 'prix'; }
-  // Rien de renseigné du tout (ni prix, ni R manuel) → calcul de repli (risque € configuré, sinon RR par défaut),
-  // pour qu'un ajout rapide (juste résultat + P&L€) reste exploitable dans toutes les statistiques.
+  // Ni prix ni R saisi : un BE vaut 0R ; sinon pas de R (le P&L € reste compté dans toutes les statistiques).
   if (pnl === null && ['TP','SL','BE'].includes(res)) {
     const cr = computeRWithSource(pnlEur, res); pnl = cr.r; rSrc = cr.src;
     if (rr === null) rr = Math.abs(pnl) || null;
@@ -5528,7 +5473,7 @@ function setPnlChartMode(mode) {
   document.querySelectorAll('.pnl-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   renderYearProgress();
 }
-// Série journalière (fin de journée) : solde en € dès qu'un montant en € existe, sinon R cumulé (hors R fictifs).
+// Série journalière (fin de journée) : solde en € dès qu'un montant en € existe, sinon R cumulé (R retenus seulement).
 function equitySeries() {
   const trades = viewTrades();   // vue filtrée (filtre global)
   const withEur = trades.filter(t => t.pnlEur != null && t.date);
@@ -5845,10 +5790,6 @@ function computeDiscipline() {
   items.push(tagUsed && mine.length >= 3
     ? { label: 'Trades sans erreur taguée', pct: mine.filter(t => !(Array.isArray(t.mistakes) && t.mistakes.length)).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis sans aucune erreur cochée.' }
     : { label: 'Trades sans erreur taguée', pct: null, hint: 'Non suivi : tague tes erreurs dans le formulaire pour activer ce critère.' });
-  const sls = closed.filter(t => t.res === 'SL' && t.pnlEur !== null && t.pnlEur !== undefined);
-  items.push(DEFAULT_RISK_EUR > 0 && sls.length >= 3
-    ? { label: 'Risque par trade respecté', pct: sls.filter(t => Math.abs(t.pnlEur) <= DEFAULT_RISK_EUR * 1.25).length / sls.length * 100, n: sls.length, hint: 'Part des pertes ≤ 125 % de ton risque configuré (' + DEFAULT_RISK_EUR + ' €).' }
-    : { label: 'Risque par trade respecté', pct: null, hint: 'Non suivi : renseigne ton risque par trade (€) dans Paramètres (3 pertes minimum).' });
   const dn = Object.values(dayNet(closed.filter(t => t.pnlEur !== null && t.pnlEur !== undefined)));
   const limitEur = (accountSize || 0) * loadDDLimitPct() / 100;
   items.push(dn.length >= 3 && limitEur > 0
@@ -5956,7 +5897,7 @@ function resetTradeFilters() {
 }
 
 function tradeRowHtml(t, num) {
-  const rsrc = rSource(t), approx = (rsrc === 'risque' || rsrc === 'defaut') ? '≈' : '';
+  const rsrc = rSource(t), approx = rsrc === 'risque' ? '≈' : '';
   const nImg = tradeImages(t).length;
   const id = raw(t.id);
   return html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date || '—'} sur ${t.asset || '—'}">
@@ -6108,8 +6049,8 @@ function openTradeDetail(id) {
   const imgs = tradeImages(t);
   const rMethod = ({
     prix: ['📐 R calculé par distance de prix (exact)', 'green'], manuel: ['✍️ R saisi', 'green'],
-    risque: ['💶 R estimé : P&L € ÷ risque configuré (' + DEFAULT_RISK_EUR + ' €)', 'blue'],
-    defaut: ['⚠️ R FICTIF : RR par défaut, aucune base réelle (exclu des stats en R)', 'amber'], aucun: ['Pas de R', 'muted']
+    risque: ['💶 R estimé : P&L € ÷ risque (ancien réglage)', 'blue'],
+    defaut: ['Pas de R', 'muted'], aucun: ['Pas de R — renseigne les prix pour le calculer', 'muted']
   })[rSource(t)];
   const quality = t.rr ? (t.rr >= 3 ? 'A+' : t.rr >= 2 ? 'A' : t.rr >= 1.5 ? 'B' : 'C') : '—';
   const checked = tradeChecklistLabels(t);
@@ -7296,7 +7237,7 @@ function saveWatch(asset, field, val) {
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────
 const BACKUP_SETTINGS_KEYS = [
   (GP + 'theme'), (GP + 'custom_themes'), (JP + 'nav_order'), (JP + 'account'), (JP + 'calc'),
-  (JP + 'dd_limit_pct'), (JP + 'dd_manual'), (JP + 'default_risk_eur'), (JP + 'default_rr_win'), (JP + 'default_rr_loss'),
+  (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
   (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
   (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate')
@@ -7322,15 +7263,12 @@ function restoreAllSettings(settings) {
 }
 // Après restauration d'un backup : recharge en mémoire les réglages d'import/R (sinon l'ancien réglage restait actif jusqu'au rechargement de la page).
 function reloadImportSettings() {
-  DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2') || 2;
-  DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1') || 1);
-  DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0') || 0;
   TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0') || 0;
   IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
-  R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
+  R_MODE = DB.getItem((JP + 'r_mode')) === 'strict' ? 'strict' : 'usable';
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  set('account-size', accountSize); set('default-rr-win', DEFAULT_RR_WIN); set('default-rr-loss', Math.abs(DEFAULT_RR_LOSS));
-  set('default-risk-eur', DEFAULT_RISK_EUR || ''); set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
+  set('account-size', accountSize);
+  set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
   set('dd-limit-pct', loadDDLimitPct());
 }
 function isValidTradesArray(arr) {
@@ -8500,7 +8438,6 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
     const pnlRaw = parseNumCSV(anyRow[col.pnl]) || 0;
     const res = pnlRaw > 0.000001 ? 'TP' : (pnlRaw < -0.000001 ? 'SL' : 'BE');
     const pnl = Math.round(pnlRaw * fx * 100) / 100;   // montant converti en € (fx = 1 si l'export est déjà en euros)
-    // Real R if a risk€ is configured, otherwise the flat default (see settings).
     const rmSrc = computeRWithSource(pnl, res);
     const rMultiple = rmSrc.r;
     const mfe = col.mfe > -1 ? Math.abs(parseNumCSV(anyRow[col.mfe]) || 0) * fx : null;
@@ -8636,7 +8573,7 @@ function tryGenericSingleRowImport(headers, rows) {
     if (!res) return;
     let rr = col.rr > -1 ? parseNumCSV(r[col.rr]) : null;
     if (rr !== null && isNaN(rr)) rr = null;
-    // No R value in the file (neither an rr column nor a pnl-in-R column) → real R from risk€, or flat default.
+    // Pas de R dans le fichier (ni colonne RR ni P&L en R) : pas de R inventé, le P&L € suffit (BE = 0R).
     let rSrc = (pnl !== null || rr !== null) ? 'manuel' : undefined;
     if (pnl === null && rr === null) {
       const cr = computeRWithSource(pnlEur, res); pnl = cr.r; rSrc = cr.src;
@@ -8650,47 +8587,6 @@ function tryGenericSingleRowImport(headers, rows) {
     });
   });
   return out;
-}
-
-function fixMissingRR() {
-  let fixed = 0;
-  const before = JSON.stringify(trades);
-  trades.forEach(t => {
-    if ((t.pnl === null || t.pnl === undefined) && ['TP','SL','BE'].includes(t.res)) {
-      const cr = computeRWithSource(t.pnlEur, t.res, { entryPrice: t.entryPrice, slPrice: t.slPrice, exitPrice: t.exitPrice, dir: t.dir });
-      t.pnl = cr.r; t.rSrc = cr.src;
-      if (t.rr === null || t.rr === undefined) t.rr = t.pnl;
-      fixed++;
-    }
-  });
-  if (fixed > 0) {
-    if (!save()) { trades = JSON.parse(before); return; }
-    renderAll();
-    showToast(fixed + ' trade(s) corrigé(s) ✓', 'success');
-  } else {
-    showToast('Aucun trade à corriger — tout est déjà à jour');
-  }
-}
-
-function fixImplausibleDistanceR() {
-  const DISTANCE_R_PLAUSIBLE_MAX = 15;
-  let fixed = 0;
-  const before = JSON.stringify(trades);
-  trades.forEach(t => {
-    if (t.pnl === null || t.pnl === undefined || Math.abs(t.pnl) <= DISTANCE_R_PLAUSIBLE_MAX) return;
-    if (t.entryPrice === null || t.entryPrice === undefined || t.slPrice === null || t.slPrice === undefined) return;
-    const cr = computeRWithSource(t.pnlEur, t.res);
-    t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src;
-    t.slPrice = null;
-    fixed++;
-  });
-  if (fixed > 0) {
-    if (!save()) { trades = JSON.parse(before); return; }
-    renderAll();
-    showToast(fixed + ' trade(s) corrigé(s) (R invraisemblable détecté) ✓', 'success');
-  } else {
-    showToast('Aucun trade avec un R invraisemblable détecté');
-  }
 }
 
 const SEED_ASSETS = ['EUR/USD','GBP/USD','USD/JPY','GBP/JPY','EUR/JPY','XAU/USD','DAX 40','CAC 40','NAS 100','SP 500'];

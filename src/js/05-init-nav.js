@@ -13,9 +13,6 @@ onReady(() => {
   document.getElementById('account-size').value = accountSize;
   document.getElementById('dd-date').value = localDateStr();
   document.getElementById('dd-limit-pct').value = loadDDLimitPct();
-  document.getElementById('default-rr-win').value = DEFAULT_RR_WIN;
-  document.getElementById('default-rr-loss').value = Math.abs(DEFAULT_RR_LOSS);
-  document.getElementById('default-risk-eur').value = DEFAULT_RISK_EUR || '';
   const tzInp = document.getElementById('tz-offset-hours'); if (tzInp) tzInp.value = TZ_OFFSET_HOURS;
   const fxInp = document.getElementById('import-fx-rate'); if (fxInp) fxInp.value = IMPORT_FX_RATE;
   [renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, initPlan, initWatchlist, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));

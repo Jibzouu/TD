@@ -1021,28 +1021,7 @@
           <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
           <p id="csv-import-status"></p>
           <div class="sep-top-16">
-            <div class="center-row mb-14">
-              <span class="mono-muted">Risque € par trade (calcul du R réel = P&L € ÷ risque) :</span>
-              <input type="number" id="default-risk-eur" step="1" min="0" placeholder="ex : 50" oninput="saveDefaultRiskEur()">
-              <span class="amber-11">€</span>
-            </div>
             <div class="center-row">
-              <span class="mono-muted">Sinon, RR fixe par défaut :</span>
-              <span class="inline-row5">
-                <span class="green-11">Gagnant +</span>
-                <input type="number" id="default-rr-win" step="0.1" min="0.1" oninput="saveDefaultRR()">
-                <span class="green-11">R</span>
-              </span>
-              <span class="inline-row5">
-                <span class="red-11">Perdant -</span>
-                <input type="number" id="default-rr-loss" step="0.1" min="0.1" oninput="saveDefaultRR()">
-                <span class="red-11">R</span>
-              </span>
-            </div>
-            <p class="note-center">
-              Si tu renseignes un risque €, le R de chaque trade importé sera calculé précisément (P&L réel ÷ risque), au lieu d'un R fixe identique pour tous les gagnants. Beaucoup plus fidèle à la réalité.
-            </p>
-            <div class="center-row sep-top-14">
               <span class="mono-muted">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
               <input type="number" id="tz-offset-hours" step="0.5" value="0" oninput="saveTZOffset()">
               <button class="btn-ghost btn-xs" onclick="recalcSessions()">Recalculer les sessions des trades déjà importés</button>
@@ -1074,18 +1053,6 @@
           <div class="export-desc" id="safety-snapshot-info"></div>
           <button class="btn-ghost" onclick="restoreSafetySnapshot()">Restaurer l'état d'avant</button>
           <button class="btn-ghost ml-6" onclick="dismissSafetySnapshot()">Effacer cette copie</button>
-        </div>
-        <div class="export-card span-2">
-          <div class="export-icon">🩹</div>
-          <div class="export-title">Corriger les trades déjà importés sans R</div>
-          <div class="export-desc">Si des trades TP/SL affichent un P&L en R manquant (calendrier gris, dashboard incomplet), applique-leur rétroactivement le calcul de R ci-dessus.</div>
-          <button class="btn-ghost" onclick="fixMissingRR()">Corriger maintenant</button>
-        </div>
-        <div class="export-card span-2">
-          <div class="export-icon">🎯</div>
-          <div class="export-title">Corriger les R invraisemblables (stop remonté au break-even)</div>
-          <div class="export-desc">Si un stop loss a été déplacé au break-even en cours de trade, l'historique d'ordres TradingView ne garde que sa position finale — le calcul par distance de prix peut alors donner un R absurde (ex : 58R). Ce correctif détecte ces cas (R > 15) et repasse sur le calcul de secours.</div>
-          <button class="btn-ghost" onclick="fixImplausibleDistanceR()">Corriger maintenant</button>
         </div>
         <div class="export-card span-2">
           <div class="export-icon">♻️</div>

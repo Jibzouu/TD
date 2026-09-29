@@ -155,3 +155,23 @@ test('application installable : manifeste, service worker, ouverture hors ligne'
     server.close();
   }
 });
+
+test('nettoyage unique des anciens R : fictifs effacés, R invraisemblable écarté, R manquant recalculé', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [
+    T({ id: 1, res: 'TP', pnl: 2, rr: 2, rSrc: 'defaut', pnlEur: 120 }),
+    T({ id: 2, res: 'TP', pnl: 58, rr: 58, rSrc: 'prix', pnlEur: 90, entryPrice: 1.1, slPrice: 1.0999, exitPrice: 1.1058 }),
+    T({ id: 3, res: 'SL', pnl: null, rr: null, pnlEur: -50, entryPrice: 1.1, slPrice: 1.098, exitPrice: 1.098, dir: 'Long' }),
+    T({ id: 4, res: 'TP', pnl: 1.5, rr: 1.5, rSrc: 'manuel', pnlEur: 75 }),
+  ], tj_default_rr_win: '2', tj_default_risk_eur: '0' } });
+  const r = await page.evaluate(() => Object.fromEntries(trades.map(t => [t.id, { pnl: t.pnl, sl: t.slPrice ?? null }])));
+  assert.equal(r[1].pnl, null, 'R fictif effacé');
+  assert.equal(r[2].pnl, null, 'R invraisemblable effacé');
+  assert.equal(r[2].sl, null);
+  assert.equal(r[3].pnl, -1, 'R exact recalculé depuis les prix');
+  assert.equal(r[4].pnl, 1.5, 'R saisi conservé');
+  assert.equal(await page.evaluate(() => trades.find(t => t.id === 1).pnlEur), 120, 'P&L € intact');
+  assert.equal(await page.evaluate(() => DB.getItem(JP + 'default_rr_win')), null, 'ancien réglage supprimé');
+  assert.equal(await page.locator('#default-risk-eur, #default-rr-win').count(), 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

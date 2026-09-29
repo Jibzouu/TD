@@ -100,7 +100,7 @@ function setPnlChartMode(mode) {
   document.querySelectorAll('.pnl-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   renderYearProgress();
 }
-// Série journalière (fin de journée) : solde en € dès qu'un montant en € existe, sinon R cumulé (hors R fictifs).
+// Série journalière (fin de journée) : solde en € dès qu'un montant en € existe, sinon R cumulé (R retenus seulement).
 function equitySeries() {
   const trades = viewTrades();   // vue filtrée (filtre global)
   const withEur = trades.filter(t => t.pnlEur != null && t.date);
@@ -417,10 +417,6 @@ function computeDiscipline() {
   items.push(tagUsed && mine.length >= 3
     ? { label: 'Trades sans erreur taguée', pct: mine.filter(t => !(Array.isArray(t.mistakes) && t.mistakes.length)).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis sans aucune erreur cochée.' }
     : { label: 'Trades sans erreur taguée', pct: null, hint: 'Non suivi : tague tes erreurs dans le formulaire pour activer ce critère.' });
-  const sls = closed.filter(t => t.res === 'SL' && t.pnlEur !== null && t.pnlEur !== undefined);
-  items.push(DEFAULT_RISK_EUR > 0 && sls.length >= 3
-    ? { label: 'Risque par trade respecté', pct: sls.filter(t => Math.abs(t.pnlEur) <= DEFAULT_RISK_EUR * 1.25).length / sls.length * 100, n: sls.length, hint: 'Part des pertes ≤ 125 % de ton risque configuré (' + DEFAULT_RISK_EUR + ' €).' }
-    : { label: 'Risque par trade respecté', pct: null, hint: 'Non suivi : renseigne ton risque par trade (€) dans Paramètres (3 pertes minimum).' });
   const dn = Object.values(dayNet(closed.filter(t => t.pnlEur !== null && t.pnlEur !== undefined)));
   const limitEur = (accountSize || 0) * loadDDLimitPct() / 100;
   items.push(dn.length >= 3 && limitEur > 0

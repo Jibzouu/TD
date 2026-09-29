@@ -111,10 +111,6 @@ let watchData = loadJSON(JP + 'watch', null);
 let planData = loadJSON(JP + 'plan', null);
 let accountSize = parseFloat(DB.getItem((JP + 'account')) || '10000');
 
-// Default R multiples applied to imported trades when the source file only
-// gives a €/$ P&L and no real R value (e.g. TradingView's "List of trades" export).
-// Adjustable from the Export / Import page.
-let DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2');
 // Décalage (en heures) entre l'heure de tes exports et ton propre fuseau — sinon les sessions (Asie/Londres/NY) sont calculées sur la mauvaise heure.
 let TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0');
 function saveTZOffset() {
@@ -140,18 +136,6 @@ function recalcSessions() {
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
-let DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1'));
-function saveDefaultRR() {
-  const w = parseFloat(document.getElementById('default-rr-win').value);
-  const l = parseFloat(document.getElementById('default-rr-loss').value);
-  if (!isNaN(w) && w > 0) { DEFAULT_RR_WIN = w; DB.setItem((JP + 'default_rr_win'), w); }
-  if (!isNaN(l) && l > 0) { DEFAULT_RR_LOSS = -Math.abs(l); DB.setItem((JP + 'default_rr_loss'), l); }
-}
-
-// Real risk per trade in €. When set, imported R multiples are computed as
-// (real €P&L ÷ risk€) instead of a flat default — a much truer picture than
-// assuming every winner is worth exactly the same R.
-let DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0');
 // Taux appliqué aux montants importés dans une autre devise que l'euro (1 unité étrangère = IMPORT_FX_RATE €).
 let IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
 function saveImportFxRate() {
@@ -184,17 +168,13 @@ function reconvertImportedTrades() {
       t.pnlEur = conv(t.pnlEur); t.mfe = conv(t.mfe); t.mae = conv(t.mae);
       if (!t.ccy) t.ccy = 'USD';
       t.fxRate = rate;
-      if (rSource(t) === 'risque' && DEFAULT_RISK_EUR > 0) { t.pnl = Math.round(t.pnlEur / DEFAULT_RISK_EUR * 100) / 100; t.rr = t.pnl; }
+      // R estimé à partir du P&L € (ancien réglage « risque € ») : il suit la conversion dans la même proportion.
+      if (rSource(t) === 'risque' && t.pnl != null) { t.pnl = Math.round(t.pnl / old * rate * 100) / 100; t.rr = t.pnl; }
     });
     if (!save()) { trades = JSON.parse(before); return; }
     renderAll();
     showToast((known.length + legacy.length) + ' trade(s) convertis ✓', 'success');
   });
-}
-function saveDefaultRiskEur() {
-  const v = parseFloat(document.getElementById('default-risk-eur').value);
-  DEFAULT_RISK_EUR = (!isNaN(v) && v > 0) ? v : 0;
-  DB.setItem((JP + 'default_risk_eur'), DEFAULT_RISK_EUR);
 }
 function computeRealR(pnlEur, res, priceCtx) { return computeRWithSource(pnlEur, res, priceCtx).r; }
 

@@ -43,7 +43,7 @@ function resetTradeFilters() {
 }
 
 function tradeRowHtml(t, num) {
-  const rsrc = rSource(t), approx = (rsrc === 'risque' || rsrc === 'defaut') ? '≈' : '';
+  const rsrc = rSource(t), approx = rsrc === 'risque' ? '≈' : '';
   const nImg = tradeImages(t).length;
   const id = raw(t.id);
   return html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date || '—'} sur ${t.asset || '—'}">
@@ -195,8 +195,8 @@ function openTradeDetail(id) {
   const imgs = tradeImages(t);
   const rMethod = ({
     prix: ['📐 R calculé par distance de prix (exact)', 'green'], manuel: ['✍️ R saisi', 'green'],
-    risque: ['💶 R estimé : P&L € ÷ risque configuré (' + DEFAULT_RISK_EUR + ' €)', 'blue'],
-    defaut: ['⚠️ R FICTIF : RR par défaut, aucune base réelle (exclu des stats en R)', 'amber'], aucun: ['Pas de R', 'muted']
+    risque: ['💶 R estimé : P&L € ÷ risque (ancien réglage)', 'blue'],
+    defaut: ['Pas de R', 'muted'], aucun: ['Pas de R — renseigne les prix pour le calculer', 'muted']
   })[rSource(t)];
   const quality = t.rr ? (t.rr >= 3 ? 'A+' : t.rr >= 2 ? 'A' : t.rr >= 1.5 ? 'B' : 'C') : '—';
   const checked = tradeChecklistLabels(t);

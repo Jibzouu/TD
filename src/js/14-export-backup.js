@@ -1,7 +1,7 @@
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────
 const BACKUP_SETTINGS_KEYS = [
   (GP + 'theme'), (GP + 'custom_themes'), (JP + 'nav_order'), (JP + 'account'), (JP + 'calc'),
-  (JP + 'dd_limit_pct'), (JP + 'dd_manual'), (JP + 'default_risk_eur'), (JP + 'default_rr_win'), (JP + 'default_rr_loss'),
+  (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
   (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
   (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate')
@@ -27,15 +27,12 @@ function restoreAllSettings(settings) {
 }
 // Après restauration d'un backup : recharge en mémoire les réglages d'import/R (sinon l'ancien réglage restait actif jusqu'au rechargement de la page).
 function reloadImportSettings() {
-  DEFAULT_RR_WIN = parseFloat(DB.getItem((JP + 'default_rr_win')) || '2') || 2;
-  DEFAULT_RR_LOSS = -Math.abs(parseFloat(DB.getItem((JP + 'default_rr_loss')) || '1') || 1);
-  DEFAULT_RISK_EUR = parseFloat(DB.getItem((JP + 'default_risk_eur')) || '0') || 0;
   TZ_OFFSET_HOURS = parseFloat(DB.getItem((JP + 'tz_offset_hours')) || '0') || 0;
   IMPORT_FX_RATE = parseFloat(DB.getItem((JP + 'import_fx_rate')) || '1') || 1;
-  R_MODE = DB.getItem((JP + 'r_mode')) || 'usable';
+  R_MODE = DB.getItem((JP + 'r_mode')) === 'strict' ? 'strict' : 'usable';
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  set('account-size', accountSize); set('default-rr-win', DEFAULT_RR_WIN); set('default-rr-loss', Math.abs(DEFAULT_RR_LOSS));
-  set('default-risk-eur', DEFAULT_RISK_EUR || ''); set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
+  set('account-size', accountSize);
+  set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
   set('dd-limit-pct', loadDDLimitPct());
 }
 function isValidTradesArray(arr) {

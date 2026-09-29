@@ -210,7 +210,6 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
     const pnlRaw = parseNumCSV(anyRow[col.pnl]) || 0;
     const res = pnlRaw > 0.000001 ? 'TP' : (pnlRaw < -0.000001 ? 'SL' : 'BE');
     const pnl = Math.round(pnlRaw * fx * 100) / 100;   // montant converti en € (fx = 1 si l'export est déjà en euros)
-    // Real R if a risk€ is configured, otherwise the flat default (see settings).
     const rmSrc = computeRWithSource(pnl, res);
     const rMultiple = rmSrc.r;
     const mfe = col.mfe > -1 ? Math.abs(parseNumCSV(anyRow[col.mfe]) || 0) * fx : null;
@@ -346,7 +345,7 @@ function tryGenericSingleRowImport(headers, rows) {
     if (!res) return;
     let rr = col.rr > -1 ? parseNumCSV(r[col.rr]) : null;
     if (rr !== null && isNaN(rr)) rr = null;
-    // No R value in the file (neither an rr column nor a pnl-in-R column) → real R from risk€, or flat default.
+    // Pas de R dans le fichier (ni colonne RR ni P&L en R) : pas de R inventé, le P&L € suffit (BE = 0R).
     let rSrc = (pnl !== null || rr !== null) ? 'manuel' : undefined;
     if (pnl === null && rr === null) {
       const cr = computeRWithSource(pnlEur, res); pnl = cr.r; rSrc = cr.src;
@@ -360,47 +359,6 @@ function tryGenericSingleRowImport(headers, rows) {
     });
   });
   return out;
-}
-
-function fixMissingRR() {
-  let fixed = 0;
-  const before = JSON.stringify(trades);
-  trades.forEach(t => {
-    if ((t.pnl === null || t.pnl === undefined) && ['TP','SL','BE'].includes(t.res)) {
-      const cr = computeRWithSource(t.pnlEur, t.res, { entryPrice: t.entryPrice, slPrice: t.slPrice, exitPrice: t.exitPrice, dir: t.dir });
-      t.pnl = cr.r; t.rSrc = cr.src;
-      if (t.rr === null || t.rr === undefined) t.rr = t.pnl;
-      fixed++;
-    }
-  });
-  if (fixed > 0) {
-    if (!save()) { trades = JSON.parse(before); return; }
-    renderAll();
-    showToast(fixed + ' trade(s) corrigé(s) ✓', 'success');
-  } else {
-    showToast('Aucun trade à corriger — tout est déjà à jour');
-  }
-}
-
-function fixImplausibleDistanceR() {
-  const DISTANCE_R_PLAUSIBLE_MAX = 15;
-  let fixed = 0;
-  const before = JSON.stringify(trades);
-  trades.forEach(t => {
-    if (t.pnl === null || t.pnl === undefined || Math.abs(t.pnl) <= DISTANCE_R_PLAUSIBLE_MAX) return;
-    if (t.entryPrice === null || t.entryPrice === undefined || t.slPrice === null || t.slPrice === undefined) return;
-    const cr = computeRWithSource(t.pnlEur, t.res);
-    t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src;
-    t.slPrice = null;
-    fixed++;
-  });
-  if (fixed > 0) {
-    if (!save()) { trades = JSON.parse(before); return; }
-    renderAll();
-    showToast(fixed + ' trade(s) corrigé(s) (R invraisemblable détecté) ✓', 'success');
-  } else {
-    showToast('Aucun trade avec un R invraisemblable détecté');
-  }
 }
 
 const SEED_ASSETS = ['EUR/USD','GBP/USD','USD/JPY','GBP/JPY','EUR/JPY','XAU/USD','DAX 40','CAC 40','NAS 100','SP 500'];

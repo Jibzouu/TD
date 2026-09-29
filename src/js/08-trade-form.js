@@ -185,8 +185,7 @@ function addTrade() {
   let rSrc = pnl !== null ? 'manuel' : undefined;
   const distR = computeDistanceR(entryPrice, slPrice, exitPrice, dir || 'Long');
   if (distR !== null) { pnl = distR; rr = Math.abs(distR) || rr; rSrc = 'prix'; }
-  // Rien de renseigné du tout (ni prix, ni R manuel) → calcul de repli (risque € configuré, sinon RR par défaut),
-  // pour qu'un ajout rapide (juste résultat + P&L€) reste exploitable dans toutes les statistiques.
+  // Ni prix ni R saisi : un BE vaut 0R ; sinon pas de R (le P&L € reste compté dans toutes les statistiques).
   if (pnl === null && ['TP','SL','BE'].includes(res)) {
     const cr = computeRWithSource(pnlEur, res); pnl = cr.r; rSrc = cr.src;
     if (rr === null) rr = Math.abs(pnl) || null;
