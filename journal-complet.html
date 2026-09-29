@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// CDN principal indisponible → second CDN. Sans aucun des deux (hors ligne), le journal fonctionne quand même : seuls les graphiques sont remplacés par un message.
+if (typeof Chart === 'undefined') document.write('<script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -73,10 +77,7 @@ body.texture-on::after{content:'';position:fixed;inset:0;pointer-events:none;z-i
 .theme-swatch .swatch-name{font-size:11px;font-family:var(--mono);color:var(--txt2);text-align:center}
 
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:calc(var(--r) * .3)}
+/* ── SCROLLBAR : voir « Finition » plus bas ── */
 
 /* ── LAYOUT ── */
 .app{display:block;min-height:100vh}
@@ -309,8 +310,7 @@ body.sidebar-open .sidebar-overlay{opacity:1;pointer-events:auto;background:rgba
   color:var(--txt);font-family:var(--mono);font-size:12px;padding:9px 12px;
   transition:border-color .15s;outline:none;
 }
-.field input:focus,.field select,.field textarea:focus{border-color:var(--border2)}
-.field input:focus,.field textarea:focus{border-color:var(--green) !important;box-shadow:0 0 0 3px rgba(34,197,94,.08)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green) !important;box-shadow:0 0 0 3px rgba(34,197,94,.08)}
 .field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a4f6e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 .field textarea{resize:vertical;min-height:64px;line-height:1.5}
 .field select option{background:var(--bg3)}
@@ -383,7 +383,7 @@ tbody tr:hover td{background:var(--bg3)}
 .b-long{background:var(--green-dd);color:var(--green);font-size:9px}
 .b-short{background:var(--red-dd);color:var(--red);font-size:9px}
 
-.qual{display:inline-block;width:24px;height:24px;border-radius:calc(var(--r) * .6);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.qual{width:24px;height:24px;border-radius:calc(var(--r) * .6);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
 .q-ap{background:rgba(34,197,94,.2);color:var(--green)}
 .q-a{background:rgba(96,165,250,.15);color:var(--blue)}
 .q-b{background:rgba(245,158,11,.15);color:var(--amber)}
@@ -460,7 +460,7 @@ tbody tr:hover td{background:var(--bg3)}
 .toast.error{border-color:var(--red);color:var(--red)}
 
 /* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:28px;width:500px;max-width:90vw}
 .modal h3{font-size:16px;font-weight:600;margin-bottom:6px}
@@ -977,9 +977,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
               <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
               <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
             </div>
-            <div class="form-row f3" style="margin-bottom:0">
+            <div class="form-row f2" style="margin-bottom:0">
               <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
-              <div class="field"><label>DD journalier utilisé avant ce trade (%)</label><input type="number" id="f-dd" placeholder="ex : 0.3" step="0.01" min="0" max="1"></div>
               <div class="field"><label>Note émotionnelle</label>
                 <select id="f-emotion">
                   <option value="">Sélectionner…</option>
@@ -1533,6 +1532,15 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
             <p style="font-size:10px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6">
               Sans ce réglage, les stats par session (Asie/Londres/NY) peuvent être fausses : l'heure d'un export n'est pas forcément déjà dans ton fuseau.
             </p>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Conversion des montants importés en devise étrangère (ex. « P&amp;L net USD » de TradingView) : 1 unité =</span>
+              <input type="number" id="import-fx-rate" step="0.0001" min="0.0001" style="width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center" value="1" oninput="saveImportFxRate()">
+              <span style="font-size:11px;color:var(--txt3)">€</span>
+              <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="reconvertImportedTrades()">Appliquer ce taux aux trades déjà importés</button>
+            </div>
+            <p style="font-size:10px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6">
+              Laisse 1 si ton compte de trading est déjà en euros. La devise est détectée dans l'en-tête du fichier (USD, GBP, CHF…) ; un fichier en EUR n'est jamais converti.
+            </p>
           </div>
         </div>
         <div class="export-card" style="grid-column:span 2">
@@ -1809,12 +1817,99 @@ const SHARED_SETTINGS = ['theme', 'custom_themes', 'theme_texture', 'theme_autos
   } catch (e) {}
 })();
 
+// ── OUTILS DE ROBUSTESSE ─────────────────────────────────────────────
+// Date du jour au format AAAA-MM-JJ dans le fuseau LOCAL (toISOString() donne la date UTC : entre 0 h et 2 h en France, c'était la veille).
+function localDateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Lecture JSON protégée : une donnée corrompue ne doit jamais empêcher le journal de démarrer.
+// La valeur illisible est mise de côté (clé *_corrupt_backup) au lieu d'être écrasée à la prochaine sauvegarde.
+function loadJSON(key, fallback) {
+  const raw = localStorage.getItem(key);
+  if (raw === null || raw === '') return fallback;
+  try { const v = JSON.parse(raw); return v === null || v === undefined ? fallback : v; }
+  catch (e) {
+    console.error('Donnée illisible dans « ' + key + ' » :', e);
+    try { localStorage.setItem(key + '_corrupt_backup', raw); } catch (e2) {}
+    window._corruptKeys = (window._corruptKeys || []).concat(key);
+    return fallback;
+  }
+}
+// Exécute une étape de rendu sans que son éventuelle erreur bloque les suivantes.
+function safeRun(fn, label) {
+  try { return fn(); } catch (e) { console.error('Erreur dans ' + (label || fn.name || 'rendu') + ' :', e); }
+}
+// Chart.js absent (hors ligne, CDN bloqué) : message à la place du graphique au lieu de faire planter toute l'application.
+function chartsAvailable(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ok = typeof Chart !== 'undefined';
+  if (canvas) {
+    let note = canvas.parentNode && canvas.parentNode.querySelector(':scope > .chart-offline-note');
+    if (!ok && !note && canvas.parentNode) {
+      note = document.createElement('div');
+      note.className = 'chart-offline-note';
+      note.style.cssText = 'height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:8px';
+      note.textContent = 'Graphique indisponible hors ligne (Chart.js non chargé) — tes données sont intactes.';
+      canvas.parentNode.appendChild(note);
+    }
+    canvas.style.display = ok ? '' : 'none';
+    if (ok && note) note.remove();
+  }
+  return ok;
+}
+// Nombre lu dans un CSV : accepte la virgule décimale (12,5), les séparateurs de milliers (1 234,56 · 1,234.56 · 1.234,56),
+// les symboles monétaires, le signe moins typographique et les parenthèses comptables. Renvoie NaN si ce n'est pas un nombre.
+function parseNumCSV(raw) {
+  if (raw === null || raw === undefined) return NaN;
+  let s = String(raw).trim().replace(/[\s  ']/g, '').replace(/−/g, '-').replace(/[€$£%]/g, '').replace(/^(USD|EUR|GBP|CHF)|(USD|EUR|GBP|CHF)$/i, '');
+  if (s === '') return NaN;
+  let neg = false;
+  if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+  if (lc > -1 && ld > -1) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  else if (lc > -1) s = s.split(',').length > 2 ? s.replace(/,/g, '') : s.replace(',', '.');
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return NaN;
+  const v = Number(s);
+  return neg ? -v : v;
+}
+// Normalise un trade venant du stockage ou d'un fichier importé : types attendus, valeurs inconnues neutralisées.
+// Empêche qu'un backup ou un CSV piégé injecte du HTML/JS via un champ affiché (heure, taille, prix, résultat…).
+const TRADE_NUM_FIELDS = ['rr', 'pnl', 'pnlEur', 'size', 'ddUsed', 'emotion', 'entryPrice', 'slPrice', 'tpPrice', 'exitPrice', 'mfe', 'mae', 'fxRate', 'checklistTotal'];
+const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy'];
+function sanitizeTrade(t) {
+  if (!t || typeof t !== 'object') return null;
+  const o = Object.assign({}, t);
+  const idNum = Number(o.id);
+  o.id = isFinite(idNum) && idNum > 0 ? idNum : Date.now() + Math.floor(Math.random() * 1e6);
+  TRADE_NUM_FIELDS.forEach(k => {
+    if (!(k in o)) return;
+    const v = o[k] === '' || o[k] === null || o[k] === undefined ? null : Number(o[k]);
+    o[k] = v === null || !isFinite(v) ? null : v;
+  });
+  if (!('pnl' in o)) o.pnl = null;
+  if (!('pnlEur' in o)) o.pnlEur = null;
+  if (o.emotion !== null && o.emotion !== undefined) o.emotion = Math.min(5, Math.max(1, Math.round(o.emotion)));
+  TRADE_STR_FIELDS.forEach(k => { if (k in o && o[k] !== null && o[k] !== undefined) o[k] = String(o[k]); });
+  // Date : on garde toute date « inoffensive » (chiffres, lettres, / . - : , espaces) même si elle n'est pas au format ISO, pour ne rien perdre.
+  o.date = /^[\w\s\/.:,\-]{0,40}$/.test(String(o.date || '')) ? String(o.date || '') : '';
+  ['entry', 'exit'].forEach(k => { o[k] = /^\d{1,2}:\d{2}(:\d{2})?$/.test(String(o[k] || '')) ? String(o[k]) : ''; });
+  o.res = ['TP', 'SL', 'BE', 'OPEN'].includes(o.res) ? o.res : 'OPEN';
+  if (o.dir && !['Long', 'Short'].includes(o.dir)) o.dir = '';
+  if ('checklist' in o) o.checklist = Array.isArray(o.checklist) ? o.checklist.map(Number).filter(n => Number.isInteger(n) && n >= 0) : [];
+  if ('checklistLabels' in o) o.checklistLabels = Array.isArray(o.checklistLabels) ? o.checklistLabels.map(String) : [];
+  if ('mistakes' in o) o.mistakes = Array.isArray(o.mistakes) ? o.mistakes.map(String) : [];
+  o.cap = safeImgSrc(o.cap);
+  return o;
+}
+function sanitizeTrades(arr) { return (Array.isArray(arr) ? arr : []).map(sanitizeTrade).filter(Boolean); }
+
 // ── DATA ────────────────────────────────────────────────────────────
 let _atCache = null;   // cache de la vue « analyse » (déclaré ici : sortTradesChrono() est appelée dès le chargement)
-let trades = JSON.parse(localStorage.getItem((JP + 'trades')) || '[]');
+let trades = sanitizeTrades(loadJSON(JP + 'trades', []));
 sortTradesChrono();
-let watchData = JSON.parse(localStorage.getItem((JP + 'watch')) || 'null');
-let planData = JSON.parse(localStorage.getItem((JP + 'plan')) || 'null');
+let watchData = loadJSON(JP + 'watch', null);
+let planData = loadJSON(JP + 'plan', null);
 let accountSize = parseFloat(localStorage.getItem((JP + 'account')) || '10000');
 let currentImgBase64 = '';
 
@@ -1832,6 +1927,7 @@ function saveTZOffset() {
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
 function recalcSessions() {
   let n = 0;
+  const before = trades.map(t => t.session);
   trades.forEach(t => {
     if (!t.entry) return;
     const h = parseInt(t.entry.split(':')[0], 10);
@@ -1839,7 +1935,10 @@ function recalcSessions() {
     const ns = sessionFromHour(h);
     if (ns && ns !== t.session) { t.session = ns; n++; }
   });
-  if (n > 0) { save(); renderAll(); showToast(n + ' session(s) recalculée(s) ✓', 'success'); }
+  if (n > 0) {
+    if (!save()) { trades.forEach((t, i) => { t.session = before[i]; }); return; }
+    renderAll(); showToast(n + ' session(s) recalculée(s) ✓', 'success');
+  }
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
@@ -1855,6 +1954,45 @@ function saveDefaultRR() {
 // (real €P&L ÷ risk€) instead of a flat default — a much truer picture than
 // assuming every winner is worth exactly the same R.
 let DEFAULT_RISK_EUR = parseFloat(localStorage.getItem((JP + 'default_risk_eur')) || '0');
+// Taux appliqué aux montants importés dans une autre devise que l'euro (1 unité étrangère = IMPORT_FX_RATE €).
+let IMPORT_FX_RATE = parseFloat(localStorage.getItem((JP + 'import_fx_rate')) || '1') || 1;
+function saveImportFxRate() {
+  const v = parseFloat(document.getElementById('import-fx-rate').value);
+  IMPORT_FX_RATE = (!isNaN(v) && v > 0) ? v : 1;
+  localStorage.setItem((JP + 'import_fx_rate'), IMPORT_FX_RATE);
+}
+// Devise lue dans un nom de colonne (« P&L net USD », « Profit (EUR) »…). '' si aucune devise n'est indiquée.
+function detectCcyFromHeader(h) {
+  const n = String(h || '').toUpperCase();
+  const m = n.match(/(?:^|[^A-Z])(USD|EUR|GBP|CHF|JPY|CAD|AUD)(?:[^A-Z]|$)/) || n.match(/(USD|EUR|GBP|CHF|JPY|CAD|AUD)$/);
+  if (m) return m[1];
+  if (/\$/.test(n)) return 'USD';
+  if (/€/.test(n)) return 'EUR';
+  return '';
+}
+function fxForCcy(ccy) { return ccy && ccy !== 'EUR' ? IMPORT_FX_RATE : 1; }
+// Ré-applique le taux courant aux trades importés en devise étrangère (et, après confirmation, aux anciens imports TradingView sans devise connue).
+function reconvertImportedTrades() {
+  const rate = IMPORT_FX_RATE;
+  const known = trades.filter(t => t.ccy && t.ccy !== 'EUR' && t.pnlEur != null);
+  const legacy = trades.filter(t => !t.ccy && t.tvKey && t.pnlEur != null);
+  if (!known.length && !legacy.length) { showToast('Aucun trade importé en devise étrangère'); return; }
+  const msg = known.length + ' trade(s) importé(s) en devise étrangère' + (legacy.length ? ' et ' + legacy.length + ' ancien(s) import(s) TradingView (devise non enregistrée, supposée USD)' : '') + ' seront recalculés avec 1 = ' + rate + ' €.';
+  openModal('Appliquer le taux de conversion ?', msg, () => {
+    const before = JSON.stringify(trades);
+    known.concat(legacy).forEach(t => {
+      const old = t.fxRate || 1;
+      const conv = v => (v === null || v === undefined) ? v : Math.round(v / old * rate * 100) / 100;
+      t.pnlEur = conv(t.pnlEur); t.mfe = conv(t.mfe); t.mae = conv(t.mae);
+      if (!t.ccy) t.ccy = 'USD';
+      t.fxRate = rate;
+      if (rSource(t) === 'risque' && DEFAULT_RISK_EUR > 0) { t.pnl = Math.round(t.pnlEur / DEFAULT_RISK_EUR * 100) / 100; t.rr = t.pnl; }
+    });
+    if (!save()) { trades = JSON.parse(before); return; }
+    renderAll();
+    showToast((known.length + legacy.length) + ' trade(s) convertis ✓', 'success');
+  });
+}
 function saveDefaultRiskEur() {
   const v = parseFloat(document.getElementById('default-risk-eur').value);
   DEFAULT_RISK_EUR = (!isNaN(v) && v > 0) ? v : 0;
@@ -2237,7 +2375,7 @@ function restoreSafetySnapshot() {
   if (!snap || !Array.isArray(snap.trades)) return;
   openModal('Annuler la dernière importation ?', snap.trades.length + ' trades seront restaurés (état « ' + (snap.label || 'avant import') + ' »)' + (snap.imagesDropped ? ' — les ' + snap.imagesDropped + ' capture(s) d\'écran ne sont pas incluses dans cette copie.' : '.'), () => {
     const prev = trades.slice();
-    trades = snap.trades; sortTradesChrono();
+    trades = sanitizeTrades(snap.trades); sortTradesChrono();
     if (!save()) { trades = prev; return; }
     if (snap.planData) { planData = snap.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
     if (snap.watchData) { watchData = snap.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
@@ -2324,7 +2462,7 @@ function setRMode(m) {
 function migrateRSources() {
   if (localStorage.getItem((JP + 'rsrc_v1'))) return;
   let changed = false;
-  trades.forEach(t => { if (!t.rSrc && t.pnl !== null && t.pnl !== undefined) { t.rSrc = rSource(t); changed = true; } });
+  trades.forEach(t => { if (!t.rSrc && t.pnl != null) { t.rSrc = rSource(t); changed = true; } });
   if (changed) { try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
   localStorage.setItem((JP + 'rsrc_v1'), '1');
 }
@@ -2358,14 +2496,54 @@ function estimateRFromLosses() {
   openModal('Estimer le R avec ' + avg + ' € de risque ?', 'Le R des trades sans stop-loss sera calculé comme P&L € ÷ ' + avg + ' € (ta perte moyenne). Ces R sont marqués « estimés » et restent exclus si tu choisis « R exact seulement ».', () => {
     DEFAULT_RISK_EUR = avg; localStorage.setItem((JP + 'default_risk_eur'), avg);
     let k = 0;
+    const before = JSON.stringify(trades);
     trades.forEach(t => { if (rSource(t) === 'defaut') { const cr = computeRWithSource(t.pnlEur, t.res); t.pnl = cr.r; t.rr = cr.r; t.rSrc = cr.src; k++; } });
-    if (!save()) return;
+    if (!save()) { trades = JSON.parse(before); return; }
     const inp = document.getElementById('default-risk-eur'); if (inp) inp.value = DEFAULT_RISK_EUR;
     renderAll();
     showToast('R estimé pour ' + k + ' trade(s) avec ' + avg + ' € de risque', 'success');
   });
 }
 migrateRSources();
+
+// ── CHECKLIST : historique indépendant des modifications du plan ─────────────────────
+// Chaque trade garde le TEXTE des critères cochés (checklistLabels) et le nombre de critères que comptait la checklist
+// au moment de la saisie (checklistTotal). Supprimer, réordonner ou ajouter un critère dans le Plan ne réécrit donc plus l'historique.
+function tradeHasChecklist(t) { return Array.isArray(t.checklistLabels) || Array.isArray(t.checklist); }
+function tradeChecklistLabels(t) {
+  if (Array.isArray(t.checklistLabels)) return t.checklistLabels;
+  const items = getEntryItems();
+  return Array.isArray(t.checklist) ? t.checklist.map(i => items[i]).filter(v => v !== undefined) : [];
+}
+function tradeChecklistComplete(t) {
+  const total = (typeof t.checklistTotal === 'number' && t.checklistTotal > 0) ? t.checklistTotal : getEntryItems().length;
+  return total > 0 && tradeChecklistLabels(t).length >= total;
+}
+function migrateChecklistLabels() {
+  if (localStorage.getItem((JP + 'checklist_v2'))) return;
+  const items = getEntryItems();
+  let changed = false;
+  trades.forEach(t => {
+    if (Array.isArray(t.checklist) && !Array.isArray(t.checklistLabels)) {
+      t.checklistLabels = t.checklist.map(i => items[i]).filter(v => v !== undefined);
+      t.checklistTotal = items.length;
+      changed = true;
+    }
+  });
+  if (changed) { try { localStorage.setItem((JP + 'trades'), JSON.stringify(trades)); } catch (e) { return; } }
+  localStorage.setItem((JP + 'checklist_v2'), '1');
+}
+// Renommer un critère ou une erreur dans le Plan renomme aussi ce libellé dans les trades déjà saisis (sinon les stats se coupent en deux).
+function renameLabelInTrades(field, oldV, newV) {
+  if (oldV === undefined || oldV === null || oldV === newV || String(newV).trim() === '') return;
+  const touched = trades.filter(t => Array.isArray(t[field]) && t[field].includes(oldV));
+  if (!touched.length) return;
+  const before = touched.map(t => t[field].slice());
+  touched.forEach(t => { t[field] = [...new Set(t[field].map(v => v === oldV ? newV : v))]; });
+  if (!save()) { touched.forEach((t, i) => { t[field] = before[i]; }); return; }
+  renderAll();
+  showToast('« ' + oldV + ' » renommé dans ' + touched.length + ' trade(s) ✓', 'success');
+}
 
 // ── THEME / PARAMÈTRES ──────────────────────────────────────────────
 const THEME_VARS = [
@@ -2408,7 +2586,7 @@ const THEME_PRESETS = {
   neon:     { name:'Synthwave', emoji:'🌆', colors:{'--bg':'#0a0118','--bg2':'#150726','--bg3':'#1f0d38','--bg4':'#2a1450','--border':'#3d1f66','--border2':'#562b8a','--txt':'#f5e9ff','--txt2':'#b79ddb','--txt3':'#6b4d94','--green':'#00f5d4','--red':'#ff2975','--amber':'#ffb800','--blue':'#00d4ff','--purple':'#f222ff'} },
   sunset:   { name:'Coucher de soleil', emoji:'🌇', colors:{'--bg':'#1a0f0a','--bg2':'#241610','--bg3':'#2f1d15','--bg4':'#3d2620','--border':'#4a2f24','--border2':'#614030','--txt':'#fff1e6','--txt2':'#d9a789','--txt3':'#8a6350','--green':'#4ade80','--red':'#ff6b5b','--amber':'#ffa94d','--blue':'#7dd3fc','--purple':'#fb923c'} },
   ocean:    { name:'Océan profond', emoji:'🌊', colors:{'--bg':'#051419','--bg2':'#0a2129','--bg3':'#0f303b','--bg4':'#164252','--border':'#1d5468','--border2':'#276b82','--txt':'#e0f7fa','--txt2':'#7fb8c9','--txt3':'#4a7d8f','--green':'#2dd4bf','--red':'#f87171','--amber':'#fbbf24','--blue':'#38bdf8','--purple':'#a78bfa'} },
-  mono:     { name:'Contraste', emoji:'⬛', colors:{'--bg':'#000000','--bg2':'#0a0a0a','--bg3':'#141414','--bg4':'#1f1f1f','--border':'#333333','--border2':'#4d4d4d','--txt':'#ffffff','--txt2':'#b3b3b3','--txt3':'#666666','--green':'#00ff66','--red':'#ff3333','--amber':'#ffcc00','--blue':'#3399ff','--purple':'#cc66ff'} },
+  contrast: { name:'Contraste', emoji:'⬛', colors:{'--bg':'#000000','--bg2':'#0a0a0a','--bg3':'#141414','--bg4':'#1f1f1f','--border':'#333333','--border2':'#4d4d4d','--txt':'#ffffff','--txt2':'#b3b3b3','--txt3':'#666666','--green':'#00ff66','--red':'#ff3333','--amber':'#ffcc00','--blue':'#3399ff','--purple':'#cc66ff'} },
   matrix:   { name:'Terminal', emoji:'🖥️', colors:{'--bg':'#000800','--bg2':'#001a00','--bg3':'#002e00','--bg4':'#004400','--border':'#0a5c0a','--border2':'#147814','--txt':'#c8ffc8','--txt2':'#6fcf6f','--txt3':'#3d8f3d','--green':'#00ff41','--red':'#ff4444','--amber':'#ffcc00','--blue':'#33ffcc','--purple':'#66ff99'} },
   proclair: { name:'Pro Clair', emoji:'💎', colors:{'--bg':'#f4f5fa','--bg2':'#ffffff','--bg3':'#f8f9fd','--bg4':'#eef0f8','--border':'#e4e6f0','--border2':'#d3d7e6','--txt':'#151723','--txt2':'#5b5f77','--txt3':'#9296ab','--green':'#16a34a','--red':'#e11d48','--amber':'#d97706','--blue':'#4f46e5','--purple':'#7c3aed'} },
   ledger:   { name:'Ledger', emoji:'📖', colors:{'--bg':'#f0e6d2','--bg2':'#f8f1e0','--bg3':'#ece0c8','--bg4':'#e3d4b0','--border':'#c9b896','--border2':'#b3a074','--txt':'#2b1f14','--txt2':'#6b5940','--txt3':'#9c8968','--green':'#2d5a3d','--red':'#8b2635','--amber':'#a67c00','--blue':'#2c4a6e','--purple':'#6b4571'} },
@@ -2422,7 +2600,7 @@ function hexToRgba(hex, alpha) {
   return `rgba(${(num>>16)&255},${(num>>8)&255},${num&255},${alpha})`;
 }
 function loadThemeObj() {
-  try { return JSON.parse(localStorage.getItem((GP + 'theme')) || '{}'); } catch(e) { return {}; }
+  try { const o = JSON.parse(localStorage.getItem((GP + 'theme')) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(e) { return {}; }
 }
 function saveThemeObj(theme) { localStorage.setItem((GP + 'theme'), JSON.stringify(theme)); }
 
@@ -2615,8 +2793,10 @@ function renderThemePresetGrid() {
 }
 
 function getCustomThemes() {
-  try { return JSON.parse(localStorage.getItem((GP + 'custom_themes')) || '[]'); } catch (e) { return []; }
+  try { const l = JSON.parse(localStorage.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
 }
+// Couleur acceptée seulement si c'est vraiment une couleur (#hex, rgb(a)) : un thème importé ne peut pas injecter de HTML via un attribut style.
+function safeColor(v, fallback) { return (typeof v === 'string' && /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%]+\))$/.test(v.trim())) ? v.trim() : fallback; }
 function saveCustomThemesList(list) {
   localStorage.setItem((GP + 'custom_themes'), JSON.stringify(list));
 }
@@ -2632,7 +2812,7 @@ function saveCurrentThemeAs() {
 }
 function applyCustomTheme(id) {
   const list = getCustomThemes();
-  const entry = list.find(t => t.id === id);
+  const entry = list.find(t => Number(t.id) === id);
   if (!entry) return;
   saveThemeObj(entry.theme);
   Object.entries(entry.theme).forEach(([k,v]) => {
@@ -2646,7 +2826,7 @@ function applyCustomTheme(id) {
 }
 function deleteCustomTheme(id, event) {
   if (event) event.stopPropagation();
-  const list = getCustomThemes().filter(t => t.id !== id);
+  const list = getCustomThemes().filter(t => Number(t.id) !== id);
   saveCustomThemesList(list);
   renderCustomThemesGrid();
 }
@@ -2660,14 +2840,14 @@ function renderCustomThemesGrid() {
   }
   cont.innerHTML = list.map(entry => {
     const c = entry.theme || {};
-    return `<div class="theme-swatch" style="position:relative" onclick="applyCustomTheme(${entry.id})">
-      <button onclick="deleteCustomTheme(${entry.id}, event)" title="Supprimer" style="position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--bg4);color:var(--txt3);border:none;font-size:11px;cursor:pointer;line-height:1;z-index:1;display:flex;align-items:center;justify-content:center">×</button>
+    return `<div class="theme-swatch" style="position:relative" onclick="applyCustomTheme(${Number(entry.id) || 0})">
+      <button onclick="deleteCustomTheme(${Number(entry.id) || 0}, event)" title="Supprimer" style="position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--bg4);color:var(--txt3);border:none;font-size:11px;cursor:pointer;line-height:1;z-index:1;display:flex;align-items:center;justify-content:center">×</button>
       <div class="swatch-strip">
-        <span style="background:${c['--bg']||'#111'}"></span>
-        <span style="background:${c['--bg3']||'#222'}"></span>
-        <span style="background:${c['--green']||'#22c55e'}"></span>
-        <span style="background:${c['--red']||'#ef4444'}"></span>
-        <span style="background:${c['--purple']||'#a78bfa'}"></span>
+        <span style="background:${safeColor(c['--bg'],'#111')}"></span>
+        <span style="background:${safeColor(c['--bg3'],'#222')}"></span>
+        <span style="background:${safeColor(c['--green'],'#22c55e')}"></span>
+        <span style="background:${safeColor(c['--red'],'#ef4444')}"></span>
+        <span style="background:${safeColor(c['--purple'],'#a78bfa')}"></span>
       </div>
       <div class="swatch-name">💾 ${esc(entry.name)}</div>
     </div>`;
@@ -2748,6 +2928,7 @@ function renderSettingsPage() {
 
 // ── INIT ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  safeRun(migrateChecklistLabels, 'migrateChecklistLabels');   // ici et pas plus haut : la checklist par défaut (const) n'est définie que plus bas dans le script
   initSidebarState();
   initDashboardLayout();
   initScalingDraw();
@@ -2756,22 +2937,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
   applyNavOrder();
   initNavDragDrop();
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = localDateStr();
   document.getElementById('account-size').value = accountSize;
-  document.getElementById('dd-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dd-date').value = localDateStr();
   document.getElementById('dd-limit-pct').value = loadDDLimitPct();
   document.getElementById('default-rr-win').value = DEFAULT_RR_WIN;
   document.getElementById('default-rr-loss').value = Math.abs(DEFAULT_RR_LOSS);
   document.getElementById('default-risk-eur').value = DEFAULT_RISK_EUR || '';
   const tzInp = document.getElementById('tz-offset-hours'); if (tzInp) tzInp.value = TZ_OFFSET_HOURS;
-  renderTradeChecklist();
-  renderTradeMistakes();
-  loadPositionCalc();
-  renderAll();
-  refreshAssetDropdowns();
-  initPlan();
-  initWatchlist();
-  renderSettingsPage();
+  const fxInp = document.getElementById('import-fx-rate'); if (fxInp) fxInp.value = IMPORT_FX_RATE;
+  [renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, initPlan, initWatchlist, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));
+  if (window._corruptKeys && window._corruptKeys.length) {
+    showToast('⚠️ Donnée illisible ignorée (' + window._corruptKeys.join(', ') + ') — copie gardée sous « …_corrupt_backup »', 'error');
+  }
 });
 
 // ── RÉORGANISATION DE LA SIDEBAR (glisser-déposer) ──────────────────
@@ -3094,30 +3272,31 @@ function dismissWelcome() {
 
 function renderAll() {
   _atCache = null;
-  renderKPIs();
-  renderKpiSparklines();
-  renderSummaryBanner();
-  renderWelcomeCard();
-  renderCurve();
-  renderWinDonuts();
-  renderYearProgress();
-  renderRDistribution();
-  renderDrawdownChart();
-  renderMonthlyReturnsTable();
-  renderRadar();
-  renderAssetBars();
-  renderTable();
-  renderStats();
-  renderCalendrier();
-  renderBilan();
-  if (JOURNAL_ID === 'pf') renderPropFirm();
-  renderScaling();
-  updateSidebarCount();
-  renderStorageWarning();
-  renderRCoverage();
-  renderTrashUI();
-  checkExportReminder();
-  checkImportReminder();
+  // Chaque bloc est isolé : une erreur dans un graphique ne doit jamais empêcher le reste du journal de s'afficher.
+  safeRun(renderKPIs, 'renderKPIs');
+  safeRun(renderKpiSparklines, 'renderKpiSparklines');
+  safeRun(renderSummaryBanner, 'renderSummaryBanner');
+  safeRun(renderWelcomeCard, 'renderWelcomeCard');
+  safeRun(renderCurve, 'renderCurve');
+  safeRun(renderWinDonuts, 'renderWinDonuts');
+  safeRun(renderYearProgress, 'renderYearProgress');
+  safeRun(renderRDistribution, 'renderRDistribution');
+  safeRun(renderDrawdownChart, 'renderDrawdownChart');
+  safeRun(renderMonthlyReturnsTable, 'renderMonthlyReturnsTable');
+  safeRun(renderRadar, 'renderRadar');
+  safeRun(renderAssetBars, 'renderAssetBars');
+  safeRun(renderTable, 'renderTable');
+  safeRun(renderStats, 'renderStats');
+  safeRun(renderCalendrier, 'renderCalendrier');
+  safeRun(renderBilan, 'renderBilan');
+  if (JOURNAL_ID === 'pf') safeRun(renderPropFirm, 'renderPropFirm');
+  safeRun(renderScaling, 'renderScaling');
+  safeRun(updateSidebarCount, 'updateSidebarCount');
+  safeRun(renderStorageWarning, 'renderStorageWarning');
+  safeRun(renderRCoverage, 'renderRCoverage');
+  safeRun(renderTrashUI, 'renderTrashUI');
+  safeRun(checkExportReminder, 'checkExportReminder');
+  safeRun(checkImportReminder, 'checkImportReminder');
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────────────
@@ -3161,7 +3340,7 @@ let editingTradeId = null;
 
 function resetTradeForm() {
   ['f-asset','f-tf','f-dir','f-session','f-res','f-emotion'].forEach(id => document.getElementById(id).value = '');
-  ['f-rr','f-pnl','f-pnleur','f-size','f-dd','f-desc','f-entry','f-exit'].forEach(id => document.getElementById(id).value = '');
+  ['f-rr','f-pnl','f-pnleur','f-size','f-desc','f-entry','f-exit'].forEach(id => document.getElementById(id).value = '');
   ['f-entry-price','f-sl-price','f-tp-price','f-exit-price'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const preview = document.getElementById('distance-r-preview');
   if (preview) preview.style.display = 'none';
@@ -3186,10 +3365,9 @@ function startEditTrade(id) {
   document.getElementById('f-emotion').value = (t.emotion !== null && t.emotion !== undefined) ? t.emotion : '';
   document.getElementById('f-res').value = t.res || '';
   document.getElementById('f-rr').value = (t.rr !== null && t.rr !== undefined) ? t.rr : '';
-  document.getElementById('f-pnl').value = (t.pnl !== null && t.pnl !== undefined) ? t.pnl : '';
+  document.getElementById('f-pnl').value = (t.pnl != null) ? t.pnl : '';
   document.getElementById('f-pnleur').value = (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : '';
   document.getElementById('f-size').value = (t.size !== null && t.size !== undefined) ? t.size : '';
-  document.getElementById('f-dd').value = (t.ddUsed !== null && t.ddUsed !== undefined) ? t.ddUsed : '';
   document.getElementById('f-desc').value = t.desc || '';
   document.getElementById('f-entry-price').value = (t.entryPrice !== null && t.entryPrice !== undefined) ? t.entryPrice : '';
   document.getElementById('f-sl-price').value = (t.slPrice !== null && t.slPrice !== undefined) ? t.slPrice : '';
@@ -3199,7 +3377,7 @@ function startEditTrade(id) {
 
   document.querySelectorAll('.f-checklist-item').forEach(el => {
     const idx = parseInt(el.dataset.idx, 10);
-    el.checked = Array.isArray(t.checklist) && t.checklist.includes(idx);
+    el.checked = Array.isArray(t.checklistLabels) ? t.checklistLabels.includes(getEntryItems()[idx]) : (Array.isArray(t.checklist) && t.checklist.includes(idx));
   });
   document.querySelectorAll('.f-mistake-item').forEach(el => {
     el.checked = Array.isArray(t.mistakes) && t.mistakes.includes(el.value);
@@ -3228,8 +3406,8 @@ function startEditTrade(id) {
 
   closeAllFormSections();
   if (t.entryPrice || t.slPrice || t.tpPrice || t.exitPrice) openFormSectionById('section-prices');
-  if (t.tf || t.session || t.entry || t.exit || t.size || t.ddUsed || t.emotion) openFormSectionById('section-context');
-  if ((Array.isArray(t.checklist) && t.checklist.length) || (Array.isArray(t.mistakes) && t.mistakes.length)) openFormSectionById('section-checklist');
+  if (t.tf || t.session || t.entry || t.exit || t.size || t.emotion) openFormSectionById('section-context');
+  if (tradeChecklistLabels(t).length || (Array.isArray(t.mistakes) && t.mistakes.length)) openFormSectionById('section-checklist');
   if (t.desc || t.cap) openFormSectionById('section-notes');
 
   closeTradeDetail();
@@ -3249,7 +3427,7 @@ function cancelEditTrade() {
   if (titleText) titleText.textContent = 'Nouveau trade';
   const btnText = document.getElementById('trade-submit-btn-text');
   if (btnText) btnText.textContent = 'Enregistrer le trade';
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = localDateStr();
   showToast('Modification annulée');
 }
 
@@ -3313,11 +3491,12 @@ function addTrade() {
   const pnlEur = pnlEurRaw !== '' ? parseFloat(pnlEurRaw) : null;
   const sizeRaw = document.getElementById('f-size').value;
   const size = sizeRaw !== '' ? parseFloat(sizeRaw) : null;
-  const ddRaw = document.getElementById('f-dd').value;
-  const ddUsed = ddRaw !== '' ? parseFloat(ddRaw) : null;
   const cap = currentImgBase64 || '';
   const desc = document.getElementById('f-desc').value.trim();
+  const entryItemsNow = getEntryItems();
   const checklist = Array.from(document.querySelectorAll('.f-checklist-item:checked')).map(el => parseInt(el.dataset.idx, 10));
+  const checklistLabels = checklist.map(i => entryItemsNow[i]).filter(v => v !== undefined);
+  const checklistTotal = entryItemsNow.length;
   const mistakes = Array.from(document.querySelectorAll('.f-mistake-item:checked')).map(el => el.value);
 
   const entryPriceRaw = document.getElementById('f-entry-price').value;
@@ -3348,7 +3527,7 @@ function addTrade() {
   if (editingTradeId !== null) {
     const idx = trades.findIndex(t => t.id === editingTradeId);
     if (idx !== -1) {
-      trades[idx] = { ...trades[idx], date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, ddUsed, cap, desc, checklist, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
+      trades[idx] = { ...trades[idx], date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, desc, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
     }
     sortTradesChrono();
     if (!save()) { trades = prevTrades; return; }   // stockage plein : rien n'est perdu, le formulaire reste tel quel
@@ -3365,7 +3544,7 @@ function addTrade() {
     return;
   }
 
-  trades.unshift({ id: Date.now(), date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, ddUsed, cap, desc, checklist, mistakes, entryPrice, slPrice, tpPrice, exitPrice });
+  trades.unshift({ id: Date.now(), date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, desc, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice });
   sortTradesChrono();
   if (!save()) { trades = prevTrades; return; }   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
   resetTradeForm();
@@ -3433,7 +3612,7 @@ function clearDDManual() {
 function renderDDBanner() {
   const dateInput = document.getElementById('dd-date');
   if (!dateInput) return;
-  if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+  if (!dateInput.value) dateInput.value = localDateStr();
   const date = dateInput.value;
 
   const limitPctInput = document.getElementById('dd-limit-pct');
@@ -3494,13 +3673,15 @@ function renderDDBanner() {
 function deleteTrade(id) {
   openModal('Supprimer ce trade ?', 'Il sera déplacé dans la corbeille (Export/Import) — récupérable si besoin.', () => {
     const t = trades.find(t => t.id === id);
+    const prevTrades = trades;
+    trades = trades.filter(t => t.id !== id);
+    if (!save()) { trades = prevTrades; return; }   // stockage refusé : le trade reste en place
     if (t) {
       const trash = loadTrash();
       trash.unshift({ trade: t, deletedAt: Date.now() });
-      saveTrash(trash.slice(0, 20));
+      // La corbeille garde les captures seulement si la place le permet ; sinon elle garde le trade sans sa capture.
+      if (!saveTrash(trash.slice(0, 20))) saveTrash(trash.slice(0, 20).map(e => e.trade && e.trade.cap ? { ...e, trade: { ...e.trade, cap: '' } } : e));
     }
-    trades = trades.filter(t => t.id !== id);
-    save();
     renderAll();
     renderTrashUI();
     showToast('Trade déplacé dans la corbeille');
@@ -3527,7 +3708,7 @@ function renderKPIs() {
   wrSub.title = W.n ? 'Win rate = gagnants ÷ trades clos (break-even inclus au dénominateur) · ' + fmtCI(W) + ' · n = ' + W.n : '';
 
   // P&L
-  const pnlArr = trades.filter(t => t.pnl !== null);
+  const pnlArr = trades.filter(t => t.pnl != null);
   const total = pnlArr.reduce((s, t) => s + t.pnl, 0);
   const pnlEl = document.getElementById('k-pnl');
   if (pnlArr.length > 0) {
@@ -3614,8 +3795,9 @@ function renderCurve() {
   const val = t => useEur ? (t.pnlEur !== null && t.pnlEur !== undefined ? t.pnlEur : 0) : t.pnl;
   const unit = useEur ? '€' : 'R';
   const fmtVal = v => useEur ? fmtEUR(v, true, 2) : ((v>=0?'+':'')+v.toFixed(2)+'R');
-  const sorted = [...all].reverse().filter(t => useEur ? (t.pnlEur !== null && t.pnlEur !== undefined) : (t.pnl !== null && t.pnl !== undefined));
+  const sorted = [...all].reverse().filter(t => useEur ? (t.pnlEur !== null && t.pnlEur !== undefined) : (t.pnl != null));
   if (pnlChartInst) { pnlChartInst.destroy(); pnlChartInst = null; }
+  if (!chartsAvailable('pnlChart')) return;
   const ctx = document.getElementById('pnlChart').getContext('2d');
   const ct = chartTheme();
   const green = cssVar('--green', '#22c55e'), red = cssVar('--red', '#ef4444');
@@ -3703,6 +3885,7 @@ function drawWinDonut(canvasId, win, loss, be) {
   if (donutChartInsts[canvasId]) { donutChartInsts[canvasId].destroy(); }
   const total = win + loss + be;
   const pct = total > 0 ? Math.round((win/total)*100) : 0;
+  if (!chartsAvailable(canvasId)) return;
   const ctx = canvas.getContext('2d');
   const ct = chartTheme();
   const green = cssVar('--green', '#22c55e'), red = cssVar('--red', '#ef4444'), border = cssVar('--border', '#2a2d3e'), neutral = cssVar('--txt3', '#6b7280');
@@ -3765,6 +3948,7 @@ function renderYearProgress() {
   const ct = chartTheme();
   const lc = isPos ? cssVar('--green', '#22c55e') : cssVar('--red', '#ef4444');
   const fc = hexToRgba(lc, chartFillAlpha(.07));
+  if (!chartsAvailable('yearProgressChart')) return;
   const ctx = canvas.getContext('2d');
   yearProgressChartInst = new Chart(ctx, {
     type: 'line',
@@ -3796,7 +3980,7 @@ function renderRDistribution() {
   if (!canvas) return;
   if (rDistChartInst) { rDistChartInst.destroy(); rDistChartInst = null; }
 
-  const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res) && t.pnl !== null && t.pnl !== undefined);
+  const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res) && t.pnl != null);
   if (closed.length < 5) {
     if (statsEl) statsEl.innerHTML = '';
     const ctx0 = canvas.getContext('2d');
@@ -3835,6 +4019,7 @@ function renderRDistribution() {
   }
 
   const ct = chartTheme();
+  if (!chartsAvailable('rDistChart')) return;
   const ctx = canvas.getContext('2d');
   rDistChartInst = new Chart(ctx, {
     type: 'bar',
@@ -3924,6 +4109,7 @@ function renderDrawdownChart() {
 
   const ct = chartTheme();
   const red = cssVar('--red', '#ef4444');
+  if (!chartsAvailable('drawdownChart')) return;
   const ctx = canvas.getContext('2d');
   drawdownChartInst = new Chart(ctx, {
     type: 'line',
@@ -3990,9 +4176,9 @@ function computeDiscipline() {
   const closed = trades.filter(t => ['TP', 'SL', 'BE'].includes(t.res));
   const items = [];
   const entryCount = getEntryItems().length;
-  const mine = closed.filter(t => Array.isArray(t.checklist));                       // trades saisis avec le formulaire
+  const mine = closed.filter(tradeHasChecklist);                                      // trades saisis avec le formulaire
   items.push(mine.length >= 3
-    ? { label: "Checklist d'entrée complète", pct: mine.filter(t => t.checklist.length >= entryCount).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis où tous les critères de ta checklist sont cochés.' }
+    ? { label: "Checklist d'entrée complète", pct: mine.filter(tradeChecklistComplete).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis où tous les critères de ta checklist sont cochés.' }
     : { label: "Checklist d'entrée complète", pct: null, hint: 'Non suivi : coche ta checklist en saisissant un trade (3 trades minimum).' });
   const tagUsed = closed.some(t => Array.isArray(t.mistakes) && t.mistakes.length);
   items.push(tagUsed && mine.length >= 3
@@ -4009,7 +4195,7 @@ function computeDiscipline() {
     : { label: 'Perte journalière sous la limite', pct: null, hint: 'Non suivi : 3 journées avec des montants en € minimum.' });
   const tilt = computeTiltTrades();
   items.push(tilt.lossesWithFollowup >= 3
-    ? { label: 'Pas de ré-entrée impulsive', pct: (1 - tilt.flagged.length / tilt.lossesWithFollowup) * 100, n: tilt.lossesWithFollowup, hint: 'Part des ré-entrées après un SL qui ne sont ni précipitées (≤ 10 min) ni gonflées en taille.' }
+    ? { label: 'Pas de ré-entrée impulsive', pct: (1 - tilt.flagged.length / tilt.lossesWithFollowup) * 100, n: tilt.lossesWithFollowup, hint: 'Part des ré-entrées après un SL qui ne sont ni précipitées (≤ 10 min après la sortie du SL) ni gonflées en taille.' }
     : { label: 'Pas de ré-entrée impulsive', pct: null, hint: 'Non suivi : 3 SL suivis d\'un nouveau trade le même jour minimum.' });
   const tracked = items.filter(i => i.pct !== null);
   return { items, tracked: tracked.length, total: items.length, score: tracked.length >= 2 ? Math.round(tracked.reduce((s, i) => s + i.pct, 0) / tracked.length) : null };
@@ -4099,7 +4285,7 @@ function resetTradeFilters() {
 function tradeRowHtml(t, num) {
   const bc = t.res==='TP'?'b-tp':t.res==='SL'?'b-sl':t.res==='BE'?'b-be':'b-open';
   const rsrc = rSource(t), approx = (rsrc === 'risque' || rsrc === 'defaut') ? '≈' : '', rtitle = esc(R_SRC_LABELS[rsrc]);
-  const pnlStr = t.pnl!==null ? (t.pnl>0?`<span class="pnl-p" title="${rtitle}">${approx}+${t.pnl.toFixed(1)}R</span>`:t.pnl<0?`<span class="pnl-n" title="${rtitle}">${approx}${t.pnl.toFixed(1)}R</span>`:`<span class="pnl-z" title="${rtitle}">0R</span>`) : '—';
+  const pnlStr = t.pnl != null ? (t.pnl>0?`<span class="pnl-p" title="${rtitle}">${approx}+${t.pnl.toFixed(1)}R</span>`:t.pnl<0?`<span class="pnl-n" title="${rtitle}">${approx}${t.pnl.toFixed(1)}R</span>`:`<span class="pnl-z" title="${rtitle}">0R</span>`) : '—';
   const pnlEurStr = (t.pnlEur!==null && t.pnlEur!==undefined) ? (t.pnlEur>0?`<span class="pnl-p">${fmtEUR(t.pnlEur,true,2)}</span>`:t.pnlEur<0?`<span class="pnl-n">${fmtEUR(t.pnlEur,false,2)}</span>`:`<span class="pnl-z">0 €</span>`) : '—';
   const dir = t.dir ? `<span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${esc(t.dir)}</span>` : '—';
   const icons = [
@@ -4112,7 +4298,7 @@ function tradeRowHtml(t, num) {
     <td style="font-weight:500">${esc(t.asset||'—')}</td>
     <td>${dir}</td>
     <td><span class="badge ${bc}">${esc(t.res)}</span></td>
-    <td>${t.rr?t.rr+'R':'—'}</td>
+    <td>${t.rr?esc(t.rr)+'R':'—'}</td>
     <td>${pnlStr}</td>
     <td>${pnlEurStr}</td>
     <td style="text-align:center">${icons}</td>
@@ -4209,14 +4395,14 @@ function openTradeDetail(id) {
   if (!t) return;
   const bc = t.res==='TP'?'b-tp':t.res==='SL'?'b-sl':t.res==='BE'?'b-be':'b-open';
   const dir = t.dir ? `<span class="badge ${t.dir==='Long'?'b-long':'b-short'}">${esc(t.dir)}</span>` : '—';
-  const pnlStr = t.pnl!==null ? (t.pnl>0?`<span class="pnl-p">+${t.pnl.toFixed(1)}R</span>`:t.pnl<0?`<span class="pnl-n">${t.pnl.toFixed(1)}R</span>`:`<span class="pnl-z">0R</span>`) : '—';
+  const pnlStr = t.pnl != null ? (t.pnl>0?`<span class="pnl-p">+${t.pnl.toFixed(1)}R</span>`:t.pnl<0?`<span class="pnl-n">${t.pnl.toFixed(1)}R</span>`:`<span class="pnl-z">0R</span>`) : '—';
   const pnlEurStr = (t.pnlEur!==null && t.pnlEur!==undefined) ? (t.pnlEur>0?`<span class="pnl-p">${fmtEUR(t.pnlEur,true,2)}</span>`:t.pnlEur<0?`<span class="pnl-n">${fmtEUR(t.pnlEur,false,2)}</span>`:`<span class="pnl-z">0 €</span>`) : '—';
   const qual = t.rr ? (t.rr>=3?`<div class="qual q-ap">A+</div>`:t.rr>=2?`<div class="qual q-a">A</div>`:t.rr>=1.5?`<div class="qual q-b">B</div>`:`<div class="qual q-c">C</div>`) : '<span style="color:var(--txt3);font-size:12px">—</span>';
   const emotionStars = t.emotion ? '★'.repeat(t.emotion)+'☆'.repeat(5-t.emotion) : '—';
 
-  const entryItems = getEntryItems();
-  const checklistHtml = (Array.isArray(t.checklist) && t.checklist.length)
-    ? t.checklist.map(idx => `<div style="font-size:12px;color:var(--green);padding:3px 0">✓ ${entryItems[idx] !== undefined ? entryItems[idx] : 'Critère #'+(idx+1)}</div>`).join('')
+  const checkedLabels = tradeChecklistLabels(t);
+  const checklistHtml = checkedLabels.length
+    ? checkedLabels.map(label => `<div style="font-size:12px;color:var(--green);padding:3px 0">✓ ${esc(label)}</div>`).join('')
     : '<div style="font-size:12px;color:var(--txt3)">Aucune checklist cochée</div>';
 
   const mistakesHtml = (Array.isArray(t.mistakes) && t.mistakes.length)
@@ -4237,10 +4423,10 @@ function openTradeDetail(id) {
     aucun: { txt: 'Pas de R', col: 'var(--txt3)' }
   })[rSource(t)];
   const priceLevelsHtml = (t.entryPrice || t.slPrice || t.tpPrice || t.exitPrice) ? `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Prix entrée</span><span>${t.entryPrice ?? '—'}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Stop Loss</span><span>${t.slPrice ?? '—'}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Take Profit</span><span>${t.tpPrice ?? '—'}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Prix sortie</span><span>${t.exitPrice ?? '—'}</span></div>` : '';
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Prix entrée</span><span>${esc(t.entryPrice ?? '—')}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Stop Loss</span><span>${esc(t.slPrice ?? '—')}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Take Profit</span><span>${esc(t.tpPrice ?? '—')}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Prix sortie</span><span>${esc(t.exitPrice ?? '—')}</span></div>` : '';
 
   document.getElementById('trade-drawer').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
@@ -4262,7 +4448,7 @@ function openTradeDetail(id) {
       </div>
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
         <div style="font-size:9.5px;font-family:var(--mono);color:var(--txt3);margin-bottom:4px">RR / P&L</div>
-        <div style="font-family:var(--mono);font-size:13px">${t.rr?t.rr+'R':'—'} · ${pnlStr}</div>
+        <div style="font-family:var(--mono);font-size:13px">${t.rr?esc(t.rr)+'R':'—'} · ${pnlStr}</div>
         <div style="font-family:var(--mono);font-size:12px;margin-top:2px">${pnlEurStr}</div>
       </div>
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
@@ -4272,9 +4458,9 @@ function openTradeDetail(id) {
     </div>
     <div style="margin-bottom:16px;font-size:12px;font-family:var(--mono);color:var(--txt2)">
       <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Session</span><span>${esc(t.session||'—')}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Entrée</span><span>${t.entry||'—'}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Sortie</span><span>${t.exit||'—'}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Taille</span><span>${t.size||'—'}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Entrée</span><span>${esc(t.entry||'—')}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Sortie</span><span>${esc(t.exit||'—')}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3)">Taille</span><span>${esc(t.size||'—')}</span></div>
       ${priceLevelsHtml}
     </div>
     <div style="margin-bottom:16px">
@@ -4313,7 +4499,7 @@ function renderStatsSessionTables() {
   const hMap = {};
 
   trades.forEach(t => {
-    const rr = (t.pnl !== null && t.pnl !== undefined) ? t.pnl : 0;
+    const rr = (t.pnl != null) ? t.pnl : 0;
     if (t.date) {
       const d = new Date(t.date + 'T00:00:00');
       if (!isNaN(d)) {
@@ -4415,13 +4601,13 @@ function renderChecklistAnalysis() {
   const cont = document.getElementById('checklist-analysis-body');
   if (!cont) return;
   const total = getEntryItems().length;
-  const withChecklist = trades.filter(t => Array.isArray(t.checklist));
+  const withChecklist = trades.filter(tradeHasChecklist);
   if (total === 0 || withChecklist.length === 0) {
     cont.innerHTML = `<p style="font-size:12px;color:var(--txt3)">Coche la checklist en ajoutant tes trades (Dashboard → Nouveau trade) pour voir si respecter ton plan améliore vraiment tes résultats.</p>`;
     return;
   }
-  const full = withChecklist.filter(t => t.checklist.length === total);
-  const partial = withChecklist.filter(t => t.checklist.length < total);
+  const full = withChecklist.filter(tradeChecklistComplete);
+  const partial = withChecklist.filter(t => !tradeChecklistComplete(t));
   function stats(arr) {
     const closed = arr.filter(t => ['TP','SL','BE'].includes(t.res));
     const tp = arr.filter(t => t.res === 'TP').length;
@@ -4459,29 +4645,33 @@ function renderChecklistAnalysis() {
 
 // ── TILT METER : détection de revenge trading ───────────────────────
 function computeTiltTrades() {
+  const toMin = hhmm => { const [h, m] = String(hhmm || '').split(':').map(Number); return (isNaN(h) || isNaN(m)) ? null : h * 60 + m; };
   const byDay = {};
-  trades.forEach(t => { if (!t.date || !t.entry) return; (byDay[t.date] = byDay[t.date] || []).push(t); });
+  trades.forEach(t => { if (!t.date || toMin(t.entry) === null) return; (byDay[t.date] = byDay[t.date] || []).push(t); });
   const flagged = [];
   let lossesWithFollowup = 0;
   Object.values(byDay).forEach(dayTrades => {
-    const sorted = dayTrades.slice().sort((a,b) => a.entry.localeCompare(b.entry));
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const cur = sorted[i], next = sorted[i+1];
-      if (cur.res !== 'SL') continue;
-      const [ch,cm] = cur.entry.split(':').map(Number);
-      const [nh,nm] = next.entry.split(':').map(Number);
-      if (isNaN(ch) || isNaN(nh)) continue;
-      const gapMin = (nh*60+nm) - (ch*60+cm);
-      if (gapMin < 0 || gapMin > 240) continue;
+    const sorted = dayTrades.slice().sort((a, b) => toMin(a.entry) - toMin(b.entry));
+    sorted.forEach(cur => {
+      if (cur.res !== 'SL') return;
+      // L'écart se mesure depuis la SORTIE du trade perdant (moment où la perte est encaissée), pas depuis son entrée.
+      // Sans heure de sortie exploitable, on retombe sur l'heure d'entrée.
+      const entryMin = toMin(cur.entry), exitMin = toMin(cur.exit);
+      const lossAt = (exitMin !== null && exitMin >= entryMin) ? exitMin : entryMin;
+      // Ré-entrée = premier trade ouvert APRÈS la perte (un trade déjà ouvert pendant ce trade n'est pas une réaction à la perte).
+      const next = sorted.slice(sorted.indexOf(cur) + 1).find(t => toMin(t.entry) >= lossAt);
+      if (!next) return;
+      const gapMin = toMin(next.entry) - lossAt;
+      if (gapMin < 0 || gapMin > 240) return;
       lossesWithFollowup++;
       const reasons = [];
-      if (gapMin <= 10) reasons.push(`ré-entrée en ${gapMin} min`);
+      if (gapMin <= 10) reasons.push(`ré-entrée ${gapMin} min après la perte`);
       const curSize = parseFloat(cur.size), nextSize = parseFloat(next.size);
       if (!isNaN(curSize) && !isNaN(nextSize) && curSize > 0 && nextSize > curSize * 1.3) {
         reasons.push(`taille +${Math.round((nextSize/curSize - 1) * 100)}%`);
       }
       if (reasons.length) flagged.push({ trade: next, afterLoss: cur, reasons, gapMin });
-    }
+    });
   });
   return { flagged, lossesWithFollowup };
 }
@@ -4516,9 +4706,9 @@ function renderTiltMeter() {
       <div style="font-size:10px;font-family:var(--mono);color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Trades signalés</div>` +
       flagged.slice(0,10).map(f => `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)">
-          <span style="color:var(--txt2)">${f.trade.date} · ${f.trade.entry} · ${esc(f.trade.asset||'—')}</span>
+          <span style="color:var(--txt2)">${esc(f.trade.date)} · ${esc(f.trade.entry)} · ${esc(f.trade.asset||'—')}</span>
           <span style="color:var(--amber)">${f.reasons.join(' · ')}</span>
-          <span class="badge b-${(f.trade.res||'').toLowerCase()}">${f.trade.res||'—'}</span>
+          <span class="badge b-${esc((f.trade.res||'').toLowerCase())}">${esc(f.trade.res||'—')}</span>
         </div>`).join('') +
       (flagged.length > 10 ? `<p style="font-size:11px;color:var(--txt3);margin-top:8px">+ ${flagged.length-10} autre(s)</p>` : '') +
       `</div>`;
@@ -4604,7 +4794,7 @@ function renderEdgeFinder() {
     return `<div>
       <div style="font-size:10px;font-family:var(--mono);color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${title}</div>
       ${list.map(s => `<div style="display:flex;justify-content:space-between;font-size:12px;font-family:var(--mono);padding:6px 0;border-bottom:1px solid var(--border)">
-        <span style="color:var(--txt2)">${s.key} <span style="color:var(--txt3)">· ${s.dimension}</span></span>
+        <span style="color:var(--txt2)">${esc(s.key)} <span style="color:var(--txt3)">· ${esc(s.dimension)}</span></span>
         <span style="color:${s.totalR>=0?'var(--green)':'var(--red)'}">${s.totalR>=0?'+':''}${s.totalR.toFixed(1)}R</span>
       </div>`).join('')}
     </div>`;
@@ -4741,7 +4931,7 @@ function renderMistakeCostReport() {
       if (!map[m]) map[m] = { n:0, costEur:0, costR:0 };
       map[m].n++;
       if (t.pnlEur !== null && t.pnlEur !== undefined) map[m].costEur += t.pnlEur;
-      if (t.pnl !== null && t.pnl !== undefined) map[m].costR += t.pnl;
+      if (t.pnl != null) map[m].costR += t.pnl;
     });
   });
   const rows = Object.entries(map).sort((a,b) => a[1].costEur - b[1].costEur);
@@ -4872,9 +5062,21 @@ function computePropFirmStatus() {
   const bestDayPct = positiveDaysSum > 0 ? (bestDayPnl/positiveDaysSum*100) : 0;
   const consistencyOk = !consistencyOn || positiveDaysSum <= 0 || bestDayPct <= consistencyPct;
 
+  // Perte journalière max (réglée dans le bandeau DD du Dashboard) : une seule journée au-delà = challenge échoué.
+  // Les montants saisis à la main dans le bandeau DD remplacent le calcul automatique pour le jour concerné.
+  const dailyLimitAmount = startBalance * (dailyLimitPct / 100);
+  const manualDD = loadDDManualMap();
+  const dailyNet = Object.assign({}, byDay);
+  Object.entries(manualDD).forEach(([d, v]) => { if (typeof v === 'number' && isFinite(v)) dailyNet[d] = v; });
+  const dailyEntries = Object.entries(dailyNet).sort((a, b) => a[0].localeCompare(b[0]));
+  const dailyBreaches = dailyLimitAmount > 0 ? dailyEntries.filter(([, v]) => v < -dailyLimitAmount - 1e-9).map(([d]) => d) : [];
+  const worstDay = dailyEntries.reduce((w, e) => (w === null || e[1] < w[1]) ? e : w, null);
+  const dailyOk = dailyBreaches.length === 0;
+
   return { startBalance, maxDDPct, ddType, profitTargetPct, minDays, consistencyOn, consistencyPct, dailyLimitPct,
     currentEquity, floor, distanceToFloor, breached, totalPnl, targetAmount, targetProgress, targetReached,
-    tradingDays, daysOk, bestDayPnl, bestDayPct, consistencyOk };
+    tradingDays, daysOk, bestDayPnl, bestDayPct, consistencyOk,
+    dailyLimitAmount, dailyBreaches, dailyOk, worstDayDate: worstDay ? worstDay[0] : null, worstDayPnl: worstDay ? worstDay[1] : 0 };
 }
 
 const PF_DD_TYPE_LABELS = { static: 'Statique', trailing_eod: 'Trailing (fin de journée)', trailing_intraday: 'Trailing (intrajournalier)' };
@@ -4896,10 +5098,11 @@ function renderPropFirm() {
   const ddPct = s.startBalance>0 ? Math.min(Math.max((s.startBalance*(s.maxDDPct/100) - s.distanceToFloor) / (s.startBalance*(s.maxDDPct/100)) * 100, 0), 100) : 0;
   const ddCol = s.breached ? 'var(--red)' : ddPct >= 75 ? 'var(--red)' : ddPct >= 50 ? 'var(--amber)' : 'var(--green)';
 
-  const allOk = !s.breached && s.consistencyOk;
+  const allOk = !s.breached && s.dailyOk && s.consistencyOk;
   const readyToPass = allOk && s.targetReached && s.daysOk;
   let verdictText, verdictCol, verdictIcon;
   if (s.breached) { verdictText = 'Drawdown maximum dépassé — challenge en échec'; verdictCol = 'var(--red)'; verdictIcon = '🚨'; }
+  else if (!s.dailyOk) { verdictText = 'Perte journalière max dépassée (' + s.dailyBreaches.map(esc).join(', ') + ') — challenge en échec'; verdictCol = 'var(--red)'; verdictIcon = '🚨'; }
   else if (readyToPass) { verdictText = 'Toutes les conditions sont réunies'; verdictCol = 'var(--green)'; verdictIcon = '✅'; }
   else if (!s.consistencyOk) { verdictText = 'Règle de consistance non respectée sur le profit actuel'; verdictCol = 'var(--amber)'; verdictIcon = '⚠️'; }
   else { verdictText = 'En cours — conditions pas encore toutes réunies'; verdictCol = 'var(--blue)'; verdictIcon = '⏳'; }
@@ -4941,7 +5144,15 @@ function renderPropFirm() {
         </div>
       </div>
     </div>
-    <div class="charts-row" style="grid-template-columns:1fr 1fr">
+    <div class="charts-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="panel">
+        <div class="panel-hdr">Perte journalière max</div>
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+          <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${s.dailyOk?'var(--green)':'var(--red)'}">${s.worstDayDate && s.worstDayPnl < 0 ? fmtEUR(s.worstDayPnl) : '0 €'}</span>
+          <span style="font-size:12px;color:var(--txt3);font-family:var(--mono)">pire journée${s.worstDayDate && s.worstDayPnl < 0 ? ' (' + esc(s.worstDayDate) + ')' : ''} · limite −${fmtEUR(s.dailyLimitAmount)} (${s.dailyLimitPct} %) ${s.dailyOk?'✓':'✗'}</span>
+        </div>
+        ${s.dailyOk ? '' : `<p style="font-size:11px;color:var(--red);margin-top:8px;font-family:var(--mono)">${s.dailyBreaches.length} journée(s) au-delà de la limite : ${s.dailyBreaches.map(esc).join(', ')}</p>`}
+      </div>
       <div class="panel">
         <div class="panel-hdr">Jours de trading</div>
         <div style="display:flex;align-items:baseline;gap:8px">
@@ -4962,21 +5173,14 @@ function renderPropFirm() {
 
 function renderStats() {
   const trades = analysisTrades();
-  renderEdgeFinder();
-  renderStatsSessionTables();
-  renderMaeMfeAnalysis();
-  renderChecklistAnalysis();
-  renderTiltMeter();
-  renderSharpeSortino();
-  renderCoinFlip();
-  renderMistakeCostReport();
-  renderWhatIf();
+  [renderEdgeFinder, renderStatsSessionTables, renderMaeMfeAnalysis, renderChecklistAnalysis, renderTiltMeter,
+   renderSharpeSortino, renderCoinFlip, renderMistakeCostReport, renderWhatIf].forEach(fn => safeRun(fn, fn.name));
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
   const wins = trades.filter(t => t.res === 'TP');
   const losses = trades.filter(t => t.res === 'SL');
   const bes = trades.filter(t => t.res === 'BE');
   const n = closed.length;
-  const pnlArr = trades.filter(t => t.pnl !== null);
+  const pnlArr = trades.filter(t => t.pnl != null);
   const totalPnl = pnlArr.reduce((s,t)=>s+t.pnl,0);
   const gw = wins.reduce((s,t)=>s+(t.pnl||0),0);
   const gl = Math.abs(losses.reduce((s,t)=>s+(t.pnl||0),0));
@@ -5018,8 +5222,10 @@ function renderStats() {
     statRow('Trades C  (RR<1.5)', trades.filter(t=>t.rr&&t.rr<1.5).length),
   ].join('');
 
-  // Asset breakdown
-  const assets = ['EUR/USD','GBP/USD','USD/JPY','GBP/JPY','EUR/JPY','XAU/USD','DAX 40','CAC 40','NAS 100','SP 500'];
+  // Asset breakdown : tous les actifs réellement présents (y compris ceux découverts à l'import), du plus tradé au moins tradé.
+  const assetCounts = {};
+  trades.forEach(t => { if (t.asset) assetCounts[t.asset] = (assetCounts[t.asset] || 0) + 1; });
+  const assets = Object.keys(assetCounts).sort((a, b) => assetCounts[b] - assetCounts[a] || a.localeCompare(b));
   const assetTbody = document.getElementById('stats-assets-tbody');
   assetTbody.innerHTML = assets.map(asset => {
     const at = trades.filter(t=>t.asset===asset);
@@ -5029,24 +5235,25 @@ function renderStats() {
     const asl = at.filter(t=>t.res==='SL').length;
     const abe = at.filter(t=>t.res==='BE').length;
     const awr = ac.length>0?pct(atp,ac.length):'—';
-    const apnl = at.filter(t=>t.pnl!==null).reduce((s,t)=>s+t.pnl,0);
+    const apnl = at.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
     const arr = at.filter(t=>t.rr);
     const avgRR = arr.length>0?(arr.reduce((s,t)=>s+t.rr,0)/arr.length).toFixed(2)+'R':'—';
     const wrNum = ac.length>0?atp/ac.length:0;
     return `<tr>
-      <td style="font-weight:500">${asset}</td>
+      <td style="font-weight:500">${esc(asset)}</td>
       <td>${at.length}</td>
       <td style="color:var(--green)">${atp}</td>
       <td style="color:var(--red)">${asl}</td>
       <td style="color:var(--amber)">${abe}</td>
       <td style="${wrNum>=.5?'color:var(--green)':wrNum>0?'color:var(--red)':''};font-weight:500">${awr}</td>
-      <td class="${apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z'}">${at.filter(t=>t.pnl!==null).length>0?(apnl>=0?'+':'')+apnl.toFixed(2)+'R':'—'}</td>
+      <td class="${apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z'}">${at.filter(t=>t.pnl != null).length>0?(apnl>=0?'+':'')+apnl.toFixed(2)+'R':'—'}</td>
       <td>${avgRR}</td>
     </tr>`;
   }).join('');
 
   // TF breakdown
-  const tfs = ['M1','M3','M5','M10','M15','M30','H1','H4','Multi-TF'];
+  const TF_ORDER = ['M1','M3','M5','M10','M15','M30','H1','H4','Multi-TF'];
+  const tfs = TF_ORDER.concat([...new Set(trades.map(t => t.tf).filter(tf => tf && !TF_ORDER.includes(tf)))].sort());
   const tfTbody = document.getElementById('stats-tf-tbody');
   tfTbody.innerHTML = tfs.map(tf => {
     const tt = trades.filter(t=>t.tf===tf);
@@ -5054,13 +5261,13 @@ function renderStats() {
     const tc = tt.filter(t=>['TP','SL','BE'].includes(t.res));
     const ttp = tt.filter(t=>t.res==='TP').length;
     const twr = tc.length>0?pct(ttp,tc.length):'—';
-    const tpnl = tt.filter(t=>t.pnl!==null).reduce((s,t)=>s+t.pnl,0);
+    const tpnl = tt.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
     const wrNum = tc.length>0?ttp/tc.length:0;
     return `<tr>
-      <td style="font-weight:500">${tf}</td>
+      <td style="font-weight:500">${esc(tf)}</td>
       <td>${tt.length}</td>
       <td style="${wrNum>=.5?'color:var(--green)':wrNum>0?'color:var(--red)':''};font-weight:500">${twr}</td>
-      <td class="${tpnl>0?'pnl-p':tpnl<0?'pnl-n':'pnl-z'}">${tt.filter(t=>t.pnl!==null).length>0?(tpnl>=0?'+':'')+tpnl.toFixed(2)+'R':'—'}</td>
+      <td class="${tpnl>0?'pnl-p':tpnl<0?'pnl-n':'pnl-z'}">${tt.filter(t=>t.pnl != null).length>0?(tpnl>=0?'+':'')+tpnl.toFixed(2)+'R':'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -5112,7 +5319,10 @@ function getFilterItems() {
 }
 
 function initPlan() {
-  planData = JSON.parse(localStorage.getItem((JP + 'plan')) || '{"ce":[],"cf":[],"notes":""}');
+  planData = loadJSON(JP + 'plan', null);
+  if (!planData || typeof planData !== 'object' || Array.isArray(planData)) planData = { ce: [], cf: [], notes: '' };
+  if (Array.isArray(planData.risk)) planData.risk = planData.risk.filter(r => Array.isArray(r)).map(r => [String(r[0] ?? ''), String(r[1] ?? '')]);
+  ['entryItems', 'filterItems', 'mistakeTags'].forEach(k => { if (Array.isArray(planData[k])) planData[k] = planData[k].map(v => String(v ?? '')); });
   if (!Array.isArray(planData.risk) || planData.risk.length === 0) {
     planData.risk = RISK_RULES.map(r => r.slice());
   }
@@ -5137,7 +5347,7 @@ function renderMistakeTagsEditor() {
   const items = planData.mistakeTags || [];
   cont.innerHTML = items.map((text, i) => `
     <div class="risk-row" style="gap:8px">
-      <input class="watch-input" style="flex:1;font-size:12px" value="${esc(text)}" oninput="updateMistakeTag(${i},this.value)" placeholder="Erreur">
+      <input class="watch-input" style="flex:1;font-size:12px" value="${esc(text)}" onfocus="this.dataset.orig=this.value" oninput="updateMistakeTag(${i},this.value)" onchange="renameLabelInTrades('mistakes',this.dataset.orig,this.value);this.dataset.orig=this.value" placeholder="Erreur">
       <button class="del-btn" onclick="removeMistakeTag(${i})" title="Supprimer">×</button>
     </div>`).join('')
     + `<button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addMistakeTag()">+ Ajouter une erreur à suivre</button>`;
@@ -5180,7 +5390,7 @@ function renderChecklistGroup(key, groupKey) {
     const checked = checkedArr.includes(i);
     return `<div class="checklist-item" style="gap:8px">
       <div class="check-box ${checked?'checked':''}" onclick="toggleCheck('${groupKey}',${i},this)"></div>
-      <input class="watch-input" style="flex:1;font-size:12.5px" value="${esc(text)}" oninput="updateChecklistItem('${key}',${i},this.value)" placeholder="Critère">
+      <input class="watch-input" style="flex:1;font-size:12.5px" value="${esc(text)}" onfocus="this.dataset.orig=this.value" oninput="updateChecklistItem('${key}',${i},this.value)" ${key === 'entryItems' ? `onchange="renameLabelInTrades('checklistLabels',this.dataset.orig,this.value);this.dataset.orig=this.value"` : ''} placeholder="Critère">
       <button class="del-btn" onclick="removeChecklistItem('${key}',${i},'${groupKey}')" title="Supprimer">×</button>
     </div>`;
   }).join('') + `<button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addChecklistItem('${key}')">+ Ajouter un critère</button>`;
@@ -5213,8 +5423,8 @@ function renderRiskRules() {
   if (!cont) return;
   cont.innerHTML = planData.risk.map((row, i) => `
     <div class="risk-row" style="gap:8px">
-      <input class="watch-input" style="flex:1.3;font-size:12px" value="${String(row[0]).replace(/"/g,'&quot;')}" oninput="updateRiskRule(${i},0,this.value)" placeholder="Règle">
-      <input class="watch-input" style="flex:1;text-align:right;color:var(--amber);font-weight:600;font-family:var(--mono)" value="${String(row[1]).replace(/"/g,'&quot;')}" oninput="updateRiskRule(${i},1,this.value)" placeholder="Valeur">
+      <input class="watch-input" style="flex:1.3;font-size:12px" value="${esc(row[0])}" oninput="updateRiskRule(${i},0,this.value)" placeholder="Règle">
+      <input class="watch-input" style="flex:1;text-align:right;color:var(--amber);font-weight:600;font-family:var(--mono)" value="${esc(row[1])}" oninput="updateRiskRule(${i},1,this.value)" placeholder="Valeur">
       <button class="del-btn" onclick="removeRiskRule(${i})" title="Supprimer">×</button>
     </div>`).join('')
     + `<button class="btn-ghost" style="margin-top:10px;width:100%" onclick="addRiskRule()">+ Ajouter une règle</button>`;
@@ -5255,8 +5465,8 @@ const WATCH_DEFAULTS = {
 };
 
 function initWatchlist() {
-  watchData = JSON.parse(localStorage.getItem((JP + 'watch')) || 'null');
-  if (!watchData) {
+  watchData = loadJSON(JP + 'watch', null);
+  if (!watchData || typeof watchData !== 'object' || Array.isArray(watchData)) {
     watchData = {};
     Object.entries(WATCH_DEFAULTS).forEach(([sec, assets]) => {
       assets.forEach(a => { watchData[a] = { biais:'', niveaux:'', notes:'' }; });
@@ -5306,7 +5516,7 @@ const BACKUP_SETTINGS_KEYS = [
   (JP + 'dd_limit_pct'), (JP + 'dd_manual'), (JP + 'default_risk_eur'), (JP + 'default_rr_win'), (JP + 'default_rr_loss'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
   (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
-  (JP + 'last_csv_import'), (JP + 'dash_layout'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours')
+  (JP + 'last_csv_import'), (JP + 'dash_layout'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate')
 ];
 function collectAllSettings() {
   const out = {};
@@ -5327,6 +5537,19 @@ function restoreAllSettings(settings) {
     localStorage.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
   });
 }
+// Après restauration d'un backup : recharge en mémoire les réglages d'import/R (sinon l'ancien réglage restait actif jusqu'au rechargement de la page).
+function reloadImportSettings() {
+  DEFAULT_RR_WIN = parseFloat(localStorage.getItem((JP + 'default_rr_win')) || '2') || 2;
+  DEFAULT_RR_LOSS = -Math.abs(parseFloat(localStorage.getItem((JP + 'default_rr_loss')) || '1') || 1);
+  DEFAULT_RISK_EUR = parseFloat(localStorage.getItem((JP + 'default_risk_eur')) || '0') || 0;
+  TZ_OFFSET_HOURS = parseFloat(localStorage.getItem((JP + 'tz_offset_hours')) || '0') || 0;
+  IMPORT_FX_RATE = parseFloat(localStorage.getItem((JP + 'import_fx_rate')) || '1') || 1;
+  R_MODE = localStorage.getItem((JP + 'r_mode')) || 'usable';
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('account-size', accountSize); set('default-rr-win', DEFAULT_RR_WIN); set('default-rr-loss', Math.abs(DEFAULT_RR_LOSS));
+  set('default-risk-eur', DEFAULT_RISK_EUR || ''); set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
+  set('dd-limit-pct', loadDDLimitPct());
+}
 function isValidTradesArray(arr) {
   if (!Array.isArray(arr)) return false;
   return arr.every(t => t && typeof t === 'object' && (typeof t.id === 'number' || typeof t.id === 'string'));
@@ -5338,7 +5561,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'journal-' + JOURNALS[JOURNAL_ID].slug + '-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.download = 'journal-' + JOURNALS[JOURNAL_ID].slug + '-backup-' + localDateStr() + '.json';
   a.click();
   URL.revokeObjectURL(url);
   localStorage.setItem((JP + 'last_export'), Date.now());
@@ -5422,7 +5645,7 @@ async function writeBackupToSlot(slot) {
   if (!handle) return { slot, ok: false, reason: 'non configuré' };
   if (!(await verifyBackupPermission(handle))) return { slot, ok: false, reason: 'permission refusée', name: handle.name };
   try {
-    const fname = 'journal-trading-sauvegarde-' + new Date().toISOString().split('T')[0] + '.json';
+    const fname = 'journal-trading-sauvegarde-' + localDateStr() + '.json';
     const fileHandle = await handle.getFileHandle(fname, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(fullBackupPayload(), null, 2));
@@ -5435,7 +5658,9 @@ async function runBackupNow(silent) {
   for (const slot of BACKUP_SLOTS) results.push(await writeBackupToSlot(slot));
   const okCount = results.filter(r => r.ok).length;
   const anyConfigured = results.some(r => r.reason !== 'non configuré');
-  localStorage.setItem((GP + 'last_backup_run'), Date.now());
+  // La date de dernière sauvegarde n'avance que si au moins un dossier a vraiment reçu le fichier : un échec sera retenté à la prochaine ouverture.
+  if (okCount > 0) localStorage.setItem((GP + 'last_backup_run'), Date.now());
+  localStorage.setItem((GP + 'last_backup_attempt'), Date.now());
   localStorage.setItem((GP + 'last_backup_results'), JSON.stringify(results));
   if (okCount > 0) showToast('Sauvegarde effectuée : ' + okCount + '/' + BACKUP_SLOTS.length + ' dossier(s) ✓', 'success');
   else if (!silent && anyConfigured) showToast('Échec de la sauvegarde — vérifie l\'autorisation des dossiers ci-dessous.', 'error');
@@ -5450,8 +5675,11 @@ async function checkAutoBackupDue() {
   const handles = await Promise.all(BACKUP_SLOTS.map(s => backupIdbGet('slot' + s)));
   if (!handles.some(h => h)) return; // aucun dossier configuré : rien à faire
   const last = parseInt(localStorage.getItem((GP + 'last_backup_run'))) || 0;
+  const lastTry = parseInt(localStorage.getItem((GP + 'last_backup_attempt'))) || 0;
   const daysSince = (Date.now() - last) / 86400000;
-  if (new Date().getDay() === getBackupDay() && daysSince >= 6) await runBackupNow(true);
+  if (Date.now() - lastTry < 3600000) return;   // pas plus d'une tentative automatique par heure
+  // Jour choisi (et pas déjà fait aujourd'hui) OU rattrapage : plus de 7 jours sans sauvegarde réussie (journal pas ouvert le bon jour, échec…).
+  if ((new Date().getDay() === getBackupDay() && daysSince >= 1) || daysSince >= 7) await runBackupNow(true);
 }
 async function renderBackupSettings() {
   const list = document.getElementById('backup-slots-list');
@@ -5478,11 +5706,12 @@ async function renderBackupSettings() {
   const info = document.getElementById('backup-last-run-info');
   if (info) {
     const last = parseInt(localStorage.getItem((GP + 'last_backup_run')));
-    if (!last) { info.textContent = 'Aucune sauvegarde automatique effectuée pour l\'instant.'; }
+    const lastTry = parseInt(localStorage.getItem((GP + 'last_backup_attempt')));
+    if (!last) { info.textContent = lastTry ? 'Aucune sauvegarde réussie pour l\'instant — dernière tentative le ' + new Date(lastTry).toLocaleString('fr-FR') + ' : échec (vérifie l\'autorisation des dossiers).' : 'Aucune sauvegarde automatique effectuée pour l\'instant.'; }
     else {
       let results = []; try { results = JSON.parse(localStorage.getItem((GP + 'last_backup_results')) || '[]'); } catch (e) {}
       const ok = results.filter(r => r.ok).length;
-      info.textContent = 'Dernière sauvegarde : ' + new Date(last).toLocaleString('fr-FR') + ' (' + ok + '/' + BACKUP_SLOTS.length + ' dossier(s) réussi(s)). La sauvegarde automatique se déclenche seulement quand le journal est ouvert.';
+      info.textContent = 'Dernière sauvegarde : ' + new Date(last).toLocaleString('fr-FR') + ' (' + ok + '/' + BACKUP_SLOTS.length + ' dossier(s) réussi(s)). La sauvegarde automatique se déclenche quand le journal est ouvert : le jour choisi, ou dès la prochaine ouverture si plus de 7 jours se sont écoulés.';
     }
   }
 }
@@ -5503,16 +5732,17 @@ function importData(input) {
       openModal('Importer ce backup ?', msg, () => {
         createSafetySnapshot('avant import de backup');
         const prevTrades = trades.slice();
-        trades = data.trades; sortTradesChrono();
+        trades = sanitizeTrades(data.trades); sortTradesChrono();
         if (!save()) { trades = prevTrades; return; }   // rien n'est modifié si le stockage refuse
-        if (data.watchData) { watchData = data.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-        if (data.planData) { planData = data.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; localStorage.setItem((JP + 'watch'), JSON.stringify(watchData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; localStorage.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
         applySavedTheme();
         if (localStorage.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
         else document.body.classList.remove('texture-on');
         applyNavOrder();
         accountSize = parseFloat(localStorage.getItem((JP + 'account'))) || accountSize;
+        reloadImportSettings();
         CAL_HEAT_INTENSITY = parseFloat(localStorage.getItem((GP + 'cal_heat_intensity')) || '1.5');
         CHART_INTENSITY = parseFloat(localStorage.getItem((GP + 'chart_intensity')) || '2');
         const savedLayout = loadDashLayout();
@@ -5534,10 +5764,15 @@ function importData(input) {
 function confirmReset() {
   openModal('Réinitialiser le journal ?', 'Tous tes trades seront supprimés. Une copie de sécurité sera gardée localement (restaurable depuis cette page) au cas où.', () => {
     if (trades.length > 0) {
-      localStorage.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() }));
+      try { localStorage.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
+      catch (e) {
+        // Pas la place de garder une copie locale : on télécharge un backup complet AVANT d'effacer quoi que ce soit.
+        try { exportData(); } catch (e2) { showToast('Impossible de sauvegarder avant réinitialisation — rien n\'a été effacé', 'error'); return; }
+      }
     }
+    const prevTrades = trades;
     trades = [];
-    save();
+    if (!save()) { trades = prevTrades; return; }
     renderAll();
     renderTrashUI();
     showToast('Journal réinitialisé — sauvegarde disponible dans Export/Import');
@@ -5551,9 +5786,12 @@ function restoreResetBackup() {
   const backup = loadResetBackup();
   if (!backup || !backup.trades) return;
   openModal('Restaurer cette sauvegarde ?', backup.trades.length + ' trades vont remplacer ton journal actuel.', () => {
-    trades = backup.trades; sortTradesChrono();
-    save();
+    const prevTrades = trades;
+    trades = sanitizeTrades(backup.trades); sortTradesChrono();
+    if (!save()) { trades = prevTrades; return; }
+    localStorage.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
     renderAll();
+    renderTrashUI();
     showToast('Sauvegarde restaurée — ' + trades.length + ' trades', 'success');
   });
 }
@@ -5566,16 +5804,19 @@ function dismissResetBackup() {
 function loadTrash() {
   try { return JSON.parse(localStorage.getItem((JP + 'trash')) || '[]'); } catch(e) { return []; }
 }
-function saveTrash(list) { localStorage.setItem((JP + 'trash'), JSON.stringify(list)); }
+function saveTrash(list) { try { localStorage.setItem((JP + 'trash'), JSON.stringify(list)); return true; } catch (e) { console.error('Corbeille non enregistrée :', e); return false; } }
 
 function restoreTrashItem(idx) {
   const trash = loadTrash();
   const entry = trash[idx];
   if (!entry) return;
-  trades.unshift(entry.trade); sortTradesChrono();
+  const prevTrades = trades.slice();
+  const restored = sanitizeTrade(entry.trade);
+  if (!restored) return;
+  trades.unshift(restored); sortTradesChrono();
+  if (!save()) { trades = prevTrades; return; }   // pas restauré : il reste dans la corbeille
   trash.splice(idx, 1);
   saveTrash(trash);
-  save();
   renderAll();
   renderTrashUI();
   showToast('Trade restauré ✓', 'success');
@@ -5725,7 +5966,7 @@ function toggleCalView() {
 let calDayDataCache = {};
 function computeDayData(dateStr, dayMap) {
   const dayTrades = dayMap[dateStr] || [];
-  const pnlSum = dayTrades.filter(t=>t.pnl!==null).reduce((s,t)=>s+t.pnl,0);
+  const pnlSum = dayTrades.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
   const pnlEurSum = dayTrades.filter(t=>t.pnlEur!==null && t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur,0);
   const gainsEur = dayTrades.filter(t=>t.pnlEur!==null && t.pnlEur!==undefined && t.pnlEur>0).reduce((s,t)=>s+t.pnlEur,0);
   const lossesEur = dayTrades.filter(t=>t.pnlEur!==null && t.pnlEur!==undefined && t.pnlEur<0).reduce((s,t)=>s+t.pnlEur,0);
@@ -5733,7 +5974,11 @@ function computeDayData(dateStr, dayMap) {
   const sl = dayTrades.filter(t=>t.res==='SL').length;
   const closed = dayTrades.filter(t=>['TP','SL','BE'].includes(t.res)).length;
   const winPct = closed>0 ? Math.round(tp/closed*100) : 0;
-  const data = { dayTrades, pnlSum, pnlEurSum, gainsEur, lossesEur, tp, sl, closed, winPct };
+  // Résultat net du jour utilisé pour la COULEUR : en € dès qu'un montant en € existe ce jour-là, sinon en R.
+  // (Avant, le signe venait du R et l'intensité des € : un jour positif en € mais sans R s'affichait comme un break-even.)
+  const hasEur = dayTrades.some(t => t.pnlEur !== null && t.pnlEur !== undefined);
+  const net = hasEur ? pnlEurSum : pnlSum;
+  const data = { dayTrades, pnlSum, pnlEurSum, gainsEur, lossesEur, tp, sl, closed, winPct, hasEur, net };
   calDayDataCache[dateStr] = data;
   return data;
 }
@@ -5784,7 +6029,7 @@ function showCalTooltip(e, dateStr) {
   if (!tip || !data || !data.dayTrades.length) return;
   const rows = data.dayTrades.slice(0,5).map(t => {
     const col = t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--txt3)';
-    return `<div style="display:flex;justify-content:space-between;gap:14px"><span>${esc(t.asset||'\u2014')} ${esc(t.res||'')}</span><span style="color:${col}">${t.pnl!==null&&t.pnl!==undefined?((rSource(t)==='defaut'||rSource(t)==='risque')?'≈':'')+(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':'\u2014'}</span></div>`;
+    return `<div style="display:flex;justify-content:space-between;gap:14px"><span>${esc(t.asset||'\u2014')} ${esc(t.res||'')}</span><span style="color:${col}">${t.pnl != null?((rSource(t)==='defaut'||rSource(t)==='risque')?'≈':'')+(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':'\u2014'}</span></div>`;
   }).join('');
   const more = data.dayTrades.length > 5 ? `<div style="color:var(--txt3);margin-top:4px">+ ${data.dayTrades.length-5} autre(s)</div>` : '';
   tip.innerHTML = `<div style="font-weight:600;color:var(--txt);margin-bottom:6px">${esc(dateStr)} \u00b7 ${fmtEUR(data.pnlEurSum,true)}</div>${rows}${more}`;
@@ -5851,7 +6096,7 @@ function renderCalendrier() {
   const lastDay = new Date(calYear, calMonth+1, 0);
   let startDow = firstDay.getDay();
   startDow = startDow === 0 ? 6 : startDow - 1;
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
 
   const cells = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
@@ -5861,15 +6106,16 @@ function renderCalendrier() {
   while (cells.length % 7 !== 0) cells.push(null);
 
   const monthDates = cells.filter(Boolean);
-  let maxAbs = 0, bestDate = null, bestVal = -Infinity, worstDate = null, worstVal = Infinity;
+  let maxAbs = 0, maxAbsR = 0, bestDate = null, bestVal = -Infinity, worstDate = null, worstVal = Infinity;
   const chronoEntries = [];
   monthDates.forEach(dateStr => {
     const data = computeDayData(dateStr, dayMap);
     if (data.dayTrades.length > 0) {
-      if (Math.abs(data.pnlEurSum) > maxAbs) maxAbs = Math.abs(data.pnlEurSum);
+      if (data.hasEur) { if (Math.abs(data.pnlEurSum) > maxAbs) maxAbs = Math.abs(data.pnlEurSum); }
+      else if (Math.abs(data.pnlSum) > maxAbsR) maxAbsR = Math.abs(data.pnlSum);
       if (data.pnlEurSum > bestVal) { bestVal = data.pnlEurSum; bestDate = dateStr; }
       if (data.pnlEurSum < worstVal) { worstVal = data.pnlEurSum; worstDate = dateStr; }
-      chronoEntries.push({ date: dateStr, pnlSum: data.pnlSum });
+      chronoEntries.push({ date: dateStr, pnlSum: data.net });
     }
   });
   const streakMap = computeCalStreaks(chronoEntries);
@@ -5896,7 +6142,7 @@ function renderCalendrier() {
       if (data.dayTrades.length > 0) {
         weekDays++; monthTradingDays++;
         weekEur += data.pnlEurSum; monthTotalEur += data.pnlEurSum;
-        const hc = heatColors(data.pnlSum > 0 ? data.pnlEurSum : (data.pnlSum < 0 ? data.pnlEurSum : 0), maxAbs);
+        const hc = heatColors(data.net, data.hasEur ? maxAbs : maxAbsR);
         bg = hc.bg; border = hc.border; txtC = hc.txt;
         if (hc.strong) onFill = hc.onFill;
       }
@@ -5965,11 +6211,12 @@ function renderYearlyCalendar() {
   const dayMap = {};
   filteredTrades.forEach(t => { if (!t.date) return; (dayMap[t.date] = dayMap[t.date] || []).push(t); });
 
-  let yearMaxAbs = 0;
+  let yearMaxAbs = 0, yearMaxAbsR = 0;
   Object.keys(dayMap).forEach(dstr => {
     if (!dstr.startsWith(String(calYear))) return;
     const data = computeDayData(dstr, dayMap);
-    if (Math.abs(data.pnlEurSum) > yearMaxAbs) yearMaxAbs = Math.abs(data.pnlEurSum);
+    if (data.hasEur) yearMaxAbs = Math.max(yearMaxAbs, Math.abs(data.pnlEurSum));
+    else yearMaxAbsR = Math.max(yearMaxAbsR, Math.abs(data.pnlSum));
   });
 
   let yearTotal = 0, yearDays = 0;
@@ -5986,7 +6233,7 @@ function renderYearlyCalendar() {
       let sq = 'var(--bg4)';
       if (data && data.dayTrades.length) {
         yearTotal += data.pnlEurSum; yearDays++;
-        const hc = heatColors(data.pnlEurSum, yearMaxAbs);
+        const hc = heatColors(data.net, data.hasEur ? yearMaxAbs : yearMaxAbsR);
         sq = hc.bg;
       }
       monthHtml += `<div class="cal-year-sq" style="background:${sq};cursor:${data&&data.dayTrades.length?'pointer':'default'}" onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()" onclick="${data&&data.dayTrades.length?`selectBilanDate('${dateStr}')`:''}"></div>`;
@@ -6024,7 +6271,7 @@ function renderRRTables() {
     if (!t.date) return;
     const d = new Date(t.date + 'T00:00:00');
     if (isNaN(d)) return;
-    const rr = (t.pnl !== null && t.pnl !== undefined) ? t.pnl : 0;
+    const rr = (t.pnl != null) ? t.pnl : 0;
 
     const iso = getISOWeek(d);
     const wKey = iso.year + '-W' + String(iso.week).padStart(2, '0');
@@ -6032,7 +6279,7 @@ function renderRRTables() {
       const monday = new Date(d);
       const dow = (d.getDay() + 6) % 7;
       monday.setDate(d.getDate() - dow);
-      weekMap[wKey] = { rr: 0, n: 0, tp: 0, sl: 0, be: 0, monday: monday.toISOString().split('T')[0] };
+      weekMap[wKey] = { rr: 0, n: 0, tp: 0, sl: 0, be: 0, monday: localDateStr(monday) };
     }
     weekMap[wKey].rr += rr; weekMap[wKey].n++;
     if (t.res === 'TP') weekMap[wKey].tp++; else if (t.res === 'SL') weekMap[wKey].sl++; else if (t.res === 'BE') weekMap[wKey].be++;
@@ -6115,19 +6362,21 @@ function renderBilan() {
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;
   const be = dayTrades.filter(t=>t.res==='BE').length;
-  const pnlR = dayTrades.filter(t=>t.pnl!==null).reduce((s,t)=>s+t.pnl,0);
-  const pnlEur = dayTrades.filter(t=>t.pnlEur!=null).reduce((s,t)=>s+t.pnlEur,0);
+  const pnlR = dayTrades.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
+  const eurDay = dayTrades.filter(t=>t.pnlEur!=null);
+  const pnlEur = eurDay.reduce((s,t)=>s+t.pnlEur,0);
   const wr = (tp+sl+be)>0 ? (tp/(tp+sl+be)*100).toFixed(0)+'%' : '—';
   const avgEmotion = dayTrades.filter(t=>t.emotion).length>0 ? (dayTrades.filter(t=>t.emotion).reduce((s,t)=>s+t.emotion,0)/dayTrades.filter(t=>t.emotion).length).toFixed(1) : '—';
   const emotionColor = avgEmotion!=='—' ? (avgEmotion>=4?'var(--green)':avgEmotion>=3?'var(--amber)':'var(--red)') : 'var(--txt3)';
 
   document.getElementById('bilan-content').innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">
       ${[
         ['Trades',''+dayTrades.length,'var(--txt)'],
         ['TP',''+tp,'var(--green)'],
         ['SL',''+sl,'var(--red)'],
         ['Win Rate',wr,tp/(tp+sl+be||1)>=.5?'var(--green)':'var(--red)'],
+        ['P&L (€)',eurDay.length?fmtEUR(pnlEur,true):'—',!eurDay.length?'var(--txt3)':pnlEur>=0?'var(--green)':'var(--red)'],
         ['P&L (R)',(pnlR>=0?'+':'')+pnlR.toFixed(2)+'R',pnlR>=0?'var(--green)':'var(--red)'],
         ['Humeur moy.',avgEmotion+'/5',emotionColor],
       ].map(([l,v,c])=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px;text-align:center">
@@ -6162,12 +6411,12 @@ function renderBilan() {
             <td style="padding:8px 12px;font-weight:500;color:var(--txt)">${esc(t.asset)}</td>
             <td style="padding:8px 12px;color:var(--txt2)">${esc(t.tf)}</td>
             <td style="padding:8px 12px;color:var(--txt3)">${esc(t.session||'—')}</td>
-            <td style="padding:8px 12px;color:var(--txt2)">${t.entry||'—'}</td>
-            <td style="padding:8px 12px;color:var(--txt2)">${t.exit||'—'}</td>
+            <td style="padding:8px 12px;color:var(--txt2)">${esc(t.entry||'—')}</td>
+            <td style="padding:8px 12px;color:var(--txt2)">${esc(t.exit||'—')}</td>
             <td style="padding:8px 12px">${esc(t.dir||'—')}</td>
             <td style="padding:8px 12px"><span style="background:${bc}22;color:${bc};padding:2px 8px;border-radius:calc(var(--r) * .4);font-weight:500">${esc(t.res)}</span></td>
-            <td style="padding:8px 12px;color:var(--txt2)">${t.rr?t.rr+'R':'—'}</td>
-            <td style="padding:8px 12px;color:${t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--txt3)'};font-weight:500">${t.pnl!==null?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':'—'}</td>
+            <td style="padding:8px 12px;color:var(--txt2)">${t.rr?esc(t.rr)+'R':'—'}</td>
+            <td style="padding:8px 12px;color:${t.pnl>0?'var(--green)':t.pnl<0?'var(--red)':'var(--txt3)'};font-weight:500">${t.pnl != null?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':'—'}</td>
             <td style="padding:8px 12px;color:${t.emotion?emC:'var(--txt3)'}">${emotionStars}</td>
             <td style="padding:8px 12px">${capCell}</td>
           </tr>`;
@@ -6189,7 +6438,7 @@ function renderHeatmap() {
   if (!wrap) return;
   const hours = Array.from({length:24},(_,i)=>i);
   const hMap = {};
-  trades.filter(t=>t.entry&&t.pnl!==null).forEach(t => {
+  trades.filter(t=>t.entry&&t.pnl != null).forEach(t => {
     const h = parseInt(t.entry.split(':')[0]);
     if (!hMap[h]) hMap[h]={tp:0,sl:0,pnl:0,total:0};
     hMap[h].total++;
@@ -6350,7 +6599,21 @@ function normHeaderCSV(h) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+// Séparateur détecté sur la ligne d'en-tête (hors guillemets) : « , » (TradingView), « ; » (Excel FR) ou tabulation.
+function detectCSVDelimiter(text) {
+  const counts = { ',': 0, ';': 0, '\t': 0 };
+  let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') inQ = !inQ;
+    else if (!inQ && c === '\n') break;
+    else if (!inQ && counts[c] !== undefined) counts[c]++;
+  }
+  return Object.keys(counts).reduce((best, d) => counts[d] > counts[best] ? d : best, ',');
+}
 function parseCSVGeneric(text) {
+  text = String(text || '').replace(/^\uFEFF/, '');   // BOM UTF-8 des exports Excel
+  const delim = detectCSVDelimiter(text);
   const rows = [];
   let row = [], field = '', inQuotes = false;
   for (let i = 0; i < text.length; i++) {
@@ -6360,7 +6623,7 @@ function parseCSVGeneric(text) {
       else field += c;
     } else {
       if (c === '"') inQuotes = true;
-      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === delim) { row.push(field); field = ''; }
       else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
       else if (c === '\r') { /* skip */ }
       else field += c;
@@ -6444,9 +6707,9 @@ function parseOrdersCSV(headers, rows) {
   return rows.map(r => ({
     symbol: col.symbol > -1 ? cleanSymbol(r[col.symbol]) : '',
     type: col.type > -1 ? (r[col.type]||'').trim() : '',
-    qty: col.qty > -1 ? parseFloat((r[col.qty]||'').replace(',','.')) : null,
-    limitPrice: col.limitPrice > -1 ? (parseFloat((r[col.limitPrice]||'').replace(',','.')) || null) : null,
-    stopPrice: col.stopPrice > -1 ? (parseFloat((r[col.stopPrice]||'').replace(',','.')) || null) : null,
+    qty: col.qty > -1 ? parseNumCSV(r[col.qty]) : null,
+    limitPrice: col.limitPrice > -1 ? (parseNumCSV(r[col.limitPrice]) || null) : null,
+    stopPrice: col.stopPrice > -1 ? (parseNumCSV(r[col.stopPrice]) || null) : null,
     status: col.status > -1 ? (r[col.status]||'').trim() : '',
     closeTime: col.closeTime > -1 ? (r[col.closeTime]||'').trim() : '',
     orderId: col.orderId > -1 ? (r[col.orderId]||'').trim() : ''
@@ -6503,6 +6766,8 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
   });
 
   const symbolGuess = guessSymbolFromFilenameCSV(filename);
+  const srcCcy = detectCcyFromHeader(headers[col.pnl]);
+  const fx = fxForCcy(srcCcy);
   function extractDateTime(raw) {
     if (!raw) return { date:'', hour:null, time:'' };
     // ISO — "2025-12-30 08:18" or "2025-12-30T08:18"
@@ -6568,20 +6833,21 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
     const entryDT = entryRow ? extractDateTime(entryRow[col.date]) : { date:'',hour:null,time:'' };
     const exitDT = exitRow ? extractDateTime(exitRow[col.date]) : { date:'',hour:null,time:'' };
     const date = exitDT.date || entryDT.date;
-    const pnl = Number(anyRow[col.pnl]) || 0;
-    const res = pnl > 0.000001 ? 'TP' : (pnl < -0.000001 ? 'SL' : 'BE');
+    const pnlRaw = parseNumCSV(anyRow[col.pnl]) || 0;
+    const res = pnlRaw > 0.000001 ? 'TP' : (pnlRaw < -0.000001 ? 'SL' : 'BE');
+    const pnl = Math.round(pnlRaw * fx * 100) / 100;   // montant converti en € (fx = 1 si l'export est déjà en euros)
     // Real R if a risk€ is configured, otherwise the flat default (see settings).
     const rmSrc = computeRWithSource(pnl, res);
     const rMultiple = rmSrc.r;
-    const mfe = col.mfe > -1 ? Math.abs(Number(anyRow[col.mfe]) || 0) : null;
-    const mae = col.mae > -1 ? Math.abs(Number(anyRow[col.mae]) || 0) : null;
+    const mfe = col.mfe > -1 ? Math.abs(parseNumCSV(anyRow[col.mfe]) || 0) * fx : null;
+    const mae = col.mae > -1 ? Math.abs(parseNumCSV(anyRow[col.mae]) || 0) * fx : null;
     const rowSymbol = col.symbol > -1 ? cleanSymbol(anyRow[col.symbol]) : '';
     const asset = rowSymbol || symbolGuess;
     const entryOrderId = (col.orderId > -1 && entryRow) ? (entryRow[col.orderId]||'').trim() : '';
     const exitOrderId = (col.orderId > -1 && exitRow) ? (exitRow[col.orderId]||'').trim() : '';
     const tvKey = (entryOrderId || exitOrderId) ? `${asset}|${entryOrderId}|${exitOrderId}` : '';
-    const entryPrice = (col.price > -1 && entryRow) ? (parseFloat(entryRow[col.price]) || null) : null;
-    const exitPrice = (col.price > -1 && exitRow) ? (parseFloat(exitRow[col.price]) || null) : null;
+    const entryPrice = (col.price > -1 && entryRow) ? (parseNumCSV(entryRow[col.price]) || null) : null;
+    const exitPrice = (col.price > -1 && exitRow) ? (parseNumCSV(exitRow[col.price]) || null) : null;
     const levels = findBracketLevels(ordersLookup, exitOrderId || entryOrderId);
     // Prix disponibles (entrée + SL trouvé dans l'historique d'ordres + sortie réelle) → R exact par distance.
     // Garde-fou : l'export TradingView ne donne que le prix FINAL de chaque ordre, pas son historique de
@@ -6597,7 +6863,7 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
       id: Date.now() + Math.floor(Math.random()*100000),
       date, asset, tf: '', dir, session: sessionFromHour(entryDT.hour),
       entry: entryDT.time, exit: exitDT.time, emotion: null,
-      res, rr: finalR, pnl: finalR, rSrc: distRPlausible ? 'prix' : rmSrc.src, pnlEur: pnl, size: null, ddUsed: null, cap: '',
+      res, rr: finalR, pnl: finalR, rSrc: distRPlausible ? 'prix' : rmSrc.src, pnlEur: pnl, ccy: srcCcy || '', fxRate: fx, size: null, cap: '',
       mfe, mae, tvKey, entryPrice, slPrice: finalSlPrice, tpPrice: levels.tpPrice, exitPrice,
       desc: (() => {
         if (!entryRow || col.signal === -1) return '';
@@ -6631,12 +6897,14 @@ function tryGenericSingleRowImport(headers, rows) {
   if (col.pnl === -1 && ambIdx > -1) {
     if (col.pnleur > -1) col.pnl = ambIdx;
     else {
-      const vals = rows.map(r => parseFloat((r[ambIdx] || '').replace(',', '.'))).filter(v => !isNaN(v));
+      const vals = rows.map(r => parseNumCSV(r[ambIdx])).filter(v => !isNaN(v));
       if (vals.some(v => Math.abs(v) > 20)) col.pnleur = ambIdx; else col.pnl = ambIdx;
     }
   }
   if (col.date === -1) return null;
   if (col.pnl === -1 && col.pnleur === -1 && col.res === -1) return null;
+  const srcCcy = col.pnleur > -1 ? detectCcyFromHeader(headers[col.pnleur]) : '';
+  const fx = fxForCcy(srcCcy);
 
   const out = [];
   rows.forEach(r => {
@@ -6685,9 +6953,10 @@ function tryGenericSingleRowImport(headers, rows) {
     let dir = col.dir > -1 ? (r[col.dir]||'').trim() : '';
     dir = /short|sell|vente/i.test(dir) ? 'Short' : (dir ? 'Long' : '');
     let res = col.res > -1 ? (r[col.res]||'').trim().toUpperCase() : '';
-    let pnlEur = col.pnleur > -1 ? parseFloat((r[col.pnleur]||'').replace(',','.')) : null;
-    let pnl = col.pnl > -1 ? parseFloat((r[col.pnl]||'').replace(',','.')) : null;
+    let pnlEur = col.pnleur > -1 ? parseNumCSV(r[col.pnleur]) : null;
+    let pnl = col.pnl > -1 ? parseNumCSV(r[col.pnl]) : null;
     if (pnlEur !== null && isNaN(pnlEur)) pnlEur = null;
+    if (pnlEur !== null) pnlEur = Math.round(pnlEur * fx * 100) / 100;
     if (pnl !== null && isNaN(pnl)) pnl = null;
     if (!res) {
       const ref = (pnlEur !== null) ? pnlEur : pnl;
@@ -6699,7 +6968,7 @@ function tryGenericSingleRowImport(headers, rows) {
       else res = '';
     }
     if (!res) return;
-    let rr = col.rr > -1 ? parseFloat((r[col.rr]||'').replace(',','.')) : null;
+    let rr = col.rr > -1 ? parseNumCSV(r[col.rr]) : null;
     if (rr !== null && isNaN(rr)) rr = null;
     // No R value in the file (neither an rr column nor a pnl-in-R column) → real R from risk€, or flat default.
     let rSrc = (pnl !== null || rr !== null) ? 'manuel' : undefined;
@@ -6711,7 +6980,7 @@ function tryGenericSingleRowImport(headers, rows) {
     out.push({
       id: Date.now() + Math.floor(Math.random()*100000),
       date, asset, tf:'', dir, session:'', entry:'', exit:'', emotion:null,
-      res, rr, pnl, rSrc, pnlEur, size:null, ddUsed:null, cap:'', desc:''
+      res, rr, pnl, rSrc, pnlEur, ccy: srcCcy || '', fxRate: fx, size:null, cap:'', desc:''
     });
   });
   return out;
@@ -6719,6 +6988,7 @@ function tryGenericSingleRowImport(headers, rows) {
 
 function fixMissingRR() {
   let fixed = 0;
+  const before = JSON.stringify(trades);
   trades.forEach(t => {
     if ((t.pnl === null || t.pnl === undefined) && ['TP','SL','BE'].includes(t.res)) {
       const cr = computeRWithSource(t.pnlEur, t.res, { entryPrice: t.entryPrice, slPrice: t.slPrice, exitPrice: t.exitPrice, dir: t.dir });
@@ -6728,7 +6998,7 @@ function fixMissingRR() {
     }
   });
   if (fixed > 0) {
-    save();
+    if (!save()) { trades = JSON.parse(before); return; }
     renderAll();
     showToast(fixed + ' trade(s) corrigé(s) ✓', 'success');
   } else {
@@ -6739,6 +7009,7 @@ function fixMissingRR() {
 function fixImplausibleDistanceR() {
   const DISTANCE_R_PLAUSIBLE_MAX = 15;
   let fixed = 0;
+  const before = JSON.stringify(trades);
   trades.forEach(t => {
     if (t.pnl === null || t.pnl === undefined || Math.abs(t.pnl) <= DISTANCE_R_PLAUSIBLE_MAX) return;
     if (t.entryPrice === null || t.entryPrice === undefined || t.slPrice === null || t.slPrice === undefined) return;
@@ -6748,7 +7019,7 @@ function fixImplausibleDistanceR() {
     fixed++;
   });
   if (fixed > 0) {
-    save();
+    if (!save()) { trades = JSON.parse(before); return; }
     renderAll();
     showToast(fixed + ' trade(s) corrigé(s) (R invraisemblable détecté) ✓', 'success');
   } else {
@@ -6831,13 +7102,14 @@ async function handleCsvImport(input) {
   });
 
   function syntheticTradeKey(t) {
-  const amt = (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : t.pnl;
+  // Montant d'origine (avant conversion de devise) : un changement de taux ne doit pas faire passer un doublon pour un nouveau trade.
+  const amt = (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur / (t.fxRate || 1) : t.pnl;
   return [t.date||'', (t.asset||'').toLowerCase(), t.res||'', t.entry||'', (amt===null||amt===undefined||isNaN(amt))?'':Number(amt).toFixed(2)].join('|');
 }
 const existingKeys = new Set(trades.map(t => t.tvKey).filter(Boolean));
 const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTradeKey));
   const allNew = [];
-  let dupCount = 0, tradesFilesCount = 0, secondaryFilesCount = 0, emptyFilesCount = 0, slEnrichedCount = 0;
+  let dupCount = 0, tradesFilesCount = 0, secondaryFilesCount = 0, emptyFilesCount = 0, slEnrichedCount = 0, unconvertedCount = 0, foreignCcy = '';
 
   fileData.forEach(fd => {
     if (!fd.rows || fd.rows.length < 2) { emptyFilesCount++; return; }
@@ -6865,6 +7137,7 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
         existingSynthKeys.add(sk);
       }
       if (t.slPrice !== null && t.slPrice !== undefined) slEnrichedCount++;
+      if (t.ccy && t.ccy !== 'EUR' && t.fxRate === 1) { unconvertedCount++; foreignCcy = t.ccy; }
       allNew.push(t);
     });
   });
@@ -6883,7 +7156,7 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
 
   const prevTrades = trades.slice();
   createSafetySnapshot('avant import CSV');
-  trades = trades.concat(allNew);
+  trades = trades.concat(sanitizeTrades(allNew));
   sortTradesChrono();
   if (!save()) {
     trades = prevTrades;
@@ -6902,6 +7175,7 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
   if (dupCount > 0) parts.push(`${dupCount} doublon(s) ignoré(s)`);
   if (secondaryFilesCount > 0) parts.push(`${secondaryFilesCount} fichier(s) secondaire(s) reconnu(s) (ordres/solde/activité/positions)`);
   if (emptyFilesCount > 0) parts.push(`${emptyFilesCount} fichier(s) vide(s) ignoré(s)`);
+  if (unconvertedCount > 0) parts.push(`⚠️ ${unconvertedCount} montant(s) en ${foreignCcy} importé(s) SANS conversion (taux = 1) — règle le taux ci-dessous puis clique « Appliquer ce taux aux trades déjà importés »`);
   const msg = parts.join(' · ');
   if (statusEl) statusEl.textContent = msg;
   showToast(allNew.length + ' trade(s) importés ✓', 'success');
@@ -7537,7 +7811,7 @@ function renderGlobalSearchResults(query) {
     html += `<div class="search-group-label">Trades</div>`;
     tradeMatches.forEach(t => {
       const i = searchCurrentItems.findIndex(x=>x.type==='trade'&&x.trade.id===t.id);
-      const sub = `${t.date||''} · ${t.res||''} ${t.pnl!==null&&t.pnl!==undefined?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':''}`;
+      const sub = `${t.date||''} · ${t.res||''} ${t.pnl != null?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':''}`;
       html += searchItemHtml(i, '📈', t.asset||'—', sub);
     });
   }
@@ -7638,7 +7912,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Keyboard shortcut : Escape closes modal, lightbox, trade drawer, search and mobile sidebar
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeLightbox(); closeTradeDetail(); closeGlobalSearch(); closeMobileSidebar(); } });
+// (la sidebar n'est refermée que sur mobile : sur grand écran elle est permanente, Échap ne doit pas la masquer)
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeLightbox(); closeTradeDetail(); closeGlobalSearch(); if (window.matchMedia('(max-width: 860px)').matches) closeMobileSidebar(); } });
 </script>
 </body>
 </html>
