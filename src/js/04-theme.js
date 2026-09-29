@@ -258,22 +258,20 @@ function renderThemePresetGrid() {
   if (!cont) return;
   const theme = loadThemeObj();
   const activeKey = theme['--preset-key'] || 'default';
-  cont.innerHTML = Object.entries(THEME_PRESETS).map(([key, p]) => {
+  mount(cont, html`${Object.entries(THEME_PRESETS).map(([key, p]) => {
     const c = p.colors;
-    const active = key === activeKey ? ' active' : '';
-    return `<div class="theme-swatch${active}" onclick="applyPreset('${key}')">
-      <div class="swatch-strip">
-        <span style="background:${c['--bg']}"></span>
-        <span style="background:${c['--bg3']}"></span>
-        <span style="background:${c['--green']}"></span>
-        <span style="background:${c['--red']}"></span>
-        <span style="background:${c['--accent'] || c['--blue']}"></span>
-      </div>
+    return html`<div class="theme-swatch${raw(key === activeKey ? ' active' : '')}" onclick="applyPreset('${key}')">
+      ${swatchStrip([c['--bg'], c['--bg3'], c['--green'], c['--red'], c['--accent'] || c['--blue']])}
       <div class="swatch-name">${p.emoji} ${p.name}</div>
     </div>`;
-  }).join('');
+  })}`);
 }
 
+// Aperçu d'un thème : ses 5 couleurs passées en variables CSS (seules valeurs en ligne, vérifiées par safeColor).
+function swatchStrip(colors) {
+  const fb = ['#111', '#222', '#22c55e', '#ef4444', '#a78bfa'];
+  return html`<div class="swatch-strip" style="${raw(colors.map((c, i) => `--s${i + 1}:${safeColor(c, fb[i])}`).join(';'))}"><span></span><span></span><span></span><span></span><span></span></div>`;
+}
 function getCustomThemes() {
   try { const l = JSON.parse(DB.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
 }
@@ -317,23 +315,17 @@ function renderCustomThemesGrid() {
   if (!cont) return;
   const list = getCustomThemes();
   if (!list.length) {
-    cont.innerHTML = '<p style="font-size:11.5px;color:var(--txt3);grid-column:1/-1">Aucun thème enregistré pour l\'instant — personnalise les couleurs ci-dessous puis clique sur "Enregistrer le thème actuel".</p>';
+    mount(cont, html`<p class="theme-empty">Aucun thème enregistré pour l'instant — personnalise les couleurs ci-dessous puis clique sur "Enregistrer le thème actuel".</p>`);
     return;
   }
-  cont.innerHTML = list.map(entry => {
-    const c = entry.theme || {};
-    return `<div class="theme-swatch" style="position:relative" onclick="applyCustomTheme(${Number(entry.id) || 0})">
-      <button onclick="deleteCustomTheme(${Number(entry.id) || 0}, event)" title="Supprimer" style="position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--bg4);color:var(--txt3);border:none;font-size:11px;cursor:pointer;line-height:1;z-index:1;display:flex;align-items:center;justify-content:center">×</button>
-      <div class="swatch-strip">
-        <span style="background:${safeColor(c['--bg'],'#111')}"></span>
-        <span style="background:${safeColor(c['--bg3'],'#222')}"></span>
-        <span style="background:${safeColor(c['--green'],'#22c55e')}"></span>
-        <span style="background:${safeColor(c['--red'],'#ef4444')}"></span>
-        <span style="background:${safeColor(c['--purple'],'#a78bfa')}"></span>
-      </div>
-      <div class="swatch-name">💾 ${esc(entry.name)}</div>
+  mount(cont, html`${list.map(entry => {
+    const c = entry.theme || {}, id = raw(Number(entry.id) || 0);
+    return html`<div class="theme-swatch custom" onclick="applyCustomTheme(${id})">
+      <button class="theme-del" onclick="deleteCustomTheme(${id}, event)" title="Supprimer">×</button>
+      ${swatchStrip([c['--bg'], c['--bg3'], c['--green'], c['--red'], c['--purple']])}
+      <div class="swatch-name">💾 ${entry.name}</div>
     </div>`;
-  }).join('');
+  })}`);
 }
 
 
@@ -342,23 +334,20 @@ function renderSettingsPage() {
   renderCustomThemesGrid();
   const cont = document.getElementById('settings-groups');
   if (!cont) return;
-  cont.innerHTML = THEME_VARS.map(g => `
-    <div class="panel" style="margin-bottom:20px">
+  mount(cont, html`${THEME_VARS.map(g => html`
+    <div class="panel mb-20">
       <div class="panel-hdr">${g.group}</div>
-      <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
+      <div class="color-grid">
         ${g.items.map(it => {
           const val = currentVar(it.key, '#000000');
           const safe = /^#[0-9a-fA-F]{6}$/.test(val) ? val : '#000000';
-          return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;display:flex;align-items:center;gap:10px">
-            <input type="color" value="${safe}" onchange="onColorPick('${it.key}', this.value, ${!!it.derive})" style="width:36px;height:36px;border:none;border-radius:calc(var(--r) * .8);cursor:pointer;background:none;padding:0">
-            <div style="min-width:0">
-              <div style="font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.label}</div>
-              <div style="font-size:11px;font-family:var(--mono);color:var(--txt3)">${safe}</div>
-            </div>
+          return html`<div class="color-item">
+            <input type="color" value="${safe}" onchange="onColorPick('${it.key}', this.value, ${raw(!!it.derive)})">
+            <div class="color-item-txt"><div class="color-item-label">${it.label}</div><div class="color-item-val">${safe}</div></div>
           </div>`;
-        }).join('')}
+        })}
       </div>
-    </div>`).join('');
+    </div>`)}`);
 
   const radiusSlider = document.getElementById('radius-slider');
   const radiusVal = document.getElementById('radius-val');

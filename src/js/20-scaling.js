@@ -265,14 +265,14 @@ function toggleScalingParamsPanel() {
 function renderScalingTiles(st, model, current) {
   const cont = document.getElementById('sc-tiles');
   if (!cont) return;
-  if (model.error) { cont.innerHTML = ''; return; }
+  if (model.error) { mount(cont, ''); return; }
   const r = scalingReachedIdx(model, current);
   const cur = model.pts[r];
   const next = model.pts[r + 1] || model.nextBeyond || null;
   const below = current < st.start - 1e-6;
   const floorBal = r >= 1 ? model.pts[r - 1].trigger : st.start;
   const cushionLosses = (current - floorBal) / cur.risk;
-  const cushCol = cushionLosses < 2 ? 'var(--red)' : (cushionLosses < 5 ? 'var(--amber)' : 'var(--green)');
+  const cushTone = cushionLosses < 2 ? 'red' : (cushionLosses < 5 ? 'amber' : 'green');
   // Prochain palier : on compte jusqu'à la FIN du coussin (moment réel de l'augmentation), pas jusqu'au palier rond.
   const delayed = !!next && next.trigger > next.bal + 0.005;
   const inCushion = !!next && current + 1e-6 >= next.bal && current + 1e-6 < next.trigger;
@@ -285,22 +285,22 @@ function renderScalingTiles(st, model, current) {
       : `encore ${fmtEUR(remaining)}${pctTxt} → risque ${fmtEUR(next.risk, false, 2)}`;
   }
   const tiles = [
-    { label: 'Risque par trade actuel', val: fmtEUR(cur.risk, false, 2), col: 'var(--blue)',
+    { label: 'Risque par trade actuel', val: fmtEUR(cur.risk, false, 2), tone: 'blue',
       sub: `${current > 0 ? scPct(cur.risk / current * 100) + ' du capital actuel · ' : ''}${r === 0 ? 'palier de départ' : 'palier P' + r}` },
-    { label: 'Palier actuel', val: r === 0 ? (below ? 'Sous le départ' : 'Départ') : 'P' + r, col: 'var(--txt)',
+    { label: 'Palier actuel', val: r === 0 ? (below ? 'Sous le départ' : 'Départ') : 'P' + r, tone: 'txt',
       sub: below ? `il manque ${fmtEUR(st.start - current)} pour revenir au capital de départ`
         : (r === 0 ? `capital ${fmtEUR(cur.bal)} atteint · toi : ${fmtEUR(current)}` : `augmenté à ${fmtEUR(cur.trigger)} · toi : ${fmtEUR(current)}`) },
-    { label: 'Prochain palier', val: next ? fmtEUR(next.trigger) : 'Objectif atteint', col: 'var(--amber)', sub: nextSub },
-    { label: 'Coussin actuel', val: cushionLosses > 0 ? scNum1(cushionLosses) + ' pertes' : 'Aucun', col: cushCol,
+    { label: 'Prochain palier', val: next ? fmtEUR(next.trigger) : 'Objectif atteint', tone: 'amber', sub: nextSub },
+    { label: 'Coussin actuel', val: cushionLosses > 0 ? scNum1(cushionLosses) + ' pertes' : 'Aucun', tone: cushTone,
       sub: `d'affilée avant de repasser sous ${r >= 2 ? 'le palier P' + (r - 1) + ' (' + fmtEUR(floorBal) + ')' : 'ton capital de départ (' + fmtEUR(floorBal) + ')'}` }
   ];
-  cont.innerHTML = tiles.map(t => `<div class="sc-tile"><div class="sc-tile-label">${t.label}</div><div class="sc-tile-val" style="color:${t.col}">${t.val}</div><div class="sc-tile-sub">${t.sub}</div></div>`).join('');
+  mount(cont, html`${tiles.map(t => html`<div class="sc-tile"><div class="sc-tile-label">${t.label}</div><div class="sc-tile-val tone-${raw(t.tone)}">${t.val}</div><div class="sc-tile-sub">${t.sub}</div></div>`)}`);
 }
 
 function renderScalingTimeline(st, model, current, opts) {
   const wrap = document.getElementById('sc-tl-wrap'), tl = document.getElementById('sc-tl');
   if (!wrap || !tl) return;
-  if (model.error) { tl.style.width = 'auto'; tl.style.height = 'auto'; tl.innerHTML = `<div class="sc-empty">${scEsc(model.error)}</div>`; scalingGeom = null; return; }
+  if (model.error) { tl.style.width = 'auto'; tl.style.height = 'auto'; mount(tl, html`<div class="sc-empty">${model.error}</div>`); scalingGeom = null; return; }
   tl.style.height = '258px';
   const pts = model.pts.map(p => ({ ...p, type: p.k === 0 ? 'start' : 'palier' }));
   if (pts.length === 1 && model.nextBeyond) pts.push({ ...model.nextBeyond, type: 'palier' });
@@ -320,14 +320,16 @@ function renderScalingTimeline(st, model, current, opts) {
   const fillW = Math.max(0, Math.min(trackW, meX - padL));
   const trig = p => (p.trigger != null ? p.trigger : p.bal);
   const nextIdx = pts.findIndex(p => current + 1e-6 < trig(p));
-  let h = '';
+  // Frise : positions en pixels calculées (seule géométrie laissée en ligne), tout le reste en classes.
+  const at = (x, w) => raw(`left:${x}px` + (w != null ? `;width:${w}px` : ''));
+  const h = [];
   (st.showZones ? st.zones : []).forEach(z => {
     const a = Math.min(z.from, z.to), b = Math.max(z.from, z.to);
     const x1 = xOf(a), x2 = xOf(b);
     const showName = !/^\s*coussin\s*$/i.test(z.label);
-    h += `<div class="sc-zone ${z.color}" style="left:${Math.min(x1, x2)}px;width:${Math.max(8, Math.abs(x2 - x1))}px" title="${scEsc(z.label)} : ${fmtEUR(a)} → ${fmtEUR(b)}">${showName ? `<span class="sc-zone-name">${scEsc(z.label)}</span>` : ''}</div>`;
+    h.push(html`<div class="sc-zone ${z.color}" style="${at(Math.min(x1, x2), Math.max(8, Math.abs(x2 - x1)))}" title="${z.label} : ${fmtEUR(a)} → ${fmtEUR(b)}">${showName ? html`<span class="sc-zone-name">${z.label}</span>` : ''}</div>`);
   });
-  h += `<div class="sc-track" style="left:${padL}px;width:${trackW}px"><div class="sc-fill" style="width:${fillW}px"></div></div>`;
+  h.push(html`<div class="sc-track" style="${at(padL, trackW)}"><div class="sc-fill" style="${raw('width:' + fillW + 'px')}"></div></div>`);
   pts.forEach((p, i) => {
     const x = padL + i * S;
     const reached = p.type !== 'goal' && current + 1e-6 >= trig(p);
@@ -335,11 +337,11 @@ function renderScalingTimeline(st, model, current, opts) {
     const state = reached ? 'reached' : (inCushion ? 'cushion' : (i === nextIdx ? 'next' : ''));
     const chip = p.type === 'start' ? 'Départ' : (p.type === 'goal' ? 'Objectif' : 'P' + p.k);
     const tip = p.type === 'goal' ? `Objectif : ${fmtEUR(p.bal)}` : `${chip} — ${fmtEUR(p.bal)}${trig(p) > p.bal + 0.005 ? ' · augmentation à ' + fmtEUR(trig(p)) : ''} · risque ${fmtEUR(p.risk, false, 2)} par trade`;
-    h += `<div class="sc-dot ${state}" style="left:${x}px" title="${scEsc(tip)}"></div>`;
-    h += `<div class="sc-lbl sc-lbl-top" style="left:${x}px"><span class="sc-chip ${state}">${chip}</span><div class="sc-cap">${fmtEUR(p.bal)}</div></div>`;
+    h.push(html`<div class="sc-dot ${state}" style="${at(x)}" title="${tip}"></div>`);
+    h.push(html`<div class="sc-lbl sc-lbl-top" style="${at(x)}"><span class="sc-chip ${state}">${chip}</span><div class="sc-cap">${fmtEUR(p.bal)}</div></div>`);
     // Le risque s'affiche là où la taille change VRAIMENT : sous le palier s'il n'y a pas de coussin, sinon à la fin du coussin (repère ▲).
     if (p.type !== 'goal' && !(p.type === 'palier' && trig(p) > p.bal + 0.005)) {
-      h += `<div class="sc-lbl sc-lbl-bot" style="left:${x}px"><div class="sc-risk">${fmtEUR(p.risk, false, 2)}<span class="sc-risk-u"> / trade</span></div></div>`;
+      h.push(html`<div class="sc-lbl sc-lbl-bot" style="${at(x)}"><div class="sc-risk">${fmtEUR(p.risk, false, 2)}<span class="sc-risk-u"> / trade</span></div></div>`);
     }
   });
   if (st.showZones && model.targets) {
@@ -347,14 +349,12 @@ function renderScalingTimeline(st, model, current, opts) {
       const x = xOf(t.b);
       const entry = model.pts[Math.max(...t.ks)] || model.nextBeyond;
       const tip = `Fin du coussin « ${t.zone.label} » : tu augmentes ta taille à ${fmtEUR(t.b)} → risque ${fmtEUR(entry.risk, false, 2)} par trade`;
-      h += `<div class="sc-end-line ${t.zone.color}" style="left:${x}px"></div>`;
-      h += `<div class="sc-end ${t.zone.color}" style="left:${x}px" title="${scEsc(tip)}"></div>`;
-      h += `<div class="sc-end-lbl ${t.zone.color}" style="left:${x}px" title="${scEsc(tip)}"><b>▲ ${fmtEUR(t.b)}</b><span>${fmtEUR(entry.risk, false, 2)} / trade</span></div>`;
+      h.push(html`<div class="sc-end-line ${t.zone.color}" style="${at(x)}"></div><div class="sc-end ${t.zone.color}" style="${at(x)}" title="${tip}"></div><div class="sc-end-lbl ${t.zone.color}" style="${at(x)}" title="${tip}"><b>▲ ${fmtEUR(t.b)}</b><span>${fmtEUR(entry.risk, false, 2)} / trade</span></div>`);
     });
   }
-  h += `<div class="sc-me" style="left:${meX}px"><div class="sc-me-pill">Toi · ${fmtEUR(current)}</div><div class="sc-me-line"></div></div>`;
-  h += `<div class="sc-draw" style="left:${padL - 44}px;width:${trackW + 88}px">Glisse ici pour marquer une zone coussin de sécurité</div>`;
-  tl.innerHTML = h;
+  h.push(html`<div class="sc-me" style="${at(meX)}"><div class="sc-me-pill">Toi · ${fmtEUR(current)}</div><div class="sc-me-line"></div></div>`);
+  h.push(html`<div class="sc-draw" style="${at(padL - 44, trackW + 88)}">Glisse ici pour marquer une zone coussin de sécurité</div>`);
+  mount(tl, html`${h}`);
   if (opts && opts.center) wrap.scrollLeft = Math.max(0, meX - wrap.clientWidth / 2);
 }
 
@@ -366,27 +366,22 @@ function cushFormula(p, prev) {
 function renderScalingTable(st, model, current) {
   const cont = document.getElementById('sc-table');
   if (!cont) return;
-  if (model.error) { cont.innerHTML = ''; scTableCount = 0; applyScalingTablePanel(); return; }
+  if (model.error) { mount(cont, ''); scTableCount = 0; applyScalingTablePanel(); return; }
   const r = scalingReachedIdx(model, current);
-  let rows = '';
-  model.pts.forEach((p, i) => {
+  const rows = model.pts.map((p, i) => {
     const prev = i > 0 ? model.pts[i - 1] : null;
     const trig = p.trigger != null ? p.trigger : p.bal;
     const delayed = i > 0 && trig > p.bal + 0.005;
     const inCush = i > r && current + 1e-6 >= p.bal && current + 1e-6 < trig;
-    const status = i < r ? '<span style="color:var(--green)">✔ atteint</span>'
-      : (i === r ? '<span style="color:var(--blue);font-weight:700">● en cours</span>'
-      : (inCush ? `<span style="color:var(--amber)">◐ dans le coussin · reste ${fmtEUR(trig - current)}</span>` : `reste ${fmtEUR(trig - current)}`));
-    rows += `<tr class="${i === r ? 'cur' : ''}"><td style="color:var(--txt);font-weight:700">${i === 0 ? 'Départ' : 'P' + p.k}</td>` +
-      `<td>${fmtEUR(p.bal)}</td>` +
-      `<td>${i === 0 ? '—' : (delayed ? `<span style="color:var(--amber);font-weight:700">${fmtEUR(trig)}</span>` : fmtEUR(trig))}</td>` +
-      `<td style="color:var(--blue);font-weight:700">${fmtEUR(p.risk, false, 2)}</td><td>${scPct(st.riskPct)}</td>` +
-      `<td>${prev ? '+' + fmtEUR(p.risk - prev.risk, false, 2) : '—'}</td><td${i > 0 ? ` title="${scEsc(cushFormula(p, prev))}"` : ''}>${p.cushion != null ? scNum1(p.cushion) + ' pertes' + `<div class="sc-formula">${scEsc(cushFormula(p, prev))}</div>` : '—'}</td><td>${status}</td></tr>`;
+    const status = i < r ? html`<span class="tone-green">✔ atteint</span>`
+      : (i === r ? html`<span class="tone-blue fw-700">● en cours</span>`
+      : (inCush ? html`<span class="tone-amber">◐ dans le coussin · reste ${fmtEUR(trig - current)}</span>` : `reste ${fmtEUR(trig - current)}`));
+    return html`<tr class="${i === r ? 'cur' : ''}"><td class="sc-td-k">${i === 0 ? 'Départ' : 'P' + p.k}</td><td>${fmtEUR(p.bal)}</td><td>${i === 0 ? '—' : (delayed ? html`<span class="tone-amber fw-700">${fmtEUR(trig)}</span>` : fmtEUR(trig))}</td><td class="tone-blue fw-700">${fmtEUR(p.risk, false, 2)}</td><td>${scPct(st.riskPct)}</td><td>${prev ? '+' + fmtEUR(p.risk - prev.risk, false, 2) : '—'}</td><td${raw(i > 0 ? ` title="${scEsc(cushFormula(p, prev))}"` : '')}>${p.cushion != null ? html`${scNum1(p.cushion) + ' pertes'}<div class="sc-formula">${cushFormula(p, prev)}</div>` : '—'}</td><td>${status}</td></tr>`;
   });
   if (st.goal > model.pts[model.pts.length - 1].bal * 1.0000001) {
-    rows += `<tr><td style="color:var(--txt);font-weight:700">Objectif</td><td>${fmtEUR(st.goal)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${current >= st.goal ? '<span style="color:var(--green)">✔ atteint</span>' : 'reste ' + fmtEUR(st.goal - current)}</td></tr>`;
+    rows.push(html`<tr><td class="sc-td-k">Objectif</td><td>${fmtEUR(st.goal)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${current >= st.goal ? html`<span class="tone-green">✔ atteint</span>` : 'reste ' + fmtEUR(st.goal - current)}</td></tr>`);
   }
-  cont.innerHTML = `<table class="sc-table"><thead><tr><th>Palier</th><th>Capital du palier</th><th>Augmente à</th><th>Risque / trade</th><th>Risque (%)</th><th>Hausse</th><th>Coussin</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table><p class="sc-note">Coussin = nombre de pertes d'affilée que tu peux encaisser, au nouveau risque, avant de repasser sous le <b>palier précédent</b> (pour P1, le palier précédent est ton capital de départ). Formule : (point d'augmentation − point d'augmentation précédent) ÷ risque du palier.</p>`;
+  mount(cont, html`<table class="sc-table"><thead><tr><th>Palier</th><th>Capital du palier</th><th>Augmente à</th><th>Risque / trade</th><th>Risque (%)</th><th>Hausse</th><th>Coussin</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table><p class="sc-note">Coussin = nombre de pertes d'affilée que tu peux encaisser, au nouveau risque, avant de repasser sous le <b>palier précédent</b> (pour P1, le palier précédent est ton capital de départ). Formule : (point d'augmentation − point d'augmentation précédent) ÷ risque du palier.</p>`);
   scTableCount = model.pts.length - 1;
   applyScalingTablePanel();
 }
@@ -413,18 +408,18 @@ function renderScalingZones() {
   if (!cont) return;
   const st = getScalingState();
   if (!st.zones.length) {
-    cont.innerHTML = `<div class="sc-empty" style="padding:14px">Aucune zone pour l'instant — glisse sur la bande pointillée de la frise, ou clique sur « Ajouter une zone ».</div>`;
+    mount(cont, html`<div class="sc-empty pad-14">Aucune zone pour l'instant — glisse sur la bande pointillée de la frise, ou clique sur « Ajouter une zone ».</div>`);
     applyScalingZonesPanel();
     return;
   }
   const colors = [['green', '🟢 Coussin'], ['amber', '🟠 Prudence'], ['red', '🔴 Danger'], ['blue', '🔵 Autre']];
-  cont.innerHTML = st.zones.map(z => `<div class="sc-zone-row">
-    <select onchange="updateScalingZone(${z.id},'color',this.value)">${colors.map(c => `<option value="${c[0]}"${c[0] === z.color ? ' selected' : ''}>${c[1]}</option>`).join('')}</select>
-    <input type="text" value="${scEsc(z.label)}" placeholder="Nom de la zone" oninput="updateScalingZone(${z.id},'label',this.value)">
-    <div class="sc-zone-range"><span>De</span><input type="number" value="${scRound(Math.min(z.from, z.to), 2)}" step="10" oninput="updateScalingZone(${z.id},'from',this.value)"><span>€</span></div>
-    <div class="sc-zone-range"><span>à</span><input type="number" value="${scRound(Math.max(z.from, z.to), 2)}" step="10" oninput="updateScalingZone(${z.id},'to',this.value)"><span>€</span></div>
-    <button class="btn-ghost" style="padding:6px 10px" title="Supprimer" onclick="deleteScalingZone(${z.id})">🗑</button>
-  </div>`).join('');
+  mount(cont, html`${st.zones.map(z => { const id = raw(z.id); return html`<div class="sc-zone-row">
+    <select onchange="updateScalingZone(${id},'color',this.value)">${colors.map(c => html`<option value="${c[0]}"${raw(c[0] === z.color ? ' selected' : '')}>${c[1]}</option>`)}</select>
+    <input type="text" value="${z.label}" placeholder="Nom de la zone" oninput="updateScalingZone(${id},'label',this.value)">
+    <div class="sc-zone-range"><span>De</span><input type="number" value="${scRound(Math.min(z.from, z.to), 2)}" step="10" oninput="updateScalingZone(${id},'from',this.value)"><span>€</span></div>
+    <div class="sc-zone-range"><span>à</span><input type="number" value="${scRound(Math.max(z.from, z.to), 2)}" step="10" oninput="updateScalingZone(${id},'to',this.value)"><span>€</span></div>
+    <button class="btn-ghost btn-sm-icon" title="Supprimer" onclick="deleteScalingZone(${id})">🗑</button>
+  </div>`; })}`);
   applyScalingZonesPanel();
 }
 function applyScalingZonesPanel() {
