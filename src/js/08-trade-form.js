@@ -141,7 +141,7 @@ function knownSetups() {
 }
 function refreshSetupList() {
   const dl = document.getElementById('setup-list');
-  if (dl) dl.innerHTML = knownSetups().map(s => `<option value="${esc(s)}"></option>`).join('');
+  if (dl) mount(dl, html`${knownSetups().map(s => html`<option value="${s}"></option>`)}`);
 }
 function addTrade() {
   const date = document.getElementById('f-date').value;
@@ -230,11 +230,11 @@ function renderTradeChecklist() {
   const cont = document.getElementById('f-checklist');
   if (!cont) return;
   const items = getEntryItems();
-  cont.innerHTML = items.map((item, i) => `
-    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer">
-      <input type="checkbox" class="f-checklist-item" data-idx="${i}" style="accent-color:var(--green);cursor:pointer">
-      ${esc(item)}
-    </label>`).join('');
+  mount(cont, html`${items.map((item, i) => html`
+    <label class="mistake-chip check">
+      <input type="checkbox" class="f-checklist-item" data-idx="${i}">
+      ${item}
+    </label>`)}`);
 }
 
 // ── DD JOURNALIER (avec override manuel) ────────────────────────────

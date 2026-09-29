@@ -24,7 +24,7 @@ function renderPositionCalc() {
   const cont = document.getElementById('calc-result');
   if (!cont) return;
   if (!(balance > 0) || !(riskPct > 0) || !(stopDist > 0) || !(pointValue > 0)) {
-    cont.innerHTML = `<div style="grid-column:span 3;font-size:12px;color:var(--txt3)">Renseigne les 4 champs ci-dessus pour calculer la taille de position.</div>`;
+    mount(cont, html`<div class="pc-empty">Renseigne les 4 champs ci-dessus pour calculer la taille de position.</div>`);
     return;
   }
   const riskEur = balance * (riskPct / 100);
@@ -34,9 +34,9 @@ function renderPositionCalc() {
     ['Taille suggérée', size.toFixed(2) + ' unités/lots'],
     ['Perte si stop touché', '-' + riskEur.toFixed(2) + ' €'],
   ];
-  cont.innerHTML = cells.map(([l,v]) => `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center">
-    <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:6px">${l}</div>
-    <div style="font-size:16px;font-weight:600;font-family:var(--mono);color:var(--amber)">${v}</div>
-  </div>`).join('');
+  mount(cont, html`${cells.map(([l, v]) => html`<div class="pc-cell">
+    <div class="pc-label">${l}</div>
+    <div class="pc-val">${v}</div>
+  </div>`)}`);
 }
 

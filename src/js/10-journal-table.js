@@ -55,7 +55,7 @@ function tradeRowHtml(t, num) {
     <td>${t.rr ? t.rr + 'R' : '—'}</td>
     <td title="${R_SRC_LABELS[rsrc]}">${t.pnl != null ? html`${approx}${UI.pnl(t.pnl, 'R')}` : '—'}</td>
     <td>${UI.pnl(t.pnlEur, '€')}</td>
-    <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" style="color:${raw(t.emotion >= 4 ? 'var(--green)' : t.emotion >= 3 ? 'var(--amber)' : 'var(--red)')}">●</span>` : ''}</td>
+    <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" class="tone-${raw(t.emotion >= 4 ? 'green' : t.emotion >= 3 ? 'amber' : 'red')}">●</span>` : ''}</td>
     <td><button class="del-btn row-del" onclick="event.stopPropagation();deleteTrade(${id})" title="Supprimer" aria-label="Supprimer ce trade">×</button></td>
   </tr>`;
 }
@@ -226,10 +226,10 @@ function openTradeDetail(id) {
       t.entryPrice != null ? ['Prix d\'entrée', t.entryPrice] : null, t.slPrice != null ? ['Stop loss', t.slPrice] : null, t.tpPrice != null ? ['Take profit', t.tpPrice] : null, t.exitPrice != null ? ['Prix de sortie', t.exitPrice] : null])}
     ${Array.isArray(t.tags) && t.tags.length ? UI.section('Tags', UI.chips(t.tags.map(x => '#' + x))) : ''}
     ${UI.section('Description / confluences', html`<div class="dw-text">${t.desc || html`<span class="ui-muted">—</span>`}</div>`)}
-    ${UI.section('Note après coup', html`<textarea class="dw-review" id="dw-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" onchange="saveTradeReview(${raw(t.id)}, this.value)">${t.review || ''}</textarea><div class="ui-muted" style="margin-top:4px">Enregistré automatiquement quand tu quittes le champ.</div>`)}
+    ${UI.section('Note après coup', html`<textarea class="dw-review" id="dw-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" onchange="saveTradeReview(${raw(t.id)}, this.value)">${t.review || ''}</textarea><div class="ui-muted mt-4">Enregistré automatiquement quand tu quittes le champ.</div>`)}
     ${UI.section('Checklist respectée', checked.length ? html`${checked.map(c => html`<div class="dw-check">✓ ${c}</div>`)}` : html`<div class="ui-muted">Aucune checklist cochée</div>`)}
     ${UI.section('Erreurs taguées', Array.isArray(t.mistakes) && t.mistakes.length ? UI.chips(t.mistakes, 'chip-mistake') : html`<div class="ui-muted">Aucune erreur taguée</div>`)}
-    ${UI.section('Captures (' + imgs.length + ')', imgs.length ? html`<div class="drawer-caps">${imgs.map((src, i) => html`<img src="${raw(safeImgSrc(src))}" alt="Capture ${i + 1}" onclick="openLightboxById(${raw(t.id)}, ${raw(i)})">`)}</div><div class="ui-muted" style="margin-top:6px">Clique une capture pour l'agrandir et l'annoter.</div>` : html`<div class="ui-muted">Aucune capture — ajoute-les via « Modifier ».</div>`)}
+    ${UI.section('Captures (' + imgs.length + ')', imgs.length ? html`<div class="drawer-caps">${imgs.map((src, i) => html`<img src="${raw(safeImgSrc(src))}" alt="Capture ${i + 1}" onclick="openLightboxById(${raw(t.id)}, ${raw(i)})">`)}</div><div class="ui-muted mt-6">Clique une capture pour l'agrandir et l'annoter.</div>` : html`<div class="ui-muted">Aucune capture — ajoute-les via « Modifier ».</div>`)}
     <div class="dw-actions">
       <button class="btn-ghost" onclick="startEditTrade(${raw(t.id)})">✏️ Modifier</button>
       <button class="btn-ghost" onclick="duplicateTrade(${raw(t.id)})">⧉ Dupliquer</button>

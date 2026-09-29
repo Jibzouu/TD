@@ -73,35 +73,19 @@ function renderGlobalSearchResults(query) {
   searchSelectedIndex = 0;
 
   if (!searchCurrentItems.length) {
-    cont.innerHTML = `<p style="padding:20px;text-align:center;font-size:12px;color:var(--txt3)">Aucun résultat pour "${esc(query)}"</p>`;
+    mount(cont, html`<p class="search-empty">Aucun résultat pour "${query}"</p>`);
     return;
   }
 
-  let html = '';
-  if (pageMatches.length) {
-    html += `<div class="search-group-label">Pages</div>`;
-    pageMatches.forEach(p => { const i = searchCurrentItems.findIndex(x=>x.type==='page'&&x.page===p.page); html += searchItemHtml(i, p.icon, p.label, ''); });
-  }
-  if (actionMatches.length) {
-    html += `<div class="search-group-label">Actions</div>`;
-    actionMatches.forEach(a => { const i = searchCurrentItems.findIndex(x=>x.type==='action'&&x.label===a.label); html += searchItemHtml(i, a.icon, a.label, ''); });
-  }
-  if (tradeMatches.length) {
-    html += `<div class="search-group-label">Trades</div>`;
-    tradeMatches.forEach(t => {
-      const i = searchCurrentItems.findIndex(x=>x.type==='trade'&&x.trade.id===t.id);
-      const sub = `${t.date||''} · ${t.res||''} ${t.pnl != null?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':''}`;
-      html += searchItemHtml(i, '📈', t.asset||'—', sub);
-    });
-  }
-  cont.innerHTML = html;
+  const idx = pred => searchCurrentItems.findIndex(pred);
+  mount(cont, html`${pageMatches.length ? html`<div class="search-group-label">Pages</div>${pageMatches.map(p => searchItemHtml(idx(x => x.type === 'page' && x.page === p.page), p.icon, p.label, ''))}` : ''}${actionMatches.length ? html`<div class="search-group-label">Actions</div>${actionMatches.map(a => searchItemHtml(idx(x => x.type === 'action' && x.label === a.label), a.icon, a.label, ''))}` : ''}${tradeMatches.length ? html`<div class="search-group-label">Trades</div>${tradeMatches.map(t => searchItemHtml(idx(x => x.type === 'trade' && x.trade.id === t.id), '📈', t.asset || '—', `${t.date || ''} · ${t.res || ''} ${t.pnl != null ? (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : ''}`))}` : ''}`);
   updateSearchSelection();
 }
 function searchItemHtml(index, icon, label, sub) {
-  return `<div class="search-item" data-idx="${index}" onclick="activateSearchItem(${index})">
+  return html`<div class="search-item" data-idx="${index}" onclick="activateSearchItem(${raw(index)})">
     <span class="si-icon">${icon}</span>
-    <span class="si-label">${esc(label)}</span>
-    ${sub ? `<span class="si-sub">${esc(sub)}</span>` : ''}
+    <span class="si-label">${label}</span>
+    ${sub ? html`<span class="si-sub">${sub}</span>` : ''}
   </div>`;
 }
 function updateSearchSelection() {

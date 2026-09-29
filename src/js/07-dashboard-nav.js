@@ -39,24 +39,23 @@ function renderSummaryBanner() {
     tiltCost = flagged.reduce((s,f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
   }
 
-  const goToBilan = `event.preventDefault();showPage('bilan', document.querySelector('.nav-item[onclick*=bilan]'))`;
-  const goToStats = `event.preventDefault();showPage('stats', document.querySelector('.nav-item[onclick*=stats]'))`;
-  const linkStyle = 'text-decoration:underline;cursor:pointer';
+  const goToBilan = raw(`event.preventDefault();showPage('bilan', document.querySelector('.nav-item[onclick*=bilan]'))`);
+  const goToStats = raw(`event.preventDefault();showPage('stats', document.querySelector('.nav-item[onclick*=stats]'))`);
 
   const parts = [];
   const eurTxt = fmtEUR(totalEur, true);
-  parts.push(`Tu es <strong style="color:${totalEur>=0?'var(--green)':'var(--red)'}">${eurTxt}</strong> sur l'ensemble de ton historique (${trades.length} trades).`);
+  parts.push(html`Tu es <strong class="tone-${raw(totalEur >= 0 ? 'green' : 'red')}">${eurTxt}</strong> sur l'ensemble de ton historique (${trades.length} trades).`);
   if (bestDow !== null && bestDowVal > 0) {
-    parts.push(`Ton meilleur jour est le <a onclick="${goToBilan}" style="${linkStyle};color:var(--blue)">${WD_NAMES[bestDow]}</a> (${bestDowVal>=0?'+':''}${bestDowVal.toFixed(1)}R cumulé).`);
+    parts.push(html`Ton meilleur jour est le <a class="sb-link tone-blue" onclick="${goToBilan}">${WD_NAMES[bestDow]}</a> (${bestDowVal>=0?'+':''}${bestDowVal.toFixed(1)}R cumulé).`);
   }
   if (bestHour !== null && bestHourVal > 0) {
-    parts.push(`Ta meilleure heure d'entrée est <a onclick="${goToBilan}" style="${linkStyle};color:var(--blue)">${String(bestHour).padStart(2,'0')}h</a>.`);
+    parts.push(html`Ta meilleure heure d'entrée est <a class="sb-link tone-blue" onclick="${goToBilan}">${String(bestHour).padStart(2,'0')}h</a>.`);
   }
   if (tiltCount > 0 && tiltCost > 0) {
-    parts.push(`<a onclick="${goToStats}" style="${linkStyle};color:var(--amber)">${tiltCount} trade(s) signalé(s) par le Tilt Meter</a> t'ont coûté environ ${tiltCost.toFixed(0)} €.`);
+    parts.push(html`<a class="sb-link tone-amber" onclick="${goToStats}">${tiltCount} trade(s) signalé(s) par le Tilt Meter</a> t'ont coûté environ ${tiltCost.toFixed(0)} €.`);
   }
 
-  textEl.innerHTML = parts.join(' ');
+  mount(textEl, html`${parts.map((p, i) => html`${i ? ' ' : ''}${p}`)}`);
   banner.style.display = 'block';
 }
 

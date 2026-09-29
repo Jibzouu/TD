@@ -60,7 +60,6 @@ function chartsAvailable(canvasId) {
     if (!ok && !note && canvas.parentNode) {
       note = document.createElement('div');
       note.className = 'chart-offline-note';
-      note.style.cssText = 'height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:8px';
       note.textContent = 'Graphique indisponible hors ligne (Chart.js non chargé) — tes données sont intactes.';
       canvas.parentNode.appendChild(note);
     }

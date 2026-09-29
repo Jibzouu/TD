@@ -63,7 +63,7 @@ function renderFilterBar() {
   const opts = (id, values, allLabel, cur) => {
     const el = document.getElementById(id); if (!el) return;
     const list = values.includes(cur) || !cur ? values : values.concat([cur]);
-    el.innerHTML = `<option value="">${allLabel}</option>` + list.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
+    mount(el, html`<option value="">${allLabel}</option>${list.map(v => html`<option value="${v}"${raw(v === cur ? ' selected' : '')}>${v}</option>`)}`);
     el.value = cur || '';
     el.classList.toggle('on', !!cur);
   };

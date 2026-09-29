@@ -74,7 +74,7 @@ function setupNavDraggable(item, nav, isClickable) {
   if (isClickable && !item.querySelector('.nav-grip')) {
     const grip = document.createElement('span');
     grip.className = 'nav-grip';
-    grip.innerHTML = '<svg viewBox="0 0 10 16" fill="currentColor" width="10" height="16"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></svg>';
+    mount(grip, html`<svg viewBox="0 0 10 16" fill="currentColor" width="10" height="16"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></svg>`);
     item.insertBefore(grip, item.firstChild);
   }
 

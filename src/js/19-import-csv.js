@@ -418,7 +418,7 @@ function refreshAssetDropdowns() {
     const el = document.getElementById(id);
     if (!el) return;
     const current = el.value;
-    el.innerHTML = '<option value="">Tous les assets</option>' + allAssets.map(a => `<option${a===current?' selected':''}>${esc(a)}</option>`).join('');
+    mount(el, html`<option value="">Tous les assets</option>${allAssets.map(a => html`<option${raw(a === current ? ' selected' : '')}>${a}</option>`)}`);
   });
 
   const fAsset = document.getElementById('f-asset');
@@ -428,7 +428,7 @@ function refreshAssetDropdowns() {
     const og = document.createElement('optgroup');
     og.label = "Découverts à l'import";
     og.setAttribute('data-discovered', '1');
-    og.innerHTML = discovered.map(a => `<option>${esc(a)}</option>`).join('');
+    mount(og, html`${discovered.map(a => html`<option>${a}</option>`)}`);
     fAsset.appendChild(og);
   }
 }

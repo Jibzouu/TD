@@ -39,10 +39,10 @@ function renderUploadThumbs() {
   if (!prev || !ph) return;
   ph.style.display = currentImgs.length ? 'none' : 'block';
   prev.style.display = currentImgs.length ? 'flex' : 'none';
-  prev.innerHTML = currentImgs.map((src, i) => `<div class="thumb">
-      <img src="${safeImgSrc(src)}" alt="Capture ${i + 1}" onclick="event.stopPropagation();openGallery(currentImgs, ${i}, (j, d) => { currentImgs[j] = d; renderUploadThumbs(); })">
-      <button type="button" class="thumb-del" title="Retirer cette capture" aria-label="Retirer la capture ${i + 1}" onclick="event.stopPropagation();removeUploadImg(${i})">×</button>
-    </div>`).join('') + (currentImgs.length < MAX_CAPS ? '<div class="thumb thumb-add" title="Ajouter une capture">+</div>' : '');
+  mount(prev, html`${currentImgs.map((src, i) => html`<div class="thumb">
+      <img src="${safeImgSrc(src)}" alt="Capture ${i + 1}" onclick="event.stopPropagation();openGallery(currentImgs, ${raw(i)}, (j, d) => { currentImgs[j] = d; renderUploadThumbs(); })">
+      <button type="button" class="thumb-del" title="Retirer cette capture" aria-label="Retirer la capture ${i + 1}" onclick="event.stopPropagation();removeUploadImg(${raw(i)})">×</button>
+    </div>`)}${currentImgs.length < MAX_CAPS ? html`<div class="thumb thumb-add" title="Ajouter une capture">+</div>` : ''}`);
 }
 function removeUploadImg(i) { currentImgs.splice(i, 1); renderUploadThumbs(); }
 function clearImg() { currentImgs = []; const f = document.getElementById('f-img'); if (f) f.value = ''; renderUploadThumbs(); }

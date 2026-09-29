@@ -1173,7 +1173,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .watch-input.rule-val{flex:1;text-align:right;color:var(--amber);font-weight:600;font-family:var(--mono)}
 .nowrap{white-space:nowrap}
 .btn-ghost.btn-add{margin-top:10px;width:100%}
-.mistake-chip{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer}
+.mistake-chip,.field label.mistake-chip{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer}
 .mistake-chip input{accent-color:#f472b6;cursor:pointer}
 
 /* Stockage (alertes, jauge) et couverture du R */
@@ -1197,6 +1197,17 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .bk-slot-btns{display:flex;gap:6px}
 .btn-ghost.btn-xs2{padding:5px 10px;font-size:11px}
 .trash-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)}
+
+/* Divers : calculateur de position, bandeau de résumé, checklist du formulaire, recherche */
+.mt-4{margin-top:4px}.mt-6{margin-top:6px}
+.pc-empty{grid-column:span 3;font-size:12px;color:var(--txt3)}
+.pc-cell{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.pc-label{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:6px}
+.pc-val{font-size:16px;font-weight:600;font-family:var(--mono);color:var(--amber)}
+.sb-link{text-decoration:underline;cursor:pointer}
+.mistake-chip.check input{accent-color:var(--green)}
+.search-empty{padding:20px;text-align:center;font-size:12px;color:var(--txt3)}
+.chart-offline-note{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:8px}
 
 </style>
 </head>
@@ -2786,7 +2797,6 @@ function chartsAvailable(canvasId) {
     if (!ok && !note && canvas.parentNode) {
       note = document.createElement('div');
       note.className = 'chart-offline-note';
-      note.style.cssText = 'height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:8px';
       note.textContent = 'Graphique indisponible hors ligne (Chart.js non chargé) — tes données sont intactes.';
       canvas.parentNode.appendChild(note);
     }
@@ -3197,10 +3207,10 @@ function renderUploadThumbs() {
   if (!prev || !ph) return;
   ph.style.display = currentImgs.length ? 'none' : 'block';
   prev.style.display = currentImgs.length ? 'flex' : 'none';
-  prev.innerHTML = currentImgs.map((src, i) => `<div class="thumb">
-      <img src="${safeImgSrc(src)}" alt="Capture ${i + 1}" onclick="event.stopPropagation();openGallery(currentImgs, ${i}, (j, d) => { currentImgs[j] = d; renderUploadThumbs(); })">
-      <button type="button" class="thumb-del" title="Retirer cette capture" aria-label="Retirer la capture ${i + 1}" onclick="event.stopPropagation();removeUploadImg(${i})">×</button>
-    </div>`).join('') + (currentImgs.length < MAX_CAPS ? '<div class="thumb thumb-add" title="Ajouter une capture">+</div>' : '');
+  mount(prev, html`${currentImgs.map((src, i) => html`<div class="thumb">
+      <img src="${safeImgSrc(src)}" alt="Capture ${i + 1}" onclick="event.stopPropagation();openGallery(currentImgs, ${raw(i)}, (j, d) => { currentImgs[j] = d; renderUploadThumbs(); })">
+      <button type="button" class="thumb-del" title="Retirer cette capture" aria-label="Retirer la capture ${i + 1}" onclick="event.stopPropagation();removeUploadImg(${raw(i)})">×</button>
+    </div>`)}${currentImgs.length < MAX_CAPS ? html`<div class="thumb thumb-add" title="Ajouter une capture">+</div>` : ''}`);
 }
 function removeUploadImg(i) { currentImgs.splice(i, 1); renderUploadThumbs(); }
 function clearImg() { currentImgs = []; const f = document.getElementById('f-img'); if (f) f.value = ''; renderUploadThumbs(); }
@@ -3875,7 +3885,7 @@ function renderFilterBar() {
   const opts = (id, values, allLabel, cur) => {
     const el = document.getElementById(id); if (!el) return;
     const list = values.includes(cur) || !cur ? values : values.concat([cur]);
-    el.innerHTML = `<option value="">${allLabel}</option>` + list.map(v => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
+    mount(el, html`<option value="">${allLabel}</option>${list.map(v => html`<option value="${v}"${raw(v === cur ? ' selected' : '')}>${v}</option>`)}`);
     el.value = cur || '';
     el.classList.toggle('on', !!cur);
   };
@@ -4405,7 +4415,7 @@ function setupNavDraggable(item, nav, isClickable) {
   if (isClickable && !item.querySelector('.nav-grip')) {
     const grip = document.createElement('span');
     grip.className = 'nav-grip';
-    grip.innerHTML = '<svg viewBox="0 0 10 16" fill="currentColor" width="10" height="16"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></svg>';
+    mount(grip, html`<svg viewBox="0 0 10 16" fill="currentColor" width="10" height="16"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></svg>`);
     item.insertBefore(grip, item.firstChild);
   }
 
@@ -4774,24 +4784,23 @@ function renderSummaryBanner() {
     tiltCost = flagged.reduce((s,f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
   }
 
-  const goToBilan = `event.preventDefault();showPage('bilan', document.querySelector('.nav-item[onclick*=bilan]'))`;
-  const goToStats = `event.preventDefault();showPage('stats', document.querySelector('.nav-item[onclick*=stats]'))`;
-  const linkStyle = 'text-decoration:underline;cursor:pointer';
+  const goToBilan = raw(`event.preventDefault();showPage('bilan', document.querySelector('.nav-item[onclick*=bilan]'))`);
+  const goToStats = raw(`event.preventDefault();showPage('stats', document.querySelector('.nav-item[onclick*=stats]'))`);
 
   const parts = [];
   const eurTxt = fmtEUR(totalEur, true);
-  parts.push(`Tu es <strong style="color:${totalEur>=0?'var(--green)':'var(--red)'}">${eurTxt}</strong> sur l'ensemble de ton historique (${trades.length} trades).`);
+  parts.push(html`Tu es <strong class="tone-${raw(totalEur >= 0 ? 'green' : 'red')}">${eurTxt}</strong> sur l'ensemble de ton historique (${trades.length} trades).`);
   if (bestDow !== null && bestDowVal > 0) {
-    parts.push(`Ton meilleur jour est le <a onclick="${goToBilan}" style="${linkStyle};color:var(--blue)">${WD_NAMES[bestDow]}</a> (${bestDowVal>=0?'+':''}${bestDowVal.toFixed(1)}R cumulé).`);
+    parts.push(html`Ton meilleur jour est le <a class="sb-link tone-blue" onclick="${goToBilan}">${WD_NAMES[bestDow]}</a> (${bestDowVal>=0?'+':''}${bestDowVal.toFixed(1)}R cumulé).`);
   }
   if (bestHour !== null && bestHourVal > 0) {
-    parts.push(`Ta meilleure heure d'entrée est <a onclick="${goToBilan}" style="${linkStyle};color:var(--blue)">${String(bestHour).padStart(2,'0')}h</a>.`);
+    parts.push(html`Ta meilleure heure d'entrée est <a class="sb-link tone-blue" onclick="${goToBilan}">${String(bestHour).padStart(2,'0')}h</a>.`);
   }
   if (tiltCount > 0 && tiltCost > 0) {
-    parts.push(`<a onclick="${goToStats}" style="${linkStyle};color:var(--amber)">${tiltCount} trade(s) signalé(s) par le Tilt Meter</a> t'ont coûté environ ${tiltCost.toFixed(0)} €.`);
+    parts.push(html`<a class="sb-link tone-amber" onclick="${goToStats}">${tiltCount} trade(s) signalé(s) par le Tilt Meter</a> t'ont coûté environ ${tiltCost.toFixed(0)} €.`);
   }
 
-  textEl.innerHTML = parts.join(' ');
+  mount(textEl, html`${parts.map((p, i) => html`${i ? ' ' : ''}${p}`)}`);
   banner.style.display = 'block';
 }
 
@@ -4996,7 +5005,7 @@ function knownSetups() {
 }
 function refreshSetupList() {
   const dl = document.getElementById('setup-list');
-  if (dl) dl.innerHTML = knownSetups().map(s => `<option value="${esc(s)}"></option>`).join('');
+  if (dl) mount(dl, html`${knownSetups().map(s => html`<option value="${s}"></option>`)}`);
 }
 function addTrade() {
   const date = document.getElementById('f-date').value;
@@ -5085,11 +5094,11 @@ function renderTradeChecklist() {
   const cont = document.getElementById('f-checklist');
   if (!cont) return;
   const items = getEntryItems();
-  cont.innerHTML = items.map((item, i) => `
-    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);padding:7px 11px;cursor:pointer">
-      <input type="checkbox" class="f-checklist-item" data-idx="${i}" style="accent-color:var(--green);cursor:pointer">
-      ${esc(item)}
-    </label>`).join('');
+  mount(cont, html`${items.map((item, i) => html`
+    <label class="mistake-chip check">
+      <input type="checkbox" class="f-checklist-item" data-idx="${i}">
+      ${item}
+    </label>`)}`);
 }
 
 // ── DD JOURNALIER (avec override manuel) ────────────────────────────
@@ -5761,7 +5770,7 @@ function tradeRowHtml(t, num) {
     <td>${t.rr ? t.rr + 'R' : '—'}</td>
     <td title="${R_SRC_LABELS[rsrc]}">${t.pnl != null ? html`${approx}${UI.pnl(t.pnl, 'R')}` : '—'}</td>
     <td>${UI.pnl(t.pnlEur, '€')}</td>
-    <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" style="color:${raw(t.emotion >= 4 ? 'var(--green)' : t.emotion >= 3 ? 'var(--amber)' : 'var(--red)')}">●</span>` : ''}</td>
+    <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" class="tone-${raw(t.emotion >= 4 ? 'green' : t.emotion >= 3 ? 'amber' : 'red')}">●</span>` : ''}</td>
     <td><button class="del-btn row-del" onclick="event.stopPropagation();deleteTrade(${id})" title="Supprimer" aria-label="Supprimer ce trade">×</button></td>
   </tr>`;
 }
@@ -5932,10 +5941,10 @@ function openTradeDetail(id) {
       t.entryPrice != null ? ['Prix d\'entrée', t.entryPrice] : null, t.slPrice != null ? ['Stop loss', t.slPrice] : null, t.tpPrice != null ? ['Take profit', t.tpPrice] : null, t.exitPrice != null ? ['Prix de sortie', t.exitPrice] : null])}
     ${Array.isArray(t.tags) && t.tags.length ? UI.section('Tags', UI.chips(t.tags.map(x => '#' + x))) : ''}
     ${UI.section('Description / confluences', html`<div class="dw-text">${t.desc || html`<span class="ui-muted">—</span>`}</div>`)}
-    ${UI.section('Note après coup', html`<textarea class="dw-review" id="dw-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" onchange="saveTradeReview(${raw(t.id)}, this.value)">${t.review || ''}</textarea><div class="ui-muted" style="margin-top:4px">Enregistré automatiquement quand tu quittes le champ.</div>`)}
+    ${UI.section('Note après coup', html`<textarea class="dw-review" id="dw-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?" onchange="saveTradeReview(${raw(t.id)}, this.value)">${t.review || ''}</textarea><div class="ui-muted mt-4">Enregistré automatiquement quand tu quittes le champ.</div>`)}
     ${UI.section('Checklist respectée', checked.length ? html`${checked.map(c => html`<div class="dw-check">✓ ${c}</div>`)}` : html`<div class="ui-muted">Aucune checklist cochée</div>`)}
     ${UI.section('Erreurs taguées', Array.isArray(t.mistakes) && t.mistakes.length ? UI.chips(t.mistakes, 'chip-mistake') : html`<div class="ui-muted">Aucune erreur taguée</div>`)}
-    ${UI.section('Captures (' + imgs.length + ')', imgs.length ? html`<div class="drawer-caps">${imgs.map((src, i) => html`<img src="${raw(safeImgSrc(src))}" alt="Capture ${i + 1}" onclick="openLightboxById(${raw(t.id)}, ${raw(i)})">`)}</div><div class="ui-muted" style="margin-top:6px">Clique une capture pour l'agrandir et l'annoter.</div>` : html`<div class="ui-muted">Aucune capture — ajoute-les via « Modifier ».</div>`)}
+    ${UI.section('Captures (' + imgs.length + ')', imgs.length ? html`<div class="drawer-caps">${imgs.map((src, i) => html`<img src="${raw(safeImgSrc(src))}" alt="Capture ${i + 1}" onclick="openLightboxById(${raw(t.id)}, ${raw(i)})">`)}</div><div class="ui-muted mt-6">Clique une capture pour l'agrandir et l'annoter.</div>` : html`<div class="ui-muted">Aucune capture — ajoute-les via « Modifier ».</div>`)}
     <div class="dw-actions">
       <button class="btn-ghost" onclick="startEditTrade(${raw(t.id)})">✏️ Modifier</button>
       <button class="btn-ghost" onclick="duplicateTrade(${raw(t.id)})">⧉ Dupliquer</button>
@@ -8063,7 +8072,7 @@ function renderPositionCalc() {
   const cont = document.getElementById('calc-result');
   if (!cont) return;
   if (!(balance > 0) || !(riskPct > 0) || !(stopDist > 0) || !(pointValue > 0)) {
-    cont.innerHTML = `<div style="grid-column:span 3;font-size:12px;color:var(--txt3)">Renseigne les 4 champs ci-dessus pour calculer la taille de position.</div>`;
+    mount(cont, html`<div class="pc-empty">Renseigne les 4 champs ci-dessus pour calculer la taille de position.</div>`);
     return;
   }
   const riskEur = balance * (riskPct / 100);
@@ -8073,10 +8082,10 @@ function renderPositionCalc() {
     ['Taille suggérée', size.toFixed(2) + ' unités/lots'],
     ['Perte si stop touché', '-' + riskEur.toFixed(2) + ' €'],
   ];
-  cont.innerHTML = cells.map(([l,v]) => `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center">
-    <div style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:6px">${l}</div>
-    <div style="font-size:16px;font-weight:600;font-family:var(--mono);color:var(--amber)">${v}</div>
-  </div>`).join('');
+  mount(cont, html`${cells.map(([l, v]) => html`<div class="pc-cell">
+    <div class="pc-label">${l}</div>
+    <div class="pc-val">${v}</div>
+  </div>`)}`);
 }
 
 
@@ -8501,7 +8510,7 @@ function refreshAssetDropdowns() {
     const el = document.getElementById(id);
     if (!el) return;
     const current = el.value;
-    el.innerHTML = '<option value="">Tous les assets</option>' + allAssets.map(a => `<option${a===current?' selected':''}>${esc(a)}</option>`).join('');
+    mount(el, html`<option value="">Tous les assets</option>${allAssets.map(a => html`<option${raw(a === current ? ' selected' : '')}>${a}</option>`)}`);
   });
 
   const fAsset = document.getElementById('f-asset');
@@ -8511,7 +8520,7 @@ function refreshAssetDropdowns() {
     const og = document.createElement('optgroup');
     og.label = "Découverts à l'import";
     og.setAttribute('data-discovered', '1');
-    og.innerHTML = discovered.map(a => `<option>${esc(a)}</option>`).join('');
+    mount(og, html`${discovered.map(a => html`<option>${a}</option>`)}`);
     fAsset.appendChild(og);
   }
 }
@@ -9258,35 +9267,19 @@ function renderGlobalSearchResults(query) {
   searchSelectedIndex = 0;
 
   if (!searchCurrentItems.length) {
-    cont.innerHTML = `<p style="padding:20px;text-align:center;font-size:12px;color:var(--txt3)">Aucun résultat pour "${esc(query)}"</p>`;
+    mount(cont, html`<p class="search-empty">Aucun résultat pour "${query}"</p>`);
     return;
   }
 
-  let html = '';
-  if (pageMatches.length) {
-    html += `<div class="search-group-label">Pages</div>`;
-    pageMatches.forEach(p => { const i = searchCurrentItems.findIndex(x=>x.type==='page'&&x.page===p.page); html += searchItemHtml(i, p.icon, p.label, ''); });
-  }
-  if (actionMatches.length) {
-    html += `<div class="search-group-label">Actions</div>`;
-    actionMatches.forEach(a => { const i = searchCurrentItems.findIndex(x=>x.type==='action'&&x.label===a.label); html += searchItemHtml(i, a.icon, a.label, ''); });
-  }
-  if (tradeMatches.length) {
-    html += `<div class="search-group-label">Trades</div>`;
-    tradeMatches.forEach(t => {
-      const i = searchCurrentItems.findIndex(x=>x.type==='trade'&&x.trade.id===t.id);
-      const sub = `${t.date||''} · ${t.res||''} ${t.pnl != null?(t.pnl>=0?'+':'')+t.pnl.toFixed(1)+'R':''}`;
-      html += searchItemHtml(i, '📈', t.asset||'—', sub);
-    });
-  }
-  cont.innerHTML = html;
+  const idx = pred => searchCurrentItems.findIndex(pred);
+  mount(cont, html`${pageMatches.length ? html`<div class="search-group-label">Pages</div>${pageMatches.map(p => searchItemHtml(idx(x => x.type === 'page' && x.page === p.page), p.icon, p.label, ''))}` : ''}${actionMatches.length ? html`<div class="search-group-label">Actions</div>${actionMatches.map(a => searchItemHtml(idx(x => x.type === 'action' && x.label === a.label), a.icon, a.label, ''))}` : ''}${tradeMatches.length ? html`<div class="search-group-label">Trades</div>${tradeMatches.map(t => searchItemHtml(idx(x => x.type === 'trade' && x.trade.id === t.id), '📈', t.asset || '—', `${t.date || ''} · ${t.res || ''} ${t.pnl != null ? (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : ''}`))}` : ''}`);
   updateSearchSelection();
 }
 function searchItemHtml(index, icon, label, sub) {
-  return `<div class="search-item" data-idx="${index}" onclick="activateSearchItem(${index})">
+  return html`<div class="search-item" data-idx="${index}" onclick="activateSearchItem(${raw(index)})">
     <span class="si-icon">${icon}</span>
-    <span class="si-label">${esc(label)}</span>
-    ${sub ? `<span class="si-sub">${esc(sub)}</span>` : ''}
+    <span class="si-label">${label}</span>
+    ${sub ? html`<span class="si-sub">${sub}</span>` : ''}
   </div>`;
 }
 function updateSearchSelection() {
