@@ -382,3 +382,25 @@ test('scaling : pas des paliers qui grandit par tranche', async () => {
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('scaling : paliers calculés à partir d’un coussin de N pertes, arrondis à des chiffres ronds', async () => {
+  const sc = { version: 2, start: 1000, riskPct: 3, mode: 'round', roundTo: 100, params: { round: 1000, cushion: 10, capital: 10, risk: 10 },
+    goal: 30000, current: 1850, auto: false, tableOpen: true, paramsOpen: true, zones: [], minCush: { unit: 'loss', value: 5, by: {} } };
+  const { page, ctx, errors } = await openJournal({ seed: { tj_scaling: sc } });
+  await goto(page, 'scaling');
+  await page.selectOption('#sc-mode', 'cushion'); await page.waitForTimeout(60);
+  assert.equal(await page.inputValue('#sc-round'), '-1', 'chiffres ronds proposés par défaut');
+  assert.equal(await page.locator('#sc-mincush-field').isVisible(), false, 'coussin minimum masqué : il ferait double emploi');
+  const caps = () => page.$$eval('#sc-table tbody tr', trs => trs.map(tr => tr.children[1].textContent.replace(/\D/g, '')));
+  assert.deepEqual(await caps(), ['1000', '1500', '2500', '4000', '6000', '9000', '15000', '25000', '30000']);
+  // Chaque écart couvre au moins 10 pertes au nouveau risque.
+  const losses = await page.$$eval('#sc-table tbody tr .sc-cush-res b', bs => bs.map(b => parseFloat(b.textContent.replace(',', '.'))));
+  assert.ok(losses.length === 7 && losses.every(n => n >= 10), 'coussins ≥ 10 pertes : ' + losses);
+  // 5 pertes à partir de P3 : 2 500 / 0,85 → 3 000, puis 4 000, 5 000… (hérité).
+  const inp = page.locator('#sc-table tbody tr').nth(3).locator('input[aria-label^="Coussin"]');
+  await inp.fill('5'); await inp.dispatchEvent('change'); await page.waitForTimeout(60);
+  assert.deepEqual((await caps()).slice(0, 6), ['1000', '1500', '2500', '3000', '4000', '5000']);
+  assert.match(await page.locator('#sc-rule-text').textContent(), /au moins 10 pertes d'affilée/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
