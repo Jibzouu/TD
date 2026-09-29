@@ -1,0 +1,1223 @@
+
+<button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Menu">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
+</button>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-row">
+        <svg class="logo-mark" viewBox="0 0 28 28" fill="none">
+          <rect x="1" y="1" width="26" height="26" rx="8" fill="var(--logo-color)"/>
+          <text x="14" y="19.5" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="var(--bg)" text-anchor="middle">JT</text>
+        </svg>
+        <div>
+          <h1 id="jr-title">Journal de Trading</h1>
+          <p id="jr-sub">Trades réels · Forex · Indices</p>
+        </div>
+      </div>
+      <div class="jr-tabs" id="jr-tabs" role="tablist" aria-label="Journal">
+        <button class="jr-tab" data-journal="tj" role="tab" onclick="switchJournal('tj')">Live</button>
+        <button class="jr-tab" data-journal="bt" role="tab" onclick="switchJournal('bt')">Backtest</button>
+        <button class="jr-tab" data-journal="pf" role="tab" onclick="switchJournal('pf')">PropFirm</button>
+      </div>
+    </div>
+    <button onclick="openGlobalSearch()" style="display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:10px 10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--txt3);font-family:var(--sans);font-size:12px;cursor:pointer;text-align:left">
+      <span style="opacity:.6">🔍</span><span style="flex:1">Rechercher…</span><kbd style="background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px">⌘K</kbd>
+    </button>
+    <nav class="nav">
+      <button class="nav-item active" onclick="showPage('dashboard',this)" data-page="dashboard" data-navid="dashboard">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('trades',this)" data-page="trades" data-navid="trades">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h8"/></svg>
+        Journal des trades
+      </button>
+      <button class="nav-item" onclick="showPage('stats',this)" data-page="stats" data-navid="stats">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 14V8m4 6V4m4 10V6m4 8V2"/></svg>
+        Statistiques
+      </button>
+      <button class="nav-item" onclick="showPage('calendrier',this)" data-page="calendrier" data-navid="calendrier">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="3" width="14" height="12" rx="1.5"/><path d="M5 1v4M11 1v4M1 7h14"/></svg>
+        Calendrier
+      </button>
+      <button class="nav-item" onclick="showPage('bilan',this)" data-page="bilan" data-navid="bilan">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+        Bilan journalier
+      </button>
+      <button class="nav-item" onclick="showPage('propfirm',this)" data-page="propfirm" data-navid="propfirm">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.5 2 4v4.2c0 3.6 2.5 6 6 6.8 3.5-.8 6-3.2 6-6.8V4L8 1.5Z"/><path d="M5.5 8l1.8 1.8L10.5 6"/></svg>
+        Prop Firm
+      </button>
+      <button class="nav-item" onclick="showPage('scaling',this)" data-page="scaling" data-navid="scaling">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 13.5H5V10h3.5V6.5H12V3h2.5"/></svg>
+        Scaling Account
+      </button>
+      <div class="nav-sep" data-navid="sep1"></div>
+      <button class="nav-item" onclick="showPage('plan',this)" data-page="plan" data-navid="plan">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h8M4 10h6"/><rect x="1" y="2" width="14" height="12" rx="2"/></svg>
+        Plan de trading
+      </button>
+      <button class="nav-item" onclick="showPage('watchlist',this)" data-page="watchlist" data-navid="watchlist">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+        Watchlist
+      </button>
+      <div class="nav-sep" data-navid="sep2"></div>
+      <button class="nav-item" onclick="showPage('export',this)" data-page="export" data-navid="export">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/></svg>
+        Export / Import
+      </button>
+      <button class="nav-item" onclick="showPage('parametres',this)" data-page="parametres" data-navid="parametres">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1M12.4 12.4l-1.1-1.1M4.7 4.7 3.6 3.6"/></svg>
+        Paramètres
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <p>Trades enregistrés<br><span id="trade-total-count">0</span> trade(s) · Données locales</p>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div id="page-dashboard" class="page active">
+      <div id="welcome-card" style="display:none;background:linear-gradient(155deg, color-mix(in srgb, var(--green) 7%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:22px 24px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <div>
+            <div style="font-size:16px;font-weight:600;margin-bottom:4px">👋 Bienvenue dans ton journal de trading</div>
+            <div style="font-size:12.5px;color:var(--txt3)">Quelques repères pour bien démarrer :</div>
+          </div>
+          <button class="btn-ghost" onclick="dismissWelcome()" style="padding:6px 12px;font-size:11px;flex-shrink:0">J'ai compris</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px">
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">1. Ajoute un trade</div>
+            <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">Remplis le formulaire ci-dessous, ou importe directement un CSV TradingView depuis Export/Import.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">2. Personnalise ton plan</div>
+            <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">Édite ta checklist, tes règles de risque et tes erreurs à suivre dans Plan de trading.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">3. Configure ton compte</div>
+            <div id="welcome-step3" style="font-size:11.5px;color:var(--txt3);line-height:1.5">Solde, limite de perte journalière, et challenge Prop Firm si tu en fais un.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">4. Fais-le tien</div>
+            <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd style="background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
+          </div>
+        </div>
+      </div>
+      <div id="summary-banner" style="display:none;background:linear-gradient(155deg, color-mix(in srgb, var(--blue) 6%, var(--bg2)), var(--bg2) 70%);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--txt2)">
+        <span style="margin-right:8px">📊</span><span id="summary-banner-text"></span>
+      </div>
+      <div id="export-reminder" style="display:none;align-items:center;gap:14px;background:var(--amber-d);border:1px solid rgba(245,158,11,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px">
+        <span style="font-size:16px">💾</span>
+        <span id="export-reminder-text" style="flex:1;font-size:12.5px;color:var(--txt2)"></span>
+        <button class="btn-ghost" style="padding:7px 14px;font-size:11px;border-color:var(--amber);color:var(--amber)" onclick="showPage('export', document.querySelector('.nav-item[onclick*=export]'));exportData()">Exporter maintenant</button>
+        <button class="btn-ghost" style="padding:7px 10px;font-size:11px" onclick="dismissExportReminder()">Plus tard</button>
+      </div>
+      <div id="import-reminder" style="display:none;align-items:center;gap:14px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r2);padding:14px 18px;margin-bottom:16px">
+        <span style="font-size:16px">🔄</span>
+        <span id="import-reminder-text" style="flex:1;font-size:12.5px;color:var(--txt2)"></span>
+        <button class="btn-ghost" style="padding:7px 14px;font-size:11px;border-color:var(--blue);color:var(--blue)" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'))">Importer maintenant</button>
+        <button class="btn-ghost" style="padding:7px 10px;font-size:11px" onclick="dismissImportReminder()">Plus tard</button>
+      </div>
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <h2>Dashboard</h2>
+          <p id="dash-subtitle">Aucune entrée pour l'instant</p>
+        </div>
+      </div>
+
+      <div class="hero-metric">
+        <div class="hero-main">
+          <div class="hero-metric-label">Performance globale</div>
+          <div class="hero-metric-value" id="k-pnleur">—</div>
+          <div class="hero-metric-sub" id="k-pnleur-sub">en euros</div>
+        </div>
+        <div class="hero-side" id="hero-side"></div>
+        <svg class="hero-spark" id="hero-spark" viewBox="0 0 240 64" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
+      <div id="r-coverage"></div>
+      <div class="kpi-grid kpi-grid-5">
+        <div class="kpi k-green">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="kpi-label">Win rate</div>
+            <span class="kpi-trend" id="k-wr-trend"></span>
+          </div>
+          <div class="kpi-val pos" id="k-wr">—</div>
+          <div class="kpi-sub" id="k-wr-sub">— trades fermés</div>
+          <svg class="kpi-spark" id="k-wr-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi k-blue">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="kpi-label">P&amp;L total (R)</div>
+            <span class="kpi-trend" id="k-pnl-trend"></span>
+          </div>
+          <div class="kpi-val blue" id="k-pnl">—</div>
+          <div class="kpi-sub" id="k-pnl-sub">en R</div>
+          <svg class="kpi-spark" id="k-pnl-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi k-amber">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="kpi-label">Payoff moyen</div>
+            <span class="kpi-trend" id="k-rr-trend"></span>
+          </div>
+          <div class="kpi-val amb" id="k-rr">—</div>
+          <div class="kpi-sub" id="k-rr-sub">gain moyen ÷ perte moyenne</div>
+          <svg class="kpi-spark" id="k-rr-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi k-purple">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="kpi-label">Profit Factor</div>
+            <span class="kpi-trend" id="k-pf-trend"></span>
+          </div>
+          <div class="kpi-val neu" id="k-pf">—</div>
+          <div class="kpi-sub" id="k-pf-sub">gains / pertes</div>
+          <svg class="kpi-spark" id="k-pf-spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Série en cours</div>
+          <div class="kpi-val" id="k-streak">—</div>
+          <div class="kpi-sub" id="k-streak-sub">consécutifs</div>
+          <div class="kpi-form-dots" id="k-form-dots"></div>
+        </div>
+      </div>
+
+      <!-- DD JOURNALIER INDICATOR -->
+      <div id="dd-banner" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3);">Drawdown journalier</span>
+              <input type="date" id="dd-date" onchange="renderDDBanner()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:3px 6px;outline:none">
+              <span id="dd-status-badge" style="font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:calc(var(--r) * .4);background:var(--bg3);color:var(--txt3)">—</span>
+            </div>
+            <div style="text-align:right;display:flex;align-items:center;gap:6px">
+              <span id="dd-amount" style="font-size:18px;font-weight:600;font-family:var(--mono);color:var(--txt)">—</span>
+              <span id="dd-limit-label" style="font-size:11px;font-family:var(--mono);color:var(--txt3)"></span>
+              <button id="dd-edit-btn" onclick="toggleDDManualInput()" title="Modifier à la main" style="background:none;border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt3);cursor:pointer;padding:3px 7px;font-size:11px;line-height:1">✎</button>
+            </div>
+          </div>
+          <div id="dd-manual-row" style="display:none;align-items:center;gap:8px;margin-bottom:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);padding:8px 10px">
+            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">P&L du jour (€), à la main :</span>
+            <input type="number" id="dd-manual-input" step="1" placeholder="ex : -120" style="width:100px;background:var(--bg2);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none">
+            <button class="btn-ghost" style="padding:5px 10px;font-size:11px" onclick="saveDDManual()">Enregistrer</button>
+            <button class="btn-ghost" style="padding:5px 10px;font-size:11px" onclick="clearDDManual()">Revenir à l'auto</button>
+          </div>
+          <div style="height:10px;background:var(--bg4);border-radius:calc(var(--r) * .5);overflow:hidden;position:relative">
+            <div id="dd-bar" style="height:100%;width:0%;border-radius:calc(var(--r) * .5);transition:width .5s cubic-bezier(.4,0,.2,1),background .3s"></div>
+            <div id="dd-warning-line" style="position:absolute;top:0;height:100%;width:1px;background:rgba(245,158,11,.6);display:none"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">0%</span>
+            <span id="dd-pct-label" style="font-size:11px;font-family:var(--mono);color:var(--txt3)">—</span>
+            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:flex;align-items:center;gap:4px">
+              Limite
+              <input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()" style="width:42px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .5);color:var(--txt2);font-family:var(--mono);font-size:11px;padding:2px 4px;outline:none;text-align:center">%
+            </span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);white-space:nowrap">Solde de départ</label>
+          <div style="position:relative">
+            <input type="number" id="account-size" placeholder="10000" min="0" step="100"
+              style="width:110px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:7px 28px 7px 10px;outline:none"
+              oninput="saveAccountSize()" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'">
+            <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--txt3);pointer-events:none;font-family:var(--mono)">€</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn-ghost" style="padding:6px 12px;font-size:11px" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>
+      </div>
+      <div class="dash-grid" id="dash-grid">
+        <div class="dash-widget w-full" data-widget="year-progress">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Courbe d'équité<small class="panel-sub" id="year-progress-sub"></small></span>
+              <span class="widget-controls">
+                <span class="seg" role="group" aria-label="Affichage">
+                  <button class="seg-btn pnl-tab-btn active" data-mode="cumulative" onclick="setPnlChartMode('cumulative')">Équité</button>
+                  <button class="seg-btn pnl-tab-btn" data-mode="daily" onclick="setPnlChartMode('daily')">P&amp;L journalier</button>
+                </span>
+                <select class="widget-width-select" onchange="setWidgetWidth('year-progress', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div class="eq-stats" id="equity-stats"></div>
+            <div class="chart-wrap" id="wrap-year-progress" style="height:260px"><canvas id="yearProgressChart"></canvas></div>
+            <div class="uw-head"><span>Drawdown depuis le plus haut</span><span id="drawdown-sub"></span></div>
+            <div class="chart-wrap" id="wrap-underwater" style="height:92px"><canvas id="underwaterChart"></canvas></div>
+            <div class="widget-resize-handle"></div>
+          </div>
+        </div>
+        <div class="dash-widget w-half" data-widget="winrate">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Taux de réussite<small class="panel-sub">comparé à ton seuil de rentabilité</small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('winrate', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div id="winrate-body" class="wr-body"></div>
+          </div>
+        </div>
+        <div class="dash-widget w-half" data-widget="asset-bars">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Performance par actif<small class="panel-sub">win rate · trades · P&amp;L</small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('asset-bars', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div class="asset-list" id="asset-bars" style="min-height:120px"><p class="empty-note">Aucun trade</p></div>
+          </div>
+        </div>
+        <div class="dash-widget w-half" data-widget="r-distribution">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Distribution des R<small class="panel-sub">résultat de chaque trade clos</small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('r-distribution', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div class="eq-stats" id="r-distribution-stats"></div>
+            <div class="chart-wrap" id="wrap-r-distribution" style="height:210px"><canvas id="rDistChart"></canvas></div>
+            <div class="widget-resize-handle"></div>
+          </div>
+        </div>
+        <div class="dash-widget w-half" data-widget="radar">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Discipline<small class="panel-sub">ta façon de trader, pas tes résultats</small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('radar', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div class="disc-score">
+              <span id="discipline-score-val">—</span>
+              <div class="disc-meter"><div id="discipline-score-marker"></div></div>
+            </div>
+            <div id="discipline-note" class="disc-note"></div>
+            <div class="chart-wrap" id="wrap-radar" style="height:auto;overflow:visible"><div id="discipline-list"></div></div>
+          </div>
+        </div>
+        <div class="dash-widget w-full" data-widget="heatmap-dh">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Heatmap jour × heure d'entrée<small class="panel-sub" id="heatmap-dh-sub"></small></span>
+              <span class="widget-controls">
+                <select class="widget-width-select" onchange="setWidgetWidth('heatmap-dh', this.value)" aria-label="Largeur du widget"><option value="w-third">1/3</option><option value="w-half">1/2</option><option value="w-full">Pleine largeur</option></select>
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div id="heatmap-dh" class="hm-wrap"></div>
+          </div>
+        </div>
+        <div class="dash-widget w-full" data-widget="monthly-returns" data-no-resize="1">
+          <div class="panel">
+            <div class="panel-hdr">
+              <span>Rendements mensuels<small class="panel-sub">P&amp;L et % du solde en début de mois</small></span>
+              <span class="widget-controls">
+                <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
+              </span>
+            </div>
+            <div id="monthly-returns-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick add form on dashboard -->
+      <div class="form-card" id="trade-form-card">
+        <div id="edit-trade-banner" style="display:none;align-items:center;gap:10px;background:var(--blue-d);border:1px solid rgba(96,165,250,.4);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--blue)">
+          <span>✏️</span><span id="edit-trade-banner-text" style="flex:1">Modification d'un trade existant</span>
+          <button class="btn-ghost" onclick="cancelEditTrade()" style="padding:5px 10px;font-size:11px">Annuler</button>
+        </div>
+        <div class="form-title"><div class="form-title-dot"></div><span id="form-title-text">Nouveau trade</span></div>
+
+        <!-- Essentiel : toujours visible, suffisant pour enregistrer un trade en quelques secondes -->
+        <div class="form-row f4">
+          <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+          <div class="field"><label>Asset</label>
+            <select id="f-asset">
+              <option value="">Sélectionner…</option>
+              <optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>GBP/JPY</option><option>EUR/JPY</option><option>XAU/USD</option><option>Autre Forex</option></optgroup>
+              <optgroup label="Indices"><option>DAX 40</option><option>CAC 40</option><option>NAS 100</option><option>SP 500</option></optgroup>
+            </select>
+          </div>
+          <div class="field"><label>Direction</label>
+            <select id="f-dir">
+              <option value="">Sélectionner…</option>
+              <option>Long</option><option>Short</option>
+            </select>
+          </div>
+          <div class="field"><label>Résultat</label>
+            <select id="f-res">
+              <option value="">Sélectionner…</option>
+              <option value="TP">TP</option><option value="SL">SL</option>
+              <option value="BE">Break Even</option><option value="OPEN">En cours</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row f3" style="margin-bottom:20px">
+          <div class="field"><label>RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
+          <div class="field"><label>P&L en R (optionnel)</label><input type="number" id="f-pnl" placeholder="auto si vide" step="0.1"></div>
+          <div class="field"><label>P&L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
+        </div>
+
+        <!-- Sections dépliables : tout ce qui n'est pas indispensable pour enregistrer vite -->
+        <div class="form-section" id="section-prices">
+          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+            <span class="fs-icon">🎯</span><span class="fs-title">Prix & Stop Loss</span><span class="fs-hint">pour un R calculé exactement, pas estimé</span><span class="fs-chevron">▾</span>
+          </button>
+          <div class="form-section-body">
+            <div class="form-row f4" style="margin-bottom:0">
+              <div class="field"><label>Prix d'entrée</label><input type="number" id="f-entry-price" placeholder="ex : 1.13661" step="any" oninput="updateDistanceRPreview()"></div>
+              <div class="field"><label>Stop Loss (prix)</label><input type="number" id="f-sl-price" placeholder="ex : 1.13500" step="any" oninput="updateDistanceRPreview()"></div>
+              <div class="field"><label>Take Profit (prix)</label><input type="number" id="f-tp-price" placeholder="ex : 1.14000" step="any" oninput="updateDistanceRPreview()"></div>
+              <div class="field"><label>Prix de sortie réel</label><input type="number" id="f-exit-price" placeholder="ex : 1.13980" step="any" oninput="updateDistanceRPreview()"></div>
+            </div>
+            <div id="distance-r-preview" style="display:none;font-size:11.5px;font-family:var(--mono);color:var(--green);margin-top:14px;padding:8px 12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)"></div>
+          </div>
+        </div>
+
+        <div class="form-section" id="section-context">
+          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+            <span class="fs-icon">🕐</span><span class="fs-title">Contexte du trade</span><span class="fs-hint">timeframe, session, heures, taille</span><span class="fs-chevron">▾</span>
+          </button>
+          <div class="form-section-body">
+            <div class="form-row f4" style="margin-bottom:12px">
+              <div class="field"><label>Timeframe</label>
+                <select id="f-tf">
+                  <option value="">Sélectionner…</option>
+                  <option>M1</option><option>M3</option><option>M5</option><option>M10</option><option>M15</option><option>M30</option><option>H1</option><option>H4</option><option>Multi-TF</option>
+                </select>
+              </div>
+              <div class="field"><label>Session</label>
+                <select id="f-session">
+                  <option value="">Sélectionner…</option>
+                  <option>Asie</option><option>Overlap Asie/Londres</option><option>Londres</option><option>Overlap LDN/NY</option><option>New York</option><option>Hors session</option>
+                </select>
+              </div>
+              <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
+              <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
+            </div>
+            <div class="form-row f2" style="margin-bottom:0">
+              <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
+              <div class="field"><label>Note émotionnelle</label>
+                <select id="f-emotion">
+                  <option value="">Sélectionner…</option>
+                  <option value="5">5 — Excellent · Zen total</option>
+                  <option value="4">4 — Bien · Calme</option>
+                  <option value="3">3 — Neutre · Correct</option>
+                  <option value="2">2 — Tendu · Impatient</option>
+                  <option value="1">1 — Mauvais · FOMO / Revanche</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="section-checklist">
+          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+            <span class="fs-icon">✅</span><span class="fs-title">Checklist & erreurs</span><span class="fs-hint">pour l'analyse Edge Finder et le coût des erreurs</span><span class="fs-chevron">▾</span>
+          </button>
+          <div class="form-section-body">
+            <div class="form-row" style="margin-bottom:16px">
+              <div class="field" style="width:100%">
+                <label>Checklist d'entrée respectée pour ce trade</label>
+                <div id="f-checklist" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:0">
+              <div class="field" style="width:100%">
+                <label>Erreurs commises sur ce trade</label>
+                <div id="f-mistakes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="section-notes">
+          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+            <span class="fs-icon">📝</span><span class="fs-title">Notes & capture</span><span class="fs-hint">description, setup, screenshot</span><span class="fs-chevron">▾</span>
+          </button>
+          <div class="form-section-body">
+            <div class="form-row f2" style="margin-bottom:0">
+              <div class="field">
+                <label>Capture du trade (JPG / PNG)</label>
+                <div class="img-upload-zone" id="upload-zone"
+                  ondragover="event.preventDefault();this.classList.add('drag')"
+                  ondragleave="this.classList.remove('drag')"
+                  ondrop="handleDrop(event)"
+                  onclick="document.getElementById('f-img').click()">
+                  <input type="file" id="f-img" accept="image/*" onchange="handleImgSelect(this)">
+                  <div id="upload-placeholder">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--txt3)" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 4px;display:block"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2 14l4-4 3 3 3-4 4 5"/></svg>
+                    <p>Clique ou glisse une image ici</p>
+                  </div>
+                  <div id="upload-preview" style="display:none">
+                    <div class="img-preview-wrap">
+                      <img id="img-preview-el" class="img-preview" src="" alt="preview" onclick="event.stopPropagation();openLightbox(this.src)">
+                      <button class="img-preview-del" onclick="event.stopPropagation();clearImg()" title="Supprimer">×</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="field"><label>Description / setup / confluences</label><textarea id="f-desc" placeholder="Setup, confluences, raison d'entrée…" style="min-height:120px"></textarea></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="trade-submit-btn" onclick="addTrade()">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg>
+            <span id="trade-submit-btn-text">Enregistrer le trade</span>
+          </button>
+          <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Sauvegarde automatique</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ JOURNAL ═══ -->
+    <div id="page-trades" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left">
+          <h2>Journal des trades</h2>
+          <p id="trades-subtitle">Historique complet</p>
+        </div>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-hdr" style="flex-wrap:wrap;gap:10px">
+          <h3>Historique</h3>
+          <div class="tbl-controls" style="flex-wrap:wrap">
+            <input type="text" class="filter-select" id="filter-search" placeholder="🔍 Rechercher…" oninput="renderTable()" style="cursor:text;min-width:140px">
+            <select class="filter-select" id="filter-res" onchange="renderTable()">
+              <option value="">Tous les résultats</option>
+              <option value="TP">TP</option><option value="SL">SL</option>
+              <option value="BE">BE</option><option value="OPEN">En cours</option>
+            </select>
+            <select class="filter-select" id="filter-asset" onchange="renderTable()">
+              <option value="">Tous les assets</option>
+              <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
+              <option>GBP/JPY</option><option>EUR/JPY</option><option>XAU/USD</option><option>DAX 40</option>
+              <option>CAC 40</option><option>NAS 100</option><option>SP 500</option>
+            </select>
+            <select class="filter-select" id="filter-session" onchange="renderTable()">
+              <option value="">Toutes sessions</option>
+              <option>Asie</option><option>Overlap Asie/Londres</option><option>Londres</option>
+              <option>Overlap LDN/NY</option><option>New York</option><option>Hors session</option>
+            </select>
+            <input type="date" class="filter-select" id="filter-date-from" onchange="renderTable()" style="cursor:pointer" title="Du">
+            <input type="date" class="filter-select" id="filter-date-to" onchange="renderTable()" style="cursor:pointer" title="Au">
+            <button class="btn-ghost" id="btn-group-day" onclick="toggleGroupByDay()" style="padding:5px 12px;font-size:11px">Grouper par jour</button>
+            <button class="btn-ghost" onclick="resetTradeFilters()" style="padding:5px 12px;font-size:11px">Réinitialiser</button>
+            <span class="tbl-count" id="tbl-count">0 trade</span>
+          </div>
+        </div>
+        <div class="trades-minibar" id="trades-minibar"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th class="sortable" data-sort="date" onclick="sortTable('date')">Date <span class="sort-arrow">▾</span></th>
+                <th class="sortable" data-sort="asset" onclick="sortTable('asset')">Asset <span class="sort-arrow">▾</span></th>
+                <th>Sens</th>
+                <th>Résultat</th>
+                <th class="sortable" data-sort="rr" onclick="sortTable('rr')">RR <span class="sort-arrow">▾</span></th>
+                <th class="sortable" data-sort="pnl" onclick="sortTable('pnl')">P&L (R) <span class="sort-arrow">▾</span></th>
+                <th class="sortable" data-sort="pnlEur" onclick="sortTable('pnlEur')">P&L (€) <span class="sort-arrow">▾</span></th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STATS ═══ -->
+    <div id="page-stats" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Statistiques</h2><p>Analyse détaillée de tes performances</p></div>
+      </div>
+
+      <div class="subtab-bar">
+        <button class="subtab-btn active" data-subtab="overview" onclick="showStatsSubtab('overview')">Vue d'ensemble</button>
+        <button class="subtab-btn" data-subtab="timing" onclick="showStatsSubtab('timing')">Timing</button>
+        <button class="subtab-btn" data-subtab="behavior" onclick="showStatsSubtab('behavior')">Comportement</button>
+        <button class="subtab-btn" data-subtab="advanced" onclick="showStatsSubtab('advanced')">Avancé</button>
+      </div>
+
+      <div class="subtab-panel active" data-subtab="overview">
+        <div class="panel" style="margin-bottom:20px;background:linear-gradient(155deg, color-mix(in srgb, var(--purple) 6%, var(--bg2)), var(--bg2) 70%)">
+          <div class="panel-hdr"><span>Edge Finder<small class="panel-sub">Scan automatique de tous tes axes d'analyse</small></span></div>
+          <div id="edge-finder-body" style="padding:18px"></div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-section">
+            <div class="stat-section-title">Performance globale</div>
+            <div id="stats-perf"></div>
+          </div>
+          <div class="stat-section">
+            <div class="stat-section-title">P&L détaillé</div>
+            <div id="stats-pnl"></div>
+          </div>
+          <div class="stat-section">
+            <div class="stat-section-title">Risk / Reward</div>
+            <div id="stats-rr"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-hdr">Performance par asset</div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Asset</th><th>Trades</th><th>TP</th><th>SL</th><th>BE</th><th>Win Rate</th><th>P&L (R)</th><th>RR Moyen</th></tr></thead>
+              <tbody id="stats-assets-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr">Performance par timeframe</div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>TF</th><th>Trades</th><th>Win Rate</th><th>P&L (R)</th></tr></thead>
+              <tbody id="stats-tf-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab="timing">
+        <div class="charts-row" style="grid-template-columns:1fr 1fr">
+          <div class="panel">
+            <div class="panel-hdr">Meilleurs jours de la semaine</div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr><th>Jour</th><th>Trades</th><th>Win Rate</th><th>RR total</th></tr></thead>
+                <tbody id="stats-weekday-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-hdr">Meilleures heures pour trader (entrée)</div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr><th>Heure</th><th>Trades</th><th>Win Rate</th><th>RR total</th></tr></thead>
+                <tbody id="stats-hour-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab="behavior">
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-hdr"><span>Respect du plan vs résultats<small class="panel-sub">Checklist cochée à l'ajout du trade</small></span></div>
+          <div id="checklist-analysis-body" style="padding:18px"></div>
+        </div>
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-hdr"><span>Tilt Meter<small class="panel-sub">Détection de revenge trading après une perte</small></span></div>
+          <div id="tilt-meter-body" style="padding:18px"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr"><span>Coût de tes erreurs<small class="panel-sub">€ perdus par type d'erreur taguée</small></span></div>
+          <div id="mistake-cost-body" style="padding:18px"></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab="advanced">
+        <div class="charts-row" style="grid-template-columns:1fr 1fr">
+          <div class="panel">
+            <div class="panel-hdr"><span>Ratios ajustés au risque<small class="panel-sub">Sharpe / Sortino, sur P&L journalier</small></span></div>
+            <div id="sharpe-sortino-body" style="padding:18px"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-hdr"><span>Coin Flip Distribution<small class="panel-sub">Ton edge est-il statistiquement réel ?</small></span></div>
+            <div id="coinflip-body" style="padding:18px"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-hdr"><span>Analyse MAE / MFE<small class="panel-sub">Excursion adverse / favorable — trades importés de TradingView</small></span></div>
+          <div id="mae-mfe-body" style="padding:18px"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr"><span>Comparateur "et si"<small class="panel-sub">Simule un autre objectif de RR sur ton historique réel</small></span></div>
+          <div id="whatif-body" style="padding:18px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PROP FIRM ═══ -->
+    <div id="page-propfirm" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Prop Firm</h2><p>Suivi de conformité pour challenges et comptes financés</p></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Paramètres du challenge</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono);color:var(--txt2);cursor:pointer;text-transform:none;letter-spacing:0">
+            <input type="checkbox" id="pf-enabled" onchange="savePfSetting('enabled', this.checked?1:0); renderPropFirm()" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer">
+            Activer le suivi
+          </label>
+        </div>
+        <div style="padding:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <div class="field"><label>Objectif de profit (%)</label><input type="number" id="pf-target-pct" step="0.5" min="0" oninput="savePfSetting('target_pct', this.value); renderPropFirm()"></div>
+          <div class="field"><label>Perte totale max (%)</label><input type="number" id="pf-maxdd-pct" step="0.5" min="0" oninput="savePfSetting('maxdd_pct', this.value); renderPropFirm()"></div>
+          <div class="field">
+            <label>Type de drawdown</label>
+            <select id="pf-dd-type" onchange="savePfSetting('dd_type', this.value); renderPropFirm()" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none">
+              <option value="static">Statique (fixe)</option>
+              <option value="trailing_eod">Trailing — fin de journée</option>
+              <option value="trailing_intraday">Trailing — intrajournalier</option>
+            </select>
+          </div>
+          <div class="field"><label>Jours de trading min.</label><input type="number" id="pf-min-days" step="1" min="0" oninput="savePfSetting('min_days', this.value); renderPropFirm()"></div>
+        </div>
+        <div style="padding:0 18px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:16px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt2);cursor:pointer">
+            <input type="checkbox" id="pf-consistency-on" onchange="savePfSetting('consistency_on', this.checked?1:0); renderPropFirm()" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer">
+            Règle de consistance — le meilleur jour ne doit pas dépasser
+          </label>
+          <input type="number" id="pf-consistency-pct" step="1" min="1" max="100" oninput="savePfSetting('consistency_pct', this.value); renderPropFirm()" style="width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:6px 8px;outline:none">
+          <span style="font-size:12px;color:var(--txt2)">% du profit total</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">Perte journalière max : réglée dans le bandeau DD du Dashboard (<span id="pf-daily-limit-echo">1</span>%)</span>
+        </div>
+      </div>
+
+      <div id="propfirm-status"></div>
+    </div>
+
+    <!-- ═══ PLAN ═══ -->
+    <!-- ═══ SCALING ACCOUNT ═══ -->
+    <div id="page-scaling" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Scaling Account</h2><p>Repère les bons moments pour augmenter ta taille de position selon la taille de ton compte</p></div>
+      </div>
+
+      <div class="panel sc-zones-panel" id="sc-params-panel" style="margin-bottom:20px">
+        <div class="sc-zones-head" onclick="toggleScalingParamsPanel()">
+          <span class="sc-zones-title">Paramètres<span class="sc-zones-count sc-sum" id="sc-params-summary"></span></span>
+          <span class="sc-zones-actions"><span class="sc-zones-chevron"><span id="sc-params-hint">Déplier</span><span class="sc-zones-arrow">▾</span></span></span>
+        </div>
+        <div class="sc-zones-body">
+        <div class="sc-params">
+          <div class="field"><label>Capital de départ (€)</label><input type="number" id="sc-start" min="1" step="10" oninput="onScalingInput('start')"></div>
+          <div class="field"><label>Risque par trade (%)</label><input type="number" id="sc-risk-pct" min="0.01" step="0.05" oninput="onScalingInput('riskPct')"></div>
+          <div class="field"><label>Risque par trade (€)</label><input type="number" id="sc-risk-eur" min="0.01" step="1" oninput="onScalingInput('riskEur')"></div>
+          <div class="field"><label>Règle de palier</label>
+            <select id="sc-mode" onchange="onScalingInput('mode')">
+              <option value="round">Paliers ronds</option>
+              <option value="cushion">Coussin (N pertes)</option>
+              <option value="capital">Tous les +X % de capital</option>
+              <option value="risk">Tous les +X € de risque</option>
+            </select>
+          </div>
+          <div class="field"><label id="sc-param-label">Pertes d'affilée à couvrir</label><input type="number" id="sc-param" min="0.1" step="1" oninput="onScalingInput('param')"></div>
+          <div class="field" id="sc-round-field"><label>Arrondir les paliers à</label>
+            <select id="sc-round" onchange="onScalingInput('roundTo')">
+              <option value="0">Aucun arrondi</option><option value="50">50 €</option><option value="100">100 €</option><option value="500">500 €</option><option value="1000">1 000 €</option>
+            </select>
+          </div>
+          <div class="field"><label>Objectif de capital (€)</label><input type="number" id="sc-goal" min="1" step="100" oninput="onScalingInput('goal')"></div>
+          <div class="field"><label>Capital actuel (€)</label><input type="number" id="sc-current" step="1" oninput="onScalingInput('current')"></div>
+        </div>
+        <label class="sc-auto"><input type="checkbox" id="sc-auto" onchange="onScalingInput('auto')"> Suivre automatiquement le journal (solde de départ du journal + tous tes P&amp;L)</label>
+        <div class="sc-rule" id="sc-rule-text"></div>
+        </div>
+      </div>
+
+      <div class="sc-tiles" id="sc-tiles"></div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-hdr" style="justify-content:space-between;flex-wrap:wrap;row-gap:6px">
+          <span>Frise des paliers</span>
+          <span style="font-size:11px;color:var(--txt3);text-transform:none;letter-spacing:0">Glisse sur la bande pointillée pour marquer une zone coussin</span>
+        </div>
+        <div class="sc-tl-wrap" id="sc-tl-wrap"><div class="sc-tl" id="sc-tl"></div></div>
+      </div>
+
+      <div class="panel sc-zones-panel" id="sc-zones-panel" style="margin-bottom:20px">
+        <div class="sc-zones-head" onclick="toggleScalingZonesPanel()">
+          <span class="sc-zones-title">Zones coussins de sécurité<span class="sc-zones-count" id="sc-zones-count"></span></span>
+          <span class="sc-zones-actions">
+            <label class="sc-zones-toggle" onclick="event.stopPropagation()"><input type="checkbox" id="sc-show-zones" onchange="onScalingInput('showZones')"> Afficher sur la frise</label>
+            <span class="sc-zones-chevron"><span id="sc-zones-hint">Déplier</span><span class="sc-zones-arrow">▾</span></span>
+          </span>
+        </div>
+        <div class="sc-zones-body">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+            <button class="btn-ghost" style="padding:6px 12px;font-size:11px" onclick="addScalingZone()">+ Ajouter une zone</button>
+          </div>
+          <div id="sc-zones"></div>
+        </div>
+      </div>
+
+      <div class="panel sc-zones-panel" id="sc-table-panel" style="margin-bottom:20px">
+        <div class="sc-zones-head" onclick="toggleScalingTablePanel()">
+          <span class="sc-zones-title">Tableau des paliers<span class="sc-zones-count" id="sc-table-count"></span></span>
+          <span class="sc-zones-actions">
+            <span class="sc-zones-chevron"><span id="sc-table-hint">Déplier</span><span class="sc-zones-arrow">▾</span></span>
+          </span>
+        </div>
+        <div class="sc-zones-body">
+          <div id="sc-table" style="overflow-x:auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-plan" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Plan de trading</h2><p>Règles, checklist et gestion du risque</p></div>
+      </div>
+      <div class="plan-grid">
+        <div class="plan-card">
+          <div class="plan-card-title"><div class="plan-dot" style="background:var(--green)"></div>Checklist d'entrée</div>
+          <div id="checklist-entry"></div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-card-title"><div class="plan-dot" style="background:var(--red)"></div>Filtres — ne pas trader si…</div>
+          <div id="checklist-filters"></div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-card-title"><div class="plan-dot" style="background:var(--amber)"></div>Gestion du risque</div>
+          <div id="risk-rules"></div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-card-title"><div class="plan-dot" style="background:#f472b6"></div>Erreurs à suivre <span style="font-weight:normal;color:var(--txt3);font-size:11px">(chiffrées en € dans Statistiques)</span></div>
+          <div id="mistake-tags"></div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-card-title"><div class="plan-dot" style="background:var(--blue)"></div>Notes & rappels</div>
+          <textarea id="plan-notes" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:10px;resize:vertical;min-height:140px;outline:none;line-height:1.6" placeholder="Tes notes personnelles, observations de marché…" oninput="savePlanNotes()"></textarea>
+        </div>
+        <div class="plan-card" style="grid-column:span 2">
+          <div class="plan-card-title"><div class="plan-dot" style="background:var(--purple)"></div>Calculateur de taille de position (RR)</div>
+          <div class="form-row f4" style="margin-bottom:14px">
+            <div class="field"><label>Solde (€)</label><input type="number" id="calc-balance" step="1" placeholder="ex : 10000" oninput="renderPositionCalc()"></div>
+            <div class="field"><label>Risque par trade (%)</label><input type="number" id="calc-risk-pct" step="0.1" placeholder="ex : 0.5" oninput="renderPositionCalc()"></div>
+            <div class="field"><label>Distance au stop (points/pips)</label><input type="number" id="calc-stop-dist" step="0.1" placeholder="ex : 20" oninput="renderPositionCalc()"></div>
+            <div class="field"><label>Valeur par point/pip (€)</label><input type="number" id="calc-point-value" step="0.01" placeholder="ex : 10" oninput="renderPositionCalc()"></div>
+          </div>
+          <div id="calc-result" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+          <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px;line-height:1.6">
+            Risque en € = Solde × Risque%. Taille suggérée = Risque € ÷ (Distance au stop × Valeur du point). La valeur du point dépend de l'instrument et du courtier — vérifie-la dans la fiche produit de ta plateforme.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WATCHLIST ═══ -->
+    <div id="page-watchlist" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Watchlist</h2><p>Suivi des biais et niveaux clés</p></div>
+      </div>
+      <div class="watch-grid" id="watchlist-grid"></div>
+    </div>
+
+    <!-- ═══ CALENDRIER ═══ -->
+    <div id="page-calendrier" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Calendrier</h2><p id="cal-subtitle">Vue mensuelle des trades</p></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span id="cal-monthly-stats" style="font-size:11px;font-family:var(--mono);color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px"></span>
+          <button class="btn-ghost" onclick="calPrev()">←</button>
+          <span id="cal-month-label" style="font-family:var(--mono);font-size:13px;min-width:110px;text-align:center"></span>
+          <button class="btn-ghost" onclick="calNext()">→</button>
+          <button class="btn-ghost" onclick="calToday()">Ce mois-ci</button>
+          <button class="btn-ghost" id="btn-cal-view" onclick="toggleCalView()">📅 Vue annuelle</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        <select class="filter-select" id="cal-filter-asset" onchange="renderCalendrier()">
+          <option value="">Tous les assets</option>
+          <option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option>
+          <option>GBP/JPY</option><option>EUR/JPY</option><option>XAU/USD</option><option>DAX 40</option>
+          <option>CAC 40</option><option>NAS 100</option><option>SP 500</option>
+        </select>
+        <select class="filter-select" id="cal-filter-session" onchange="renderCalendrier()">
+          <option value="">Toutes sessions</option>
+          <option>Asie</option><option>Overlap Asie/Londres</option><option>Londres</option>
+          <option>Overlap LDN/NY</option><option>New York</option><option>Hors session</option>
+        </select>
+      </div>
+
+      <div id="cal-grid" style="margin-bottom:20px"></div>
+      <div id="cal-year-wrap" style="display:none;margin-bottom:20px">
+        <div id="cal-year-stats" style="font-size:12px;font-family:var(--mono);color:var(--txt2);margin-bottom:14px"></div>
+        <div id="cal-year-grid"></div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:11px;font-family:var(--mono);color:var(--txt3);flex-wrap:wrap">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);background:var(--green-d);border:1px solid var(--green);margin-right:4px"></span>Jour profitable</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);background:var(--red-d);border:1px solid var(--red);margin-right:4px"></span>Jour en perte</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:calc(var(--r) * .2);background:var(--amber-d);border:1px solid var(--amber);margin-right:4px"></span>Break even</span>
+        <span>🏆 Meilleur jour du mois</span>
+        <span>⚠️ Jour le plus coûteux</span>
+        <span>🔥 Série de gains · ❄️ Série de pertes (3+)</span>
+      </div>
+
+      <div class="charts-row" style="grid-template-columns:1fr 1fr;margin-top:24px">
+        <div class="panel">
+          <div class="panel-hdr">Total RR par semaine</div>
+          <div style="max-height:360px;overflow-y:auto">
+            <table style="width:100%;border-collapse:collapse" id="rr-week-table"></table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr">Total RR par mois</div>
+          <div style="max-height:360px;overflow-y:auto">
+            <table style="width:100%;border-collapse:collapse" id="rr-month-table"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cal-tooltip" class="cal-tooltip"></div>
+
+    <!-- ═══ BILAN ═══ -->
+    <div id="page-bilan" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Analyse détaillée par journée de trading</p></div>
+        <select id="bilan-date-select" class="filter-select" onchange="renderBilan()" style="font-size:12px;padding:7px 12px"></select>
+      </div>
+      <div id="bilan-content"></div>
+      <div class="panel" style="margin-top:20px">
+        <div class="panel-hdr"><span>Résultat par heure d'entrée<small class="panel-sub" id="heatmap-sub">tous tes trades, toutes journées confondues</small></span></div>
+        <div id="heatmap-wrap"></div>
+      </div>
+      <div class="charts-row" style="grid-template-columns:1fr 1fr;margin-top:12px">
+        <div class="bars-panel">
+          <div class="section-lbl">Performance par session<small class="panel-sub">win rate · trades · résultat net</small></div>
+          <div id="session-bars" class="asset-list"></div>
+        </div>
+        <div class="bars-panel">
+          <div class="section-lbl">Jours de la semaine<small class="panel-sub">win rate · trades · résultat net</small></div>
+          <div id="weekday-bars" class="asset-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ EXPORT ═══ -->
+    <div id="page-export" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Export / Import</h2><p>Sauvegarde et restauration de tes données</p></div>
+      </div>
+      <div class="export-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:900px">
+        <div class="export-card">
+          <div class="export-icon">💾</div>
+          <div class="export-title">Exporter mes trades</div>
+          <div class="export-desc">Télécharge tous tes trades au format JSON. Tu peux les réimporter à tout moment pour ne jamais perdre tes données.</div>
+          <button class="btn-primary" onclick="exportData()">Télécharger le backup</button>
+        </div>
+        <div class="export-card">
+          <div class="export-icon">📂</div>
+          <div class="export-title">Importer un backup</div>
+          <div class="export-desc">Restaure tes trades depuis un fichier JSON précédemment exporté.</div>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+          <button class="btn-ghost" onclick="document.getElementById('import-file').click()">Choisir un fichier…</button>
+        </div>
+        <div class="export-card" style="grid-column:span 2">
+          <div class="export-icon">📊</div>
+          <div class="export-title">Importer un ou plusieurs CSV (broker / TradingView)</div>
+          <div class="export-desc">Sélectionne en une fois tous les fichiers exportés (liste des trades, ordres, solde, activité, positions…) — le journal reconnaît chaque type, n'utilise que ceux qui contiennent de vrais trades, ignore les doublons si tu réimportes un export plus récent, et calcule tout automatiquement.</div>
+          <input type="file" id="csv-import-file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCsvImport(this)">
+          <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
+          <p id="csv-import-status" style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px"></p>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Risque € par trade (calcul du R réel = P&L € ÷ risque) :</span>
+              <input type="number" id="default-risk-eur" step="1" min="0" placeholder="ex : 50" style="width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--amber);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="saveDefaultRiskEur()">
+              <span style="font-size:11px;color:var(--amber)">€</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Sinon, RR fixe par défaut :</span>
+              <span style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--green)">Gagnant +</span>
+                <input type="number" id="default-rr-win" step="0.1" min="0.1" style="width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="saveDefaultRR()">
+                <span style="font-size:11px;color:var(--green)">R</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--red)">Perdant -</span>
+                <input type="number" id="default-rr-loss" step="0.1" min="0.1" style="width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="saveDefaultRR()">
+                <span style="font-size:11px;color:var(--red)">R</span>
+              </span>
+            </div>
+            <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:10px;text-align:center;line-height:1.6">
+              Si tu renseignes un risque €, le R de chaque trade importé sera calculé précisément (P&L réel ÷ risque), au lieu d'un R fixe identique pour tous les gagnants. Beaucoup plus fidèle à la réalité.
+            </p>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
+              <input type="number" id="tz-offset-hours" step="0.5" style="width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center" value="0" oninput="saveTZOffset()">
+              <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="recalcSessions()">Recalculer les sessions des trades déjà importés</button>
+            </div>
+            <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6">
+              Sans ce réglage, les stats par session (Asie/Londres/NY) peuvent être fausses : l'heure d'un export n'est pas forcément déjà dans ton fuseau.
+            </p>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Conversion des montants importés en devise étrangère (ex. « P&amp;L net USD » de TradingView) : 1 unité =</span>
+              <input type="number" id="import-fx-rate" step="0.0001" min="0.0001" style="width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);padding:5px 8px;font-family:var(--mono);text-align:center" value="1" oninput="saveImportFxRate()">
+              <span style="font-size:11px;color:var(--txt3)">€</span>
+              <button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="reconvertImportedTrades()">Appliquer ce taux aux trades déjà importés</button>
+            </div>
+            <p style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:8px;text-align:center;line-height:1.6">
+              Laisse 1 si ton compte de trading est déjà en euros. La devise est détectée dans l'en-tête du fichier (USD, GBP, CHF…) ; un fichier en EUR n'est jamais converti.
+            </p>
+          </div>
+        </div>
+        <div class="export-card" style="grid-column:span 2">
+          <div class="export-icon">🗄️</div>
+          <div class="export-title">Espace de stockage</div>
+          <div class="export-desc">Le navigateur limite l'espace disponible (≈ 5 Mo), partagé par Live, Backtest et PropFirm. Les captures d'écran sont réduites automatiquement à l'ajout ; tu peux aussi compresser celles déjà enregistrées.</div>
+          <div id="storage-card-body"></div>
+          <button class="btn-ghost" style="margin-top:8px" onclick="recompressStoredImages()">Compresser les captures existantes</button>
+        </div>
+        <div class="export-card" id="safety-snapshot-card" style="grid-column:span 2;display:none">
+          <div class="export-icon">↩️</div>
+          <div class="export-title">Annuler la dernière importation</div>
+          <div class="export-desc" id="safety-snapshot-info"></div>
+          <button class="btn-ghost" onclick="restoreSafetySnapshot()">Restaurer l'état d'avant</button>
+          <button class="btn-ghost" style="margin-left:6px" onclick="dismissSafetySnapshot()">Effacer cette copie</button>
+        </div>
+        <div class="export-card" style="grid-column:span 2">
+          <div class="export-icon">🩹</div>
+          <div class="export-title">Corriger les trades déjà importés sans R</div>
+          <div class="export-desc">Si des trades TP/SL affichent un P&L en R manquant (calendrier gris, dashboard incomplet), applique-leur rétroactivement le calcul de R ci-dessus.</div>
+          <button class="btn-ghost" onclick="fixMissingRR()">Corriger maintenant</button>
+        </div>
+        <div class="export-card" style="grid-column:span 2">
+          <div class="export-icon">🎯</div>
+          <div class="export-title">Corriger les R invraisemblables (stop remonté au break-even)</div>
+          <div class="export-desc">Si un stop loss a été déplacé au break-even en cours de trade, l'historique d'ordres TradingView ne garde que sa position finale — le calcul par distance de prix peut alors donner un R absurde (ex : 58R). Ce correctif détecte ces cas (R > 15) et repasse sur le calcul de secours.</div>
+          <button class="btn-ghost" onclick="fixImplausibleDistanceR()">Corriger maintenant</button>
+        </div>
+        <div class="export-card" style="grid-column:span 2">
+          <div class="export-icon">♻️</div>
+          <div class="export-title">Corbeille <button id="empty-trash-btn" class="btn-ghost" style="display:none;padding:4px 10px;font-size:11px;margin-left:10px" onclick="emptyTrash()">Vider</button></div>
+          <div class="export-desc">Les 20 derniers trades supprimés restent récupérables ici.</div>
+          <div id="trash-list" style="margin-top:6px;text-align:left"></div>
+        </div>
+        <div id="reset-backup-card" class="export-card" style="grid-column:span 2;display:none">
+          <div class="export-icon">🛟</div>
+          <div class="export-title">Sauvegarde avant dernière réinitialisation</div>
+          <div class="export-desc" id="reset-backup-info"></div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button class="btn-ghost" onclick="restoreResetBackup()">Restaurer</button>
+            <button class="btn-ghost" onclick="dismissResetBackup()">Ignorer</button>
+          </div>
+        </div>
+        <div class="export-card" style="grid-column:span 2">
+          <div class="export-icon">🗑️</div>
+          <div class="export-title">Réinitialiser le journal</div>
+          <div class="export-desc">Supprime tous les trades enregistrés. Une sauvegarde de secours reste disponible juste au-dessus.</div>
+          <button class="btn-danger" style="border-radius:var(--r);padding:10px 20px;font-family:var(--mono);font-size:12px;cursor:pointer;background:var(--red);color:#fff;border:none" onclick="confirmReset()">Réinitialiser</button>
+        </div>
+        <div class="export-card" style="grid-column:span 2;text-align:left">
+          <div style="text-align:center">
+            <div class="export-icon">🗓️</div>
+            <div class="export-title">Sauvegarde automatique hebdomadaire</div>
+          </div>
+          <div class="export-desc" style="text-align:center">
+            Écrit chaque semaine une copie complète (tous les journaux + réglages) dans jusqu'à 3 dossiers séparés que tu choisis toi-même — utile pour garder une copie hors de cet ordinateur (clé USB, dossier synchronisé, etc.).
+          </div>
+          <div id="backup-fs-unsupported" style="display:none;font-size:11.5px;color:var(--amber);background:var(--amber-d);border:1px solid var(--amber);border-radius:var(--r);padding:10px 14px;margin:14px 0;line-height:1.6;text-align:left">
+            ⚠️ Ton navigateur ne permet pas d'écrire automatiquement dans un dossier (fonctionne avec <b>Chrome</b> ou <b>Edge</b> ; ne fonctionne pas dans Firefox/Safari, ni si le fichier est ouvert en double-clic — sers-le via un petit serveur local ou dépose-le sur <code>localhost</code>). En attendant, utilise le bouton « Télécharger le backup » plus haut.
+          </div>
+          <div id="backup-slots-list" style="text-align:left;margin:14px 0;display:flex;flex-direction:column;gap:10px"></div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px 0;padding-top:14px;border-top:1px solid var(--border)">
+            <span style="font-size:11px;font-family:var(--mono);color:var(--txt3)">Jour de sauvegarde automatique (fin de semaine) :</span>
+            <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)" style="font-size:12px;padding:6px 10px">
+              <option value="5">Vendredi</option>
+              <option value="6">Samedi</option>
+              <option value="0">Dimanche</option>
+            </select>
+          </div>
+          <div style="text-align:center">
+            <button class="btn-primary" onclick="runBackupNow()">Sauvegarder maintenant dans les 3 dossiers</button>
+          </div>
+          <p id="backup-last-run-info" style="font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:12px;text-align:center;line-height:1.6"></p>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-parametres" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Paramètres</h2><p>Personnalise l'apparence comme tu veux — elle est commune aux trois journaux (Live, Backtest, PropFirm) et tout est sauvegardé localement</p></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Thèmes rapides</span>
+          <button class="btn-danger" style="border-radius:var(--r);padding:8px 16px;font-family:var(--mono);font-size:11px;cursor:pointer;background:var(--red);color:#fff;border:none" onclick="resetTheme()">Réinitialiser tout</button>
+        </div>
+        <div id="theme-preset-grid" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-hdr" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Mes thèmes</span>
+          <button class="btn-ghost" style="padding:7px 14px;font-size:11px" onclick="saveCurrentThemeAs()">💾 Enregistrer le thème actuel</button>
+        </div>
+        <div id="custom-theme-grid" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-hdr">Ambiance visuelle</div>
+        <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div>
+            <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Style d'arrière-plan</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-ghost bg-style-btn" data-val="solid" onclick="onBgStyleChange('solid')">Uni</button>
+              <button class="btn-ghost bg-style-btn" data-val="gradient" onclick="onBgStyleChange('gradient')">Dégradé</button>
+              <button class="btn-ghost bg-style-btn" data-val="grid" onclick="onBgStyleChange('grid')">Grille</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Style des cartes</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-ghost card-style-btn" data-val="flat" onclick="onCardStyleChange('flat')">Plat</button>
+              <button class="btn-ghost card-style-btn" data-val="glass" onclick="onCardStyleChange('glass')">Verre</button>
+              <button class="btn-ghost card-style-btn" data-val="elevated" onclick="onCardStyleChange('elevated')">Élevé</button>
+            </div>
+          </div>
+          <div style="grid-column:span 2;display:flex;align-items:center;gap:10px;padding-top:6px;border-top:1px solid var(--border)">
+            <input type="checkbox" id="glow-toggle" onchange="onGlowChange(this.checked)" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+            <label for="glow-toggle" style="font-size:12px;color:var(--txt2);cursor:pointer">Lueur sur les accents (boutons actifs, chiffres positifs/négatifs)</label>
+          </div>
+          <div style="grid-column:span 2;display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="texture-toggle" onchange="onTextureChange(this.checked)" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+            <label for="texture-toggle" style="font-size:12px;color:var(--txt2);cursor:pointer">Grain papier subtil sur le fond</label>
+          </div>
+          <div style="grid-column:span 2;display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="autotheme-toggle" onchange="onAutoThemeChange(this.checked)" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+            <label for="autotheme-toggle" style="font-size:12px;color:var(--txt2);cursor:pointer">Suivre automatiquement le thème clair/sombre du système</label>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-groups"></div>
+
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-hdr">Forme & typographie</div>
+        <div style="padding:18px">
+          <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Forme des cases</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+            <button class="btn-ghost shape-preset-btn" data-r="0" onclick="onRadiusChange(0)">◻ Carré</button>
+            <button class="btn-ghost shape-preset-btn" data-r="10" onclick="onRadiusChange(10)">▢ Arrondi</button>
+            <button class="btn-ghost shape-preset-btn" data-r="20" onclick="onRadiusChange(20)">◯ Très arrondi</button>
+            <button class="btn-ghost shape-preset-btn" data-r="999" onclick="onRadiusChange(999)">⬭ Pilule</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">
+            <div>
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Arrondi précis — <span id="radius-val">10px</span></label>
+              <input type="range" id="radius-slider" min="0" max="30" step="1" oninput="onRadiusChange(this.value)" style="width:100%;accent-color:var(--green)">
+            </div>
+            <div>
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Police du texte</label>
+              <select id="font-select" onchange="onFontChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--sans);font-size:13px;padding:8px 10px;outline:none">
+                <option value="'Inter',system-ui,sans-serif">Inter (défaut)</option>
+                <option value="'Sora',sans-serif">Sora</option>
+                <option value="Georgia,'Times New Roman',serif">Georgia (serif)</option>
+                <option value="system-ui,-apple-system,'Segoe UI',sans-serif">Système (system-ui)</option>
+                <option value="'Courier New',monospace">Courier New (mono)</option>
+                <option value="Verdana,Geneva,sans-serif">Verdana</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Police des données (chiffres)</label>
+              <select id="font-mono-select" onchange="onFontMonoChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:13px;padding:8px 10px;outline:none">
+                <option value="'JetBrains Mono',ui-monospace,monospace">JetBrains Mono (défaut)</option>
+                <option value="'DM Mono',monospace">DM Mono</option>
+                <option value="'Space Mono',monospace">Space Mono</option>
+                <option value="'Courier New',monospace">Courier New</option>
+                <option value="ui-monospace,'SF Mono',Menlo,monospace">Système (mono)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Style des bordures</label>
+              <select id="border-style-select" onchange="onBorderStyleChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none">
+                <option value="solid">─── Continue</option>
+                <option value="dashed">╌╌╌ Tirets</option>
+                <option value="dotted">···· Pointillé</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Lignes des graphiques</label>
+              <select id="chart-line-style-select" onchange="onChartLineStyleChange(this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none">
+                <option value="solid">─── Continue</option>
+                <option value="dashed">╌╌╌ Tirets</option>
+                <option value="dotted">···· Pointillé</option>
+              </select>
+            </div>
+            <div style="grid-column:span 2">
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Intensité de la heatmap du calendrier — <span id="heat-intensity-val">150%</span></label>
+              <input type="range" id="heat-intensity-slider" min="40" max="250" step="10" oninput="onHeatIntensityChange(this.value)" style="width:100%;accent-color:var(--green)">
+              <p style="font-size:11px;color:var(--txt3);margin-top:6px">Plus haut = les jours ressortent davantage (utile si les petits P&L sont difficiles à voir).</p>
+            </div>
+            <div style="grid-column:span 2">
+              <label style="font-size:11px;font-family:var(--mono);color:var(--txt3);display:block;margin-bottom:8px">Intensité des graphiques (Dashboard) — <span id="chart-intensity-val">200%</span></label>
+              <input type="range" id="chart-intensity-slider" min="50" max="300" step="10" oninput="onChartIntensityChange(this.value)" style="width:100%;accent-color:var(--green)">
+              <p style="font-size:11px;color:var(--txt3);margin-top:6px">Plus haut = remplissage, lignes et grille plus marqués sur les courbes P&L et le radar de performance.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Confirmer la suppression</h3>
+    <p id="modal-msg">Cette action est irréversible.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-danger" id="modal-confirm">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightbox-img" src="" alt="Capture du trade">
+</div>
+
+<!-- DRAWER : détail d'un trade -->
+<div class="drawer-overlay" id="trade-drawer-overlay" onclick="if(event.target===this) closeTradeDetail()">
+  <div class="drawer" id="trade-drawer"></div>
+</div>
+
+<!-- RECHERCHE GLOBALE (Ctrl/Cmd+K) -->
+<div class="search-overlay" id="search-overlay" onclick="if(event.target===this) closeGlobalSearch()">
+  <div class="search-modal">
+    <div class="search-input-row">
+      <span style="opacity:.5">🔍</span>
+      <input type="text" id="search-input" placeholder="Rechercher une page, une action, un trade…" oninput="renderGlobalSearchResults(this.value)" autocomplete="off">
+      <kbd>Échap</kbd>
+    </div>
+    <div id="search-results"></div>
+  </div>
+</div>
+
