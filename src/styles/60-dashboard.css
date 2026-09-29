@@ -164,3 +164,11 @@
   .filter-bar .fb-toggle{order:-2}
   .filter-bar .nt-btn{order:-1}
 }
+
+/* ── Mini-courbes des cartes : tendance (couleur) + seuil (pointillé nommé) ── */
+.sp-c-green{stop-color:var(--green)}.sp-c-red{stop-color:var(--red)}.sp-c-muted{stop-color:var(--txt3)}
+.sp-ref{stroke:var(--txt3);stroke-width:1;stroke-dasharray:3 3;opacity:.8}
+.sp-ref-lbl{font:500 9.5px var(--sans);fill:var(--txt3);paint-order:stroke;stroke:var(--bg2);stroke-width:3px;stroke-linejoin:round}
+.sp-end{stroke:var(--bg2);stroke-width:2}
+.sp-end.fill-green{fill:var(--green)}.sp-end.fill-red{fill:var(--red)}.sp-end.fill-muted{fill:var(--txt3)}
+.kpi .kpi-spark{overflow:visible}

@@ -249,6 +249,25 @@ test('donuts du Dashboard : trades, journées et semaines gagnants, filtre globa
   await ctx.close();
 });
 
+test('mini-courbes des cartes : couleur selon la tendance, seuil nommé, badge assorti', async () => {
+  // 20 pertes puis 12 gains : tout monte sur les derniers trades.
+  const trades = [];
+  for (let i = 0; i < 32; i++) {
+    const win = i >= 20, d = new Date(Date.UTC(2026, 4, 1 + i)).toISOString().slice(0, 10);
+    trades.push(T({ id: 3000 + i, date: d, res: win ? 'TP' : 'SL', pnl: win ? 2 : -1, pnlEur: win ? 100 : -50 }));
+  }
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: trades } });
+  for (const k of ['wr', 'pnl']) {
+    assert.equal(await page.locator(`#k-${k}-spark .sp-end`).getAttribute('class'), 'sp-end fill-green', k + ' : point final vert');
+    assert.match(await page.locator(`#k-${k}-trend`).getAttribute('class'), /\bup\b/, k + ' : badge ▲ assorti');
+  }
+  assert.equal(await page.locator('#k-pnl-spark .sp-ref-lbl').textContent(), '0R');
+  assert.equal(await page.locator('#k-rr-spark .sp-ref-lbl').textContent(), '1,0');
+  assert.ok(await page.locator('#k-wr-spark .sp-ref').count() === 1, 'seuil du win rate en pointillé');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('bouton « Nouveau trade » : panneau déroulant, brouillon conservé, enregistrement, édition sur place', async () => {
   const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1, asset: 'DAX 40' })] } });
   assert.equal(await page.locator('#page-dashboard #trade-form-card').count(), 0, 'plus de formulaire en bas du Dashboard');

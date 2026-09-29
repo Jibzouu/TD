@@ -1,28 +1,33 @@
 // ── KPI SPARKLINES & TENDANCES ──────────────────────────────────────
-function buildSparklinePath(values, w, h, pad) {
-  w = w || 100; h = h || 24; pad = pad || 2;
-  if (!values || values.length < 2) return { path: '', lastX: 0, lastY: 0 };
-  const min = Math.min(...values), max = Math.max(...values);
-  const range = (max - min) || 1;
-  const step = (w - pad*2) / (values.length - 1);
-  let path = '';
-  let lastX = 0, lastY = 0;
-  values.forEach((v,i) => {
-    const x = pad + i*step;
-    const y = h - pad - ((v-min)/range) * (h - pad*2);
-    path += (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
-    lastX = x; lastY = y;
-  });
-  return { path: path.trim(), lastX, lastY };
-}
-function renderSparklineInto(svgId, values, color) {
+// Mini-courbe « tendance + seuil » : la couleur dit le sens (évolution sur les 10 derniers trades : vert monte,
+// rouge baisse, gris stable), le pointillé nommé dit la référence (seuil de rentabilité, 0R, 1,0) et tout ce qui
+// passe sous ce seuil est rouge. Dessinée à la taille réelle du SVG (le texte du seuil n'est pas déformé).
+function renderSparklineInto(svgId, values, opts) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   if (!values || values.length < 2) { mount(svg, ''); return; }
-  const { path, lastX, lastY } = buildSparklinePath(values);
-  // Tendance en encre discrète, dernier point à l'accent (la couleur de série est réservée aux vrais graphiques).
-  // vector-effect : le trait garde son épaisseur malgré l'étirement du SVG ; le point final est un trait de longueur nulle → rond parfait.
-  mount(svg, html`<path class="sp-muted" d="${path}" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path class="sp-line" d="M${lastX.toFixed(1)},${lastY.toFixed(1)} h0" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`);
+  opts = opts || {};
+  const cs = getComputedStyle(svg);
+  const W = Math.max(60, Math.round(parseFloat(cs.width) || 100)), H = Math.max(16, Math.round(parseFloat(cs.height) || 24)), P = 3;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const hasRef = opts.ref !== null && opts.ref !== undefined && isFinite(opts.ref);
+  const lo = Math.min(...values, hasRef ? opts.ref : Infinity), hi = Math.max(...values, hasRef ? opts.ref : -Infinity), range = (hi - lo) || 1;
+  const x = i => P + i * (W - 2 * P) / (values.length - 1), y = v => H - P - (v - lo) / range * (H - 2 * P);
+  const line = values.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+  const tone = { up: 'green', down: 'red' }[opts.trend] || 'muted';
+  const y0 = hasRef ? y(opts.ref) : H, off = Math.max(0, Math.min(1, y0 / H)).toFixed(3);
+  const last = values[values.length - 1], lx = x(values.length - 1), ly = y(last);
+  const below = hasRef && last < opts.ref;
+  const id = 'sp-' + svgId;
+  mount(svg, html`<defs>
+      <linearGradient id="${id}-f" x1="0" y1="0" x2="0" y2="${H}" gradientUnits="userSpaceOnUse"><stop offset="0" class="sp-c-${raw(tone)}" stop-opacity=".38"/><stop offset="${off}" class="sp-c-${raw(tone)}" stop-opacity=".05"/><stop offset="${off}" class="sp-c-red" stop-opacity=".1"/><stop offset="1" class="sp-c-red" stop-opacity=".4"/></linearGradient>
+      <linearGradient id="${id}-s" x1="0" y1="0" x2="0" y2="${H}" gradientUnits="userSpaceOnUse"><stop offset="${off}" class="sp-c-${raw(tone)}"/><stop offset="${off}" class="sp-c-red"/></linearGradient>
+    </defs>
+    <path d="${line} L${lx.toFixed(1)},${y0.toFixed(1)} L${P},${y0.toFixed(1)} Z" fill="url(#${id}-f)"/>
+    ${hasRef ? html`<line class="sp-ref" x1="0" x2="${W}" y1="${y0.toFixed(1)}" y2="${y0.toFixed(1)}"/><text class="sp-ref-lbl" x="${W - 1}" y="${Math.max(9, y0 - 3).toFixed(1)}" text-anchor="end">${opts.refLabel || ''}</text>` : ''}
+    <path d="${line}" fill="none" stroke="url(#${id}-s)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle class="sp-end fill-${raw(below ? 'red' : tone)}" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.5"/>`);
+  svg.setAttribute('aria-label', (opts.label || 'Évolution') + (hasRef ? ' · seuil ' + (opts.refLabel || opts.ref) : '') + ' · tendance ' + ({ up: 'en hausse', down: 'en baisse' }[opts.trend] || 'stable'));
 }
 function chronoClosedTrades() {
   return [...analysisTrades()].reverse().filter(t => ['TP','SL','BE'].includes(t.res));
@@ -211,11 +216,11 @@ function animateHeroValue(target) {
   heroAnimFrame = requestAnimationFrame(step);
 }
 // Badge d'évolution d'une carte : variation sur les 10 derniers trades (vs les 10 précédents).
-function trendBadge(elId, delta, suffix, digits, title) {
+function trendBadge(elId, delta, suffix, digits, title, dirOverride) {
   const el = document.getElementById(elId);
   if (!el) return;
   if (delta === null || delta === undefined || isNaN(delta)) { el.textContent = ''; el.className = 'kpi-trend'; el.removeAttribute('title'); return; }
-  const dir = Math.abs(delta) < 0.05 ? 'flat' : (delta > 0 ? 'up' : 'down');
+  const dir = dirOverride || (Math.abs(delta) < 0.05 ? 'flat' : (delta > 0 ? 'up' : 'down'));
   el.textContent = (dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '→ ') + (delta >= 0 ? '+' : '') + delta.toFixed(digits ?? 1).replace('.', ',') + (suffix || '');
   el.className = 'kpi-trend ' + dir;
   el.title = title || '';
@@ -223,6 +228,9 @@ function trendBadge(elId, delta, suffix, digits, title) {
 
 // Mini-courbes des cartes : valeur glissante (fenêtre de trades) pour une tendance lisible, pas un zigzag par paquet.
 const KPI_WINDOW = 10;
+// Les mini-courbes sont dessinées au pixel près : on les redessine quand la largeur des cartes change.
+let __sparkResizeT = null;
+window.addEventListener('resize', () => { clearTimeout(__sparkResizeT); __sparkResizeT = setTimeout(() => { if (currentPage() === 'dashboard') safeRun(renderKpiSparklines, 'renderKpiSparklines'); }, 150); });
 function renderKpiSparklines() {
   const closed = chronoClosedTrades();
   // Forme récente : les 10 derniers trades clos, du plus ancien au plus récent.
@@ -242,13 +250,18 @@ function renderKpiSparklines() {
   const n = closed.length, steps = Math.min(30, n - KPI_WINDOW + 1);
   const at = [...new Set(Array.from({ length: steps }, (_, j) => Math.round(KPI_WINDOW + (n - KPI_WINDOW) * j / Math.max(1, steps - 1))))];
   const series = f => at.map(f).filter(v => v !== null);
-  const draw = (k, f) => renderSparklineInto('k-' + k + '-spark', series(f));
-  draw('wr', wrAt); draw('pnl', i => cum[i]); draw('rr', payoffAt); draw('pf', pfAt);
   const prev = n - KPI_WINDOW, T = ' sur les ' + KPI_WINDOW + ' derniers trades, comparé aux ' + KPI_WINDOW + ' précédents';
   const d = (f) => { const a = f(n), b = f(prev); return a === null || b === null ? null : a - b; };
-  trendBadge('k-wr-trend', d(wrAt), ' pts', 0, 'Win rate (20 trades glissants)' + T);
-  trendBadge('k-pnl-trend', cum[n] - cum[prev], 'R', 1, 'R gagnés sur les ' + KPI_WINDOW + ' derniers trades');
-  trendBadge('k-rr-trend', d(payoffAt), '', 2, 'Payoff (20 trades glissants)' + T);
-  trendBadge('k-pf-trend', d(pfAt), '', 2, 'Profit factor (20 trades glissants)' + T);
+  const be = breakevenWinRate(), beP = be !== null ? Math.round(be * 100) : 50;
+  // Chaque carte : [clé, série, variation récente, suffixe, décimales, info-bulle, seuil, libellé du seuil, écart « stable » du badge]
+  [['wr', wrAt, d(wrAt), ' pts', 0, 'Win rate (20 trades glissants)' + T, beP, be !== null ? 'seuil ' + beP + ' %' : '50 %', 0.5],
+   ['pnl', i => cum[i], cum[n] - cum[prev], 'R', 1, 'R gagnés sur les ' + KPI_WINDOW + ' derniers trades', 0, '0R', 0.05],
+   ['rr', payoffAt, d(payoffAt), '', 2, 'Payoff (20 trades glissants)' + T, 1, '1,0', 0.05],
+   ['pf', pfAt, d(pfAt), '', 2, 'Profit factor (20 trades glissants)' + T, 1, '1,0', 0.05]
+  ].forEach(([k, f, delta, suf, dig, title, ref, refLabel, flat]) => {
+    const trend = delta === null || Math.abs(delta) < flat ? 'flat' : delta > 0 ? 'up' : 'down';
+    renderSparklineInto('k-' + k + '-spark', series(f), { ref, refLabel, trend, label: title });
+    trendBadge('k-' + k + '-trend', delta, suf, dig, title, trend);
+  });
 }
 
