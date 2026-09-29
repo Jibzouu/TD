@@ -800,6 +800,9 @@
               <option value="0">Aucun arrondi</option><option value="50">50 €</option><option value="100">100 €</option><option value="500">500 €</option><option value="1000">1 000 €</option>
             </select>
           </div>
+          <div class="field"><label for="sc-mincush">Coussin minimum avant d'augmenter</label>
+            <div class="sc-mincush"><input type="number" id="sc-mincush" min="0" step="50" placeholder="aucun" onchange="onScalingInput('minCush')"><select id="sc-mincush-unit" aria-label="Unité du coussin" onchange="onScalingInput('minCushUnit')"><option value="eur">€</option><option value="loss">pertes</option></select></div>
+          </div>
           <div class="field"><label>Objectif de capital (€)</label><input type="number" id="sc-goal" min="1" step="100" oninput="onScalingInput('goal')"></div>
           <div class="field"><label>Capital actuel (€)</label><input type="number" id="sc-current" step="1" oninput="onScalingInput('current')"></div>
         </div>

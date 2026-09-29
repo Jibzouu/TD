@@ -546,6 +546,15 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
   #cal-grid > div{min-width:640px}
 }
 
+.sc-mincush{display:flex;gap:6px}.sc-mincush input{flex:1;min-width:0}.sc-mincush select{width:auto}
+.sc-zone.sc-zone-min{border-style:dotted;background:color-mix(in srgb,var(--green) 4%,transparent)}
+.sc-cush{display:flex;flex-direction:column;gap:3px}
+.sc-cush-in{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3)}
+.sc-cush-in input{width:78px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12px;padding:4px 7px;outline:none}
+.sc-cush-in input::placeholder{color:var(--txt3)}
+.sc-cush-in.own input{border-color:var(--amber);color:var(--amber)}
+.sc-cush-res{color:var(--txt2)}.sc-cush-res b{color:var(--txt);font-weight:600}
+.sc-cush-warn{font-size:11px;white-space:normal;max-width:260px}
 
 /* ═══ styles/20-charte-terminal.css ═══ */
 /* ══════════════════════════════════════════════════════════════════════
@@ -2362,6 +2371,9 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
             <select id="sc-round" onchange="onScalingInput('roundTo')">
               <option value="0">Aucun arrondi</option><option value="50">50 €</option><option value="100">100 €</option><option value="500">500 €</option><option value="1000">1 000 €</option>
             </select>
+          </div>
+          <div class="field"><label for="sc-mincush">Coussin minimum avant d'augmenter</label>
+            <div class="sc-mincush"><input type="number" id="sc-mincush" min="0" step="50" placeholder="aucun" onchange="onScalingInput('minCush')"><select id="sc-mincush-unit" aria-label="Unité du coussin" onchange="onScalingInput('minCushUnit')"><option value="eur">€</option><option value="loss">pertes</option></select></div>
           </div>
           <div class="field"><label>Objectif de capital (€)</label><input type="number" id="sc-goal" min="1" step="100" oninput="onScalingInput('goal')"></div>
           <div class="field"><label>Capital actuel (€)</label><input type="number" id="sc-current" step="1" oninput="onScalingInput('current')"></div>
@@ -8876,7 +8888,6 @@ let scZoneSeq = 0;
 let scTableCount = 0;
 
 function scRound(v, d) { const f = Math.pow(10, d); return Math.round(v * f) / f; }
-function scEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function scPct(v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %'; }
 function scNum1(v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
 function newScalingZoneId() { return Date.now() + (scZoneSeq++); }
@@ -8885,7 +8896,7 @@ function newScalingZoneId() { return Date.now() + (scZoneSeq++); }
 function scNiceStep(start) { return Math.pow(10, Math.floor(Math.log10(Math.max(start, 1)))); }
 function scalingDefaults() {
   const start = accountSize > 0 ? accountSize : 1000;
-  return { version: 2, start, riskPct: 1, mode: 'round', roundTo: 100, params: { round: scNiceStep(start), cushion: 10, capital: 10, risk: 10 }, goal: start * 5, current: start, auto: true, zones: [], zonesOpen: false, showZones: true, tableOpen: false, paramsOpen: false };
+  return { version: 2, start, riskPct: 1, mode: 'round', roundTo: 100, params: { round: scNiceStep(start), cushion: 10, capital: 10, risk: 10 }, goal: start * 5, current: start, auto: true, minCush: { unit: 'eur', value: 0, by: {} }, zones: [], zonesOpen: false, showZones: true, tableOpen: false, paramsOpen: false };
 }
 function loadScalingState() {
   const d = scalingDefaults();
@@ -8900,6 +8911,12 @@ function loadScalingState() {
       if (typeof raw.showZones === 'boolean') d.showZones = raw.showZones;
       if (typeof raw.tableOpen === 'boolean') d.tableOpen = raw.tableOpen;
       if (typeof raw.paramsOpen === 'boolean') d.paramsOpen = raw.paramsOpen;
+      if (raw.minCush && typeof raw.minCush === 'object') {
+        const mc = raw.minCush;
+        if (mc.unit === 'eur' || mc.unit === 'loss') d.minCush.unit = mc.unit;
+        if (typeof mc.value === 'number' && mc.value >= 0 && isFinite(mc.value)) d.minCush.value = mc.value;
+        if (mc.by && typeof mc.by === 'object') Object.keys(mc.by).forEach(k => { const v = mc.by[k]; if (typeof v === 'number' && v >= 0 && isFinite(v)) d.minCush.by[k] = v; });
+      }
       if (typeof raw.roundTo === 'number' && raw.roundTo >= 0) d.roundTo = raw.roundTo;
       if (!(raw.params && raw.params.round > 0)) d.params.round = scNiceStep(d.start);
       // Sauvegardes d'avant les « paliers ronds » : on bascule sur cette règle.
@@ -8975,13 +8992,23 @@ function scalingZoneTargets(st, entries) {
     return { zone: z, a, b, ks };
   });
 }
+// Coussin minimum d'un palier : réglage du palier s'il existe, sinon le réglage global ; en € ou en pertes au risque du palier.
+function scCushKey(p) { return String(Math.round(p.bal)); }
+function scCushSetting(st, p) {
+  const by = st.minCush.by, k = scCushKey(p);
+  return Object.prototype.hasOwnProperty.call(by, k) ? { v: by[k], own: true } : { v: st.minCush.value, own: false };
+}
+function scCushEur(st, p) { const v = scCushSetting(st, p).v; return st.minCush.unit === 'loss' ? v * p.risk : v; }
+// Plancher du coussin : le niveau sous lequel tu reviens à la taille précédente.
+// Règle « coussin » : le palier précédent ; autres règles : le palier que tu viens de franchir.
+function scCushFloor(st, entries, i) { return st.mode === 'cushion' ? (i >= 2 ? entries[i - 1].trigger : st.start) : entries[i].bal; }
 function scalingApplyTriggers(st, entries) {
-  entries.forEach(p => { p.trigger = p.bal; });
+  entries.forEach((p, i) => { p.trigger = p.bal + (i >= 1 ? scCushEur(st, p) : 0); p.trigZone = null; });
   const targets = scalingZoneTargets(st, entries);
-  targets.forEach(t => t.ks.forEach(i => { if (t.b > entries[i].trigger) entries[i].trigger = t.b; }));
+  targets.forEach(t => t.ks.forEach(i => { if (t.b > entries[i].trigger + 0.005) { entries[i].trigger = t.b; entries[i].trigZone = t.zone; } }));
   for (let i = 1; i < entries.length; i++) if (entries[i].trigger < entries[i - 1].trigger) entries[i].trigger = entries[i - 1].trigger;
-  // Coussin = pertes que tes gains depuis la dernière augmentation permettent d'encaisser au nouveau risque.
-  for (let i = 1; i < entries.length; i++) entries[i].cushion = (entries[i].trigger - entries[i - 1].trigger) / entries[i].risk;
+  // Coussin = pertes d'affilée, au nouveau risque, entre le point d'augmentation et le plancher (retour à la taille précédente).
+  for (let i = 1; i < entries.length; i++) { entries[i].floor = scCushFloor(st, entries, i); entries[i].cushion = (entries[i].trigger - entries[i].floor) / entries[i].risk; }
   return targets;
 }
 function scalingIdxOf(bals, b) {
@@ -9019,6 +9046,9 @@ function fillScalingForm() {
   const rf = document.getElementById('sc-round-field');
   if (rf) rf.style.display = st.mode === 'round' ? 'none' : '';
   set('sc-goal', st.goal);
+  set('sc-mincush', st.minCush.value || '');
+  set('sc-mincush-unit', st.minCush.unit);
+  const mci = document.getElementById('sc-mincush'); if (mci) mci.step = st.minCush.unit === 'loss' ? '0.5' : '50';
   set('sc-current', scRound(st.current, 2));
   const auto = document.getElementById('sc-auto');
   if (auto) auto.checked = !!st.auto;
@@ -9065,6 +9095,20 @@ function onScalingInput(field) {
   } else if (field === 'param') {
     const v = num('sc-param');
     if (v > 0) st.params[st.mode] = v;
+  } else if (field === 'minCush') {
+    const v = num('sc-mincush'), nv = v > 0 ? v : 0;
+    if (nv === st.minCush.value) return;
+    st.minCush.value = nv;
+    // Validé en quittant le champ : on redessine une fois le focus arrivé sur sa nouvelle cible (case du tableau comprise).
+    saveScalingState(); setTimeout(() => renderScaling(), 0); return;
+  } else if (field === 'minCushUnit') {
+    const u = document.getElementById('sc-mincush-unit').value;
+    if (u !== st.minCush.unit && (u === 'eur' || u === 'loss')) {
+      // Changement d'unité : on repart sur des valeurs rondes plutôt que de convertir des réglages par palier incohérents.
+      st.minCush.unit = u; st.minCush.value = u === 'eur' ? 500 : 5; st.minCush.by = {};
+      set('sc-mincush', st.minCush.value);
+      document.getElementById('sc-mincush').step = u === 'loss' ? '0.5' : '50';
+    }
   } else if (field === 'goal') {
     const v = num('sc-goal');
     if (v > 0) st.goal = v;
@@ -9090,6 +9134,25 @@ function scalingRuleText(st) {
   return `Tu augmentes ta taille chaque fois que ton risque par trade peut monter de ${p} € tout en restant à ${pct} du capital.${rt}`;
 }
 
+function scCushTxt(st, v) { return st.minCush.unit === 'loss' ? scNum1(v).replace(/,0$/, '') + ' perte' + (v >= 2 ? 's' : '') : fmtEUR(v); }
+function scCushRuleText(st) {
+  const n = Object.keys(st.minCush.by).length;
+  if (!(st.minCush.value > 0) && !n) return '';
+  const g = st.minCush.value > 0
+    ? ` Coussin minimum : tu n'augmentes ta taille qu'une fois ${st.minCush.unit === 'loss' ? scCushTxt(st, st.minCush.value) + ' au nouveau risque' : fmtEUR(st.minCush.value)} au-dessus du palier.`
+    : ' Pas de coussin minimum global.';
+  return g + (n ? ` ${n} palier${n > 1 ? 's ont' : ' a'} un coussin personnalisé (tableau des paliers).` : '');
+}
+// Coussin personnalisé d'un palier (colonne « Coussin » du tableau) ; vide = réglage global.
+function setScalingPalierCush(key, value) {
+  const st = getScalingState();
+  const v = parseFloat(String(value).replace(',', '.'));
+  if (String(value).trim() === '' || isNaN(v) || v < 0) delete st.minCush.by[key];
+  else st.minCush.by[key] = v;
+  saveScalingState();
+  setTimeout(() => renderScaling(), 0);   // après le déplacement du focus : la case suivante reste active
+}
+
 function renderScaling(opts) {
   const page = document.getElementById('page-scaling');
   if (!page || !page.classList.contains('active')) return;
@@ -9099,7 +9162,7 @@ function renderScaling(opts) {
   if (curInput) { curInput.disabled = !!st.auto; if (st.auto) curInput.value = scRound(current, 2); }
   const model = computeScalingPaliers(st, current);
   const rule = document.getElementById('sc-rule-text');
-  if (rule) rule.textContent = scalingRuleText(st) + (model.usedZones ? ' Tes zones coussin décident du moment exact : la fin de chaque zone est le niveau où tu augmentes réellement ta taille.' : '');
+  if (rule) rule.textContent = scalingRuleText(st) + scCushRuleText(st) + (model.usedZones ? ' Tes zones coussin décident du moment exact : la fin de chaque zone est le niveau où tu augmentes réellement ta taille.' : '');
   renderScalingTiles(st, model, current);
   renderScalingTimeline(st, model, current, opts || {});
   renderScalingTable(st, model, current);
@@ -9116,7 +9179,8 @@ function applyScalingParamsPanel() {
   if (sum) {
     const p = st.params[st.mode];
     const rule = st.mode === 'round' ? 'paliers tous les ' + fmtEUR(p) : (st.mode === 'cushion' ? 'coussin ' + p + ' pertes' : (st.mode === 'capital' ? '+' + p + ' % de capital par palier' : '+' + p + ' € de risque par palier'));
-    sum.textContent = '· départ ' + fmtEUR(st.start) + ' · risque ' + scPct(st.riskPct) + ' (' + fmtEUR(st.start * st.riskPct / 100, false, 2) + ') · ' + rule;
+    const cush = st.minCush.value > 0 ? ' · coussin min ' + scCushTxt(st, st.minCush.value) : '';
+    sum.textContent = '· départ ' + fmtEUR(st.start) + ' · risque ' + scPct(st.riskPct) + ' (' + fmtEUR(st.start * st.riskPct / 100, false, 2) + ') · ' + rule + cush;
   }
 }
 function toggleScalingParamsPanel() {
@@ -9134,7 +9198,7 @@ function renderScalingTiles(st, model, current) {
   const cur = model.pts[r];
   const next = model.pts[r + 1] || model.nextBeyond || null;
   const below = current < st.start - 1e-6;
-  const floorBal = r >= 1 ? model.pts[r - 1].trigger : st.start;
+  const floorBal = r >= 1 ? cur.floor : st.start;
   const cushionLosses = (current - floorBal) / cur.risk;
   const cushTone = cushionLosses < 2 ? 'red' : (cushionLosses < 5 ? 'amber' : 'green');
   // Prochain palier : on compte jusqu'à la FIN du coussin (moment réel de l'augmentation), pas jusqu'au palier rond.
@@ -9156,7 +9220,7 @@ function renderScalingTiles(st, model, current) {
         : (r === 0 ? `capital ${fmtEUR(cur.bal)} atteint · toi : ${fmtEUR(current)}` : `augmenté à ${fmtEUR(cur.trigger)} · toi : ${fmtEUR(current)}`) },
     { label: 'Prochain palier', val: next ? fmtEUR(next.trigger) : 'Objectif atteint', tone: 'amber', sub: nextSub },
     { label: 'Coussin actuel', val: cushionLosses > 0 ? scNum1(cushionLosses) + ' pertes' : 'Aucun', tone: cushTone,
-      sub: `d'affilée avant de repasser sous ${r >= 2 ? 'le palier P' + (r - 1) + ' (' + fmtEUR(floorBal) + ')' : 'ton capital de départ (' + fmtEUR(floorBal) + ')'}` }
+      sub: `d'affilée avant de repasser sous ${r === 0 ? 'ton capital de départ' : (st.mode === 'cushion' ? (r >= 2 ? 'le palier P' + (r - 1) : 'ton capital de départ') : 'le palier P' + r)} (${fmtEUR(floorBal)}) et de réduire ta taille` }
   ];
   mount(cont, html`${tiles.map(t => html`<div class="sc-tile"><div class="sc-tile-label">${t.label}</div><div class="sc-tile-val tone-${raw(t.tone)}">${t.val}</div><div class="sc-tile-sub">${t.sub}</div></div>`)}`);
 }
@@ -9187,6 +9251,11 @@ function renderScalingTimeline(st, model, current, opts) {
   // Frise : positions en pixels calculées (seule géométrie laissée en ligne), tout le reste en classes.
   const at = (x, w) => raw(`left:${x}px` + (w != null ? `;width:${w}px` : ''));
   const h = [];
+  pts.forEach(p => {
+    if (p.type !== 'palier' || p.trigZone || !(trig(p) > p.bal + 0.005)) return;
+    const x1 = xOf(p.bal), x2 = xOf(trig(p));
+    h.push(html`<div class="sc-zone green sc-zone-min" style="${at(x1, Math.max(8, x2 - x1))}" title="Coussin minimum de P${p.k} : ${fmtEUR(p.bal)} → ${fmtEUR(trig(p))}"></div>`);
+  });
   (st.showZones ? st.zones : []).forEach(z => {
     const a = Math.min(z.from, z.to), b = Math.max(z.from, z.to);
     const x1 = xOf(a), x2 = xOf(b);
@@ -9208,24 +9277,30 @@ function renderScalingTimeline(st, model, current, opts) {
       h.push(html`<div class="sc-lbl sc-lbl-bot" style="${at(x)}"><div class="sc-risk">${fmtEUR(p.risk, false, 2)}<span class="sc-risk-u"> / trade</span></div></div>`);
     }
   });
-  if (st.showZones && model.targets) {
-    model.targets.filter(t => t.ks.length > 0).forEach(t => {
-      const x = xOf(t.b);
-      const entry = model.pts[Math.max(...t.ks)] || model.nextBeyond;
-      const tip = `Fin du coussin « ${t.zone.label} » : tu augmentes ta taille à ${fmtEUR(t.b)} → risque ${fmtEUR(entry.risk, false, 2)} par trade`;
-      h.push(html`<div class="sc-end-line ${t.zone.color}" style="${at(x)}"></div><div class="sc-end ${t.zone.color}" style="${at(x)}" title="${tip}"></div><div class="sc-end-lbl ${t.zone.color}" style="${at(x)}" title="${tip}"><b>▲ ${fmtEUR(t.b)}</b><span>${fmtEUR(entry.risk, false, 2)} / trade</span></div>`);
-    });
-  }
+  // Point d'augmentation réel (▲) de chaque palier retardé par un coussin : minimum réglé ou zone dessinée.
+  pts.forEach(p => {
+    if (p.type !== 'palier' || !(trig(p) > p.bal + 0.005)) return;
+    const x = xOf(trig(p)), z = p.trigZone, col = raw(z ? z.color : 'green');
+    const tip = z ? `Fin du coussin « ${z.label} » : tu augmentes ta taille à ${fmtEUR(trig(p))} → risque ${fmtEUR(p.risk, false, 2)} par trade`
+      : `Coussin minimum de P${p.k} : ${fmtEUR(trig(p) - p.bal)} (${scNum1((trig(p) - p.bal) / p.risk)} pertes) → tu augmentes ta taille à ${fmtEUR(trig(p))}, risque ${fmtEUR(p.risk, false, 2)} par trade`;
+    h.push(html`<div class="sc-end-line ${col}" style="${at(x)}"></div><div class="sc-end ${col}" style="${at(x)}" title="${tip}"></div><div class="sc-end-lbl ${col}" style="${at(x)}" title="${tip}"><b>▲ ${fmtEUR(trig(p))}</b><span>${fmtEUR(p.risk, false, 2)} / trade</span></div>`);
+  });
   h.push(html`<div class="sc-me" style="${at(meX)}"><div class="sc-me-pill">Toi · ${fmtEUR(current)}</div><div class="sc-me-line"></div></div>`);
   h.push(html`<div class="sc-draw" style="${at(padL - 44, trackW + 88)}">Glisse ici pour marquer une zone coussin de sécurité</div>`);
   mount(tl, html`${h}`);
   if (opts && opts.center) wrap.scrollLeft = Math.max(0, meX - wrap.clientWidth / 2);
 }
 
-function cushFormula(p, prev) {
-  const pt = p.trigger != null ? p.trigger : p.bal;
-  const pp = prev ? (prev.trigger != null ? prev.trigger : prev.bal) : 0;
-  return '(' + fmtEUR(pt) + ' − ' + fmtEUR(pp) + ') ÷ ' + fmtEUR(p.risk, false, 2);
+function cushFormula(p) {
+  return '(' + fmtEUR(p.trigger) + ' − ' + fmtEUR(p.floor) + ') ÷ ' + fmtEUR(p.risk, false, 2);
+}
+// Cellule « Coussin » : réglage du palier (vide = global) + résultat en pertes et en €.
+function scCushCell(st, p, next) {
+  const set = scCushSetting(st, p), unit = st.minCush.unit === 'loss' ? 'pertes' : '€';
+  const eur = p.trigger - p.floor;
+  const res = p.cushion > 0.005 ? html`<b>${scNum1(p.cushion)} pertes</b> · ${fmtEUR(eur)}` : html`<span class="tone-red">aucun coussin</span>`;
+  const ph = st.minCush.value > 0 ? String(st.minCush.value) : '0';
+  return html`<div class="sc-cush"><label class="sc-cush-in${raw(set.own ? ' own' : '')}" title="Coussin minimum de ce palier (${unit}). Vide = réglage global${st.minCush.value > 0 ? ' (' + scCushTxt(st, st.minCush.value) + ')' : ''}."><input type="number" min="0" step="${raw(st.minCush.unit === 'loss' ? '0.5' : '50')}" value="${set.own ? set.v : ''}" placeholder="${ph}" aria-label="Coussin minimum de P${p.k}" onchange="setScalingPalierCush('${raw(scCushKey(p))}', this.value)"><span>${unit}</span></label><div class="sc-cush-res">${res}</div><div class="sc-formula">${cushFormula(p)}</div>${next && p.trigger > next.bal + 0.005 ? html`<div class="tone-amber sc-cush-warn">⚠ dépasse le palier P${next.k} (${fmtEUR(next.bal)}) : tu l'atteindras avant d'augmenter</div>` : ''}</div>`;
 }
 function renderScalingTable(st, model, current) {
   const cont = document.getElementById('sc-table');
@@ -9240,12 +9315,15 @@ function renderScalingTable(st, model, current) {
     const status = i < r ? html`<span class="tone-green">✔ atteint</span>`
       : (i === r ? html`<span class="tone-blue fw-700">● en cours</span>`
       : (inCush ? html`<span class="tone-amber">◐ dans le coussin · reste ${fmtEUR(trig - current)}</span>` : `reste ${fmtEUR(trig - current)}`));
-    return html`<tr class="${i === r ? 'cur' : ''}"><td class="sc-td-k">${i === 0 ? 'Départ' : 'P' + p.k}</td><td>${fmtEUR(p.bal)}</td><td>${i === 0 ? '—' : (delayed ? html`<span class="tone-amber fw-700">${fmtEUR(trig)}</span>` : fmtEUR(trig))}</td><td class="tone-blue fw-700">${fmtEUR(p.risk, false, 2)}</td><td>${scPct(st.riskPct)}</td><td>${prev ? '+' + fmtEUR(p.risk - prev.risk, false, 2) : '—'}</td><td${raw(i > 0 ? ` title="${scEsc(cushFormula(p, prev))}"` : '')}>${p.cushion != null ? html`${scNum1(p.cushion) + ' pertes'}<div class="sc-formula">${cushFormula(p, prev)}</div>` : '—'}</td><td>${status}</td></tr>`;
+    return html`<tr class="${i === r ? 'cur' : ''}"><td class="sc-td-k">${i === 0 ? 'Départ' : 'P' + p.k}</td><td>${fmtEUR(p.bal)}</td><td>${i === 0 ? '—' : (delayed ? html`<span class="tone-amber fw-700">${fmtEUR(trig)}</span>` : fmtEUR(trig))}</td><td class="tone-blue fw-700">${fmtEUR(p.risk, false, 2)}</td><td>${scPct(st.riskPct)}</td><td>${prev ? '+' + fmtEUR(p.risk - prev.risk, false, 2) : '—'}</td><td>${i > 0 ? scCushCell(st, p, model.pts[i + 1] || model.nextBeyond) : '—'}</td><td>${status}</td></tr>`;
   });
   if (st.goal > model.pts[model.pts.length - 1].bal * 1.0000001) {
     rows.push(html`<tr><td class="sc-td-k">Objectif</td><td>${fmtEUR(st.goal)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${current >= st.goal ? html`<span class="tone-green">✔ atteint</span>` : 'reste ' + fmtEUR(st.goal - current)}</td></tr>`);
   }
-  mount(cont, html`<table class="sc-table"><thead><tr><th>Palier</th><th>Capital du palier</th><th>Augmente à</th><th>Risque / trade</th><th>Risque (%)</th><th>Hausse</th><th>Coussin</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table><p class="sc-note">Coussin = nombre de pertes d'affilée que tu peux encaisser, au nouveau risque, avant de repasser sous le <b>palier précédent</b> (pour P1, le palier précédent est ton capital de départ). Formule : (point d'augmentation − point d'augmentation précédent) ÷ risque du palier.</p>`);
+  // Redessin pendant la saisie (ex. : réglage global validé en cliquant dans une case du tableau) : on garde la case active.
+  const act = document.activeElement, keep = act && cont.contains(act) ? act.getAttribute('aria-label') : null;
+  mount(cont, html`<table class="sc-table"><thead><tr><th>Palier</th><th>Capital du palier</th><th>Augmente à</th><th>Risque / trade</th><th>Risque (%)</th><th>Hausse</th><th>Coussin</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table><p class="sc-note">Coussin = nombre de pertes d'affilée que tu peux encaisser, au nouveau risque, entre le moment où tu augmentes ta taille et ${raw(st.mode === 'cushion' ? 'le <b>palier précédent</b> (pour P1, ton capital de départ)' : 'le <b>palier</b> lui-même, où tu reviens à la taille précédente')}. Formule : (augmente à − ${st.mode === 'cushion' ? 'palier précédent' : 'palier'}) ÷ risque du palier. Règle un coussin minimum pour tous les paliers dans « Paramètres », ou palier par palier ici (vide = réglage global).</p>`);
+  if (keep) { const el = [...cont.querySelectorAll('input')].find(e => e.getAttribute('aria-label') === keep); if (el) el.focus(); }
   scTableCount = model.pts.length - 1;
   applyScalingTablePanel();
 }

@@ -507,3 +507,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
   #cal-grid > div{min-width:640px}
 }
 
+.sc-mincush{display:flex;gap:6px}.sc-mincush input{flex:1;min-width:0}.sc-mincush select{width:auto}
+.sc-zone.sc-zone-min{border-style:dotted;background:color-mix(in srgb,var(--green) 4%,transparent)}
+.sc-cush{display:flex;flex-direction:column;gap:3px}
+.sc-cush-in{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3)}
+.sc-cush-in input{width:78px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12px;padding:4px 7px;outline:none}
+.sc-cush-in input::placeholder{color:var(--txt3)}
+.sc-cush-in.own input{border-color:var(--amber);color:var(--amber)}
+.sc-cush-res{color:var(--txt2)}.sc-cush-res b{color:var(--txt);font-weight:600}
+.sc-cush-warn{font-size:11px;white-space:normal;max-width:260px}

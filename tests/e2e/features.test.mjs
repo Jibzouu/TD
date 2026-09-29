@@ -295,3 +295,38 @@ test('bouton « Nouveau trade » : panneau déroulant, brouillon conservé, enre
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('scaling : coussin minimum global (€ ou pertes), personnalisé par palier, zones conservées', async () => {
+  const sc = { version: 2, start: 1000, riskPct: 3, mode: 'round', roundTo: 100, params: { round: 1000, cushion: 10, capital: 10, risk: 10 },
+    goal: 5000, current: 1850, auto: false, tableOpen: true, paramsOpen: true, showZones: true,
+    zones: [{ id: 1, from: 3000, to: 3700, label: 'Coussin', color: 'green' }] };
+  const { page, ctx, errors } = await openJournal({ seed: { tj_scaling: sc } });
+  await goto(page, 'scaling');
+  const N = x => x.replace(/\D/g, '');
+  const trig = () => page.$$eval('#sc-table tbody tr', trs => trs.map(tr => tr.children[2].textContent.replace(/\D/g, '')));
+  // Sans coussin minimum : augmentation au palier, sauf la zone dessinée (P2 → 3 700 €).
+  assert.deepEqual((await trig()).slice(1, 4), ['2 000 €', '3 700 €', '4 000 €'].map(N).map(s => s.replace(/ /g, ' ')).map((s, i) => (i === 1 ? s : s)).map(s => s), 'avant réglage');
+  await page.fill('#sc-mincush', '500'); await page.dispatchEvent('#sc-mincush', 'change'); await page.waitForTimeout(60);
+  assert.deepEqual((await trig()).slice(1, 4), ['2 500 €', '3 700 €', '4 500 €'].map(N), '500 € au-dessus de chaque palier, la zone plus large l’emporte');
+  assert.match(await page.locator('#sc-table tbody tr').nth(1).innerText(), /8,3 pertes/);
+  // En pertes : 5 pertes au nouveau risque (P1 60 € → 2 300 €, P3 120 € → 4 600 €).
+  await page.selectOption('#sc-mincush-unit', 'loss');
+  assert.equal(await page.inputValue('#sc-mincush'), '5');
+  await page.fill('#sc-mincush', '5'); await page.dispatchEvent('#sc-mincush', 'change'); await page.waitForTimeout(60);
+  assert.deepEqual((await trig()).slice(1, 4), ['2 300 €', '3 700 €', '4 600 €'].map(N));
+  // Personnalisé pour P1 : 10 pertes → 2 600 €, mis en évidence, conservé après rechargement.
+  const p1 = page.locator('#sc-table tbody tr').nth(1).locator('input');
+  await p1.fill('10'); await p1.dispatchEvent('change'); await page.waitForTimeout(60);
+  assert.equal((await trig())[1], N('2 600 €'));
+  assert.ok(await page.locator('#sc-table tbody tr').nth(1).locator('.sc-cush-in.own').count() === 1);
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'scaling');
+  assert.equal((await trig())[1], N('2 600 €'), 'réglage du palier sauvegardé');
+  assert.match(await page.locator('#sc-params-summary').textContent(), /coussin min 5 pertes/);
+  // Vider la case : retour au réglage global.
+  const p1b = page.locator('#sc-table tbody tr').nth(1).locator('input');
+  await p1b.fill(''); await p1b.dispatchEvent('change'); await page.waitForTimeout(60);
+  assert.equal((await trig())[1], N('2 300 €'));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
