@@ -32,7 +32,7 @@ function reloadImportSettings() {
   R_MODE = DB.getItem((JP + 'r_mode')) === 'strict' ? 'strict' : 'usable';
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   set('account-size', accountSize);
-  set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
+  set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE); openImportSettingsIfUsed();
   set('dd-limit-pct', loadDDLimitPct());
 }
 function isValidTradesArray(arr) {

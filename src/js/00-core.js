@@ -152,6 +152,11 @@ function detectCcyFromHeader(h) {
   if (/€/.test(n)) return 'EUR';
   return '';
 }
+// Réglages d'import repliés par défaut, mais ouverts dès qu'un réglage n'est pas neutre (pour qu'il reste visible).
+function openImportSettingsIfUsed() {
+  const d = document.getElementById('import-settings');
+  if (d && (TZ_OFFSET_HOURS !== 0 || IMPORT_FX_RATE !== 1)) d.open = true;
+}
 function fxForCcy(ccy) { return ccy && ccy !== 'EUR' ? IMPORT_FX_RATE : 1; }
 // Ré-applique le taux courant aux trades importés en devise étrangère (et, après confirmation, aux anciens imports TradingView sans devise connue).
 function reconvertImportedTrades() {

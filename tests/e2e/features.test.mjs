@@ -175,3 +175,18 @@ test('nettoyage unique des anciens R : fictifs effacés, R invraisemblable écar
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('page Export : réglages d’import repliés, ouverts si un réglage est actif ; analyses retirées', async () => {
+  let { page, ctx } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  await goto(page, 'export');
+  assert.equal(await page.evaluate(() => document.getElementById('import-settings').open), false, 'replié par défaut');
+  assert.equal(await page.locator('#tz-offset-hours').isVisible(), false);
+  await page.click('#import-settings > summary');
+  assert.ok(await page.locator('#tz-offset-hours').isVisible(), 'se déplie au clic');
+  assert.equal(await page.locator('#sharpe-sortino-body, #coinflip-body, #whatif-body').count(), 0);
+  await ctx.close();
+  ({ page, ctx } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], tj_tz_offset_hours: '2' } }));
+  await goto(page, 'export');
+  assert.equal(await page.evaluate(() => document.getElementById('import-settings').open), true, 'ouvert quand un décalage est réglé');
+  await ctx.close();
+});

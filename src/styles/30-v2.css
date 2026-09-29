@@ -227,6 +227,5 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .ui-big-val small{font-size:15px;color:var(--txt3);font-weight:500}
 .ui-big-side{flex:1;min-width:180px}
 .ui-big-side .meter{margin-bottom:10px}
-.ui-big-side .meter.with-ticks{margin:6px 0 30px}
 .ui-subtitle{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px}
 .ui-sep{border-top:1px solid var(--border);padding-top:14px}

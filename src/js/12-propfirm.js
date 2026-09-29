@@ -210,7 +210,7 @@ function renderPfEquityChart(st) {
 function renderStats() {
   const trades = analysisTrades();
   [renderEdgeFinder, renderStatsSessionTables, renderMaeMfeAnalysis, renderChecklistAnalysis, renderTiltMeter,
-   renderSharpeSortino, renderCoinFlip, renderMistakeCostReport, renderWhatIf].forEach(fn => safeRun(fn, fn.name));
+   renderMistakeCostReport].forEach(fn => safeRun(fn, fn.name));
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
   const wins = trades.filter(t => t.res === 'TP');
   const losses = trades.filter(t => t.res === 'SL');

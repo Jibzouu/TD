@@ -15,6 +15,7 @@ onReady(() => {
   document.getElementById('dd-limit-pct').value = loadDDLimitPct();
   const tzInp = document.getElementById('tz-offset-hours'); if (tzInp) tzInp.value = TZ_OFFSET_HOURS;
   const fxInp = document.getElementById('import-fx-rate'); if (fxInp) fxInp.value = IMPORT_FX_RATE;
+  openImportSettingsIfUsed();
   [renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, initPlan, initWatchlist, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));
   if (window._corruptKeys && window._corruptKeys.length) {
     showToast('⚠️ Donnée illisible ignorée (' + window._corruptKeys.join(', ') + ') — copie gardée sous « …_corrupt_backup »', 'error');

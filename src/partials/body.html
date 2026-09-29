@@ -702,23 +702,9 @@
       </div>
 
       <div class="subtab-panel" data-subtab="advanced">
-        <div class="charts-row cols-2">
-          <div class="panel">
-            <div class="panel-hdr"><span>Ratios ajustés au risque<small class="panel-sub">Sharpe / Sortino, sur P&L journalier</small></span></div>
-            <div id="sharpe-sortino-body"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-hdr"><span>Coin Flip Distribution<small class="panel-sub">Ton edge est-il statistiquement réel ?</small></span></div>
-            <div id="coinflip-body"></div>
-          </div>
-        </div>
-        <div class="panel mb-20">
+        <div class="panel">
           <div class="panel-hdr"><span>Analyse MAE / MFE<small class="panel-sub">Excursion adverse / favorable — trades importés de TradingView</small></span></div>
           <div id="mae-mfe-body"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-hdr"><span>Comparateur "et si"<small class="panel-sub">Simule un autre objectif de RR sur ton historique réel</small></span></div>
-          <div id="whatif-body"></div>
         </div>
       </div>
     </div>
@@ -1020,7 +1006,9 @@
           <input type="file" id="csv-import-file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCsvImport(this)">
           <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
           <p id="csv-import-status"></p>
-          <div class="sep-top-16">
+          <details class="fold" id="import-settings">
+            <summary>Réglages d'import <span class="fold-hint">fuseau horaire et devise — seulement si ton broker exporte en UTC ou dans une autre devise</span></summary>
+            <div class="fold-body">
             <div class="center-row">
               <span class="mono-muted">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
               <input type="number" id="tz-offset-hours" step="0.5" value="0" oninput="saveTZOffset()">
@@ -1038,7 +1026,8 @@
             <p class="note-center-8">
               Laisse 1 si ton compte de trading est déjà en euros. La devise est détectée dans l'en-tête du fichier (USD, GBP, CHF…) ; un fichier en EUR n'est jamais converti.
             </p>
-          </div>
+            </div>
+          </details>
         </div>
         <div class="export-card span-2">
           <div class="export-icon">🗄️</div>
@@ -1083,21 +1072,26 @@
           <div class="export-desc text-center">
             Écrit chaque semaine une copie complète (tous les journaux + réglages) dans jusqu'à 3 dossiers séparés que tu choisis toi-même — utile pour garder une copie hors de cet ordinateur (clé USB, dossier synchronisé, etc.).
           </div>
-          <div id="backup-fs-unsupported" style="display:none">
-            ⚠️ Ton navigateur ne permet pas d'écrire automatiquement dans un dossier (fonctionne avec <b>Chrome</b> ou <b>Edge</b> ; ne fonctionne pas dans Firefox/Safari, ni si le fichier est ouvert en double-clic — sers-le via un petit serveur local ou dépose-le sur <code>localhost</code>). En attendant, utilise le bouton « Télécharger le backup » plus haut.
-          </div>
-          <div id="backup-slots-list"></div>
-          <div class="center-row sep-m14">
-            <span class="mono-muted">Jour de sauvegarde automatique (fin de semaine) :</span>
-            <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)">
-              <option value="5">Vendredi</option>
-              <option value="6">Samedi</option>
-              <option value="0">Dimanche</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <button class="btn-primary" onclick="runBackupNow()">Sauvegarder maintenant dans les 3 dossiers</button>
-          </div>
+          <details class="fold">
+            <summary>Configurer les dossiers et le jour de sauvegarde</summary>
+            <div class="fold-body">
+            <div id="backup-fs-unsupported" style="display:none">
+              ⚠️ Ton navigateur ne permet pas d'écrire automatiquement dans un dossier (fonctionne avec <b>Chrome</b> ou <b>Edge</b> ; ne fonctionne pas dans Firefox/Safari, ni si le fichier est ouvert en double-clic — sers-le via un petit serveur local ou dépose-le sur <code>localhost</code>). En attendant, utilise le bouton « Télécharger le backup » plus haut.
+            </div>
+            <div id="backup-slots-list"></div>
+            <div class="center-row sep-m14">
+              <span class="mono-muted">Jour de sauvegarde automatique (fin de semaine) :</span>
+              <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)">
+                <option value="5">Vendredi</option>
+                <option value="6">Samedi</option>
+                <option value="0">Dimanche</option>
+              </select>
+            </div>
+            <div class="text-center">
+              <button class="btn-primary" onclick="runBackupNow()">Sauvegarder maintenant dans les 3 dossiers</button>
+            </div>
+            </div>
+          </details>
           <p id="backup-last-run-info"></p>
         </div>
       </div>

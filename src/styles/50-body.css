@@ -148,10 +148,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #mistake-cost-body{padding:18px}
 #wrap-maemfe{height:260px}
 #wrap-rvr{height:260px}
-#sharpe-sortino-body{padding:18px}
-#coinflip-body{padding:18px}
 #mae-mfe-body{padding:18px}
-#whatif-body{padding:18px}
 #pf-enabled{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
 #pf-dd-type{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
 #pf-consistency-on{width:15px;height:15px;accent-color:var(--green);cursor:pointer}

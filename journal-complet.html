@@ -999,7 +999,6 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .ui-big-val small{font-size:15px;color:var(--txt3);font-weight:500}
 .ui-big-side{flex:1;min-width:180px}
 .ui-big-side .meter{margin-bottom:10px}
-.ui-big-side .meter.with-ticks{margin:6px 0 30px}
 .ui-subtitle{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-bottom:8px}
 .ui-sep{border-top:1px solid var(--border);padding-top:14px}
 
@@ -1136,12 +1135,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .h-200{height:200px}.h-90{height:90px}
 .m-0{margin:0}
 .td-empty{color:var(--txt3);padding:14px}
-.meter-tick.mid{left:calc(50% - 1px);background:var(--txt3)}
-.meter-tick-lbl.mid{left:50%;color:var(--txt3)}
 .mc-total{font-size:13px;margin-bottom:12px}
-.wi-intro{font-size:12px;color:var(--txt2);margin-bottom:14px}
-.wi-best{background:var(--green-dd)}
-.wi-foot{font-size:11px;color:var(--txt3);margin-top:12px;line-height:1.6}
 
 /* Scaling */
 .fw-700{font-weight:700}
@@ -1208,6 +1202,18 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .mistake-chip.check input{accent-color:var(--green)}
 .search-empty{padding:20px;text-align:center;font-size:12px;color:var(--txt3)}
 .chart-offline-note{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-family:var(--mono);color:var(--txt3);padding:8px}
+
+/* Sections repliables (page Export) */
+.fold{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.fold > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12.5px;font-weight:600;color:var(--txt2);padding:4px 0;user-select:none}
+.fold > summary::-webkit-details-marker{display:none}
+.fold > summary::before{content:'▸';color:var(--txt3);transition:transform .15s;display:inline-block}
+.fold[open] > summary::before{transform:rotate(90deg)}
+.fold > summary:hover{color:var(--txt)}
+.fold > summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.fold-hint{font-weight:400;font-size:11.5px;color:var(--txt3)}
+.fold-body{padding-top:12px}
+.fold-body > .center-row:first-child{margin-top:0}
 
 /* ═══ styles/50-body.css ═══ */
 /* ═══ Styles de la structure (partials/body.html), auparavant écrits en ligne ═══ */
@@ -1360,10 +1366,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #mistake-cost-body{padding:18px}
 #wrap-maemfe{height:260px}
 #wrap-rvr{height:260px}
-#sharpe-sortino-body{padding:18px}
-#coinflip-body{padding:18px}
 #mae-mfe-body{padding:18px}
-#whatif-body{padding:18px}
 #pf-enabled{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
 #pf-dd-type{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
 #pf-consistency-on{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
@@ -2111,23 +2114,9 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
       </div>
 
       <div class="subtab-panel" data-subtab="advanced">
-        <div class="charts-row cols-2">
-          <div class="panel">
-            <div class="panel-hdr"><span>Ratios ajustés au risque<small class="panel-sub">Sharpe / Sortino, sur P&L journalier</small></span></div>
-            <div id="sharpe-sortino-body"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-hdr"><span>Coin Flip Distribution<small class="panel-sub">Ton edge est-il statistiquement réel ?</small></span></div>
-            <div id="coinflip-body"></div>
-          </div>
-        </div>
-        <div class="panel mb-20">
+        <div class="panel">
           <div class="panel-hdr"><span>Analyse MAE / MFE<small class="panel-sub">Excursion adverse / favorable — trades importés de TradingView</small></span></div>
           <div id="mae-mfe-body"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-hdr"><span>Comparateur "et si"<small class="panel-sub">Simule un autre objectif de RR sur ton historique réel</small></span></div>
-          <div id="whatif-body"></div>
         </div>
       </div>
     </div>
@@ -2429,7 +2418,9 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           <input type="file" id="csv-import-file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCsvImport(this)">
           <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
           <p id="csv-import-status"></p>
-          <div class="sep-top-16">
+          <details class="fold" id="import-settings">
+            <summary>Réglages d'import <span class="fold-hint">fuseau horaire et devise — seulement si ton broker exporte en UTC ou dans une autre devise</span></summary>
+            <div class="fold-body">
             <div class="center-row">
               <span class="mono-muted">Décalage horaire de tes exports (heures, ex. exports en UTC → +2 l'été à Paris) :</span>
               <input type="number" id="tz-offset-hours" step="0.5" value="0" oninput="saveTZOffset()">
@@ -2447,7 +2438,8 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
             <p class="note-center-8">
               Laisse 1 si ton compte de trading est déjà en euros. La devise est détectée dans l'en-tête du fichier (USD, GBP, CHF…) ; un fichier en EUR n'est jamais converti.
             </p>
-          </div>
+            </div>
+          </details>
         </div>
         <div class="export-card span-2">
           <div class="export-icon">🗄️</div>
@@ -2492,21 +2484,26 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
           <div class="export-desc text-center">
             Écrit chaque semaine une copie complète (tous les journaux + réglages) dans jusqu'à 3 dossiers séparés que tu choisis toi-même — utile pour garder une copie hors de cet ordinateur (clé USB, dossier synchronisé, etc.).
           </div>
-          <div id="backup-fs-unsupported" style="display:none">
-            ⚠️ Ton navigateur ne permet pas d'écrire automatiquement dans un dossier (fonctionne avec <b>Chrome</b> ou <b>Edge</b> ; ne fonctionne pas dans Firefox/Safari, ni si le fichier est ouvert en double-clic — sers-le via un petit serveur local ou dépose-le sur <code>localhost</code>). En attendant, utilise le bouton « Télécharger le backup » plus haut.
-          </div>
-          <div id="backup-slots-list"></div>
-          <div class="center-row sep-m14">
-            <span class="mono-muted">Jour de sauvegarde automatique (fin de semaine) :</span>
-            <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)">
-              <option value="5">Vendredi</option>
-              <option value="6">Samedi</option>
-              <option value="0">Dimanche</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <button class="btn-primary" onclick="runBackupNow()">Sauvegarder maintenant dans les 3 dossiers</button>
-          </div>
+          <details class="fold">
+            <summary>Configurer les dossiers et le jour de sauvegarde</summary>
+            <div class="fold-body">
+            <div id="backup-fs-unsupported" style="display:none">
+              ⚠️ Ton navigateur ne permet pas d'écrire automatiquement dans un dossier (fonctionne avec <b>Chrome</b> ou <b>Edge</b> ; ne fonctionne pas dans Firefox/Safari, ni si le fichier est ouvert en double-clic — sers-le via un petit serveur local ou dépose-le sur <code>localhost</code>). En attendant, utilise le bouton « Télécharger le backup » plus haut.
+            </div>
+            <div id="backup-slots-list"></div>
+            <div class="center-row sep-m14">
+              <span class="mono-muted">Jour de sauvegarde automatique (fin de semaine) :</span>
+              <select id="backup-weekday-select" class="filter-select" onchange="setBackupDay(this.value)">
+                <option value="5">Vendredi</option>
+                <option value="6">Samedi</option>
+                <option value="0">Dimanche</option>
+              </select>
+            </div>
+            <div class="text-center">
+              <button class="btn-primary" onclick="runBackupNow()">Sauvegarder maintenant dans les 3 dossiers</button>
+            </div>
+            </div>
+          </details>
           <p id="backup-last-run-info"></p>
         </div>
       </div>
@@ -3050,6 +3047,11 @@ function detectCcyFromHeader(h) {
   if (/\$/.test(n)) return 'USD';
   if (/€/.test(n)) return 'EUR';
   return '';
+}
+// Réglages d'import repliés par défaut, mais ouverts dès qu'un réglage n'est pas neutre (pour qu'il reste visible).
+function openImportSettingsIfUsed() {
+  const d = document.getElementById('import-settings');
+  if (d && (TZ_OFFSET_HOURS !== 0 || IMPORT_FX_RATE !== 1)) d.open = true;
 }
 function fxForCcy(ccy) { return ccy && ccy !== 'EUR' ? IMPORT_FX_RATE : 1; }
 // Ré-applique le taux courant aux trades importés en devise étrangère (et, après confirmation, aux anciens imports TradingView sans devise connue).
@@ -4503,6 +4505,7 @@ onReady(() => {
   document.getElementById('dd-limit-pct').value = loadDDLimitPct();
   const tzInp = document.getElementById('tz-offset-hours'); if (tzInp) tzInp.value = TZ_OFFSET_HOURS;
   const fxInp = document.getElementById('import-fx-rate'); if (fxInp) fxInp.value = IMPORT_FX_RATE;
+  openImportSettingsIfUsed();
   [renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, initPlan, initWatchlist, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));
   if (window._corruptKeys && window._corruptKeys.length) {
     showToast('⚠️ Donnée illisible ignorée (' + window._corruptKeys.join(', ') + ') — copie gardée sous « …_corrupt_backup »', 'error');
@@ -6370,94 +6373,6 @@ function renderEdgeFinder() {
     ${UI.hint(`Ce scan teste ${all.length} segments à la fois sur 6 dimensions : avec autant de comparaisons, un résultat qui a l'air fort peut être dû au hasard (« data dredging »). Un segment avec n < 10 est provisoire ; vérifie surtout qu'un edge se reproduit dans le temps avant d'en faire une règle.`)}`);
 }
 
-// ── SHARPE / SORTINO ─────────────────────────────────────────────────
-function computeDailyReturns() {
-  const trades = viewTrades();   // vue filtrée (filtre global)
-  const byDay = {};
-  trades.forEach(t => { if (!t.date || t.pnlEur === null || t.pnlEur === undefined) return; byDay[t.date] = (byDay[t.date]||0) + t.pnlEur; });
-  const bal = accountSize || 10000;
-  return Object.values(byDay).map(v => v / bal);
-}
-function renderSharpeSortino() {
-  const cont = document.getElementById('sharpe-sortino-body');
-  if (!cont) return;
-  const returns = computeDailyReturns();
-  if (returns.length < 10) {
-    mount(cont, UI.hint(`Encore trop peu de journées tradées (${returns.length}) — ces ratios ont besoin d'au moins une dizaine de jours pour être lisibles.`));
-    return;
-  }
-  const mean = returns.reduce((a,b)=>a+b,0) / returns.length;
-  const variance = returns.reduce((a,b)=>a+(b-mean)*(b-mean),0) / returns.length;
-  const stdev = Math.sqrt(variance);
-  const downside = returns.filter(r => r < 0);
-  const downsideDev = downside.length ? Math.sqrt(downside.reduce((a,b)=>a+b*b,0) / returns.length) : 0;
-  const sqrtN = Math.sqrt(252);
-  const sharpe = stdev > 0 ? (mean/stdev) * sqrtN : null;
-  const sortino = downsideDev > 0 ? (mean/downsideDev) * sqrtN : null;
-
-  function verdict(val) {
-    if (val === null) return { txt: 'non calculable', tone: 'muted' };
-    if (val < 0) return { txt: 'stratégie perdante', tone: 'red' };
-    if (val < 0.5) return { txt: 'faible', tone: 'red' };
-    if (val < 1) return { txt: 'acceptable', tone: 'amber' };
-    if (val < 2) return { txt: 'bon', tone: 'green' };
-    if (val < 3) return { txt: 'très bon', tone: 'green' };
-    return { txt: "exceptionnel — vérifie l'échantillon", tone: 'purple' };
-  }
-  const tile = (label, val) => { const v = verdict(val); return UI.tile(label, val === null ? '—' : val.toFixed(2), { center: true, size: 'l', tone: v.tone, sub: v.txt }); };
-  mount(cont, html`${UI.grid([tile('Sharpe (annualisé)', sharpe), tile('Sortino (annualisé)', sortino)], 2)}
-    ${returns.length < 30 ? UI.hint(`⚠️ Annualisé sur seulement ${returns.length} journée(s) : ces ratios deviennent fiables à partir d'une trentaine de jours. En dessous, prends-les comme un indice, pas une conclusion.`, 'amber') : ''}
-    ${UI.hint(`Calculés sur ${returns.length} journée(s) de trading, en % de ton solde de départ (${(accountSize||10000).toFixed(0)} €). Le Sharpe pénalise toute volatilité, le Sortino uniquement les jours négatifs. À prendre avec prudence sous 30 jours de données.`)}`);
-}
-
-// ── COIN FLIP DISTRIBUTION ───────────────────────────────────────────
-function normalCDF(x) {
-  const t = 1/(1+0.2316419*Math.abs(x));
-  const d = 0.3989423*Math.exp(-x*x/2);
-  let prob = d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
-  if (x > 0) prob = 1 - prob;
-  return prob;
-}
-function renderCoinFlip() {
-  const trades = viewTrades();   // vue filtrée (filtre global)
-  const cont = document.getElementById('coinflip-body');
-  if (!cont) return;
-  const wins = trades.filter(t => t.res === 'TP').length;
-  const losses = trades.filter(t => t.res === 'SL').length;
-  const be = trades.filter(t => t.res === 'BE').length;
-  const n = wins + losses + be;
-  if (n < 20) {
-    mount(cont, UI.hint(`Il te faut au moins 20 trades fermés pour un test crédible (tu en as ${n}). En dessous de 50-100 trades, prends le résultat avec des pincettes.`));
-    return;
-  }
-  // Seuil de rentabilité réel : compte tenu de ton payoff (gain moyen / perte moyenne en €), le seuil pour être rentable
-  // n'est pas 50 % — un payoff > 1 rend un win rate < 50 % rentable, et inversement. On teste contre CE seuil, pas contre pile-ou-face.
-  const eurClosed = trades.filter(t => t.pnlEur !== null && t.pnlEur !== undefined && ['TP','SL'].includes(t.res));
-  const ew = eurClosed.filter(t => t.res === 'TP'), el = eurClosed.filter(t => t.res === 'SL');
-  const avgWinE = ew.length ? ew.reduce((s,t)=>s+t.pnlEur,0)/ew.length : null;
-  const avgLossE = el.length ? Math.abs(el.reduce((s,t)=>s+t.pnlEur,0)/el.length) : null;
-  const hasPayoff = avgWinE !== null && avgLossE > 0;
-  const p0 = hasPayoff ? avgLossE / (avgWinE + avgLossE) : 0.5;
-  const winRate = wins / n;
-  const z = (wins - n*p0) / Math.sqrt(n*p0*(1-p0));
-  const pValue = 2*(1-normalCDF(Math.abs(z)));
-  const significant = pValue < 0.05;
-  const barPct = Math.min(Math.max(winRate*100,0),100);
-  const p0Pct = Math.round(p0*100);
-  const fillTone = significant ? (winRate >= p0 ? 'green' : 'red') : 'amber';
-  // Jauge à deux repères (50 % et seuil réel) : positions calculées, seules valeurs de style laissées en ligne.
-  const ticks = html`<div class="meter-tick mid"></div><div class="meter-tick-lbl mid">50 %</div>${hasPayoff && Math.abs(p0Pct - 50) >= 4 ? html`<div class="meter-tick" style="${raw(`left:calc(${p0Pct}% - 1px)`)}"></div><div class="meter-tick-lbl" style="${raw(`left:${Math.max(8, p0Pct)}%`)}">seuil ${p0Pct} %</div>` : ''}`;
-
-  mount(cont, html`<div class="ui-big">
-      <div><div class="ui-big-label">Ton win rate</div><div class="ui-big-val">${(winRate*100).toFixed(1).replace('.', ',')} %</div></div>
-      <div class="ui-big-side"><div class="meter with-ticks" role="img" aria-label="Win rate ${Math.round(barPct)} %, seuil de rentabilité ${p0Pct} %"><div class="meter-fill fill-${raw(fillTone)}" style="${raw('width:' + barPct.toFixed(1) + '%')}"></div>${ticks}</div></div>
-    </div>
-    ${UI.note(html`${hasPayoff ? html`Compte tenu de ton payoff (gain moyen ${fmtEUR(avgWinE,false,0)} / perte moyenne ${fmtEUR(avgLossE,false,0)}), ton seuil de rentabilité réel est ${UI.em(p0Pct + '%')} — pas 50 %. ` : ''}
-      ${significant
-        ? html`✅ Avec ${n} trades, ton win rate est ${UI.em('statistiquement différent', 'green')} de ce seuil (p = ${pValue.toFixed(3)}). Ce n'est probablement pas de la chance.`
-        : html`⚠️ Avec ${n} trades, on ne peut ${UI.em('pas encore exclure', 'amber')} que ton win rate soit dû au hasard par rapport à ce seuil (p = ${pValue.toFixed(3)}). Continue à journaliser${n < 100 ? ' — vise au moins 50-100 trades' : ''}.`}`)}`);
-}
-
 // ── COÛT DES ERREURS ─────────────────────────────────────────────────
 function renderMistakeCostReport() {
   const trades = analysisTrades();
@@ -6483,39 +6398,6 @@ function renderMistakeCostReport() {
   mount(cont, html`<div class="ui-big-label mc-total">Coût total estimé de tes erreurs taguées : ${UI.em(totalCost.toFixed(0) + ' €', 'red')}</div>
     <div class="ui-rows">${rows.map(([label, v]) => html`<div class="ui-row grid-bar"><span>${label} <span class="sub">${v.n}×</span></span>${raw(divBarCell(v.costEur, maxAbs, (v.costEur>=0?'+':'') + v.costEur.toFixed(0) + ' € · ' + (v.costR>=0?'+':'') + v.costR.toFixed(1) + 'R'))}</div>`)}</div>`);
 }
-
-// ── COMPARATEUR "ET SI" ───────────────────────────────────────────────
-function renderWhatIf() {
-  const trades = analysisTrades();
-  const cont = document.getElementById('whatif-body');
-  if (!cont) return;
-  const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
-  if (closed.length < 5) {
-    mount(cont, html`<p class="empty-note">Pas assez de trades fermés pour ce comparateur.</p>`);
-    return;
-  }
-  const tp = closed.filter(t => t.res === 'TP').length;
-  const sl = closed.filter(t => t.res === 'SL').length;
-  const be = closed.filter(t => t.res === 'BE').length;
-  const actualTotalR = closed.reduce((s,t) => s+(t.pnl||0), 0);
-  const rrVals = trades.map(t=>t.rr).filter(v=>v!==null&&v!==undefined);
-  const actualAvgRR = rrVals.length ? rrVals.reduce((a,b)=>a+b,0)/rrVals.length : null;
-
-  const targets = [1, 1.5, 2, 2.5, 3, 4, 5];
-  const rows = targets.map(rr => ({ rr, simulatedR: tp*rr - sl*1 }));
-  const bestRow = rows.slice().sort((a,b) => b.simulatedR - a.simulatedR)[0];
-
-  mount(cont, html`<p class="wi-intro">Avec ton win rate actuel (${tp} gagnants / ${sl} perdants / ${be} BE) et un risque fixe de 1R par perte, voici ce que donnerait un objectif de gain fixe différent sur chaque trade gagnant :</p>
-    <div class="scroll-x"><table><thead><tr><th>Objectif RR</th><th>Résultat simulé</th><th>Différence vs réel</th></tr></thead><tbody>${rows.map(r => {
-      const diff = r.simulatedR - actualTotalR, isBest = r.rr === bestRow.rr;
-      return html`<tr${raw(isBest ? ' class="wi-best"' : '')}>
-      <td>${r.rr}R${isBest ? ' 🏆' : ''}</td>
-      <td class="tone-${raw(r.simulatedR >= 0 ? 'green' : 'red')}">${r.simulatedR >= 0 ? '+' : ''}${r.simulatedR.toFixed(1)}R</td>
-      <td class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}R</td>
-    </tr>`; })}</tbody></table></div>
-    <p class="wi-foot">Ton résultat réel actuel : ${actualTotalR >= 0 ? '+' : ''}${actualTotalR.toFixed(1)}R${actualAvgRR !== null ? ` (RR moyen observé : ${actualAvgRR.toFixed(2)}R)` : ''}. Hypothèse simplificatrice : ce test suppose que ton win rate resterait identique avec un objectif RR différent — en réalité viser plus loin réduit souvent le taux de réussite, donc ce chiffre est une borne théorique, pas une prédiction.</p>`);
-}
-
 
 /* ═══ js/11b-analyses.js ═══ */
 // ── ANALYSES PRO : Monte-Carlo, MAE/MFE, R réalisé vs visé, équité par setup ─────
@@ -6872,7 +6754,7 @@ function renderPfEquityChart(st) {
 function renderStats() {
   const trades = analysisTrades();
   [renderEdgeFinder, renderStatsSessionTables, renderMaeMfeAnalysis, renderChecklistAnalysis, renderTiltMeter,
-   renderSharpeSortino, renderCoinFlip, renderMistakeCostReport, renderWhatIf].forEach(fn => safeRun(fn, fn.name));
+   renderMistakeCostReport].forEach(fn => safeRun(fn, fn.name));
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
   const wins = trades.filter(t => t.res === 'TP');
   const losses = trades.filter(t => t.res === 'SL');
@@ -7268,7 +7150,7 @@ function reloadImportSettings() {
   R_MODE = DB.getItem((JP + 'r_mode')) === 'strict' ? 'strict' : 'usable';
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   set('account-size', accountSize);
-  set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE);
+  set('tz-offset-hours', TZ_OFFSET_HOURS); set('import-fx-rate', IMPORT_FX_RATE); openImportSettingsIfUsed();
   set('dd-limit-pct', loadDDLimitPct());
 }
 function isValidTradesArray(arr) {
