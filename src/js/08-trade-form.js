@@ -68,12 +68,41 @@ function startEditTrade(id) {
   if (t.desc || t.review || tradeImages(t).length) openFormSectionById('section-notes');
 
   closeTradeDetail();
-  showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]'));
-  setTimeout(() => {
-    const card = document.getElementById('trade-form-card');
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+  openTradePanel();   // le formulaire s'ouvre par-dessus la page en cours : on ne perd pas sa place
 }
+
+// ── PANNEAU « NOUVEAU TRADE » (bouton en haut à droite) ─────────────
+// Le formulaire vit dans un panneau déroulant : fermer ne vide rien (le brouillon reste), enregistrer le referme.
+function tradePanelOpen() { const p = document.getElementById('nt-panel'); return !!(p && !p.hidden); }
+function openTradePanel() {
+  const p = document.getElementById('nt-panel'), btn = document.getElementById('nt-btn');
+  if (!p) return;
+  if (!p.hidden) return;
+  rememberFocus();
+  // Ancré sous le bouton (la barre du haut est collante : le panneau suit le défilement de la page).
+  if (btn) p.style.setProperty('--nt-top', Math.round(btn.getBoundingClientRect().bottom + 8) + 'px');
+  p.hidden = false;
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  const d = document.getElementById('f-date'); if (d && !d.value) d.value = localDateStr();
+  p.scrollTop = 0;
+  setTimeout(() => { const f = document.getElementById(editingTradeId !== null ? 'f-res' : 'f-asset'); if (f) f.focus(); }, 30);
+}
+function closeTradePanel() {
+  const p = document.getElementById('nt-panel'), btn = document.getElementById('nt-btn');
+  if (!p || p.hidden) return;
+  p.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  restoreFocus();
+}
+function toggleTradePanel() { if (tradePanelOpen()) closeTradePanel(); else openTradePanel(); }
+// Clic en dehors du panneau (et hors de la visionneuse / des fenêtres ouvertes par-dessus) : on le referme.
+document.addEventListener('pointerdown', e => {
+  if (!tradePanelOpen()) return;
+  const t = e.target;
+  if (t.closest('#nt-panel, #nt-btn, #lightbox, #modal, .toast, #toast')) return;
+  closeTradePanel();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && tradePanelOpen() && !document.querySelector('#lightbox.open, #modal.open')) closeTradePanel(); });
 
 function cancelEditTrade() {
   editingTradeId = null;
@@ -85,6 +114,7 @@ function cancelEditTrade() {
   const btnText = document.getElementById('trade-submit-btn-text');
   if (btnText) btnText.textContent = 'Enregistrer le trade';
   document.getElementById('f-date').value = localDateStr();
+  closeTradePanel();
   showToast('Modification annulée');
 }
 
@@ -212,6 +242,7 @@ function addTrade() {
     const btnText = document.getElementById('trade-submit-btn-text');
     if (btnText) btnText.textContent = 'Enregistrer le trade';
     resetTradeForm();
+    closeTradePanel();
     renderAll();
     showToast('Trade mis à jour ✓', 'success');
     return;
@@ -221,6 +252,7 @@ function addTrade() {
   sortTradesChrono();
   if (!save()) { trades = prevTrades; return; }   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
   resetTradeForm();
+  closeTradePanel();
   renderAll();
   showToast('Trade enregistré ✓', 'success');
 }

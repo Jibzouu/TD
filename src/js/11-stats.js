@@ -91,7 +91,7 @@ function renderChecklistAnalysis() {
   const total = getEntryItems().length;
   const withChecklist = trades.filter(tradeHasChecklist);
   if (total === 0 || withChecklist.length === 0) {
-    mount(cont, UI.hint('Coche la checklist en ajoutant tes trades (Dashboard → Nouveau trade) pour voir si respecter ton plan améliore vraiment tes résultats.'));
+    mount(cont, UI.hint('Coche la checklist en ajoutant tes trades (bouton « ＋ Nouveau trade » en haut à droite) pour voir si respecter ton plan améliore vraiment tes résultats.'));
     return;
   }
   const full = withChecklist.filter(tradeChecklistComplete);
@@ -251,7 +251,7 @@ function renderMistakeCostReport() {
   if (!cont) return;
   const withMistakes = trades.filter(t => Array.isArray(t.mistakes) && t.mistakes.length);
   if (withMistakes.length === 0) {
-    mount(cont, UI.hint('Tague les erreurs sur tes trades (Dashboard → Nouveau trade) pour voir leur coût réel ici. Les erreurs suivies sont éditables dans Plan de trading.'));
+    mount(cont, UI.hint('Tague les erreurs sur tes trades (bouton « ＋ Nouveau trade » en haut à droite) pour voir leur coût réel ici. Les erreurs suivies sont éditables dans Plan de trading.'));
     return;
   }
   const map = {};

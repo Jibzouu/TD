@@ -5,7 +5,7 @@ const __focusStack = [];
 function rememberFocus() { __focusStack.push(document.activeElement); }
 function restoreFocus() { const el = __focusStack.pop(); if (el && typeof el.focus === 'function' && document.contains(el)) setTimeout(() => el.focus(), 0); }
 function openDialogEl() {
-  const sel = ['#shortcuts-help.open .modal', '#quick-add.open .modal', '#modal.open .modal', '#lightbox.open', '#search-overlay.show .search-modal', '#trade-drawer-overlay.show .drawer'];
+  const sel = ['#nt-panel:not([hidden])', '#shortcuts-help.open .modal', '#quick-add.open .modal', '#modal.open .modal', '#lightbox.open', '#search-overlay.show .search-modal', '#trade-drawer-overlay.show .drawer'];
   for (const s of sel) { const el = document.querySelector(s); if (el) return el; }
   return null;
 }
@@ -70,7 +70,7 @@ document.addEventListener('keydown', e => {
 
 // ── RACCOURCIS CLAVIER ───────────────────────────────────────────────
 const SHORTCUTS = [
-  ['N', 'Saisie rapide d\'un trade'], ['/', 'Recherche (pages, actions, trades)'], ['Ctrl/⌘ + K', 'Recherche'],
+  ['N', 'Saisie rapide d\'un trade'], ['Maj + N', 'Nouveau trade (formulaire complet)'], ['/', 'Recherche (pages, actions, trades)'], ['Ctrl/⌘ + K', 'Recherche'],
   ['1 … 9', 'Aller à la page n° 1 à 9 du menu'], ['F', 'Aller au filtre global'], ['← / →', 'Trade précédent / suivant (fiche ouverte) · capture précédente / suivante'],
   ['E', 'Modifier le trade ouvert'], ['Échap', 'Fermer la fenêtre ouverte'], ['?', 'Afficher cette aide']
 ];
@@ -96,7 +96,8 @@ document.addEventListener('keydown', e => {
     if (e.key === 'e' || e.key === 'E') { e.preventDefault(); if (drawerTradeId !== null) startEditTrade(drawerTradeId); return; }
   }
   if (isTyping(e) || openDialogEl()) return;
-  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openQuickAdd(); }
+  if (e.key === 'N' && e.shiftKey) { e.preventDefault(); openTradePanel(); }
+  else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openQuickAdd(); }
   else if (e.key === '/') { e.preventDefault(); openGlobalSearch(); }
   else if (e.key === '?') { e.preventDefault(); openShortcutsHelp(); }
   else if (e.key === 'f' || e.key === 'F') { const s = document.getElementById('gf-period'); if (s && s.offsetParent) { e.preventDefault(); s.focus(); } }

@@ -1519,6 +1519,37 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 @media (max-width:1100px){ .donut-row{grid-template-columns:repeat(2,minmax(0,1fr))} .donut-row > :last-child{grid-column:1 / -1} }
 @media (max-width:640px){ .donut-row{grid-template-columns:1fr} .donut-row > :last-child{grid-column:auto} }
 
+/* ── Bouton « Nouveau trade » (barre du haut) + panneau déroulant ── */
+.nt-btn{align-self:center;padding:8px 14px!important;gap:6px!important;white-space:nowrap}
+.nt-plus{font-size:14px;line-height:1}
+.nt-caret{font-size:10px;opacity:.8;transition:transform .15s}
+.nt-btn[aria-expanded="true"] .nt-caret{transform:rotate(180deg)}
+.nt-panel{position:fixed;z-index:60;top:var(--nt-top,80px);right:24px;width:min(880px,calc(100vw - 48px));max-height:calc(100vh - var(--nt-top,80px) - 16px);overflow:auto;overscroll-behavior:contain;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);box-shadow:0 18px 50px rgba(0,0,0,.45);animation:ntIn .14s ease-out}
+.nt-panel[hidden]{display:none}
+@keyframes ntIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){ .nt-panel{animation:none} }
+.nt-panel .form-card{margin:0;border:none;background:transparent}
+.nt-head{position:sticky;top:-22px;z-index:2;background:var(--bg2);margin:-22px -22px 18px;padding:16px 22px 14px;border-bottom:1px solid var(--border)}
+.nt-links{margin-left:auto;display:flex;align-items:center;gap:6px}
+.nt-link{background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--txt2);font:500 11.5px var(--sans);padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.nt-link:hover{border-color:var(--border2);color:var(--txt);background:var(--bg3)}
+.nt-link .kbd{font-size:10px;padding:0 4px}
+.nt-close{background:none;border:none;color:var(--txt3);font-size:15px;width:30px;height:30px;border-radius:var(--r);cursor:pointer}
+.nt-close:hover{background:var(--bg3);color:var(--txt)}
+@media (max-width:860px){
+  .nt-btn{padding:7px 10px!important}
+  .nt-label{display:none}
+  .nt-panel{left:8px;right:8px;width:auto;max-height:calc(100vh - var(--nt-top,80px) - 8px)}
+  .nt-links .nt-link:not(:first-child){display:none}
+}
+@media (max-width:860px){
+  /* Mobile : période, « Filtres » et « ＋ » sur la même ligne que le menu */
+  .filter-bar .fb-group:first-child{order:-3;flex:1 1 calc(100% - 170px)}
+  .filter-bar .fb-toggle{order:-2}
+  .filter-bar .nt-btn{order:-1}
+}
+
 </style>
 </head>
 <body>
@@ -1632,6 +1663,166 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
       <span class="fb-spacer"></span>
       <span class="fb-summary" id="gf-summary" aria-live="polite"></span>
       <button class="btn-ghost fb-reset" id="gf-reset" onclick="resetGlobalFilter()" style="display:none">Effacer les filtres</button>
+      <button type="button" class="btn-primary nt-btn" id="nt-btn" aria-expanded="false" aria-controls="nt-panel" onclick="toggleTradePanel()" title="Ajouter un trade (Maj+N)"><span class="nt-plus" aria-hidden="true">＋</span><span class="nt-label">Nouveau trade</span><span class="nt-caret" aria-hidden="true">▾</span></button>
+    </div>
+
+    <!-- ═══ NOUVEAU TRADE : bouton en haut à droite + panneau déroulant avec le formulaire complet ═══ -->
+    <div class="nt-panel" id="nt-panel" role="dialog" aria-modal="false" aria-labelledby="form-title-text" hidden>
+        <div class="form-card" id="trade-form-card">
+          <div class="form-title nt-head"><div class="form-title-dot"></div><span id="form-title-text">Nouveau trade</span>
+            <span class="nt-links">
+              <button type="button" class="nt-link" onclick="closeTradePanel();openQuickAdd()" title="Actif, résultat et P&amp;L seulement">⚡ Saisie rapide <kbd class="kbd">N</kbd></button>
+              <button type="button" class="nt-link" onclick="closeTradePanel();showPage('export', document.querySelector('.nav-item[data-page=export]'))">📥 Importer un CSV</button>
+              <button type="button" class="nt-close" onclick="closeTradePanel()" aria-label="Fermer (le brouillon est conservé)" title="Fermer — ta saisie est conservée">✕</button>
+            </span></div>
+          <div id="edit-trade-banner" style="display:none">
+            <span>✏️</span><span id="edit-trade-banner-text">Modification d'un trade existant</span>
+            <button class="btn-ghost btn-xs2" onclick="cancelEditTrade()">Annuler</button>
+          </div>
+
+          <!-- Essentiel : toujours visible, suffisant pour enregistrer un trade en quelques secondes -->
+          <div class="form-row f4">
+            <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+            <div class="field"><label>Asset</label>
+              <select id="f-asset">
+                <option value="">Sélectionner…</option>
+                <optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>GBP/JPY</option><option>EUR/JPY</option><option>XAU/USD</option><option>Autre Forex</option></optgroup>
+                <optgroup label="Indices"><option>DAX 40</option><option>CAC 40</option><option>NAS 100</option><option>SP 500</option></optgroup>
+              </select>
+            </div>
+            <div class="field"><label>Direction</label>
+              <select id="f-dir">
+                <option value="">Sélectionner…</option>
+                <option>Long</option><option>Short</option>
+              </select>
+            </div>
+            <div class="field"><label>Résultat</label>
+              <select id="f-res">
+                <option value="">Sélectionner…</option>
+                <option value="TP">TP</option><option value="SL">SL</option>
+                <option value="BE">Break Even</option><option value="OPEN">En cours</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row f4 mb-20">
+            <div class="field"><label for="f-pnleur">P&amp;L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
+            <div class="field"><label for="f-setup">Setup / stratégie</label><input type="text" id="f-setup" list="setup-list" placeholder="ex : OB + FVG" maxlength="60" autocomplete="off"><datalist id="setup-list"></datalist></div>
+            <div class="field"><label for="f-rr">RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
+            <div class="field"><label for="f-pnl">P&amp;L en R (optionnel)</label><input type="number" id="f-pnl" placeholder="auto si vide" step="0.1"></div>
+          </div>
+
+          <!-- Sections dépliables : tout ce qui n'est pas indispensable pour enregistrer vite -->
+          <div class="form-section" id="section-prices">
+            <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+              <span class="fs-icon">🎯</span><span class="fs-title">Prix & Stop Loss</span><span class="fs-hint">pour un R calculé exactement, pas estimé</span><span class="fs-chevron">▾</span>
+            </button>
+            <div class="form-section-body">
+              <div class="form-row f4 mb-0">
+                <div class="field"><label>Prix d'entrée</label><input type="number" id="f-entry-price" placeholder="ex : 1.13661" step="any" oninput="updateDistanceRPreview()"></div>
+                <div class="field"><label>Stop Loss (prix)</label><input type="number" id="f-sl-price" placeholder="ex : 1.13500" step="any" oninput="updateDistanceRPreview()"></div>
+                <div class="field"><label>Take Profit (prix)</label><input type="number" id="f-tp-price" placeholder="ex : 1.14000" step="any" oninput="updateDistanceRPreview()"></div>
+                <div class="field"><label>Prix de sortie réel</label><input type="number" id="f-exit-price" placeholder="ex : 1.13980" step="any" oninput="updateDistanceRPreview()"></div>
+              </div>
+              <div id="distance-r-preview" style="display:none"></div>
+            </div>
+          </div>
+
+          <div class="form-section" id="section-context">
+            <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+              <span class="fs-icon">🕐</span><span class="fs-title">Contexte du trade</span><span class="fs-hint">timeframe, session, heures, taille</span><span class="fs-chevron">▾</span>
+            </button>
+            <div class="form-section-body">
+              <div class="form-row f4 mb-12">
+                <div class="field"><label>Timeframe</label>
+                  <select id="f-tf">
+                    <option value="">Sélectionner…</option>
+                    <option>M1</option><option>M3</option><option>M5</option><option>M10</option><option>M15</option><option>M30</option><option>H1</option><option>H4</option><option>Multi-TF</option>
+                  </select>
+                </div>
+                <div class="field"><label>Session</label>
+                  <select id="f-session">
+                    <option value="">Sélectionner…</option>
+                    <option>Asie</option><option>Overlap Asie/Londres</option><option>Londres</option><option>Overlap LDN/NY</option><option>New York</option><option>Hors session</option>
+                  </select>
+                </div>
+                <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
+                <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
+              </div>
+              <div class="form-row f3 mb-0">
+                <div class="field"><label for="f-tags">Tags libres</label><input type="text" id="f-tags" placeholder="ex : news, contre-tendance" maxlength="200" autocomplete="off"></div>
+                <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
+                <div class="field"><label>Note émotionnelle</label>
+                  <select id="f-emotion">
+                    <option value="">Sélectionner…</option>
+                    <option value="5">5 — Excellent · Zen total</option>
+                    <option value="4">4 — Bien · Calme</option>
+                    <option value="3">3 — Neutre · Correct</option>
+                    <option value="2">2 — Tendu · Impatient</option>
+                    <option value="1">1 — Mauvais · FOMO / Revanche</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section" id="section-checklist">
+            <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+              <span class="fs-icon">✅</span><span class="fs-title">Checklist & erreurs</span><span class="fs-hint">pour l'analyse Edge Finder et le coût des erreurs</span><span class="fs-chevron">▾</span>
+            </button>
+            <div class="form-section-body">
+              <div class="form-row mb-16">
+                <div class="field w-100">
+                  <label>Checklist d'entrée respectée pour ce trade</label>
+                  <div id="f-checklist"></div>
+                </div>
+              </div>
+              <div class="form-row mb-0">
+                <div class="field w-100">
+                  <label>Erreurs commises sur ce trade</label>
+                  <div id="f-mistakes"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section" id="section-notes">
+            <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
+              <span class="fs-icon">📝</span><span class="fs-title">Notes & captures</span><span class="fs-hint">description, captures, note après coup</span><span class="fs-chevron">▾</span>
+            </button>
+            <div class="form-section-body">
+              <div class="form-row f2 mb-12">
+                <div class="field">
+                  <label>Captures du trade (plusieurs possibles : avant, pendant, après)</label>
+                  <div class="img-upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Ajouter des captures"
+                    ondragover="event.preventDefault();this.classList.add('drag')"
+                    ondragleave="this.classList.remove('drag')"
+                    ondrop="handleDrop(event)"
+                    onclick="document.getElementById('f-img').click()"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('f-img').click()}">
+                    <input type="file" id="f-img" accept="image/*" multiple onchange="handleImgSelect(this)">
+                    <div id="upload-placeholder">
+                      <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--txt3)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2 14l4-4 3 3 3-4 4 5"/></svg>
+                      <p>Clique, glisse ou colle (Ctrl+V) une ou plusieurs images</p>
+                    </div>
+                    <div id="upload-preview" class="thumbs" style="display:none"></div>
+                  </div>
+                </div>
+                <div class="field"><label for="f-desc">Description / setup / confluences</label><textarea id="f-desc" placeholder="Pourquoi ce trade ? Setup, confluences, raison d'entrée…"></textarea></div>
+              </div>
+              <div class="form-row mb-0">
+                <div class="field"><label for="f-review">Note après coup (revue)</label><textarea id="f-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?"></textarea></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-primary" id="trade-submit-btn" onclick="addTrade()">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg>
+              <span id="trade-submit-btn-text">Enregistrer le trade</span>
+            </button>
+            <span class="mono-muted">Sauvegarde automatique</span>
+          </div>
+        </div>
     </div>
 
     <!-- ═══ DASHBOARD ═══ -->
@@ -1647,7 +1838,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
         <div class="welcome-steps">
           <div class="wc-tip">
             <div class="wc-tip-title">1. Ajoute un trade</div>
-            <div class="wc-tip-text">Remplis le formulaire ci-dessous, ou importe directement un CSV TradingView depuis Export/Import.</div>
+            <div class="wc-tip-text">Bouton « ＋ Nouveau trade » en haut à droite (ou touche N pour une saisie rapide), ou importe un CSV TradingView depuis Export/Import.</div>
           </div>
           <div class="wc-tip">
             <div class="wc-tip-title">2. Personnalise ton plan</div>
@@ -1898,157 +2089,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
         </div>
       </div>
 
-      <!-- Quick add form on dashboard -->
-      <div class="form-card" id="trade-form-card">
-        <div id="edit-trade-banner" style="display:none">
-          <span>✏️</span><span id="edit-trade-banner-text">Modification d'un trade existant</span>
-          <button class="btn-ghost btn-xs2" onclick="cancelEditTrade()">Annuler</button>
-        </div>
-        <div class="form-title"><div class="form-title-dot"></div><span id="form-title-text">Nouveau trade</span></div>
-
-        <!-- Essentiel : toujours visible, suffisant pour enregistrer un trade en quelques secondes -->
-        <div class="form-row f4">
-          <div class="field"><label>Date</label><input type="date" id="f-date"></div>
-          <div class="field"><label>Asset</label>
-            <select id="f-asset">
-              <option value="">Sélectionner…</option>
-              <optgroup label="Forex"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>GBP/JPY</option><option>EUR/JPY</option><option>XAU/USD</option><option>Autre Forex</option></optgroup>
-              <optgroup label="Indices"><option>DAX 40</option><option>CAC 40</option><option>NAS 100</option><option>SP 500</option></optgroup>
-            </select>
-          </div>
-          <div class="field"><label>Direction</label>
-            <select id="f-dir">
-              <option value="">Sélectionner…</option>
-              <option>Long</option><option>Short</option>
-            </select>
-          </div>
-          <div class="field"><label>Résultat</label>
-            <select id="f-res">
-              <option value="">Sélectionner…</option>
-              <option value="TP">TP</option><option value="SL">SL</option>
-              <option value="BE">Break Even</option><option value="OPEN">En cours</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row f4 mb-20">
-          <div class="field"><label for="f-pnleur">P&amp;L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
-          <div class="field"><label for="f-setup">Setup / stratégie</label><input type="text" id="f-setup" list="setup-list" placeholder="ex : OB + FVG" maxlength="60" autocomplete="off"><datalist id="setup-list"></datalist></div>
-          <div class="field"><label for="f-rr">RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
-          <div class="field"><label for="f-pnl">P&amp;L en R (optionnel)</label><input type="number" id="f-pnl" placeholder="auto si vide" step="0.1"></div>
-        </div>
-
-        <!-- Sections dépliables : tout ce qui n'est pas indispensable pour enregistrer vite -->
-        <div class="form-section" id="section-prices">
-          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
-            <span class="fs-icon">🎯</span><span class="fs-title">Prix & Stop Loss</span><span class="fs-hint">pour un R calculé exactement, pas estimé</span><span class="fs-chevron">▾</span>
-          </button>
-          <div class="form-section-body">
-            <div class="form-row f4 mb-0">
-              <div class="field"><label>Prix d'entrée</label><input type="number" id="f-entry-price" placeholder="ex : 1.13661" step="any" oninput="updateDistanceRPreview()"></div>
-              <div class="field"><label>Stop Loss (prix)</label><input type="number" id="f-sl-price" placeholder="ex : 1.13500" step="any" oninput="updateDistanceRPreview()"></div>
-              <div class="field"><label>Take Profit (prix)</label><input type="number" id="f-tp-price" placeholder="ex : 1.14000" step="any" oninput="updateDistanceRPreview()"></div>
-              <div class="field"><label>Prix de sortie réel</label><input type="number" id="f-exit-price" placeholder="ex : 1.13980" step="any" oninput="updateDistanceRPreview()"></div>
-            </div>
-            <div id="distance-r-preview" style="display:none"></div>
-          </div>
-        </div>
-
-        <div class="form-section" id="section-context">
-          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
-            <span class="fs-icon">🕐</span><span class="fs-title">Contexte du trade</span><span class="fs-hint">timeframe, session, heures, taille</span><span class="fs-chevron">▾</span>
-          </button>
-          <div class="form-section-body">
-            <div class="form-row f4 mb-12">
-              <div class="field"><label>Timeframe</label>
-                <select id="f-tf">
-                  <option value="">Sélectionner…</option>
-                  <option>M1</option><option>M3</option><option>M5</option><option>M10</option><option>M15</option><option>M30</option><option>H1</option><option>H4</option><option>Multi-TF</option>
-                </select>
-              </div>
-              <div class="field"><label>Session</label>
-                <select id="f-session">
-                  <option value="">Sélectionner…</option>
-                  <option>Asie</option><option>Overlap Asie/Londres</option><option>Londres</option><option>Overlap LDN/NY</option><option>New York</option><option>Hors session</option>
-                </select>
-              </div>
-              <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
-              <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
-            </div>
-            <div class="form-row f3 mb-0">
-              <div class="field"><label for="f-tags">Tags libres</label><input type="text" id="f-tags" placeholder="ex : news, contre-tendance" maxlength="200" autocomplete="off"></div>
-              <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
-              <div class="field"><label>Note émotionnelle</label>
-                <select id="f-emotion">
-                  <option value="">Sélectionner…</option>
-                  <option value="5">5 — Excellent · Zen total</option>
-                  <option value="4">4 — Bien · Calme</option>
-                  <option value="3">3 — Neutre · Correct</option>
-                  <option value="2">2 — Tendu · Impatient</option>
-                  <option value="1">1 — Mauvais · FOMO / Revanche</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section" id="section-checklist">
-          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
-            <span class="fs-icon">✅</span><span class="fs-title">Checklist & erreurs</span><span class="fs-hint">pour l'analyse Edge Finder et le coût des erreurs</span><span class="fs-chevron">▾</span>
-          </button>
-          <div class="form-section-body">
-            <div class="form-row mb-16">
-              <div class="field w-100">
-                <label>Checklist d'entrée respectée pour ce trade</label>
-                <div id="f-checklist"></div>
-              </div>
-            </div>
-            <div class="form-row mb-0">
-              <div class="field w-100">
-                <label>Erreurs commises sur ce trade</label>
-                <div id="f-mistakes"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section" id="section-notes">
-          <button type="button" class="form-section-toggle" onclick="toggleFormSection(this)">
-            <span class="fs-icon">📝</span><span class="fs-title">Notes & captures</span><span class="fs-hint">description, captures, note après coup</span><span class="fs-chevron">▾</span>
-          </button>
-          <div class="form-section-body">
-            <div class="form-row f2 mb-12">
-              <div class="field">
-                <label>Captures du trade (plusieurs possibles : avant, pendant, après)</label>
-                <div class="img-upload-zone" id="upload-zone" tabindex="0" role="button" aria-label="Ajouter des captures"
-                  ondragover="event.preventDefault();this.classList.add('drag')"
-                  ondragleave="this.classList.remove('drag')"
-                  ondrop="handleDrop(event)"
-                  onclick="document.getElementById('f-img').click()"
-                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('f-img').click()}">
-                  <input type="file" id="f-img" accept="image/*" multiple onchange="handleImgSelect(this)">
-                  <div id="upload-placeholder">
-                    <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--txt3)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="9" r="1.5"/><path d="M2 14l4-4 3 3 3-4 4 5"/></svg>
-                    <p>Clique, glisse ou colle (Ctrl+V) une ou plusieurs images</p>
-                  </div>
-                  <div id="upload-preview" class="thumbs" style="display:none"></div>
-                </div>
-              </div>
-              <div class="field"><label for="f-desc">Description / setup / confluences</label><textarea id="f-desc" placeholder="Pourquoi ce trade ? Setup, confluences, raison d'entrée…"></textarea></div>
-            </div>
-            <div class="form-row mb-0">
-              <div class="field"><label for="f-review">Note après coup (revue)</label><textarea id="f-review" placeholder="Avec le recul : qu'ai-je bien fait, que referais-je différemment ?"></textarea></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="btn-row">
-          <button class="btn-primary" id="trade-submit-btn" onclick="addTrade()">
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg>
-            <span id="trade-submit-btn-text">Enregistrer le trade</span>
-          </button>
-          <span class="mono-muted">Sauvegarde automatique</span>
-        </div>
-      </div>
     </div>
 
     <!-- ═══ JOURNAL ═══ -->
@@ -5191,12 +5231,41 @@ function startEditTrade(id) {
   if (t.desc || t.review || tradeImages(t).length) openFormSectionById('section-notes');
 
   closeTradeDetail();
-  showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]'));
-  setTimeout(() => {
-    const card = document.getElementById('trade-form-card');
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+  openTradePanel();   // le formulaire s'ouvre par-dessus la page en cours : on ne perd pas sa place
 }
+
+// ── PANNEAU « NOUVEAU TRADE » (bouton en haut à droite) ─────────────
+// Le formulaire vit dans un panneau déroulant : fermer ne vide rien (le brouillon reste), enregistrer le referme.
+function tradePanelOpen() { const p = document.getElementById('nt-panel'); return !!(p && !p.hidden); }
+function openTradePanel() {
+  const p = document.getElementById('nt-panel'), btn = document.getElementById('nt-btn');
+  if (!p) return;
+  if (!p.hidden) return;
+  rememberFocus();
+  // Ancré sous le bouton (la barre du haut est collante : le panneau suit le défilement de la page).
+  if (btn) p.style.setProperty('--nt-top', Math.round(btn.getBoundingClientRect().bottom + 8) + 'px');
+  p.hidden = false;
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  const d = document.getElementById('f-date'); if (d && !d.value) d.value = localDateStr();
+  p.scrollTop = 0;
+  setTimeout(() => { const f = document.getElementById(editingTradeId !== null ? 'f-res' : 'f-asset'); if (f) f.focus(); }, 30);
+}
+function closeTradePanel() {
+  const p = document.getElementById('nt-panel'), btn = document.getElementById('nt-btn');
+  if (!p || p.hidden) return;
+  p.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  restoreFocus();
+}
+function toggleTradePanel() { if (tradePanelOpen()) closeTradePanel(); else openTradePanel(); }
+// Clic en dehors du panneau (et hors de la visionneuse / des fenêtres ouvertes par-dessus) : on le referme.
+document.addEventListener('pointerdown', e => {
+  if (!tradePanelOpen()) return;
+  const t = e.target;
+  if (t.closest('#nt-panel, #nt-btn, #lightbox, #modal, .toast, #toast')) return;
+  closeTradePanel();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && tradePanelOpen() && !document.querySelector('#lightbox.open, #modal.open')) closeTradePanel(); });
 
 function cancelEditTrade() {
   editingTradeId = null;
@@ -5208,6 +5277,7 @@ function cancelEditTrade() {
   const btnText = document.getElementById('trade-submit-btn-text');
   if (btnText) btnText.textContent = 'Enregistrer le trade';
   document.getElementById('f-date').value = localDateStr();
+  closeTradePanel();
   showToast('Modification annulée');
 }
 
@@ -5335,6 +5405,7 @@ function addTrade() {
     const btnText = document.getElementById('trade-submit-btn-text');
     if (btnText) btnText.textContent = 'Enregistrer le trade';
     resetTradeForm();
+    closeTradePanel();
     renderAll();
     showToast('Trade mis à jour ✓', 'success');
     return;
@@ -5344,6 +5415,7 @@ function addTrade() {
   sortTradesChrono();
   if (!save()) { trades = prevTrades; return; }   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
   resetTradeForm();
+  closeTradePanel();
   renderAll();
   showToast('Trade enregistré ✓', 'success');
 }
@@ -6359,7 +6431,7 @@ function renderChecklistAnalysis() {
   const total = getEntryItems().length;
   const withChecklist = trades.filter(tradeHasChecklist);
   if (total === 0 || withChecklist.length === 0) {
-    mount(cont, UI.hint('Coche la checklist en ajoutant tes trades (Dashboard → Nouveau trade) pour voir si respecter ton plan améliore vraiment tes résultats.'));
+    mount(cont, UI.hint('Coche la checklist en ajoutant tes trades (bouton « ＋ Nouveau trade » en haut à droite) pour voir si respecter ton plan améliore vraiment tes résultats.'));
     return;
   }
   const full = withChecklist.filter(tradeChecklistComplete);
@@ -6519,7 +6591,7 @@ function renderMistakeCostReport() {
   if (!cont) return;
   const withMistakes = trades.filter(t => Array.isArray(t.mistakes) && t.mistakes.length);
   if (withMistakes.length === 0) {
-    mount(cont, UI.hint('Tague les erreurs sur tes trades (Dashboard → Nouveau trade) pour voir leur coût réel ici. Les erreurs suivies sont éditables dans Plan de trading.'));
+    mount(cont, UI.hint('Tague les erreurs sur tes trades (bouton « ＋ Nouveau trade » en haut à droite) pour voir leur coût réel ici. Les erreurs suivies sont éditables dans Plan de trading.'));
     return;
   }
   const map = {};
@@ -9328,7 +9400,7 @@ const SEARCH_PAGES = [
 const SEARCH_ACTIONS = [
   { icon:'⚡', label:'Saisie rapide d\'un trade (N)', run: () => { closeGlobalSearch(); openQuickAdd(); } },
   { icon:'⌨️', label:'Raccourcis clavier (?)', run: () => { closeGlobalSearch(); openShortcutsHelp(); } },
-  { icon:'➕', label:'Ajouter un trade complet', run: () => { closeGlobalSearch(); showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]')); setTimeout(() => document.getElementById('trade-form-card')?.scrollIntoView({behavior:'smooth'}), 100); } },
+  { icon:'➕', label:'Ajouter un trade complet', run: () => { closeGlobalSearch(); openTradePanel(); } },
   { icon:'💾', label:'Exporter mes données', run: () => { closeGlobalSearch(); exportData(); } },
   { icon:'📅', label:'Aller à aujourd\'hui (Calendrier)', run: () => { closeGlobalSearch(); showPage('calendrier', document.querySelector('.nav-item[data-page=calendrier]')); calToday(); } },
   { icon:'🎨', label:'Changer de thème', run: () => { closeGlobalSearch(); showPage('parametres', document.querySelector('.nav-item[data-page=parametres]')); } },
@@ -9500,7 +9572,7 @@ const __focusStack = [];
 function rememberFocus() { __focusStack.push(document.activeElement); }
 function restoreFocus() { const el = __focusStack.pop(); if (el && typeof el.focus === 'function' && document.contains(el)) setTimeout(() => el.focus(), 0); }
 function openDialogEl() {
-  const sel = ['#shortcuts-help.open .modal', '#quick-add.open .modal', '#modal.open .modal', '#lightbox.open', '#search-overlay.show .search-modal', '#trade-drawer-overlay.show .drawer'];
+  const sel = ['#nt-panel:not([hidden])', '#shortcuts-help.open .modal', '#quick-add.open .modal', '#modal.open .modal', '#lightbox.open', '#search-overlay.show .search-modal', '#trade-drawer-overlay.show .drawer'];
   for (const s of sel) { const el = document.querySelector(s); if (el) return el; }
   return null;
 }
@@ -9565,7 +9637,7 @@ document.addEventListener('keydown', e => {
 
 // ── RACCOURCIS CLAVIER ───────────────────────────────────────────────
 const SHORTCUTS = [
-  ['N', 'Saisie rapide d\'un trade'], ['/', 'Recherche (pages, actions, trades)'], ['Ctrl/⌘ + K', 'Recherche'],
+  ['N', 'Saisie rapide d\'un trade'], ['Maj + N', 'Nouveau trade (formulaire complet)'], ['/', 'Recherche (pages, actions, trades)'], ['Ctrl/⌘ + K', 'Recherche'],
   ['1 … 9', 'Aller à la page n° 1 à 9 du menu'], ['F', 'Aller au filtre global'], ['← / →', 'Trade précédent / suivant (fiche ouverte) · capture précédente / suivante'],
   ['E', 'Modifier le trade ouvert'], ['Échap', 'Fermer la fenêtre ouverte'], ['?', 'Afficher cette aide']
 ];
@@ -9591,7 +9663,8 @@ document.addEventListener('keydown', e => {
     if (e.key === 'e' || e.key === 'E') { e.preventDefault(); if (drawerTradeId !== null) startEditTrade(drawerTradeId); return; }
   }
   if (isTyping(e) || openDialogEl()) return;
-  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openQuickAdd(); }
+  if (e.key === 'N' && e.shiftKey) { e.preventDefault(); openTradePanel(); }
+  else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openQuickAdd(); }
   else if (e.key === '/') { e.preventDefault(); openGlobalSearch(); }
   else if (e.key === '?') { e.preventDefault(); openShortcutsHelp(); }
   else if (e.key === 'f' || e.key === 'F') { const s = document.getElementById('gf-period'); if (s && s.offsetParent) { e.preventDefault(); s.focus(); } }

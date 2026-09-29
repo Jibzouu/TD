@@ -157,6 +157,7 @@ test('filtre global : période, actif, setup ; solde de début de période', asy
 test('parcours complet : ajout d’un trade avec setup, tags et 2 captures, toutes les pages', async () => {
   const { page, ctx, errors } = await openJournal();
   const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAEjDAGNzYAAB1uAxEu4BwIAAAAAElFTkSuQmCC';
+  await page.evaluate(() => openTradePanel());
   await page.evaluate(src => { currentImgs = [src, src]; renderUploadThumbs(); openFormSectionById('section-context'); openFormSectionById('section-notes'); }, png);
   await page.selectOption('#f-asset', 'EUR/USD');
   await page.selectOption('#f-res', 'TP');

@@ -16,7 +16,7 @@ const SEARCH_PAGES = [
 const SEARCH_ACTIONS = [
   { icon:'⚡', label:'Saisie rapide d\'un trade (N)', run: () => { closeGlobalSearch(); openQuickAdd(); } },
   { icon:'⌨️', label:'Raccourcis clavier (?)', run: () => { closeGlobalSearch(); openShortcutsHelp(); } },
-  { icon:'➕', label:'Ajouter un trade complet', run: () => { closeGlobalSearch(); showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]')); setTimeout(() => document.getElementById('trade-form-card')?.scrollIntoView({behavior:'smooth'}), 100); } },
+  { icon:'➕', label:'Ajouter un trade complet', run: () => { closeGlobalSearch(); openTradePanel(); } },
   { icon:'💾', label:'Exporter mes données', run: () => { closeGlobalSearch(); exportData(); } },
   { icon:'📅', label:'Aller à aujourd\'hui (Calendrier)', run: () => { closeGlobalSearch(); showPage('calendrier', document.querySelector('.nav-item[data-page=calendrier]')); calToday(); } },
   { icon:'🎨', label:'Changer de thème', run: () => { closeGlobalSearch(); showPage('parametres', document.querySelector('.nav-item[data-page=parametres]')); } },

@@ -248,3 +248,31 @@ test('donuts du Dashboard : trades, journées et semaines gagnants, filtre globa
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('bouton « Nouveau trade » : panneau déroulant, brouillon conservé, enregistrement, édition sur place', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1, asset: 'DAX 40' })] } });
+  assert.equal(await page.locator('#page-dashboard #trade-form-card').count(), 0, 'plus de formulaire en bas du Dashboard');
+  assert.ok(await page.evaluate(() => document.getElementById('nt-panel').hidden));
+  await page.click('#nt-btn');
+  assert.equal(await page.getAttribute('#nt-btn', 'aria-expanded'), 'true');
+  await page.selectOption('#f-asset', 'EUR/USD');
+  await page.keyboard.press('Escape');
+  assert.ok(await page.evaluate(() => document.getElementById('nt-panel').hidden), 'Échap ferme');
+  await page.click('#nt-btn');
+  assert.equal(await page.inputValue('#f-asset'), 'EUR/USD', 'brouillon conservé');
+  await page.selectOption('#f-res', 'TP');
+  await page.fill('#f-pnleur', '120');
+  await page.click('#trade-form-card .btn-primary');
+  assert.ok(await page.evaluate(() => document.getElementById('nt-panel').hidden), 'enregistrer referme le panneau');
+  assert.equal(await page.evaluate(() => trades.length), 2);
+  await goto(page, 'trades');
+  await page.evaluate(() => startEditTrade(1));
+  assert.equal(await page.evaluate(() => currentPage()), 'trades', 'modifier ne quitte pas la page');
+  assert.equal(await page.locator('#form-title-text').textContent(), 'Modifier le trade');
+  await page.click('#nt-panel .nt-close');
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.keyboard.press('Shift+N');
+  assert.equal(await page.evaluate(() => document.getElementById('nt-panel').hidden), false, 'Maj+N ouvre le formulaire');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
