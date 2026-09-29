@@ -315,7 +315,7 @@ test('scaling : coussin minimum global (€ ou pertes), personnalisé par palier
   await page.fill('#sc-mincush', '5'); await page.dispatchEvent('#sc-mincush', 'change'); await page.waitForTimeout(60);
   assert.deepEqual((await trig()).slice(1, 4), ['2 300 €', '3 700 €', '4 600 €'].map(N));
   // Personnalisé pour P1 : 10 pertes → 2 600 €, mis en évidence, conservé après rechargement.
-  const p1 = page.locator('#sc-table tbody tr').nth(1).locator('input');
+  const p1 = page.locator('#sc-table tbody tr').nth(1).locator('input[aria-label^="Coussin"]');
   await p1.fill('10'); await p1.dispatchEvent('change'); await page.waitForTimeout(60);
   assert.equal((await trig())[1], N('2 600 €'));
   assert.ok(await page.locator('#sc-table tbody tr').nth(1).locator('.sc-cush-in.own').count() === 1);
@@ -324,9 +324,35 @@ test('scaling : coussin minimum global (€ ou pertes), personnalisé par palier
   assert.equal((await trig())[1], N('2 600 €'), 'réglage du palier sauvegardé');
   assert.match(await page.locator('#sc-params-summary').textContent(), /coussin min 5 pertes/);
   // Vider la case : retour au réglage global.
-  const p1b = page.locator('#sc-table tbody tr').nth(1).locator('input');
+  const p1b = page.locator('#sc-table tbody tr').nth(1).locator('input[aria-label^="Coussin"]');
   await p1b.fill(''); await p1b.dispatchEvent('change'); await page.waitForTimeout(60);
   assert.equal((await trig())[1], N('2 300 €'));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('scaling : risque dégressif par palier, hérité par les paliers suivants', async () => {
+  const sc = { version: 2, start: 1000, riskPct: 3, mode: 'round', roundTo: 100, params: { round: 1000, cushion: 10, capital: 10, risk: 10 },
+    goal: 6000, current: 1850, auto: false, tableOpen: true, paramsOpen: true, zones: [] };
+  const { page, ctx, errors } = await openJournal({ seed: { tj_scaling: sc } });
+  await goto(page, 'scaling');
+  const D = x => x.replace(/\D/g, '');
+  const col = c => page.$$eval('#sc-table tbody tr', (trs, c) => trs.map(tr => tr.children[c].textContent.replace(/\D/g, '')), c);
+  assert.deepEqual((await col(3)).slice(1, 6), ['6000', '9000', '12000', '15000', '18000'], 'risque € à 3 % partout');
+  // 2 % à partir de P4 (5 000 €) : P4 = 100 €, P5 hérite (120 €) ; la baisse est signalée.
+  const p4 = page.locator('#sc-table tbody tr').nth(4).locator('input[aria-label^="Risque"]');
+  await p4.fill('2'); await p4.dispatchEvent('change'); await page.waitForTimeout(60);
+  assert.deepEqual((await col(3)).slice(1, 6), ['6000', '9000', '12000', '10000', '12000']);
+  assert.equal(D(await page.locator('#sc-table tbody tr').nth(4).locator('td').nth(5).textContent()), '2000');
+  assert.ok(await page.locator('#sc-table tbody tr').nth(4).locator('td').nth(5).locator('.tone-amber').count() === 1, 'baisse du risque € en orange');
+  assert.match(await page.locator('#sc-rule-text').textContent(), /Risque dégressif : 2,00 % à partir de 5\s000/);
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'scaling');
+  assert.equal((await col(3))[5], '12000', 'réglage conservé');
+  // Vider la case : retour à 3 %.
+  const p4b = page.locator('#sc-table tbody tr').nth(4).locator('input[aria-label^="Risque"]');
+  await p4b.fill(''); await p4b.dispatchEvent('change'); await page.waitForTimeout(60);
+  assert.equal((await col(3))[4], '15000');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
