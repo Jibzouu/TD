@@ -104,7 +104,7 @@ const PAGE_RENDERERS = {
   calendrier: () => [renderCalendrier],
   bilan: () => [applyChartDefaults, renderBilan],
   propfirm: () => JOURNAL_ID === 'pf' ? [applyChartDefaults, renderPropFirm] : [],
-  scaling: () => [fillScalingForm, renderScalingZones, () => renderScaling({ center: true })],
+  scaling: () => [fillScalingForm, () => renderScaling({ center: true })],
   export: () => [renderTrashUI, renderBackupSettings],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };

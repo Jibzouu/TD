@@ -3,7 +3,6 @@ onReady(() => {
   safeRun(migrateChecklistLabels, 'migrateChecklistLabels');   // ici et pas plus haut : la checklist par défaut (const) n'est définie que plus bas dans le script
   initSidebarState();
   initDashboardLayout();
-  initScalingDraw();
   applySavedTheme();
   if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
   if (DB.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();

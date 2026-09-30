@@ -776,39 +776,15 @@
         <div class="page-hdr-left"><h2>Scaling Account</h2><p>Repère les bons moments pour augmenter ta taille de position selon la taille de ton compte</p></div>
       </div>
 
-      <div class="panel sc-zones-panel" id="sc-params-panel">
-        <div class="sc-zones-head" onclick="toggleScalingParamsPanel()">
-          <span class="sc-zones-title">Paramètres<span class="sc-zones-count sc-sum" id="sc-params-summary"></span></span>
-          <span class="sc-zones-actions"><span class="sc-zones-chevron"><span id="sc-params-hint">Déplier</span><span class="sc-zones-arrow">▾</span></span></span>
-        </div>
-        <div class="sc-zones-body">
+      <div class="panel sc-setup">
         <div class="sc-params">
-          <div class="field"><label>Capital de départ (€)</label><input type="number" id="sc-start" min="1" step="10" oninput="onScalingInput('start')"></div>
-          <div class="field"><label>Risque par trade (%)</label><input type="number" id="sc-risk-pct" min="0.01" step="0.05" oninput="onScalingInput('riskPct')"></div>
-          <div class="field"><label>Risque par trade (€)</label><input type="number" id="sc-risk-eur" min="0.01" step="1" oninput="onScalingInput('riskEur')"></div>
-          <div class="field"><label>Règle de palier</label>
-            <select id="sc-mode" onchange="onScalingInput('mode')">
-              <option value="round">Paliers ronds</option>
-              <option value="cushion">Coussin de N pertes</option>
-              <option value="capital">Tous les +X % de capital</option>
-              <option value="risk">Tous les +X € de risque</option>
-            </select>
-          </div>
-          <div class="field"><label id="sc-param-label">Pertes d'affilée à couvrir</label><input type="number" id="sc-param" min="0.1" step="1" oninput="onScalingInput('param')"></div>
-          <div class="field" id="sc-round-field"><label>Arrondir les paliers à</label>
-            <select id="sc-round" onchange="onScalingInput('roundTo')">
-              <option value="-1">Chiffres ronds (auto)</option><option value="0">Aucun arrondi</option><option value="50">50 €</option><option value="100">100 €</option><option value="500">500 €</option><option value="1000">1 000 €</option>
-            </select>
-          </div>
-          <div class="field" id="sc-mincush-field"><label for="sc-mincush">Coussin minimum avant d'augmenter</label>
-            <div class="sc-mincush"><input type="number" id="sc-mincush" min="0" step="50" placeholder="aucun" onchange="onScalingInput('minCush')"><select id="sc-mincush-unit" aria-label="Unité du coussin" onchange="onScalingInput('minCushUnit')"><option value="eur">€</option><option value="loss">pertes</option></select></div>
-          </div>
-          <div class="field"><label>Objectif de capital (€)</label><input type="number" id="sc-goal" min="1" step="100" oninput="onScalingInput('goal')"></div>
-          <div class="field"><label>Capital actuel (€)</label><input type="number" id="sc-current" step="1" oninput="onScalingInput('current')"></div>
+          <div class="field"><label for="sc-start">Solde de départ (€)</label><input type="number" id="sc-start" min="1" step="100" oninput="onScalingInput('start')"></div>
+          <div class="field"><label for="sc-risk-pct">Risque par trade (%)</label><input type="number" id="sc-risk-pct" min="0.05" max="99" step="0.25" oninput="onScalingInput('riskPct')"><div class="sc-field-hint" id="sc-risk-hint"></div></div>
+          <div class="field"><label for="sc-cushion">Coussin (pertes d'affilée)</label><input type="number" id="sc-cushion" min="1" step="1" oninput="onScalingInput('cushion')"><div class="sc-field-hint">entre deux paliers, au nouveau risque</div></div>
+          <div class="field"><label for="sc-goal">Objectif (€)</label><input type="number" id="sc-goal" min="1" step="1000" oninput="onScalingInput('goal')"></div>
+          <div class="field"><label for="sc-current">Solde actuel (€)</label><input type="number" id="sc-current" step="1" oninput="onScalingInput('current')"><label class="sc-auto"><input type="checkbox" id="sc-auto" onchange="onScalingInput('auto')"> suivre le journal</label></div>
         </div>
-        <label class="sc-auto"><input type="checkbox" id="sc-auto" onchange="onScalingInput('auto')"> Suivre automatiquement le journal (solde de départ du journal + tous tes P&amp;L)</label>
         <div class="sc-rule" id="sc-rule-text"></div>
-        </div>
       </div>
 
       <div class="sc-tiles" id="sc-tiles"></div>
@@ -816,25 +792,9 @@
       <div class="panel mb-20">
         <div class="panel-hdr hdr-wrap">
           <span>Frise des paliers</span>
-          <span class="hint-plain">Glisse sur la bande pointillée pour marquer une zone coussin</span>
+          <span class="hint-plain">↔ = pertes d'affilée qui te ramènent au palier précédent</span>
         </div>
         <div class="sc-tl-wrap" id="sc-tl-wrap"><div class="sc-tl" id="sc-tl"></div></div>
-      </div>
-
-      <div class="panel sc-zones-panel" id="sc-zones-panel">
-        <div class="sc-zones-head" onclick="toggleScalingZonesPanel()">
-          <span class="sc-zones-title">Zones coussins de sécurité<span class="sc-zones-count" id="sc-zones-count"></span></span>
-          <span class="sc-zones-actions">
-            <label class="sc-zones-toggle" onclick="event.stopPropagation()"><input type="checkbox" id="sc-show-zones" onchange="onScalingInput('showZones')"> Afficher sur la frise</label>
-            <span class="sc-zones-chevron"><span id="sc-zones-hint">Déplier</span><span class="sc-zones-arrow">▾</span></span>
-          </span>
-        </div>
-        <div class="sc-zones-body">
-          <div class="row-end-6">
-            <button class="btn-ghost btn-s6" onclick="addScalingZone()">+ Ajouter une zone</button>
-          </div>
-          <div id="sc-zones"></div>
-        </div>
       </div>
 
       <div class="panel sc-zones-panel" id="sc-table-panel">

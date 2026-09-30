@@ -127,8 +127,6 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #pf-dd-type{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
 #pf-consistency-on{width:15px;height:15px;accent-color:var(--green);cursor:pointer}
 #pf-consistency-pct{width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .6);color:var(--txt);font-family:var(--mono);font-size:12px;padding:6px 8px;outline:none}
-#sc-params-panel{margin-bottom:20px}
-#sc-zones-panel{margin-bottom:20px}
 #sc-table-panel{margin-bottom:20px}
 #sc-table{overflow-x:auto}
 #plan-notes{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font-family:var(--mono);font-size:12px;padding:10px;resize:vertical;min-height:140px;outline:none;line-height:1.6}
