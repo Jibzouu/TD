@@ -311,6 +311,7 @@
         <button class="btn-ghost btn-blue" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'))">Importer maintenant</button>
         <button class="btn-ghost btn-s7" onclick="dismissImportReminder()">Plus tard</button>
       </div>
+      <div id="scaling-alert" class="scaling-alert" role="status" style="display:none"></div>
       <div class="page-hdr">
         <div class="page-hdr-left">
           <h2>Dashboard</h2>
@@ -807,6 +808,14 @@
         <div class="sc-zones-body">
           <div id="sc-table"></div>
         </div>
+      </div>
+
+      <div class="panel mb-20">
+        <div class="panel-hdr hdr-wrap">
+          <span>Respect du plan</span>
+          <span class="hint-plain">Le risque que tu as vraiment pris, comparé à celui de ton palier</span>
+        </div>
+        <div id="sc-compliance"></div>
       </div>
     </div>
 

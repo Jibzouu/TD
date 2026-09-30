@@ -333,3 +333,42 @@ test('scaling : paliers ronds calculés depuis le solde, le risque et le coussin
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('scaling : alerte de palier sur le Dashboard et respect du risque prévu', async () => {
+  // Départ 1 000 €, 3 % (30 €), coussin 10 pertes → P1 à 1 500 € (45 €).
+  const seq = [];
+  for (let i = 0; i < 9; i++) seq.push(['TP', 2, 60]);            // 30 € de risque ✓ → 1 540 €
+  seq.push(['SL', -1, -45]);                                        // P1 : 45 € ✓ → 1 495 €
+  seq.push(['SL', -1, -30]);                                        // retour au départ : 30 € ✓ → 1 465 €
+  seq.push(['SL', -1, -90]);                                        // 90 € au lieu de 30 € → trop gros → 1 375 €
+  seq.push(['TP', 2, 40]);                                          // 20 € au lieu de 30 € → trop petit → 1 415 €
+  seq.push(['TP', 3, 90]);                                          // 30 € ✓ → 1 505 € : P1 de nouveau
+  const tr = seq.map(([res, pnl, eur], i) => T({ id: 5000 + i, date: new Date(Date.UTC(2026, 4, 1 + i)).toISOString().slice(0, 10), entry: '10:00', asset: 'DAX 40', res, pnl, pnlEur: eur, rSrc: 'manuel' })).reverse();
+  const sc = { version: 3, start: 1000, riskPct: 3, cushion: 10, goal: 10000, auto: true, riskSteps: [], tableOpen: false };
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: tr, tj_account: '1000', tj_scaling: sc, tj_scaling_seen: '1000' } });
+  // Alerte : nouveau palier P1 → 45 € par trade.
+  const alert = page.locator('#scaling-alert');
+  assert.equal(await alert.isVisible(), true);
+  assert.match(await alert.innerText(), /Nouveau palier atteint : P1 \(1\s500\s€\).*45,00\s€/s);
+  // Constats : risque du palier + taille respectée sur les 10 derniers (2 écarts).
+  const strip = await page.locator('#summary-banner').innerText();
+  assert.match(strip, /Risque du palier\s*45,00\s€ \/ trade/);
+  assert.match(strip, /Taille respectée\s*8\/10/);
+  await alert.getByText("C'est noté").click();
+  assert.equal(await alert.isVisible(), false);
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  assert.equal(await page.locator('#scaling-alert').isVisible(), false, 'alerte acquittée');
+  // Page Scaling : bilan et détail.
+  await goto(page, 'scaling');
+  const comp = page.locator('#sc-compliance');
+  assert.match(await comp.locator('.sc-tile').nth(0).innerText(), /12 \/ 14/);
+  assert.match(await comp.locator('.sc-tile').nth(1).innerText(), /1\s+pire : ×3,00/);
+  assert.match(await comp.locator('.sc-tile').nth(2).innerText(), /^Trop petits\s+1/);
+  assert.match(await comp.locator('tbody tr').nth(1).innerText(), /30,00\s€\s+20,00\s€\s+×0,67\s+▼ trop petit/);
+  // Retour sous P1 : alerte « repassé sous P1 → 30 € ».
+  await page.evaluate(() => { trades.unshift(Object.assign({}, trades[0], { id: 9999, date: '2026-05-20', res: 'SL', pnl: -1, pnlEur: -45 })); renderAll(); });
+  await goto(page, 'dashboard');
+  assert.match(await page.locator('#scaling-alert').innerText(), /repassé sous P1 \(1\s500\s€\).*30,00\s€/s);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

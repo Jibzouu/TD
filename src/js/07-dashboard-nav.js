@@ -37,6 +37,7 @@ function renderSummaryBanner() {
     }
     if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt, '', 'Ré-entrées rapides ou taille augmentée juste après une perte'));
   }
+  if (typeof scalingInsightChips === 'function') chips.push(...scalingInsightChips(chip));
   mount(box, html`${chips}`);
   if (strip) strip.classList.toggle('no-insights', !chips.length);
 }

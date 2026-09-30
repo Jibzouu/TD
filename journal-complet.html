@@ -1546,6 +1546,15 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 .sp-end{stroke:var(--bg2);stroke-width:2}
 .sp-end.fill-green{fill:var(--green)}.sp-end.fill-red{fill:var(--red)}.sp-end.fill-muted{fill:var(--txt3)}
 .kpi .kpi-spark{overflow:visible}
+/* Alerte de palier (Dashboard) */
+.scaling-alert{align-items:center;gap:14px;border-radius:var(--r2);padding:14px 18px;margin-bottom:16px;border:1px solid}
+.scaling-alert.up{background:var(--green-d);border-color:color-mix(in srgb,var(--green) 40%,transparent)}
+.scaling-alert.down{background:var(--amber-d);border-color:color-mix(in srgb,var(--amber) 40%,transparent)}
+.scaling-alert-txt{flex:1;font-size:12.5px;color:var(--txt2)}.scaling-alert-txt b{color:var(--txt)}
+@media (max-width:640px){.scaling-alert{flex-wrap:wrap}.scaling-alert-txt{flex-basis:calc(100% - 40px)}}
+/* Respect du plan (Scaling) */
+.sc-tiles-3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:14px}
+.sc-table-wrap{overflow-x:auto}
 
 </style>
 </head>
@@ -1863,6 +1872,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
         <button class="btn-ghost btn-blue" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'))">Importer maintenant</button>
         <button class="btn-ghost btn-s7" onclick="dismissImportReminder()">Plus tard</button>
       </div>
+      <div id="scaling-alert" class="scaling-alert" role="status" style="display:none"></div>
       <div class="page-hdr">
         <div class="page-hdr-left">
           <h2>Dashboard</h2>
@@ -2359,6 +2369,14 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
         <div class="sc-zones-body">
           <div id="sc-table"></div>
         </div>
+      </div>
+
+      <div class="panel mb-20">
+        <div class="panel-hdr hdr-wrap">
+          <span>Respect du plan</span>
+          <span class="hint-plain">Le risque que tu as vraiment pris, comparé à celui de ton palier</span>
+        </div>
+        <div id="sc-compliance"></div>
       </div>
     </div>
 
@@ -4214,7 +4232,7 @@ function toggleFilterBar() {
 let DATA_VERSION = 1;
 const pageRenderedVersion = {};
 const PAGE_RENDERERS = {
-  dashboard: () => [renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
+  dashboard: () => [renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
   trades: () => [renderTable],
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
@@ -5071,6 +5089,7 @@ function renderSummaryBanner() {
     }
     if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt, '', 'Ré-entrées rapides ou taille augmentée juste après une perte'));
   }
+  if (typeof scalingInsightChips === 'function') chips.push(...scalingInsightChips(chip));
   mount(box, html`${chips}`);
   if (strip) strip.classList.toggle('no-insights', !chips.length);
 }
@@ -8935,6 +8954,7 @@ function onScalingInput(field) {
     if (!st.auto) st.current = scRound(scalingJournalBalance(), 2);
   } else return;
   saveScalingState();
+  if (field !== 'auto' && field !== 'current') scAckPalier();   // plan modifié : pas d'alerte « nouveau palier » fantôme
   renderScaling();
 }
 // Risque d'un palier (tableau) : vide = même % que le palier précédent.
@@ -8945,6 +8965,7 @@ function setScalingPalierRisk(bal, oldFrom, value) {
   if (String(value).trim() !== '' && v > 0 && v < 100) st.riskSteps.push({ from: bal, pct: v });
   st.riskSteps.sort((a, b) => a.from - b.from);
   saveScalingState();
+  scAckPalier();
   setTimeout(() => renderScaling(), 0);   // après le déplacement du focus : la case suivante reste active
 }
 
@@ -8967,6 +8988,7 @@ function renderScaling(opts) {
   renderScalingTiles(st, model, current);
   renderScalingTimeline(st, model, current, opts || {});
   renderScalingTable(st, model, current);
+  renderScalingCompliance(st, model);
 }
 
 function renderScalingTiles(st, model, current) {
@@ -9067,6 +9089,101 @@ window.addEventListener('resize', () => {
   clearTimeout(scResizeT);
   scResizeT = setTimeout(() => renderScaling(), 150);
 });
+
+// ── Suivi du plan : alerte de palier (Dashboard) et respect du risque prévu ──
+const SCALING_SEEN_KEY = (JP + 'scaling_seen');
+function scalingConfigured() { return DB.getItem(SCALING_KEY) != null; }
+function scalingNow() {
+  const st = getScalingState(), current = scalingCurrent(st), model = computeScalingPaliers(st, current);
+  return model.error ? null : { st, current, model, cur: model.pts[model.r] };
+}
+// Palier « vu » = capital du dernier palier dont l'utilisateur a pris connaissance.
+function scAckPalier() {
+  const now = scalingNow();
+  if (now) DB.setItem(SCALING_SEEN_KEY, String(now.cur.bal));
+  const el = document.getElementById('scaling-alert');
+  if (el) el.style.display = 'none';
+}
+function renderScalingAlert() {
+  const el = document.getElementById('scaling-alert');
+  if (!el) return;
+  const now = scalingConfigured() ? scalingNow() : null;
+  if (!now) { el.style.display = 'none'; return; }
+  const seen = parseFloat(DB.getItem(SCALING_SEEN_KEY));
+  if (isNaN(seen)) { DB.setItem(SCALING_SEEN_KEY, String(now.cur.bal)); el.style.display = 'none'; return; }
+  const { model, cur } = now, r = model.r, name = r === 0 ? 'ton palier de départ' : 'P' + r;
+  if (Math.abs(cur.bal - seen) < 0.5) { el.style.display = 'none'; return; }
+  const up = cur.bal > seen;
+  // Palier franchi à la baisse : on nomme le palier QUITTÉ (le premier au-dessus du solde actuel).
+  const left = model.pts[r + 1];
+  el.className = 'scaling-alert ' + (up ? 'up' : 'down');
+  mount(el, html`<span class="fs-16" aria-hidden="true">${up ? '📈' : '📉'}</span><span class="scaling-alert-txt">${up
+    ? html`<b>Nouveau palier atteint : ${name} (${fmtEUR(cur.bal)})</b> — passe à <b>${fmtEUR(cur.risk, false, 2)}</b> par trade (${scPct(cur.pct)}).`
+    : html`<b>Tu es repassé sous ${left ? 'P' + left.k + ' (' + fmtEUR(left.bal) + ')' : 'ton palier'}</b> — reprends <b>${fmtEUR(cur.risk, false, 2)}</b> par trade jusqu'à revenir au-dessus.`}</span><button class="btn-ghost" onclick="showPage('scaling', document.querySelector('.nav-item[data-page=scaling]'))">Voir le plan</button><button class="btn-ghost btn-s7" onclick="scAckPalier()">C'est noté</button>`);
+  el.style.display = 'flex';
+}
+
+// Risque réel d'un trade = |P&L €| ÷ |R| ; comparé au risque prévu par le palier du solde AVANT le trade.
+const SC_TOL = 0.2;   // ±20 % : arrondi des lots, spread, glissement
+function scalingCompliance(limit) {
+  const now = scalingNow();
+  if (!now) return null;
+  const { st, model } = now;
+  const base = accountSize > 0 ? accountSize : 0;
+  const chrono = [...trades].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.entry || '').localeCompare(b.entry || '') || (a.id || 0) - (b.id || 0));
+  let bal = base;
+  const rows = [];
+  chrono.forEach(t => {
+    const eur = (typeof t.pnlEur === 'number' && !isNaN(t.pnlEur)) ? t.pnlEur : null;
+    if (eur !== null && ['TP', 'SL'].includes(t.res) && typeof t.pnl === 'number' && Math.abs(t.pnl) >= 0.25 && rUsable(t) && eur !== 0 && Math.sign(eur) === Math.sign(t.pnl)) {
+      let i = 0;
+      model.pts.forEach((p, k) => { if (bal + 1e-6 >= p.bal) i = k; });
+      const plan = model.pts[i], actual = Math.abs(eur / t.pnl), ratio = actual / plan.risk;
+      rows.push({ t, bal, palier: i, plan: plan.risk, actual, ratio, verdict: ratio > 1 + SC_TOL ? 'big' : ratio < 1 - SC_TOL ? 'small' : 'ok' });
+    }
+    if (eur !== null) bal += eur;
+  });
+  const last = rows.slice(-(limit || 20));
+  return { rows: last, ok: last.filter(r => r.verdict === 'ok').length, big: last.filter(r => r.verdict === 'big'), small: last.filter(r => r.verdict === 'small'), total: rows.length };
+}
+function scRatioTxt(r) { return '×' + r.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function renderScalingCompliance(st, model) {
+  const cont = document.getElementById('sc-compliance');
+  if (!cont) return;
+  const c = model.error ? null : scalingCompliance(20);
+  if (!c || !c.rows.length) {
+    mount(cont, html`<div class="sc-empty">Aucun trade mesurable pour l'instant : il faut un P&amp;L en € et un R (prix d'entrée / stop ou R saisi) pour retrouver le risque réellement pris.</div>`);
+    return;
+  }
+  const n = c.rows.length, pct = Math.round(c.ok / n * 100);
+  const worst = c.big.reduce((w, r) => (!w || r.ratio > w.ratio) ? r : w, null);
+  const tiles = [
+    { label: 'Taille respectée', val: c.ok + ' / ' + n, tone: pct >= 80 ? 'green' : pct >= 60 ? 'amber' : 'red', sub: pct + ' % des ' + n + ' derniers trades mesurables (±' + Math.round(SC_TOL * 100) + ' %)' },
+    { label: 'Trop gros', val: String(c.big.length), tone: c.big.length ? 'red' : 'green', sub: worst ? 'pire : ' + scRatioTxt(worst.ratio) + ' le ' + fmtDateFR(worst.t.date) + ' (' + fmtEUR(worst.actual) + ' au lieu de ' + fmtEUR(worst.plan) + ')' : 'aucun dépassement' },
+    { label: 'Trop petits', val: String(c.small.length), tone: c.small.length ? 'amber' : 'green', sub: c.small.length ? 'tu laisses du potentiel de côté' : 'aucun sous-dimensionnement' }
+  ];
+  const tag = r => r.verdict === 'ok' ? html`<span class="st-chip ok">✓ dans le plan</span>` : r.verdict === 'big' ? html`<span class="st-chip crit">▲ trop gros</span>` : html`<span class="st-chip warn">▼ trop petit</span>`;
+  const rows = c.rows.slice().reverse().map(r => html`<tr><td>${fmtDateFR(r.t.date)}</td><td>${r.t.asset || '—'}</td><td>${fmtEUR(r.bal)}</td><td>${r.palier === 0 ? 'Départ' : 'P' + r.palier}</td><td>${fmtEUR(r.plan, false, 2)}</td><td class="fw-700">${fmtEUR(r.actual, false, 2)}</td><td class="tone-${raw(r.verdict === 'ok' ? 'green' : r.verdict === 'big' ? 'red' : 'amber')} fw-700">${scRatioTxt(r.ratio)}</td><td>${tag(r)}</td></tr>`);
+  mount(cont, html`<div class="sc-tiles sc-tiles-3">${tiles.map(t => html`<div class="sc-tile"><div class="sc-tile-label">${t.label}</div><div class="sc-tile-val tone-${raw(t.tone)}">${t.val}</div><div class="sc-tile-sub">${t.sub}</div></div>`)}</div>
+    <div class="sc-table-wrap"><table class="sc-table"><thead><tr><th>Date</th><th>Actif</th><th>Solde avant</th><th>Palier</th><th>Risque prévu</th><th>Risque réel</th><th>Écart</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="sc-note">Risque réel = P&amp;L en € ÷ R du trade (trades gagnants et perdants avec un R connu). Risque prévu = risque du palier correspondant à ton solde juste avant le trade. Tolérance ±${Math.round(SC_TOL * 100)} % pour l'arrondi des lots et le glissement.</p>`);
+}
+// Constats du Dashboard (barre « Aujourd'hui ») : risque du palier + respect de la taille.
+function scalingInsightChips(chip) {
+  if (!scalingConfigured()) return [];
+  const now = scalingNow();
+  if (!now) return [];
+  const go = "showPage('scaling', document.querySelector('.nav-item[data-page=scaling]'))";
+  const { cur, model } = now;
+  const out = [chip('💰', 'Risque du palier', fmtEUR(cur.risk, false, 2) + ' / trade', model.r === 0 ? 'départ' : 'P' + model.r, 'blue', go, '', 'Taille à prendre selon ton plan de scaling (' + scPct(cur.pct) + ' de ' + fmtEUR(cur.bal) + ')')];
+  const c = scalingCompliance(10);
+  if (c && c.rows.length >= 3) {
+    const last = c.rows[c.rows.length - 1], n = c.rows.length;
+    const note = last.verdict === 'big' ? 'dernier trade ' + scRatioTxt(last.ratio) + ' trop gros' : last.verdict === 'small' ? 'dernier trade ' + scRatioTxt(last.ratio) + ' trop petit' : '';
+    out.push(chip('⚖️', 'Taille respectée', c.ok + '/' + n, 'derniers trades', c.ok / n >= 0.8 ? 'green' : c.ok / n >= 0.6 ? 'amber' : 'red', go, note, 'Trades dont le risque réel (P&L € ÷ R) est à ±' + Math.round(SC_TOL * 100) + ' % du risque prévu par ton palier'));
+  }
+  return out;
+}
 
 /* ═══ js/21-search.js ═══ */
 // ── RECHERCHE GLOBALE (Ctrl/Cmd+K) ───────────────────────────────────
