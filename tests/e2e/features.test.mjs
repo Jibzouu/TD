@@ -396,3 +396,32 @@ test('chiffres fiables : Edge Finder, coût réel des erreurs, calculateur reli�
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('journal : 25 trades puis « Afficher plus », bilan ← →, cartes lisibles sur mobile', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: sampleTrades() } });
+  await goto(page, 'trades');
+  const rows = () => page.locator('#tbody tr.trade-row').count();
+  assert.equal(await rows(), 25);
+  assert.match(await page.locator('#tbody tr.more-row').innerText(), /Afficher 5 de plus\s+25 sur 30/);
+  await page.locator('#tbody tr.more-row .btn-ghost').click();
+  assert.equal(await rows(), 30);
+  assert.equal(await page.locator('#tbody tr.more-row').count(), 0);
+  assert.match(await page.locator('#tbody tr.trade-row').first().innerText(), /\d{2}\/\d{2}\/2026/, 'date au format français');
+  // Bilan : flèches entre journées tradées.
+  await goto(page, 'bilan');
+  const first = await page.inputValue('#bilan-date-select');
+  assert.equal(await page.locator('#bilan-next').isDisabled(), true, 'déjà sur la journée la plus récente');
+  await page.click('#bilan-prev');
+  assert.notEqual(await page.inputValue('#bilan-date-select'), first);
+  await page.click('#bilan-next');
+  assert.equal(await page.inputValue('#bilan-date-select'), first);
+  // Mobile : le P&L € de chaque trade est visible.
+  await page.setViewportSize({ width: 390, height: 800 });
+  await goto(page, 'trades');
+  const eur = page.locator('#tbody tr.trade-row').first().locator('td').nth(7);
+  assert.equal(await eur.isVisible(), true);
+  const box = await eur.boundingBox();
+  assert.ok(box.x + box.width <= 390, 'P&L dans l’écran');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

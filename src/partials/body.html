@@ -936,7 +936,7 @@
     <div id="page-bilan" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Analyse détaillée par journée de trading</p></div>
-        <select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select>
+        <div class="bl-nav"><button class="btn-ghost" id="bilan-prev" onclick="stepBilanDate(1)" title="Journée tradée précédente" aria-label="Journée précédente">←</button><select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select><button class="btn-ghost" id="bilan-next" onclick="stepBilanDate(-1)" title="Journée tradée suivante" aria-label="Journée suivante">→</button></div>
       </div>
       <div id="bilan-content"></div>
       <div class="panel mt-20">

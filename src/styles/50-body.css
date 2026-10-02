@@ -160,3 +160,25 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #chart-line-style-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
 #heat-intensity-slider{width:100%;accent-color:var(--green)}
 #chart-intensity-slider{width:100%;accent-color:var(--green)}
+/* Journal : bouton « Afficher plus » */
+tr.more-row td{text-align:center;padding:14px 10px}
+tr.more-row .btn-ghost{margin-right:8px}
+/* Journal sur mobile : chaque trade devient une carte (actif + P&L € en grand, puis date · sens · résultat · R) */
+@media (max-width:640px){
+  .tbl-wrap table thead{display:none}
+  .tbl-wrap table,.tbl-wrap tbody{display:block}
+  tbody tr.trade-row{display:grid;grid-template-columns:auto auto auto 1fr auto;grid-template-areas:"asset asset asset asset eur" "date dir res info r";align-items:center;gap:4px 8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+  tbody tr.trade-row td{padding:0;border:none;background:none}
+  tbody tr.trade-row td:nth-child(1),tbody tr.trade-row td:nth-child(6),tbody tr.trade-row td:nth-child(10){display:none}
+  tbody tr.trade-row td:nth-child(2){grid-area:date;font-size:11px;color:var(--txt3)}
+  tbody tr.trade-row td:nth-child(3){grid-area:asset;min-width:0}
+  tbody tr.trade-row td:nth-child(3) .row-setup{display:inline;margin-left:6px}
+  tbody tr.trade-row td:nth-child(4){grid-area:dir}
+  tbody tr.trade-row td:nth-child(5){grid-area:res}
+  tbody tr.trade-row td:nth-child(7){grid-area:r;text-align:right;font-size:11px}
+  tbody tr.trade-row td:nth-child(8){grid-area:eur;text-align:right;font-size:14px;font-weight:700}
+  tbody tr.trade-row td:nth-child(9){grid-area:info;font-size:11px}
+  tr.day-group-row,tr.more-row,tr.empty-row{display:block}
+  tr.day-group-row td,tr.more-row td,tr.empty-row td{display:block}
+}
+.bl-nav{display:flex;align-items:center;gap:6px}.bl-nav .btn-ghost{padding:6px 10px}.bl-nav .btn-ghost:disabled{opacity:.35;cursor:default}

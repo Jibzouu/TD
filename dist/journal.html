@@ -1381,6 +1381,28 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
 #chart-line-style-select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:calc(var(--r) * .8);color:var(--txt);font-family:var(--mono);font-size:12.5px;padding:8px 10px;outline:none}
 #heat-intensity-slider{width:100%;accent-color:var(--green)}
 #chart-intensity-slider{width:100%;accent-color:var(--green)}
+/* Journal : bouton « Afficher plus » */
+tr.more-row td{text-align:center;padding:14px 10px}
+tr.more-row .btn-ghost{margin-right:8px}
+/* Journal sur mobile : chaque trade devient une carte (actif + P&L € en grand, puis date · sens · résultat · R) */
+@media (max-width:640px){
+  .tbl-wrap table thead{display:none}
+  .tbl-wrap table,.tbl-wrap tbody{display:block}
+  tbody tr.trade-row{display:grid;grid-template-columns:auto auto auto 1fr auto;grid-template-areas:"asset asset asset asset eur" "date dir res info r";align-items:center;gap:4px 8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+  tbody tr.trade-row td{padding:0;border:none;background:none}
+  tbody tr.trade-row td:nth-child(1),tbody tr.trade-row td:nth-child(6),tbody tr.trade-row td:nth-child(10){display:none}
+  tbody tr.trade-row td:nth-child(2){grid-area:date;font-size:11px;color:var(--txt3)}
+  tbody tr.trade-row td:nth-child(3){grid-area:asset;min-width:0}
+  tbody tr.trade-row td:nth-child(3) .row-setup{display:inline;margin-left:6px}
+  tbody tr.trade-row td:nth-child(4){grid-area:dir}
+  tbody tr.trade-row td:nth-child(5){grid-area:res}
+  tbody tr.trade-row td:nth-child(7){grid-area:r;text-align:right;font-size:11px}
+  tbody tr.trade-row td:nth-child(8){grid-area:eur;text-align:right;font-size:14px;font-weight:700}
+  tbody tr.trade-row td:nth-child(9){grid-area:info;font-size:11px}
+  tr.day-group-row,tr.more-row,tr.empty-row{display:block}
+  tr.day-group-row td,tr.more-row td,tr.empty-row td{display:block}
+}
+.bl-nav{display:flex;align-items:center;gap:6px}.bl-nav .btn-ghost{padding:6px 10px}.bl-nav .btn-ghost:disabled{opacity:.35;cursor:default}
 
 /* ═══ styles/60-dashboard.css ═══ */
 /* ═══ Dashboard v3 : barre « Aujourd'hui », en-tête, cartes, sections ═══ */
@@ -2508,7 +2530,7 @@ label.check-label-plain,.field label.check-label-plain{font-size:12px;color:var(
     <div id="page-bilan" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Analyse détaillée par journée de trading</p></div>
-        <select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select>
+        <div class="bl-nav"><button class="btn-ghost" id="bilan-prev" onclick="stepBilanDate(1)" title="Journée tradée précédente" aria-label="Journée précédente">←</button><select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select><button class="btn-ghost" id="bilan-next" onclick="stepBilanDate(-1)" title="Journée tradée suivante" aria-label="Journée suivante">→</button></div>
       </div>
       <div id="bilan-content"></div>
       <div class="panel mt-20">
@@ -6081,6 +6103,10 @@ function drawDonut(key, parts, center, centerLbl, sub, title) {
 // ── FILTRES / TRI / GROUPEMENT ──────────────────────────────────────
 let tableSortKey = null, tableSortDir = 1;
 let groupByDayMode = false;
+// Pagination : 25 trades affichés, « Afficher plus » ajoute 25 lignes. Revient à 25 quand la sélection change.
+const TABLE_PAGE = 25;
+let tableLimit = TABLE_PAGE, tableSelKey = '';
+function showMoreTrades(all) { tableLimit = all ? Infinity : tableLimit + TABLE_PAGE; renderTable({ keepLimit: true }); }
 
 function filterTrades() {
   const trades = viewTrades();   // vue filtrée (filtre global), puis filtres propres au tableau
@@ -6139,8 +6165,11 @@ function tradeRowHtml(t, num) {
   </tr>`;
 }
 
-function renderTable() {
+function renderTable(opts) {
   let filtered = filterTrades();
+  const selKey = filtered.length + ':' + (filtered[0] ? filtered[0].id : '') + ':' + groupByDayMode + ':' + tableSortKey + tableSortDir;
+  if (!(opts && opts.keepLimit) && selKey !== tableSelKey) tableLimit = TABLE_PAGE;
+  tableSelKey = selKey;
 
   const tbody = document.getElementById('tbody');
   const count = document.getElementById('tbl-count');
@@ -6201,6 +6230,9 @@ function renderTable() {
     });
   }
 
+  const all = filtered, shown = filtered.slice(0, tableLimit), rest = all.length - shown.length;
+  const moreRow = rest > 0 ? html`<tr class="more-row"><td colspan="10"><button class="btn-ghost" onclick="showMoreTrades()">Afficher ${Math.min(rest, TABLE_PAGE)} de plus</button> <span class="tone-muted">${shown.length} sur ${all.length}</span> <button class="link-btn" onclick="showMoreTrades(true)">tout afficher</button></td></tr>` : '';
+  filtered = shown;
   if (groupByDayMode) {
     const byDay = {};
     filtered.forEach(t => { const d = t.date || 'Sans date'; (byDay[d] = byDay[d] || []).push(t); });
@@ -6209,11 +6241,13 @@ function renderTable() {
       const dayTrades = byDay[day];
       const dayR = dayTrades.reduce((s,t) => s+(t.pnl||0), 0);
       const dayEur = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur, 0);
-      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day} — ${dayTrades.length} trade(s) · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
-    })}`);
+      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day === 'Sans date' ? day : fmtDateFR(day, true)} — ${dayTrades.length} trade(s) · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
+    })}${moreRow}`);
   } else {
-    mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`);
+    mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}${moreRow}`);
   }
+  // Navigation ← → dans la fiche : sur TOUTE la sélection, pas seulement les lignes affichées.
+  filtered = all;
   drawerOrder = groupByDayMode ? Object.keys(filtered.reduce((m, t) => ((m[t.date || 'Sans date'] = 1), m), {})).sort((a, b) => b.localeCompare(a)).flatMap(d => filtered.filter(t => (t.date || 'Sans date') === d).map(t => t.id)) : filtered.map(t => t.id);
 }
 
@@ -8132,6 +8166,15 @@ function selectBilanDate(date) {
 
 /* ═══ js/17-bilan.js ═══ */
 // ── BILAN JOURNALIER ─────────────────────────────────────────────────
+// ← → : journée tradée précédente / suivante (les options sont triées du plus récent au plus ancien).
+function stepBilanDate(dir) {
+  const sel = document.getElementById('bilan-date-select');
+  if (!sel || !sel.options.length) return;
+  const i = Math.max(0, Math.min(sel.options.length - 1, sel.selectedIndex + dir));
+  if (i === sel.selectedIndex) return;
+  sel.selectedIndex = i;
+  renderBilan();
+}
 function renderBilan() {
   const trades = viewTrades();   // vue filtrée (filtre global)
   const sel = document.getElementById('bilan-date-select');
@@ -8144,6 +8187,10 @@ function renderBilan() {
   const curVal = (sel.value && dates.includes(sel.value)) ? sel.value : (dates[0]||'');
   mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${fmtDateFR(d, true)}</option>`)}`);
 
+  const ix = dates.indexOf(curVal);
+  const prevB = document.getElementById('bilan-prev'), nextB = document.getElementById('bilan-next');
+  if (prevB) prevB.disabled = ix < 0 || ix >= dates.length - 1;
+  if (nextB) nextB.disabled = ix <= 0;
   const dayTrades = curVal ? trades.filter(t => t.date === curVal) : [];
   const content = document.getElementById('bilan-content');
   if (!curVal) {

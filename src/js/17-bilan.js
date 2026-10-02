@@ -1,4 +1,13 @@
 // ── BILAN JOURNALIER ─────────────────────────────────────────────────
+// ← → : journée tradée précédente / suivante (les options sont triées du plus récent au plus ancien).
+function stepBilanDate(dir) {
+  const sel = document.getElementById('bilan-date-select');
+  if (!sel || !sel.options.length) return;
+  const i = Math.max(0, Math.min(sel.options.length - 1, sel.selectedIndex + dir));
+  if (i === sel.selectedIndex) return;
+  sel.selectedIndex = i;
+  renderBilan();
+}
 function renderBilan() {
   const trades = viewTrades();   // vue filtrée (filtre global)
   const sel = document.getElementById('bilan-date-select');
@@ -11,6 +20,10 @@ function renderBilan() {
   const curVal = (sel.value && dates.includes(sel.value)) ? sel.value : (dates[0]||'');
   mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${fmtDateFR(d, true)}</option>`)}`);
 
+  const ix = dates.indexOf(curVal);
+  const prevB = document.getElementById('bilan-prev'), nextB = document.getElementById('bilan-next');
+  if (prevB) prevB.disabled = ix < 0 || ix >= dates.length - 1;
+  if (nextB) nextB.disabled = ix <= 0;
   const dayTrades = curVal ? trades.filter(t => t.date === curVal) : [];
   const content = document.getElementById('bilan-content');
   if (!curVal) {

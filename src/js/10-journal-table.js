@@ -2,6 +2,10 @@
 // ── FILTRES / TRI / GROUPEMENT ──────────────────────────────────────
 let tableSortKey = null, tableSortDir = 1;
 let groupByDayMode = false;
+// Pagination : 25 trades affichés, « Afficher plus » ajoute 25 lignes. Revient à 25 quand la sélection change.
+const TABLE_PAGE = 25;
+let tableLimit = TABLE_PAGE, tableSelKey = '';
+function showMoreTrades(all) { tableLimit = all ? Infinity : tableLimit + TABLE_PAGE; renderTable({ keepLimit: true }); }
 
 function filterTrades() {
   const trades = viewTrades();   // vue filtrée (filtre global), puis filtres propres au tableau
@@ -60,8 +64,11 @@ function tradeRowHtml(t, num) {
   </tr>`;
 }
 
-function renderTable() {
+function renderTable(opts) {
   let filtered = filterTrades();
+  const selKey = filtered.length + ':' + (filtered[0] ? filtered[0].id : '') + ':' + groupByDayMode + ':' + tableSortKey + tableSortDir;
+  if (!(opts && opts.keepLimit) && selKey !== tableSelKey) tableLimit = TABLE_PAGE;
+  tableSelKey = selKey;
 
   const tbody = document.getElementById('tbody');
   const count = document.getElementById('tbl-count');
@@ -122,6 +129,9 @@ function renderTable() {
     });
   }
 
+  const all = filtered, shown = filtered.slice(0, tableLimit), rest = all.length - shown.length;
+  const moreRow = rest > 0 ? html`<tr class="more-row"><td colspan="10"><button class="btn-ghost" onclick="showMoreTrades()">Afficher ${Math.min(rest, TABLE_PAGE)} de plus</button> <span class="tone-muted">${shown.length} sur ${all.length}</span> <button class="link-btn" onclick="showMoreTrades(true)">tout afficher</button></td></tr>` : '';
+  filtered = shown;
   if (groupByDayMode) {
     const byDay = {};
     filtered.forEach(t => { const d = t.date || 'Sans date'; (byDay[d] = byDay[d] || []).push(t); });
@@ -130,11 +140,13 @@ function renderTable() {
       const dayTrades = byDay[day];
       const dayR = dayTrades.reduce((s,t) => s+(t.pnl||0), 0);
       const dayEur = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur, 0);
-      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day} — ${dayTrades.length} trade(s) · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
-    })}`);
+      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day === 'Sans date' ? day : fmtDateFR(day, true)} — ${dayTrades.length} trade(s) · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
+    })}${moreRow}`);
   } else {
-    mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`);
+    mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}${moreRow}`);
   }
+  // Navigation ← → dans la fiche : sur TOUTE la sélection, pas seulement les lignes affichées.
+  filtered = all;
   drawerOrder = groupByDayMode ? Object.keys(filtered.reduce((m, t) => ((m[t.date || 'Sans date'] = 1), m), {})).sort((a, b) => b.localeCompare(a)).flatMap(d => filtered.filter(t => (t.date || 'Sans date') === d).map(t => t.id)) : filtered.map(t => t.id);
 }
 
