@@ -4,7 +4,7 @@ const BACKUP_SETTINGS_KEYS = [
   (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
   (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
-  (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate')
+  (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate'), (JP + 'daily')
 ];
 function collectAllSettings() {
   const out = {};
@@ -272,6 +272,12 @@ function mergeSettingsMeta(meta) {
       const ids = new Set(mine.map(a => a && a.id));
       const extra = theirs.filter(a => a && typeof a.id === 'string' && !ids.has(a.id));
       if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra)), Math.max(+e.t, mt[key] || 0)); n++; }
+      return;
+    }
+    if (name === 'daily') {   // journal de séance : fusion jour par jour
+      let theirs; try { theirs = JSON.parse(e.v); } catch (x) { return; }
+      const mine = loadDaily(), next = JSON.stringify(mergeDailyValues(mine, theirs));
+      if (next !== JSON.stringify(mine)) { DB.setItemAt(key, next, Math.max(+e.t, mt[key] || 0)); n++; }
       return;
     }
     if (+e.t <= (mt[key] || 0) || DB.getItem(key) === e.v) return;

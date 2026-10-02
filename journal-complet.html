@@ -1280,7 +1280,26 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .pb-remind li{margin:2px 0}
 @media (max-width:760px){.pb-cols{grid-template-columns:1fr}.pb-detail .ui-grid.c5{grid-template-columns:repeat(2,1fr)}}
 #pb-rules .watch-input{font-family:var(--sans);font-size:12.5px}
-.pb-link{color:var(--accent);text-decoration:none;font-family:var(--mono)}.pb-link:hover{text-decoration:underline}
+.pb-link{color:var(--accent);text-decoration:none}.pb-detail .pb-link{font-family:var(--mono)}.pb-link:hover{text-decoration:underline}
+
+/* ── Journal de séance (Bilan) ── */
+.dj-saved{font-size:11.5px;color:var(--green);font-family:var(--mono)}
+.dj-cols{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.dj-title{font-weight:600;font-size:13.5px;margin-bottom:12px}
+.dj-field{display:block;margin-bottom:14px}
+.dj-label{display:block;font-size:11.5px;color:var(--txt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.dj-seg{display:flex;flex-wrap:wrap;gap:6px}
+.dj-opt{background:var(--bg3);border:1px solid var(--border);color:var(--txt2);border-radius:var(--r);padding:6px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.dj-opt:hover{border-color:var(--border2);color:var(--txt)}
+.dj-opt.on{border-color:var(--accent);background:var(--accent-d);color:var(--txt)}
+.dj-opt.on.tone-green{border-color:var(--green);background:var(--green-d)}
+.dj-opt.on.tone-red{border-color:var(--red);background:var(--red-d)}
+.dj-opt.on.tone-amber{border-color:var(--amber);background:var(--amber-d)}
+.dj-text{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font:inherit;font-size:13px;padding:9px 10px;resize:vertical}
+.dj-text:focus{outline:none;border-color:var(--accent)}
+.dj-rv-day{font-family:var(--mono);font-size:12px;color:var(--txt3);white-space:nowrap}
+.dj-rv-txt{flex:1;font-size:13px}
+@media (max-width:760px){.dj-cols{grid-template-columns:1fr;gap:8px}}
 
 /* ═══ styles/50-body.css ═══ */
 /* ═══ Styles de la structure (partials/body.html), auparavant écrits en ligne ═══ */
@@ -2623,11 +2642,12 @@ tr.more-row .btn-ghost{margin-right:8px}
     <!-- ═══ BILAN ═══ -->
     <div id="page-bilan" class="page">
       <div class="page-hdr">
-        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Ta journée de trading : chiffres, trades et captures</p></div>
+        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Ta journée de trading : préparation, chiffres, trades et leçons</p></div>
         <div class="bl-nav"><button class="btn-ghost" id="bilan-prev" onclick="stepBilanDate(1)" title="Journée tradée précédente" aria-label="Journée précédente">←</button><select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select><button class="btn-ghost" id="bilan-next" onclick="stepBilanDate(-1)" title="Journée tradée suivante" aria-label="Journée suivante">→</button></div>
       </div>
       <div id="bilan-content"></div>
-      <p class="ui-muted mt-12">Les résultats par heure, session et jour de la semaine sont dans <a href="#" onclick="event.preventDefault();goStatsTab('timing')">Statistiques → Timing &amp; comportement</a>.</p>
+      <div id="bilan-journal"></div>
+      <p class="ui-muted mt-12">Les résultats par heure, session et jour de la semaine sont dans <a href="#" class="pb-link" onclick="event.preventDefault();goStatsTab('timing')">Statistiques → Timing &amp; comportement</a>.</p>
     </div>
 
     <!-- ═══ REVUE HEBDOMADAIRE ═══ -->
@@ -3889,7 +3909,7 @@ function trashImageIds() { const s = new Set(); try { (JSON.parse(DB.getItem(JP 
 const SYNCED_SETTINGS = {
   journal: ['account', 'calc', 'dd_limit_pct', 'dd_manual', 'nav_order', 'stats_subtab', 'pf_enabled', 'pf_target_pct', 'pf_maxdd_pct',
     'pf_dd_type', 'pf_min_days', 'pf_consistency_on', 'pf_consistency_pct', 'dash_layout_v2', 'scaling', 'scaling_seen', 'r_mode',
-    'tz_offset_hours', 'import_fx_rate', 'plan', 'watch'],
+    'tz_offset_hours', 'import_fx_rate', 'plan', 'watch', 'daily'],
   global: ['theme', 'custom_themes', 'cal_heat_intensity', 'chart_intensity', 'theme_texture', 'theme_autosystem', 'journals']
 };
 const SETTINGS_MTIME_KEY = 'g_settings_mtime';
@@ -7902,7 +7922,7 @@ const BACKUP_SETTINGS_KEYS = [
   (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
   (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
-  (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate')
+  (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate'), (JP + 'daily')
 ];
 function collectAllSettings() {
   const out = {};
@@ -8170,6 +8190,12 @@ function mergeSettingsMeta(meta) {
       const ids = new Set(mine.map(a => a && a.id));
       const extra = theirs.filter(a => a && typeof a.id === 'string' && !ids.has(a.id));
       if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra)), Math.max(+e.t, mt[key] || 0)); n++; }
+      return;
+    }
+    if (name === 'daily') {   // journal de séance : fusion jour par jour
+      let theirs; try { theirs = JSON.parse(e.v); } catch (x) { return; }
+      const mine = loadDaily(), next = JSON.stringify(mergeDailyValues(mine, theirs));
+      if (next !== JSON.stringify(mine)) { DB.setItemAt(key, next, Math.max(+e.t, mt[key] || 0)); n++; }
       return;
     }
     if (+e.t <= (mt[key] || 0) || DB.getItem(key) === e.v) return;
@@ -8760,9 +8786,13 @@ function renderBilan() {
   // Populate date options. Si la date précédemment sélectionnée n'existe plus dans les
   // données actuelles (nouvel import, restauration, changement de jeu de données…),
   // on retombe sur la plus récente au lieu de garder une sélection fantôme.
-  const dates = [...new Set(trades.map(t=>t.date))].sort().reverse();
+  // Aujourd'hui et les jours avec un journal de séance sont aussi proposés (préparer sa séance avant le premier trade).
+  const today = localDateStr(), daily = loadDaily(), traded = new Set(trades.map(t => t.date));
+  const dates = [...new Set([...traded, today, ...Object.keys(daily).filter(d => dailyHasContent(daily[d]))])].filter(Boolean).sort().reverse();
   const curVal = (sel.value && dates.includes(sel.value)) ? sel.value : (dates[0]||'');
-  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${fmtDateFR(d, true)}</option>`)}`);
+  const optLabel = d => fmtDateFR(d, true) + (traded.has(d) ? '' : d === today ? ' · aujourd’hui' : ' · journal');
+  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${optLabel(d)}</option>`)}`);
+  renderDailyJournal(curVal || today);
 
   const ix = dates.indexOf(curVal);
   const prevB = document.getElementById('bilan-prev'), nextB = document.getElementById('bilan-next');
@@ -8773,7 +8803,7 @@ function renderBilan() {
   if (!curVal) {
     mount(content, html`<p class="bl-empty">Aucun trade enregistré.</p>`);
   } else if (!dayTrades.length) {
-    mount(content, html`<p class="bl-empty">Aucun trade ce jour.</p>`);
+    mount(content, html`<p class="bl-empty">Aucun trade ce jour${curVal === today ? ' pour l’instant — remplis ta préparation ci-dessous avant d’ouvrir les graphiques' : ''}.</p>`);
   } else {
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;
@@ -8921,6 +8951,88 @@ function renderWeekdayBars() {
     d === bestDay ? html`<span class="tag-chip tone-green">meilleur</span>` : (d === worstDay && active.length > 1 ? html`<span class="tag-chip tone-red">pire</span>` : '')))}`);
 }
 
+
+/* ═══ js/17b-daily-journal.js ═══ */
+// ── JOURNAL DE SÉANCE (avant / après) ────────────────────────────────
+// Une entrée par date, dans le Bilan : préparation (biais, état d'esprit, plan, vigilance) avant d'ouvrir les
+// graphiques, puis bilan, respect du plan et leçon à retenir après la séance. Rangé sous JP+'daily'
+// ({ 'AAAA-MM-JJ': { …champs, updatedAt } }), synchronisé jour par jour lors d'une fusion de backup.
+const DAILY_KEY = () => JP + 'daily';
+const DAILY_TEXT = { plan: 1500, focus: 200, recap: 2000, lesson: 500 };
+const DAILY_CHOICES = {
+  bias: [['haussier', '▲ Haussier', 'green'], ['neutre', '◆ Neutre', 'muted'], ['baissier', '▼ Baissier', 'red']],
+  mood: [['1', '1 · fatigué'], ['2', '2'], ['3', '3 · correct'], ['4', '4'], ['5', '5 · au top']],
+  discipline: [['oui', 'Oui', 'green'], ['partiel', 'En partie', 'amber'], ['non', 'Non', 'red']]
+};
+let DAILY_DATE = null;
+
+function loadDaily() {
+  const d = loadJSON(DAILY_KEY(), {});
+  return d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+}
+function dailyEntry(date) { const e = loadDaily()[date]; return e && typeof e === 'object' ? e : {}; }
+function dailyHasContent(e) { return !!e && ['bias', 'mood', 'plan', 'focus', 'recap', 'lesson', 'discipline'].some(k => e[k]); }
+function saveDailyField(field, value) {
+  if (!DAILY_DATE) return;
+  const all = loadDaily(), e = all[DAILY_DATE] && typeof all[DAILY_DATE] === 'object' ? all[DAILY_DATE] : {};
+  if (DAILY_TEXT[field]) value = String(value || '').slice(0, DAILY_TEXT[field]);
+  else if (DAILY_CHOICES[field]) value = DAILY_CHOICES[field].some(c => c[0] === value) && e[field] !== value ? value : '';   // re-cliquer = effacer
+  else return;
+  e[field] = value; e.updatedAt = Date.now();
+  if (dailyHasContent(e)) all[DAILY_DATE] = e; else delete all[DAILY_DATE];
+  try { DB.setItem(DAILY_KEY(), JSON.stringify(all)); } catch (x) { reportStorageError(x); return; }
+  const s = document.getElementById('dj-saved'); if (s) s.textContent = 'Enregistré ✓';
+  if (DAILY_CHOICES[field]) renderDailyJournal(DAILY_DATE);
+}
+// Fusion de deux journaux de séance : pour chaque date, l'entrée modifiée le plus récemment gagne.
+function mergeDailyValues(mine, theirs) {
+  const out = Object.assign({}, mine);
+  Object.entries(theirs || {}).forEach(([d, e]) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !e || typeof e !== 'object') return;
+    if (!out[d] || (+e.updatedAt || 0) > (+out[d].updatedAt || 0)) out[d] = e;
+  });
+  return out;
+}
+
+function renderDailyJournal(date) {
+  const cont = document.getElementById('bilan-journal');
+  if (!cont) return;
+  DAILY_DATE = date || localDateStr();
+  const e = dailyEntry(DAILY_DATE), today = DAILY_DATE === localDateStr();
+  const seg = (field, label) => html`<div class="dj-field"><span class="dj-label">${label}</span><div class="dj-seg" role="group" aria-label="${label}">${DAILY_CHOICES[field].map(([v, l, tone]) =>
+    html`<button type="button" class="dj-opt${raw(e[field] === v ? ' on' + (tone ? ' tone-' + tone : '') : '')}" aria-pressed="${raw(e[field] === v)}" onclick="saveDailyField('${raw(field)}', '${raw(v)}')">${l}</button>`)}</div></div>`;
+  const area = (field, label, ph, rows) => html`<label class="dj-field"><span class="dj-label">${label}</span><textarea class="dj-text" id="dj-${raw(field)}" rows="${raw(rows)}" maxlength="${raw(DAILY_TEXT[field])}" placeholder="${ph}" oninput="saveDailyField('${raw(field)}', this.value)">${e[field] || ''}</textarea></label>`;
+  mount(cont, html`<section class="panel dj mt-20">
+    <div class="panel-hdr hdr-between"><span>Journal de séance — ${fmtDateFR(DAILY_DATE, true)}<small class="panel-sub">${today ? 'prépare ta journée avant d’ouvrir les graphiques, puis tire les leçons après' : 'ta préparation et ton bilan de cette journée'}</small></span><span class="dj-saved" id="dj-saved" aria-live="polite">${e.updatedAt ? 'Enregistré' : ''}</span></div>
+    <div class="dj-cols">
+      <div class="dj-col">
+        <div class="dj-title">☀️ Avant la séance</div>
+        ${seg('bias', 'Biais du jour')}
+        ${seg('mood', 'État d’esprit')}
+        ${area('plan', 'Plan et niveaux clés', 'Ex : DAX — range 18 420 / 18 560, j’attends un sweep du bas de range pour un long…', 4)}
+        <label class="dj-field"><span class="dj-label">Point de vigilance</span><input class="dj-text" id="dj-focus" maxlength="200" placeholder="Ex : pas de trade avant 9h15, je respecte mon SL" value="${e.focus || ''}" oninput="saveDailyField('focus', this.value)"></label>
+      </div>
+      <div class="dj-col">
+        <div class="dj-title">🌙 Après la séance</div>
+        ${seg('discipline', 'Plan respecté ?')}
+        ${area('recap', 'Bilan de la séance', 'Ce qui s’est passé, ce que tu as bien fait, ce qui t’a fait dévier…', 4)}
+        ${area('lesson', 'Leçon à retenir', 'Une phrase que tu veux relire la semaine prochaine', 2)}
+      </div>
+    </div>
+  </section>`);
+}
+
+// Revue hebdomadaire : leçons et respect du plan de la semaine.
+function weekLessonsCard(mon) {
+  const all = loadDaily(), days = [...Array(7)].map((_, i) => localDateStr(addDays(mon, i)));
+  const rows = days.map(d => [d, all[d]]).filter(([, e]) => e && (e.lesson || e.discipline || e.recap));
+  if (!rows.length) return '';
+  const disc = { oui: ['Plan respecté', 'green'], partiel: ['En partie', 'amber'], non: ['Plan non respecté', 'red'] };
+  return UI.card('Journal de séance', 'tes leçons et le respect du plan, jour par jour', UI.rows(rows.map(([d, e]) => html`
+    <span class="dj-rv-day">${fmtDateFR(d)}</span>
+    <span class="dj-rv-txt">${e.lesson || e.recap || '—'}</span>
+    ${e.discipline ? html`<span class="chip tone-${raw(disc[e.discipline][1])}">${disc[e.discipline][0]}</span>` : html`<span></span>`}`)));
+}
 
 /* ═══ js/18-position-calc.js ═══ */
 // ── CALCULATEUR DE TAILLE DE POSITION ───────────────────────────────────
@@ -10544,6 +10656,7 @@ function renderWeeklyReview() {
       ${UI.card('3 pires trades', 'à revoir en priorité', flop.length ? html`<div class="rv-trades">${flop.map(tradeCard)}</div>` : html`<p class="ui-muted">Aucun trade perdant cette semaine 👏</p>`)}
     </div>
     ${UI.card('Erreurs récurrentes', 'fréquence et coût cette semaine, tendance vs semaine précédente', mistRows.length ? UI.table(['Erreur', 'Fois', 'Coût', 'Sem. préc.'], mistRows.map(([m, g]) => [m, String(g.n), UI.pnl(g.cost, '€'), prevMist[m] ? String(prevMist[m]) + (g.n < prevMist[m] ? ' ↓' : g.n > prevMist[m] ? ' ↑' : '') : '—']), { align: ['l', 'r', 'r', 'r'] }) : html`<p class="ui-muted">Aucune erreur taguée cette semaine${list.some(x => Array.isArray(x.mistakes)) ? ' 👏' : ' — tague tes erreurs dans le formulaire pour les suivre ici'}.</p>`)}
+    ${weekLessonsCard(mon)}
     ${reviewQuestionsHtml(answers)}`);
 
   // Graphique P&L par jour (lun → dim).

@@ -101,6 +101,7 @@ function renderWeeklyReview() {
       ${UI.card('3 pires trades', 'à revoir en priorité', flop.length ? html`<div class="rv-trades">${flop.map(tradeCard)}</div>` : html`<p class="ui-muted">Aucun trade perdant cette semaine 👏</p>`)}
     </div>
     ${UI.card('Erreurs récurrentes', 'fréquence et coût cette semaine, tendance vs semaine précédente', mistRows.length ? UI.table(['Erreur', 'Fois', 'Coût', 'Sem. préc.'], mistRows.map(([m, g]) => [m, String(g.n), UI.pnl(g.cost, '€'), prevMist[m] ? String(prevMist[m]) + (g.n < prevMist[m] ? ' ↓' : g.n > prevMist[m] ? ' ↑' : '') : '—']), { align: ['l', 'r', 'r', 'r'] }) : html`<p class="ui-muted">Aucune erreur taguée cette semaine${list.some(x => Array.isArray(x.mistakes)) ? ' 👏' : ' — tague tes erreurs dans le formulaire pour les suivre ici'}.</p>`)}
+    ${weekLessonsCard(mon)}
     ${reviewQuestionsHtml(answers)}`);
 
   // Graphique P&L par jour (lun → dim).

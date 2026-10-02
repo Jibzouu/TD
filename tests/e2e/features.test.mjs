@@ -784,3 +784,33 @@ test('playbooks : fiche par setup, règles rappelées dans le formulaire, exempl
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('journal de séance : préparation du jour sans trade, bilan et leçon, revue hebdo, fusion jour par jour', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: sampleTrades() }, time: NOW });
+  await goto(page, 'bilan');
+  assert.equal(await page.inputValue('#bilan-date-select'), '2026-06-17', 'aujourd’hui proposé même sans trade');
+  assert.match(await page.locator('#bilan-content').innerText(), /Aucun trade ce jour pour l’instant/);
+  await page.click('.dj-opt:has-text("Haussier")');
+  assert.equal(await page.locator('.dj-opt:has-text("Haussier")').getAttribute('aria-pressed'), 'true');
+  await page.fill('#dj-plan', 'DAX : range 18 420 / 18 560');
+  await page.click('.dj-opt:has-text("En partie")');
+  await page.fill('#dj-lesson', 'Attendre la clôture M5 avant d’entrer');
+  const e = await page.evaluate(() => loadDaily()['2026-06-17']);
+  assert.equal(e.bias, 'haussier'); assert.equal(e.plan, 'DAX : range 18 420 / 18 560'); assert.equal(e.discipline, 'partiel');
+  await page.click('.dj-opt:has-text("Haussier")');   // re-cliquer efface le choix
+  assert.equal(await page.evaluate(() => loadDaily()['2026-06-17'].bias), '');
+  // Une journée tradée garde son bilan chiffré, avec son propre journal (vide).
+  await page.click('#bilan-prev');
+  assert.equal(await page.inputValue('#bilan-date-select'), '2026-06-16');
+  assert.equal(await page.inputValue('#dj-lesson'), '');
+  await goto(page, 'revue');
+  assert.match(await page.locator('#revue-content').innerText(), /Journal de séance[\s\S]*Attendre la clôture M5[\s\S]*En partie/);
+  // Fusion d'un backup : les jours sont réunis, le plus récent gagne pour un même jour.
+  const n = await page.evaluate(() => mergeSettingsMeta({ tj_daily: { v: JSON.stringify({ '2026-06-15': { lesson: 'Autre appareil', updatedAt: 5 }, '2026-06-17': { lesson: 'Ancienne', updatedAt: 1 } }), t: 1 } }));
+  assert.equal(n, 1);
+  const all = await page.evaluate(() => loadDaily());
+  assert.equal(all['2026-06-15'].lesson, 'Autre appareil');
+  assert.equal(all['2026-06-17'].lesson, 'Attendre la clôture M5 avant d’entrer');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

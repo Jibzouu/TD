@@ -16,9 +16,13 @@ function renderBilan() {
   // Populate date options. Si la date précédemment sélectionnée n'existe plus dans les
   // données actuelles (nouvel import, restauration, changement de jeu de données…),
   // on retombe sur la plus récente au lieu de garder une sélection fantôme.
-  const dates = [...new Set(trades.map(t=>t.date))].sort().reverse();
+  // Aujourd'hui et les jours avec un journal de séance sont aussi proposés (préparer sa séance avant le premier trade).
+  const today = localDateStr(), daily = loadDaily(), traded = new Set(trades.map(t => t.date));
+  const dates = [...new Set([...traded, today, ...Object.keys(daily).filter(d => dailyHasContent(daily[d]))])].filter(Boolean).sort().reverse();
   const curVal = (sel.value && dates.includes(sel.value)) ? sel.value : (dates[0]||'');
-  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${fmtDateFR(d, true)}</option>`)}`);
+  const optLabel = d => fmtDateFR(d, true) + (traded.has(d) ? '' : d === today ? ' · aujourd’hui' : ' · journal');
+  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${optLabel(d)}</option>`)}`);
+  renderDailyJournal(curVal || today);
 
   const ix = dates.indexOf(curVal);
   const prevB = document.getElementById('bilan-prev'), nextB = document.getElementById('bilan-next');
@@ -29,7 +33,7 @@ function renderBilan() {
   if (!curVal) {
     mount(content, html`<p class="bl-empty">Aucun trade enregistré.</p>`);
   } else if (!dayTrades.length) {
-    mount(content, html`<p class="bl-empty">Aucun trade ce jour.</p>`);
+    mount(content, html`<p class="bl-empty">Aucun trade ce jour${curVal === today ? ' pour l’instant — remplis ta préparation ci-dessous avant d’ouvrir les graphiques' : ''}.</p>`);
   } else {
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;

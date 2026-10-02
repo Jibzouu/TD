@@ -927,11 +927,12 @@
     <!-- ═══ BILAN ═══ -->
     <div id="page-bilan" class="page">
       <div class="page-hdr">
-        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Ta journée de trading : chiffres, trades et captures</p></div>
+        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Ta journée de trading : préparation, chiffres, trades et leçons</p></div>
         <div class="bl-nav"><button class="btn-ghost" id="bilan-prev" onclick="stepBilanDate(1)" title="Journée tradée précédente" aria-label="Journée précédente">←</button><select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select><button class="btn-ghost" id="bilan-next" onclick="stepBilanDate(-1)" title="Journée tradée suivante" aria-label="Journée suivante">→</button></div>
       </div>
       <div id="bilan-content"></div>
-      <p class="ui-muted mt-12">Les résultats par heure, session et jour de la semaine sont dans <a href="#" onclick="event.preventDefault();goStatsTab('timing')">Statistiques → Timing &amp; comportement</a>.</p>
+      <div id="bilan-journal"></div>
+      <p class="ui-muted mt-12">Les résultats par heure, session et jour de la semaine sont dans <a href="#" class="pb-link" onclick="event.preventDefault();goStatsTab('timing')">Statistiques → Timing &amp; comportement</a>.</p>
     </div>
 
     <!-- ═══ REVUE HEBDOMADAIRE ═══ -->
