@@ -931,3 +931,27 @@ test('prise en main : menu par groupes, routine du jour cochée toute seule, sec
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('scaling : coussin réglé en nombre de pertes, saisi à la main et gardé à chaque palier', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1, pnlEur: 0 })], tj_account: '1000',
+    tj_scaling: JSON.stringify({ version: 4, start: 1000, riskPct: 3, step: 1000, cushion1: 500, goal: 10000, current: 1000, auto: true, riskSteps: [], tableOpen: true }) } });
+  await goto(page, 'scaling');
+  assert.equal(await page.inputValue('#sc-cushion-n'), '8.33', 'ancien coussin de 500 € = 8,3 pertes de 60 €');
+  await page.fill('#sc-cushion-n', '10');
+  await page.waitForTimeout(60);
+  assert.equal(await page.inputValue('#sc-cushion1'), '600', '10 pertes × 60 € au 1er palier');
+  const m = await page.evaluate(() => computeScalingPaliers(getScalingState(), 1000).pts.slice(1, 4).map(p => [p.bal, p.risk, p.cushionEur]));
+  assert.deepEqual(m, [[2000, 60, 600], [3000, 90, 900], [4000, 120, 1200]], '10 pertes au risque de chaque palier');
+  // Le risque change : le nombre de pertes reste, le coussin en € suit.
+  await page.fill('#sc-risk-pct', '2');
+  await page.waitForTimeout(60);
+  assert.equal(await page.inputValue('#sc-cushion-n'), '10');
+  assert.equal(await page.inputValue('#sc-cushion1'), '400');
+  // Saisie en € : le nombre de pertes se recalcule.
+  await page.fill('#sc-cushion1', '200');
+  await page.waitForTimeout(60);
+  assert.equal(await page.inputValue('#sc-cushion-n'), '5');
+  assert.equal(await page.evaluate(() => JSON.parse(DB.getItem('tj_scaling')).cushionN), 5);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

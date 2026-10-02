@@ -33,9 +33,13 @@ function loadScalingState() {
       if (Array.isArray(raw.riskSteps)) d.riskSteps = raw.riskSteps
         .filter(r => r && typeof r.from === 'number' && isFinite(r.from) && typeof r.pct === 'number' && r.pct > 0 && r.pct < 100)
         .map(r => ({ from: r.from, pct: r.pct })).sort((a, b) => a.from - b.from);
+      if (typeof raw.cushionN === 'number' && isFinite(raw.cushionN) && raw.cushionN >= 0) d.cushionN = raw.cushionN;
       if (d.goal <= d.start) d.goal = d.start * 10;
     }
   } catch (e) {}
+  // Le coussin se règle en NOMBRE DE PERTES (le même à chaque palier) ; ancien réglage en € : converti une fois.
+  if (typeof d.cushionN !== 'number') d.cushionN = scRiskFirst(d) > 0 ? d.cushion1 / scRiskFirst(d) : 0;
+  d.cushion1 = scRound(d.cushionN * scRiskFirst(d), 2);
   scalingState = d;
   return d;
 }
@@ -62,6 +66,9 @@ function scPctAt(st, bal) {
 // Réglage de risque « posé » sur un palier : le premier changement situé entre le palier précédent (exclu) et celui-ci.
 function scRiskStepOn(st, p, prevBal) { return st.riskSteps.find(r => r.from > prevBal + 0.5 && r.from <= p.bal + 0.5) || null; }
 function scCeilTo(v, step) { return Math.ceil(v / step - 1e-9) * step; }
+// Risque au 1er palier (sert à convertir le coussin entre € et nombre de pertes).
+function scFirstPalier(st) { return (Math.floor(st.start / st.step + 1e-9) + 1) * st.step; }
+function scRiskFirst(st) { if (!(st.start > 0) || !(st.step > 0) || !(st.riskPct > 0)) return 0; const f = scFirstPalier(st); return f * scPctAt(st, f) / 100; }
 
 // Paliers tous les « step » € ; risque = % du palier. En atteignant un palier tu gardes ta taille jusqu'à avoir fait
 // le coussin : coussin du 1er palier (€) puis LE MÊME NOMBRE DE PERTES à chaque palier (il grandit avec le risque).
@@ -70,7 +77,7 @@ function computeScalingPaliers(st, current) {
   if (!(st.start > 0) || !(st.riskPct > 0)) return { error: 'Renseigne un capital de départ et un risque par trade supérieurs à 0.' };
   if (!(st.step > 0)) return { error: 'Renseigne un écart entre paliers supérieur à 0.' };
   const first = (Math.floor(st.start / st.step + 1e-9) + 1) * st.step;
-  const N = (st.cushion1 || 0) / (first * scPctAt(st, first) / 100);   // pertes que représente le coussin du 1er palier
+  const N = typeof st.cushionN === 'number' ? st.cushionN : (st.cushion1 || 0) / (first * scPctAt(st, first) / 100);   // nombre de pertes du coussin
   const pts = [{ k: 0, bal: st.start, pct: st.riskPct, risk: st.start * st.riskPct / 100, trigger: st.start, cushionEur: 0, cushionN: 0 }];
   const limit = Math.max(st.goal, current || 0);
   let bal = first;
@@ -108,7 +115,7 @@ function scWalkJournal(model) {
 function scalingLevel(st, model, current) { return st.auto ? scWalkJournal(model).L : scLevelFrom(model.pts, current); }
 
 // ── Saisie ──
-const SC_FIELDS = { start: 'sc-start', riskPct: 'sc-risk-pct', riskEur: 'sc-risk-eur', step: 'sc-step', cushion1: 'sc-cushion1', goal: 'sc-goal', current: 'sc-current', auto: 'sc-auto' };
+const SC_FIELDS = { start: 'sc-start', riskPct: 'sc-risk-pct', riskEur: 'sc-risk-eur', step: 'sc-step', cushion1: 'sc-cushion1', cushionN: 'sc-cushion-n', goal: 'sc-goal', current: 'sc-current', auto: 'sc-auto' };
 function fillScalingForm() {
   const st = getScalingState();
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
@@ -117,6 +124,7 @@ function fillScalingForm() {
   set('sc-risk-eur', scRound(st.start * st.riskPct / 100, 2));
   set('sc-step', st.step);
   set('sc-cushion1', st.cushion1);
+  set('sc-cushion-n', scRound(st.cushionN, 2));
   set('sc-goal', st.goal);
   set('sc-current', scRound(scalingCurrent(st), 2));
   const auto = document.getElementById('sc-auto');
@@ -137,13 +145,16 @@ function onScalingInput(field) {
   } else if (field === 'riskPct' && v > 0 && v < 100) { st.riskPct = v; set('sc-risk-eur', scRound(st.start * v / 100, 2)); }
   else if (field === 'riskEur' && v > 0 && v < st.start) { st.riskPct = v / st.start * 100; set('sc-risk-pct', scRound(st.riskPct, 3)); }
   else if (field === 'step' && v > 0) st.step = v;
-  else if (field === 'cushion1' && v >= 0) st.cushion1 = v;
+  else if (field === 'cushion1' && v >= 0) { st.cushion1 = v; const r = scRiskFirst(st); st.cushionN = r > 0 ? v / r : 0; set('sc-cushion-n', scRound(st.cushionN, 2)); }
+  else if (field === 'cushionN' && v >= 0) { st.cushionN = v; st.cushion1 = scRound(v * scRiskFirst(st), 2); set('sc-cushion1', st.cushion1); }
   else if (field === 'goal' && v > 0) st.goal = v;
   else if (field === 'current' && !isNaN(v)) st.current = v;
   else if (field === 'auto') {
     st.auto = el.checked;
     if (!st.auto) st.current = scRound(scalingJournalBalance(), 2);
   } else return;
+  // Le nombre de pertes reste fixe quand le risque, le capital ou l'écart changent : le coussin en € suit.
+  if (['start', 'riskPct', 'riskEur', 'step'].includes(field)) { st.cushion1 = scRound(st.cushionN * scRiskFirst(st), 2); set('sc-cushion1', st.cushion1); }
   saveScalingState();
   if (field !== 'auto' && field !== 'current') scAckPalier();   // plan modifié : pas d'alerte « nouveau palier » fantôme
   renderScaling();
@@ -161,6 +172,7 @@ function setScalingPalierRisk(bal, oldFrom, value) {
   st.riskSteps = st.riskSteps.filter(r => Math.abs(r.from - bal) >= 0.5 && (oldFrom == null || Math.abs(r.from - oldFrom) >= 0.5));
   if (String(value).trim() !== '' && v > 0 && v < 100) st.riskSteps.push({ from: bal, pct: v });
   st.riskSteps.sort((a, b) => a.from - b.from);
+  st.cushion1 = scRound(st.cushionN * scRiskFirst(st), 2);
   saveScalingState();
   scAckPalier();
   setTimeout(() => renderScaling(), 0);   // après le déplacement du focus : la case suivante reste active
@@ -182,13 +194,15 @@ function renderScaling(opts) {
     ? html`<span class="tone-amber">≠ solde de départ du journal (${fmtEUR(accountSize)})</span> · <button class="link-btn" onclick="alignScalingStart()">utiliser ${fmtEUR(accountSize)}</button>`
     : (accountSize > 0 ? 'même solde que le journal (Paramètres)' : ''));
   const hint = document.getElementById('sc-cushion-hint');
-  if (hint) hint.textContent = model.error || !(st.cushion1 > 0) ? 'aucun : tu augmentes dès le palier'
-    : `= ${scNum1(model.N)} pertes à ${fmtEUR(model.pts[1].risk, false, 2)}, gardé à chaque palier`;
+  if (hint) hint.textContent = model.error || !(model.N > 0) ? 'aucun : tu augmentes dès le palier'
+    : `= ${scNum1(model.N)} pertes à ${fmtEUR(model.pts[1].risk, false, 2)} au 1er palier`;
+  const hintN = document.getElementById('sc-cushion-n-hint');
+  if (hintN) hintN.textContent = model.error ? '' : !(model.N > 0) ? 'aucun coussin : tu augmentes dès le palier' : 'le même à chaque palier : le coussin en € grandit avec le risque';
   const L = model.error ? 0 : scalingLevel(st, model, current);
   const rule = document.getElementById('sc-rule-text');
   if (rule) {
     const steps = st.riskSteps.length ? ' Risque ajusté : ' + st.riskSteps.map(r => scPct(r.pct) + ' à partir de ' + fmtEUR(r.from)).join(', ') + '.' : '';
-    rule.textContent = model.error ? '' : `Paliers tous les ${fmtEUR(st.step)}. En atteignant un palier, tu gardes ta taille jusqu'à avoir fait ton coussin (${fmtEUR(st.cushion1)} au premier palier, puis ${scNum1(model.N)} pertes au nouveau risque à chaque palier), puis tu passes à ${scPct(st.riskPct)} du palier. Si tu repasses sous le palier, tu reprends la taille d'avant.${steps}${st.auto ? '' : ' Solde saisi à la main : on suppose que tu y es arrivé en montant.'}`;
+    rule.textContent = model.error ? '' : `Paliers tous les ${fmtEUR(st.step)}. En atteignant un palier, tu gardes ta taille jusqu'à avoir fait ton coussin (${fmtEUR(st.cushion1)} au premier palier, soit ${scNum1(model.N)} pertes, puis ${scNum1(model.N)} pertes au nouveau risque à chaque palier), puis tu passes à ${scPct(st.riskPct)} du palier. Si tu repasses sous le palier, tu reprends la taille d'avant.${steps}${st.auto ? '' : ' Solde saisi à la main : on suppose que tu y es arrivé en montant.'}`;
   }
   renderScalingTiles(st, model, current, L);
   renderScalingTimeline(st, model, current, L, opts || {});
@@ -258,6 +272,13 @@ function renderScalingTimeline(st, model, current, L, opts) {
   });
   h.push(html`<div class="sc-me" style="${at(meX)}"><div class="sc-me-pill">Toi · ${fmtEUR(current)} · ${scEurShort(model.pts[L].risk)}/trade</div><div class="sc-me-line"></div></div>`);
   mount(tl, html`${h}`);
+  // L'étiquette « Toi » reste entièrement visible même tout au bord de la frise.
+  const pill = tl.querySelector('.sc-me-pill');
+  if (pill) {
+    const c = tl.getBoundingClientRect(), r = pill.getBoundingClientRect();
+    const dx = r.left < c.left + 2 ? c.left + 2 - r.left : r.right > c.right - 2 ? c.right - 2 - r.right : 0;
+    if (dx) pill.style.transform = 'translateX(' + Math.round(dx) + 'px)';
+  }
   if (opts && opts.center) wrap.scrollLeft = Math.max(0, meX - wrap.clientWidth / 2);
 }
 

@@ -50,6 +50,7 @@ function finishOnboarding(action) {
   const acc = document.getElementById('account-size'); if (acc) acc.value = d.capital;
   const st = getScalingState();
   Object.assign(st, { start: d.capital, riskPct: d.riskPct, step: scNiceStep(d.capital), cushion1: scNiceStep(d.capital) / 2, goal: d.capital * 10, auto: true });
+  st.cushionN = scRiskFirst(st) > 0 ? st.cushion1 / scRiskFirst(st) : 0;
   saveScalingState();
   DB.setItem(JP + 'dd_limit_pct', String(d.ddPct));
   if (planData) { planData.maxTP = d.maxTP; planData.maxSL = d.maxSL; DB.setItem(JP + 'plan', JSON.stringify(planData)); }
