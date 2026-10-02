@@ -223,7 +223,7 @@ test('constat « meilleur jour » : pertes soustraites, cumul de tous les mardis
     mk(4, '2026-06-09', 'TP', 4), mk(5, '2026-06-09', 'SL', -1),                                         // mardi : +3R
     mk(6, '2026-06-15', 'TP', 2), mk(7, '2026-06-12', 'SL', -1),
   ] } });
-  const chip = page.locator('#summary-banner .insight').first();
+  const chip = page.locator('#summary-banner .insight', { hasText: 'Meilleur jour' });
   const text = await chip.innerText();
   assert.match(text, /mardi/);
   assert.match(text, /\+6,1R/, 'somme signée des deux mardis (5,09 − 1 − 1 + 4 − 1), pas la somme des RR (12,09)');
@@ -460,6 +460,39 @@ test('watchlist (biais du jour daté, avec/contre), plan relié, personnalisatio
   await goto(page, 'parametres');
   assert.equal(await page.evaluate(() => document.getElementById('settings-adv').open), false);
   assert.equal(await page.locator('#theme-preset-grid').isVisible(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('règles du jour : max trades et SL d’affilée en alerte ; export CSV lisible par Excel', async () => {
+  const today = '2026-06-17';
+  const tr = [T({ id: 1, date: today, entry: '09:00', res: 'TP', pnl: 2, pnlEur: 60 }), T({ id: 2, date: today, entry: '10:00', res: 'SL', pnl: -1, pnlEur: -30 }),
+    T({ id: 3, date: today, entry: '11:00', res: 'SL', pnl: -1, pnlEur: -30, asset: 'DAX; "40"', desc: 'note\nsur deux lignes' })];
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: tr, tj_plan: { ce: [], cf: [], notes: '', risk: [], maxTrades: 3, maxConsecSL: 2 } } });
+  const alert = page.locator('#rule-alert');
+  assert.equal(await alert.isVisible(), true);
+  const txt = await alert.innerText();
+  assert.match(txt, /Règle de ton plan dépassée/);
+  assert.match(txt, /3 trades sur 3 aujourd'hui/);
+  assert.match(txt, /2 SL d'affilée aujourd'hui : ta règle dit d'arrêter après 2/);
+  assert.match(await page.locator('#summary-banner').innerText(), /Règles du jour\s*3\/3 trades · 2\/2 SL d’affilée/);
+  // Règle assouplie dans le Plan : plus d'alerte SL.
+  await goto(page, 'plan');
+  await page.fill('input[aria-label="Stop après N SL d’affilée"]', '3'); await page.dispatchEvent('input[aria-label="Stop après N SL d’affilée"]', 'change');
+  await goto(page, 'dashboard');
+  assert.doesNotMatch(await page.locator('#rule-alert').innerText(), /SL d'affilée/);
+  // CSV : BOM, « ; », virgule décimale, guillemets échappés, une ligne par trade.
+  const csv = await page.evaluate(() => tradesToCSV(trades));
+  assert.ok(csv.startsWith('﻿Date;Entrée;Sortie;Actif;Sens'));
+  const lines = csv.slice(1).split('\r\n');
+  assert.equal(lines.length, 4);
+  assert.match(lines[1], /^2026-06-17;09:00;/);
+  assert.match(lines[3], /;"DAX; ""40""";/);
+  assert.match(lines[3], /;-1;-30;/);
+  assert.match(lines[3], /note sur deux lignes/);
+  const dl = page.waitForEvent('download');
+  await page.evaluate(() => exportTradesCSV());
+  assert.match((await dl).suggestedFilename(), /^journal-.*-trades-\d{4}-\d{2}-\d{2}\.csv$/);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

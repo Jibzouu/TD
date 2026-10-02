@@ -1227,6 +1227,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .fold-body > .center-row:first-child{margin-top:0}
 .link-btn{background:none;border:none;padding:0;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .settings-adv{margin:0 0 20px;border-top:none;padding-top:0}.settings-adv > summary{font-size:13px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px}.settings-adv .fold-sub{font-weight:400;color:var(--txt3);font-size:11.5px}
+.export-card .btn-primary + .btn-ghost{margin-left:8px}
 
 /* ═══ styles/50-body.css ═══ */
 /* ═══ Styles de la structure (partials/body.html), auparavant écrits en ligne ═══ */
@@ -1598,6 +1599,12 @@ tr.more-row .btn-ghost{margin-right:8px}
 /* Respect du plan (Scaling) */
 .sc-tiles-3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:14px}
 .sc-table-wrap{overflow-x:auto}
+/* Alerte de règles du jour (Dashboard) */
+.rule-alert{align-items:center;gap:14px;border-radius:var(--r2);padding:14px 18px;margin-bottom:16px;border:1px solid}
+.rule-alert.warn{background:var(--amber-d);border-color:color-mix(in srgb,var(--amber) 40%,transparent)}
+.rule-alert.crit{background:var(--red-d);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+.rule-alert-txt{flex:1;display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--txt2)}.rule-alert-txt b{color:var(--txt)}
+@media (max-width:640px){.rule-alert{flex-wrap:wrap}}
 
 </style>
 </head>
@@ -1915,6 +1922,7 @@ tr.more-row .btn-ghost{margin-right:8px}
         <button class="btn-ghost btn-blue" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'))">Importer maintenant</button>
         <button class="btn-ghost btn-s7" onclick="dismissImportReminder()">Plus tard</button>
       </div>
+      <div id="rule-alert" class="rule-alert" role="alert" style="display:none"></div>
       <div id="scaling-alert" class="scaling-alert" role="status" style="display:none"></div>
       <div class="page-hdr">
         <div class="page-hdr-left">
@@ -2587,8 +2595,9 @@ tr.more-row .btn-ghost{margin-right:8px}
         <div class="export-card">
           <div class="export-icon">💾</div>
           <div class="export-title">Exporter mes trades</div>
-          <div class="export-desc">Télécharge tous tes trades au format JSON. Tu peux les réimporter à tout moment pour ne jamais perdre tes données.</div>
+          <div class="export-desc">Backup complet (JSON, réimportable à tout moment) ou tableau CSV de tes trades pour Excel, LibreOffice ou Google Sheets.</div>
           <button class="btn-primary" onclick="exportData()">Télécharger le backup</button>
+          <button class="btn-ghost" onclick="exportTradesCSV()" title="Tableau lisible dans Excel, LibreOffice ou Google Sheets (filtre global appliqué)">Exporter en CSV (Excel)</button>
         </div>
         <div class="export-card">
           <div class="export-icon">📂</div>
@@ -4282,7 +4291,7 @@ function toggleFilterBar() {
 let DATA_VERSION = 1;
 const pageRenderedVersion = {};
 const PAGE_RENDERERS = {
-  dashboard: () => [renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
+  dashboard: () => [renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderRuleAlerts, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
   trades: () => [renderTable],
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
@@ -4720,7 +4729,7 @@ onReady(() => {
   const tzInp = document.getElementById('tz-offset-hours'); if (tzInp) tzInp.value = TZ_OFFSET_HOURS;
   const fxInp = document.getElementById('import-fx-rate'); if (fxInp) fxInp.value = IMPORT_FX_RATE;
   openImportSettingsIfUsed();
-  [renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, initPlan, initWatchlist, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));
+  [initPlan, initWatchlist, renderTradeChecklist, renderTradeMistakes, loadPositionCalc, renderAll, refreshAssetDropdowns, renderSettingsPage].forEach(fn => safeRun(fn, fn.name));
   if (window._corruptKeys && window._corruptKeys.length) {
     showToast('⚠️ Donnée illisible ignorée (' + window._corruptKeys.join(', ') + ') — copie gardée sous « …_corrupt_backup »', 'error');
   }
@@ -5147,6 +5156,7 @@ function renderSummaryBanner() {
     }
     if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt, '', 'Ré-entrées rapides ou taille augmentée juste après une perte'));
   }
+  if (typeof ruleInsightChips === 'function') chips.unshift(...ruleInsightChips(chip));
   if (typeof scalingInsightChips === 'function') chips.push(...scalingInsightChips(chip));
   mount(box, html`${chips}`);
   if (strip) strip.classList.toggle('no-insights', !chips.length);
@@ -9887,6 +9897,80 @@ function printWeeklyReview() {
   const done = () => { document.body.classList.remove('printing-review'); window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
   setTimeout(() => { window.print(); setTimeout(done, 1000); }, 50);
+}
+
+/* ═══ js/25-rules.js ═══ */
+// ── RÈGLES DU JOUR (alertes) ET EXPORT CSV ───────────────────────────────
+// Règles chiffrées du Plan (max trades / jour, stop après N SL d'affilée) + perte max du jour : vérifiées sur les trades
+// du jour, affichées en constat dans la barre « Aujourd'hui » et en alerte quand une règle est atteinte ou dépassée.
+function todayRuleStatus() {
+  const today = localDateStr();
+  const list = trades.filter(t => t.date === today).sort((a, b) => (a.entry || '').localeCompare(b.entry || '') || (a.id || 0) - (b.id || 0));
+  const maxT = planData && planData.maxTrades > 0 ? planData.maxTrades : null;
+  const maxSL = planData && planData.maxConsecSL > 0 ? planData.maxConsecSL : null;
+  let streak = 0;
+  for (let i = list.length - 1; i >= 0 && list[i].res === 'SL'; i--) streak++;
+  const pnl = list.reduce((s, t) => s + (typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
+  const startBal = accountSize + trades.reduce((s, t) => s + (t.date && t.date < today && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
+  const ddLimit = Math.max(0, startBal) * loadDDLimitPct() / 100;
+  const alerts = [];
+  if (maxT && list.length > maxT) alerts.push({ lvl: 'crit', txt: `${list.length} trades aujourd'hui pour un maximum de ${maxT} : tu es au-delà de ton plan.` });
+  else if (maxT && list.length === maxT) alerts.push({ lvl: 'warn', txt: `${maxT} trades sur ${maxT} aujourd'hui : maximum atteint, la journée est terminée.` });
+  if (maxSL && streak >= maxSL) alerts.push({ lvl: 'crit', txt: `${streak} SL d'affilée aujourd'hui : ta règle dit d'arrêter après ${maxSL}.` });
+  if (ddLimit > 0 && pnl < 0 && -pnl >= ddLimit) alerts.push({ lvl: 'crit', txt: `Perte du jour ${fmtEUR(pnl)} : limite de ${fmtEUR(ddLimit)} atteinte, stop pour aujourd'hui.` });
+  return { n: list.length, maxT, streak, maxSL, alerts };
+}
+function renderRuleAlerts() {
+  const el = document.getElementById('rule-alert');
+  if (!el) return;
+  const s = todayRuleStatus();
+  if (!s.alerts.length) { el.style.display = 'none'; return; }
+  const crit = s.alerts.some(a => a.lvl === 'crit');
+  el.className = 'rule-alert ' + (crit ? 'crit' : 'warn');
+  mount(el, html`<span class="fs-16" aria-hidden="true">${crit ? '🛑' : '⚠️'}</span><div class="rule-alert-txt"><b>${crit ? 'Règle de ton plan dépassée' : 'Limite de ton plan atteinte'}</b>${s.alerts.map(a => html`<span>${a.txt}</span>`)}</div><button class="btn-ghost" onclick="showPage('plan', document.querySelector('.nav-item[data-page=plan]'))">Voir le plan</button>`);
+  el.style.display = 'flex';
+}
+// Constat permanent dans la barre « Aujourd'hui » quand des règles chiffrées existent.
+function ruleInsightChips(chip) {
+  const s = todayRuleStatus();
+  if (!s.maxT && !s.maxSL) return [];
+  const parts = [s.maxT ? s.n + '/' + s.maxT + ' trades' : '', s.maxSL ? s.streak + '/' + s.maxSL + ' SL d’affilée' : ''].filter(Boolean).join(' · ');
+  const lvl = s.alerts.some(a => a.lvl === 'crit') ? 'red' : s.alerts.length ? 'amber' : 'green';
+  return [chip('📏', 'Règles du jour', parts, lvl === 'green' ? 'OK' : lvl === 'red' ? 'dépassé' : 'limite', lvl, "showPage('plan', document.querySelector('.nav-item[data-page=plan]'))", '', 'Max trades par jour et SL d’affilée, réglés dans Plan de trading')];
+}
+
+// Export CSV pour Excel (FR) : séparateur « ; », virgule décimale, BOM UTF-8 pour les accents.
+function csvCell(v) {
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number') return isFinite(v) ? String(v).replace('.', ',') : '';
+  const s = String(v).replace(/\r?\n/g, ' ');
+  return /[;"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function tradesToCSV(list) {
+  const cols = [
+    ['Date', t => t.date], ['Entrée', t => t.entry], ['Sortie', t => t.exit], ['Actif', t => t.asset], ['Sens', t => t.dir],
+    ['Session', t => t.session], ['UT', t => t.tf], ['Setup', t => t.setup], ['Résultat', t => t.res],
+    ['R visé', t => t.rr], ['R réalisé', t => t.pnl], ['P&L (€)', t => t.pnlEur],
+    ['Prix d\'entrée', t => t.entryPrice], ['Stop', t => t.slPrice], ['Objectif', t => t.tpPrice], ['Prix de sortie', t => t.exitPrice],
+    ['Taille', t => t.size], ['MAE (€)', t => t.mae], ['MFE (€)', t => t.mfe], ['Humeur (1-5)', t => t.emotion],
+    ['Erreurs', t => (t.mistakes || []).join(', ')], ['Tags', t => (t.tags || []).join(', ')],
+    ['Biais du jour', t => typeof watchAlignment === 'function' ? ({ with: 'avec', against: 'contre', neutral: 'neutre', none: '' })[watchAlignment(t)] : ''],
+    ['Notes', t => t.desc], ['Revue', t => t.review]
+  ];
+  const sorted = list.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.entry || '').localeCompare(b.entry || ''));
+  return '﻿' + [cols.map(c => csvCell(c[0])).join(';'), ...sorted.map(t => cols.map(c => csvCell(c[1](t))).join(';'))].join('\r\n');
+}
+function exportTradesCSV() {
+  const list = viewTrades();
+  if (!list.length) { showToast('Aucun trade à exporter', 'info'); return; }
+  const blob = new Blob([tradesToCSV(list)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'journal-' + JOURNALS[JOURNAL_ID].slug + '-trades-' + localDateStr() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(list.length + ' trade' + (list.length > 1 ? 's' : '') + ' exporté' + (list.length > 1 ? 's' : '') + ' en CSV' + (filterActive() ? ' (filtre appliqué)' : '') + ' ✓', 'success');
 }
 
 </script>

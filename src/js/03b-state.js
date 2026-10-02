@@ -98,7 +98,7 @@ function toggleFilterBar() {
 let DATA_VERSION = 1;
 const pageRenderedVersion = {};
 const PAGE_RENDERERS = {
-  dashboard: () => [renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
+  dashboard: () => [renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderRuleAlerts, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
   trades: () => [renderTable],
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
