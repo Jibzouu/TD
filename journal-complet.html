@@ -3212,6 +3212,10 @@ function sanitizeTrade(t) {
   o.cap = safeImgSrc(o.cap);
   if ('caps' in o) o.caps = Array.isArray(o.caps) ? o.caps.map(safeImgSrc).filter(Boolean).slice(0, 8) : [];
   if (o.caps && o.caps.length && !o.cap) o.cap = o.caps[0];
+  // Modèle prêt pour la synchronisation : identifiant universel, dates de création / modification, captures par référence.
+  o.uid = /^[\w-]{6,64}$/.test(String(o.uid || '')) ? String(o.uid) : '';
+  ['createdAt', 'updatedAt'].forEach(k => { const v = Number(o[k]); o[k] = isFinite(v) && v > 0 ? v : 0; });
+  o.imgs = Array.isArray(o.imgs) ? o.imgs.map(String).filter(id => /^i[0-9a-z]{6,40}$/i.test(id)).slice(0, 8) : [];
   return o;
 }
 function sanitizeTrades(arr) { return (Array.isArray(arr) ? arr : []).map(sanitizeTrade).filter(Boolean); }
@@ -3234,19 +3238,16 @@ function saveTZOffset() {
 }
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
 function recalcSessions() {
-  let n = 0;
-  const before = trades.map(t => t.session);
-  trades.forEach(t => {
-    if (!t.entry) return;
+  const touched = TradeStore.mutate(list => list.filter(t => {
+    if (!t.entry) return false;
     const h = parseInt(t.entry.split(':')[0], 10);
-    if (isNaN(h)) return;
+    if (isNaN(h)) return false;
     const ns = sessionFromHour(h);
-    if (ns && ns !== t.session) { t.session = ns; n++; }
-  });
-  if (n > 0) {
-    if (!save()) { trades.forEach((t, i) => { t.session = before[i]; }); return; }
-    renderAll(); showToast(n + ' session(s) recalculée(s) ✓', 'success');
-  }
+    if (ns && ns !== t.session) { t.session = ns; return true; }
+    return false;
+  }));
+  if (touched === null) return;
+  if (touched.length) { renderAll(); showToast(touched.length + ' session(s) recalculée(s) ✓', 'success'); }
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
@@ -3280,8 +3281,8 @@ function reconvertImportedTrades() {
   if (!known.length && !legacy.length) { showToast('Aucun trade importé en devise étrangère'); return; }
   const msg = known.length + ' trade(s) importé(s) en devise étrangère' + (legacy.length ? ' et ' + legacy.length + ' ancien(s) import(s) TradingView (devise non enregistrée, supposée USD)' : '') + ' seront recalculés avec 1 = ' + rate + ' €.';
   openModal('Appliquer le taux de conversion ?', msg, () => {
-    const before = JSON.stringify(trades);
-    known.concat(legacy).forEach(t => {
+    const ids = new Set(known.concat(legacy).map(t => t.id));
+    const done = TradeStore.mutate(list => list.filter(t => ids.has(t.id)).map(t => {
       const old = t.fxRate || 1;
       const conv = v => (v === null || v === undefined) ? v : Math.round(v / old * rate * 100) / 100;
       t.pnlEur = conv(t.pnlEur); t.mfe = conv(t.mfe); t.mae = conv(t.mae);
@@ -3289,8 +3290,9 @@ function reconvertImportedTrades() {
       t.fxRate = rate;
       // R estimé à partir du P&L € (ancien réglage « risque € ») : il suit la conversion dans la même proportion.
       if (rSource(t) === 'risque' && t.pnl != null) { t.pnl = Math.round(t.pnl / old * rate * 100) / 100; t.rr = t.pnl; }
-    });
-    if (!save()) { trades = JSON.parse(before); return; }
+      return t;
+    }));
+    if (!done) return;
     renderAll();
     showToast((known.length + legacy.length) + ' trade(s) convertis ✓', 'success');
   });
@@ -3527,10 +3529,275 @@ const UI = {
 // Insère un SafeHTML dans un élément (le seul point d'entrée des composants vers le DOM).
 function mount(el, content) { if (typeof el === 'string') el = document.getElementById(el); if (el) el.innerHTML = String(content); return el; }
 
+/* ═══ js/00c-store.js ═══ */
+// ── DONNÉES : point d'entrée unique ─────────────────────────────────────
+// Toute modification des trades passe par TradeStore (ajout, modification, suppression, import, modification en lot) :
+// le jour de la synchronisation, elle se branche ici et nulle part ailleurs (TradeStore.onChange).
+// Modèle d'un trade, prêt pour la synchronisation entre appareils :
+//   - id        : identifiant LOCAL (numérique, utilisé par l'interface) ;
+//   - uid       : identifiant UNIVERSEL, identique sur tous les appareils ;
+//   - createdAt / updatedAt : dates (ms) pour savoir quelle version d'un trade est la plus récente ;
+//   - imgs      : références des captures, rangées à part dans le magasin d'images (ImageStore).
+// Une suppression laisse une trace (« tombstone » : uid + date) pour qu'un autre appareil ne recrée pas le trade.
+
+function newUid() {
+  try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 8);
+}
+function newLocalTradeId() {
+  const used = new Set(trades.map(t => t.id));
+  let id = Date.now();
+  while (used.has(id)) id++;
+  return id;
+}
+
+// ── Captures : une entrée par image, le trade ne garde que les références ──
+const ImageStore = {
+  key(id) { return JP + 'img_' + id; },
+  get(id) { return safeImgSrc(DB.getItem(this.key(id)) || ''); },
+  put(dataUrl) {
+    const src = safeImgSrc(dataUrl);
+    if (!src) return null;
+    const id = 'i' + newUid().replace(/[^0-9a-z]/gi, '').slice(0, 20).toLowerCase();
+    DB.setItem(this.key(id), src);   // peut lever une erreur « stockage plein » : l'appelant annule
+    return id;
+  },
+  replace(id, dataUrl) { const src = safeImgSrc(dataUrl); if (src) DB.setItem(this.key(id), src); },
+  remove(id) { DB.removeItem(this.key(id)); },
+  allIds() { const p = JP + 'img_'; return DB.keys().filter(k => k.indexOf(p) === 0).map(k => k.slice(p.length)); }
+};
+function tradeImages(t) { return (t && Array.isArray(t.imgs) ? t.imgs : []).map(id => ImageStore.get(id)).filter(Boolean); }
+
+// Ancien format (captures dans le trade : cap + caps, la première souvent en double) → magasin d'images.
+// Les images données à part (backup récent : { idImage: dataUrl }) sont rangées sous le même identifiant.
+function externalizeTradeImages(t, imagesById) {
+  const ids = [];
+  (t.imgs || []).forEach(id => { if (imagesById && imagesById[id] && safeImgSrc(imagesById[id])) DB.setItem(ImageStore.key(id), imagesById[id]); if (ImageStore.get(id)) ids.push(id); });
+  const legacy = [t.cap].concat(Array.isArray(t.caps) ? t.caps : []).map(safeImgSrc).filter(Boolean);
+  [...new Set(legacy)].forEach(src => { if (ids.length < 8) { const id = ImageStore.put(src); if (id) ids.push(id); } });
+  t.imgs = ids;
+  delete t.cap; delete t.caps;
+  return t;
+}
+// Trade complet pour un export / la corbeille : les captures sont recopiées dans le trade (_images).
+function tradeWithImages(t) { return Object.assign({}, t, { _images: tradeImages(t) }); }
+function imagesOf(list) { const out = {}; list.forEach(t => (t.imgs || []).forEach(id => { const src = ImageStore.get(id); if (src) out[id] = src; })); return out; }
+
+// Prépare un trade venant de l'extérieur (formulaire, import, backup, corbeille) pour le journal.
+function prepareIncomingTrade(raw, imagesById, now) {
+  const t = sanitizeTrade(raw);
+  if (!t) return null;
+  const inline = Array.isArray(raw && raw._images) ? raw._images : null;
+  if (inline) {
+    // Captures fournies telles quelles (formulaire, corbeille) : rangées une par une, sans dédoublonnage.
+    t.imgs = []; delete t.cap; delete t.caps;
+    inline.map(safeImgSrc).filter(Boolean).slice(0, 8).forEach(src => { const id = ImageStore.put(src); if (id) t.imgs.push(id); });
+  } else externalizeTradeImages(t, imagesById);
+  if (!t.uid) t.uid = newUid();
+  now = now || Date.now();
+  if (!t.createdAt) t.createdAt = (t.id > 1e12 && t.id < now + 864e5) ? Math.floor(t.id) : now;
+  if (!t.updatedAt) t.updatedAt = t.createdAt;
+  delete t._images;
+  return t;
+}
+
+const TradeStore = (() => {
+  const listeners = [];
+  const TOMB_KEY = () => JP + 'tombstones';
+  function emit(type, list) {
+    const info = { type, uids: (list || []).map(t => t && t.uid).filter(Boolean) };
+    listeners.forEach(fn => { try { fn(info); } catch (e) { console.error(e); } });
+  }
+  function tombstones() { try { const a = JSON.parse(DB.getItem(TOMB_KEY()) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function addTombstones(list) {
+    if (!list.length) return;
+    const now = Date.now(), all = tombstones().concat(list.filter(t => t.uid).map(t => ({ uid: t.uid, deletedAt: now })));
+    try { DB.setItem(TOMB_KEY(), JSON.stringify(all.slice(-20000))); } catch (e) { console.error(e); }
+  }
+  // Applique une modification ; si l'enregistrement échoue (stockage plein), tout revient comme avant.
+  function commit(prev, type, list, cleanup) {
+    sortTradesChrono();
+    if (!save()) { trades = prev; invalidateViews(); return false; }
+    if (cleanup) cleanup();
+    emit(type, list);
+    return true;
+  }
+  function removeImages(ids) { ids.forEach(id => ImageStore.remove(id)); }
+  function referencedImages() { const s = new Set(); trades.forEach(t => (t.imgs || []).forEach(id => s.add(id))); return s; }
+
+  return {
+    onChange(fn) { listeners.push(fn); },
+    tombstones,
+    // Ajoute un trade (champs du formulaire, captures en data URL dans images).
+    add(fields, images) {
+      const prev = trades.slice();
+      let t;
+      try { t = prepareIncomingTrade(Object.assign({}, fields, { id: newLocalTradeId(), uid: '', createdAt: 0, updatedAt: 0, imgs: [], _images: images || [] })); }
+      catch (e) { reportStorageError(e); return null; }
+      if (!t) return null;
+      trades.unshift(t);
+      if (!commit(prev, 'add', [t])) { removeImages(t.imgs); return null; }
+      return t;
+    },
+    // Ajoute plusieurs trades (import CSV, saisie rapide) ; renvoie les trades ajoutés ou null.
+    addMany(list, imagesById) {
+      const prev = trades.slice(), now = Date.now(), added = [];
+      try {
+        list.forEach(raw => {
+          const t = prepareIncomingTrade(Object.assign({}, raw, { id: newLocalTradeId() }), imagesById, now);
+          if (t) { trades.push(t); added.push(t); }
+        });
+      } catch (e) { reportStorageError(e); trades = prev; return null; }
+      if (!commit(prev, 'add', added, () => {
+        const back = new Set(added.map(t => t.uid)), tomb = tombstones();
+        if (tomb.some(x => back.has(x.uid))) { added.forEach(t => { t.updatedAt = now; }); save(); try { DB.setItem(TOMB_KEY(), JSON.stringify(tomb.filter(x => !back.has(x.uid)))); } catch (e) {} }
+      })) { added.forEach(t => removeImages(t.imgs)); return null; }
+      return added;
+    },
+    // Modifie un trade ; images (facultatif) = nouvelle liste complète de captures en data URL.
+    update(id, patch, images) {
+      const idx = trades.findIndex(t => t.id === id);
+      if (idx === -1) return null;
+      const prev = trades.slice(), old = trades[idx];
+      const next = Object.assign({}, old, patch, { id: old.id, uid: old.uid, createdAt: old.createdAt, updatedAt: Date.now() });
+      let newIds = [];
+      if (images) {
+        try {
+          const keep = new Map(old.imgs.map(i => [ImageStore.get(i), i]));
+          next.imgs = images.map(safeImgSrc).filter(Boolean).slice(0, 8).map(src => keep.get(src) || (() => { const n = ImageStore.put(src); newIds.push(n); return n; })()).filter(Boolean);
+        } catch (e) { reportStorageError(e); removeImages(newIds); return null; }
+      }
+      trades[idx] = next;
+      const dropped = images ? old.imgs.filter(i => !next.imgs.includes(i)) : [];
+      if (!commit(prev, 'update', [next], () => removeImages(dropped))) { removeImages(newIds); return null; }
+      return next;
+    },
+    // Remplace une capture (annotation) sans changer les autres.
+    replaceImage(id, index, dataUrl) {
+      const t = trades.find(x => x.id === id);
+      if (!t || !t.imgs[index]) return false;
+      const before = ImageStore.get(t.imgs[index]);
+      try { ImageStore.replace(t.imgs[index], dataUrl); } catch (e) { reportStorageError(e); return false; }
+      return this.update(id, {}) ? true : (ImageStore.replace(t.imgs[index], before), false);
+    },
+    // Supprime des trades : trace de suppression + captures retirées (sauf si on les garde pour la corbeille).
+    remove(ids, keepImages) {
+      const set = new Set(ids), prev = trades.slice();
+      const gone = trades.filter(t => set.has(t.id));
+      if (!gone.length) return [];
+      trades = trades.filter(t => !set.has(t.id));
+      if (!commit(prev, 'remove', gone, () => { addTombstones(gone); if (!keepImages) removeImages(gone.flatMap(t => t.imgs)); })) return null;
+      return gone;
+    },
+    // Remplace tout le journal (backup, restauration) ; les traces de suppression des trades disparus sont ajoutées.
+    replaceAll(list, imagesById) {
+      const prev = trades.slice(), now = Date.now();
+      let next;
+      try { next = list.map(raw => prepareIncomingTrade(raw, imagesById, now)).filter(Boolean); }
+      catch (e) { reportStorageError(e); return false; }
+      const seen = new Set(), used = new Set();
+      next = next.filter(t => { if (seen.has(t.uid)) return false; seen.add(t.uid); return true; });
+      next.forEach(t => { while (used.has(t.id)) t.id++; used.add(t.id); });
+      const keepUids = new Set(next.map(t => t.uid));
+      const removed = prev.filter(t => !keepUids.has(t.uid));
+      trades = next;
+      if (!commit(prev, 'replace', next, () => {
+        addTombstones(removed);
+        const ref = referencedImages();
+        ImageStore.allIds().forEach(id => { if (!ref.has(id) && !trashImageIds().has(id)) ImageStore.remove(id); });
+      })) return false;
+      return true;
+    },
+    // Modification en lot (renommer un setup, recalculer les sessions…) : fn modifie les trades et renvoie ceux touchés.
+    mutate(fn) {
+      const snapshot = JSON.stringify(trades), prev = trades.slice();
+      let touched;
+      try { touched = fn(trades) || []; } catch (e) { trades = JSON.parse(snapshot); throw e; }
+      if (!touched.length) return [];
+      const now = Date.now();
+      touched.forEach(t => { t.updatedAt = now; });
+      if (!commit(prev, 'update', touched)) { trades = JSON.parse(snapshot); invalidateViews(); return null; }
+      return touched;
+    }
+  };
+})();
+function trashImageIds() { const s = new Set(); try { (JSON.parse(DB.getItem(JP + 'trash') || '[]') || []).forEach(e => ((e && e.trade && e.trade.imgs) || []).forEach(id => s.add(id))); } catch (e) {} return s; }
+
+// ── Réglages : registre unique + date de dernière modification de chaque réglage ──
+// Les réglages restent rangés sous leurs clés habituelles ; le registre dit lesquels se synchronisent, et chaque écriture
+// note sa date (g_settings_mtime) pour savoir, entre deux appareils, quelle valeur est la plus récente.
+const SYNCED_SETTINGS = {
+  journal: ['account', 'calc', 'dd_limit_pct', 'dd_manual', 'nav_order', 'stats_subtab', 'pf_enabled', 'pf_target_pct', 'pf_maxdd_pct',
+    'pf_dd_type', 'pf_min_days', 'pf_consistency_on', 'pf_consistency_pct', 'dash_layout_v2', 'scaling', 'scaling_seen', 'r_mode',
+    'tz_offset_hours', 'import_fx_rate', 'plan', 'watch'],
+  global: ['theme', 'custom_themes', 'cal_heat_intensity', 'chart_intensity', 'theme_texture', 'theme_autosystem', 'journals']
+};
+const SETTINGS_MTIME_KEY = 'g_settings_mtime';
+function settingNameOf(key) {
+  const m = /^([a-z0-9]+)_(.+)$/i.exec(key);
+  if (!m) return null;
+  if (m[1] === 'g') return SYNCED_SETTINGS.global.includes(m[2]) ? m[2] : null;
+  return SYNCED_SETTINGS.journal.includes(m[2]) ? m[2] : null;
+}
+(function trackSettingsChanges() {
+  if (DB.__tracked) return;
+  const set = DB.setItem.bind(DB), del = DB.removeItem.bind(DB);
+  let mtimes = null;
+  const stamp = k => {
+    if (k === SETTINGS_MTIME_KEY || !settingNameOf(k)) return;
+    try { mtimes = mtimes || JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) { mtimes = {}; }
+    mtimes[k] = Date.now();
+    set(SETTINGS_MTIME_KEY, JSON.stringify(mtimes));
+  };
+  DB.setItem = (k, v) => { const prev = DB.getItem(k); set(k, v); if (prev !== String(v)) stamp(String(k)); };
+  DB.removeItem = k => { del(k); stamp(String(k)); };
+  DB.__tracked = true;
+})();
+// Instantané des réglages synchronisés de ce journal (+ communs) : { clé: { v: valeur, t: date } }.
+function settingsSnapshot() {
+  let mt = {};
+  try { mt = JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) {}
+  const out = {};
+  SYNCED_SETTINGS.journal.map(n => JP + n).concat(SYNCED_SETTINGS.global.map(n => 'g_' + n)).forEach(k => {
+    const v = DB.getItem(k);
+    if (v !== null) out[k] = { v, t: mt[k] || 0 };
+  });
+  return out;
+}
+
+// ── Migration unique vers ce modèle (par journal) : uid, dates, captures rangées à part ──
+(function migrateTradeModel() {
+  if (!trades.some(t => !t.uid || !t.createdAt || t.cap || (t.caps && t.caps.length))) return;
+  const before = DB.getItem(JP + 'trades');
+  const now = Date.now(), seen = new Set();
+  try {
+    trades = trades.map(t => {
+      const o = prepareIncomingTrade(t, null, now);
+      if (seen.has(o.uid)) o.uid = newUid();
+      seen.add(o.uid);
+      return o;
+    });
+    // Corbeille : les captures restent dans l'entrée (_images) tant que le trade n'est pas restauré.
+    const trash = JSON.parse(DB.getItem(JP + 'trash') || '[]');
+    if (Array.isArray(trash) && trash.some(e => e && e.trade && (e.trade.cap || e.trade.caps))) {
+      DB.setItem(JP + 'trash', JSON.stringify(trash.map(e => {
+        if (!e || !e.trade) return e;
+        const imgs = [e.trade.cap].concat(e.trade.caps || []).map(safeImgSrc).filter(Boolean);
+        const tr = Object.assign({}, e.trade, { _images: [...new Set(imgs)] }); delete tr.cap; delete tr.caps;
+        return Object.assign({}, e, { trade: tr });
+      })));
+    }
+    DB.setItem(JP + 'trades', JSON.stringify(trades));
+  } catch (e) {
+    console.error('Migration du modèle de données impossible (rien n\'est modifié) :', e);
+    if (before !== null) trades = sanitizeTrades(JSON.parse(before));
+  }
+})();
+
 /* ═══ js/01-images.js ═══ */
 // ── CAPTURES : plusieurs images par trade ────────────────────────────
-// Les captures du formulaire vivent dans currentImgs ; à l'enregistrement elles vont dans t.caps (t.cap = la première,
-// gardée pour la compatibilité avec les anciens backups). Chaque image est réduite (1400 px, JPEG) avant stockage.
+// Les captures du formulaire vivent dans currentImgs ; à l'enregistrement elles vont dans le magasin d'images
+// (TradeStore / ImageStore) et le trade n'en garde que les références (t.imgs). Chaque image est réduite (1400 px, JPEG).
 let currentImgs = [];
 const MAX_CAPS = 8;
 
@@ -3597,10 +3864,7 @@ function openLightboxById(id, index) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
   openGallery(tradeImages(t), index || 0, (j, dataUrl) => {
-    const imgs = tradeImages(t).slice(); imgs[j] = dataUrl;
-    const prev = { cap: t.cap, caps: t.caps };
-    t.caps = imgs; t.cap = imgs[0] || '';
-    if (!save()) { Object.assign(t, prev); return; }
+    if (!TradeStore.replaceImage(t.id, j, dataUrl)) return;
     showToast('Annotation enregistrée ✓', 'success');
     if (document.getElementById('trade-drawer-overlay').classList.contains('show')) openTradeDetail(t.id);
   });
@@ -3935,7 +4199,6 @@ function sortTradesChrono() {
 // Stockage : IndexedDB (place accordée par le navigateur, souvent plusieurs centaines de Mo) ; en repli localStorage ≈ 5 Mo.
 // La place est PARTAGÉE par les trois journaux.
 const STORAGE_LIMIT_CHARS = 5 * 1024 * 1024;
-function tradeImages(t) { return [t.cap].concat(Array.isArray(t.caps) ? t.caps : []).filter(Boolean); }
 function storageUsage() {
   let total = 0, mine = 0;
   DB.keys().forEach(k => { const n = k.length + (DB.getItem(k) || '').length; total += n; if (k.indexOf(JP) === 0) mine += n; });
@@ -3997,12 +4260,13 @@ function compressDataUrl(dataUrl, cb) {
 }
 function compressDataUrlAsync(dataUrl) { return new Promise(res => compressDataUrl(dataUrl, res)); }
 async function recompressStoredImages() {
-  const targets = trades.filter(t => t.cap && safeImgSrc(t.cap) && t.cap.length > 150000);
+  const targets = ImageStore.allIds().map(id => [id, ImageStore.get(id)]).filter(([, src]) => src && src.length > 150000);
   if (!targets.length) { showToast('Toutes tes captures sont déjà légères'); return; }
-  const before = targets.reduce((n, t) => n + t.cap.length, 0), originals = new Map(targets.map(t => [t.id, t.cap]));
-  for (const t of targets) t.cap = await compressDataUrlAsync(t.cap);
-  const after = targets.reduce((n, t) => n + t.cap.length, 0);
-  if (!save()) { targets.forEach(t => { t.cap = originals.get(t.id); }); return; }
+  let before = 0, after = 0;
+  for (const [id, src] of targets) {
+    const out = await compressDataUrlAsync(src);
+    if (out && out.length < src.length) { try { ImageStore.replace(id, out); before += src.length; after += out.length; } catch (e) { reportStorageError(e); break; } }
+  }
   renderAll(); renderTrashUI();
   showToast(targets.length + ' capture(s) compressée(s) — ' + Math.round((before - after) / 1024) + ' Ko libérés', 'success');
 }
@@ -4011,7 +4275,8 @@ async function recompressStoredImages() {
 // Si même cela ne tient pas, un backup complet est téléchargé automatiquement.
 function createSafetySnapshot(label) {
   try {
-    const snap = { at: Date.now(), label, trades: trades.map(t => t.cap ? Object.assign({}, t, { cap: '' }) : t), planData, watchData, imagesDropped: trades.filter(t => t.cap).length };
+    // Les captures restent dans le magasin d'images (non effacées par un import) : la copie ne garde que leurs références.
+    const snap = { at: Date.now(), label, trades, planData, watchData, imagesDropped: 0 };
     DB.setItem((JP + 'safety_snapshot'), JSON.stringify(snap));
     return true;
   } catch (e) {
@@ -4024,9 +4289,7 @@ function restoreSafetySnapshot() {
   const snap = loadSafetySnapshot();
   if (!snap || !Array.isArray(snap.trades)) return;
   openModal('Annuler la dernière importation ?', snap.trades.length + ' trades seront restaurés (état « ' + (snap.label || 'avant import') + ' »)' + (snap.imagesDropped ? ' — les ' + snap.imagesDropped + ' capture(s) d\'écran ne sont pas incluses dans cette copie.' : '.'), () => {
-    const prev = trades.slice();
-    trades = sanitizeTrades(snap.trades); sortTradesChrono();
-    if (!save()) { trades = prev; return; }
+    if (!TradeStore.replaceAll(snap.trades)) return;
     if (snap.planData) { planData = snap.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
     if (snap.watchData) { watchData = snap.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
     DB.removeItem((JP + 'safety_snapshot'));
@@ -4182,11 +4445,8 @@ function migrateChecklistLabels() {
 // Renommer un critère ou une erreur dans le Plan renomme aussi ce libellé dans les trades déjà saisis (sinon les stats se coupent en deux).
 function renameLabelInTrades(field, oldV, newV) {
   if (oldV === undefined || oldV === null || oldV === newV || String(newV).trim() === '') return;
-  const touched = trades.filter(t => Array.isArray(t[field]) && t[field].includes(oldV));
-  if (!touched.length) return;
-  const before = touched.map(t => t[field].slice());
-  touched.forEach(t => { t[field] = [...new Set(t[field].map(v => v === oldV ? newV : v))]; });
-  if (!save()) { touched.forEach((t, i) => { t[field] = before[i]; }); return; }
+  const touched = TradeStore.mutate(list => list.filter(t => Array.isArray(t[field]) && t[field].includes(oldV)).map(t => { t[field] = [...new Set(t[field].map(v => v === oldV ? newV : v))]; return t; }));
+  if (!touched || !touched.length) return;
   renderAll();
   showToast('« ' + oldV + ' » renommé dans ' + touched.length + ' trade(s) ✓', 'success');
 }
@@ -5415,8 +5675,7 @@ function addTrade() {
   const pnlEur = pnlEurRaw !== '' ? parseFloat(pnlEurRaw) : null;
   const sizeRaw = document.getElementById('f-size').value;
   const size = sizeRaw !== '' ? parseFloat(sizeRaw) : null;
-  const caps = currentImgs.map(safeImgSrc).filter(Boolean);
-  const cap = caps[0] || '';
+  const images = currentImgs.map(safeImgSrc).filter(Boolean);
   const desc = document.getElementById('f-desc').value.trim();
   const setup = document.getElementById('f-setup').value.trim().slice(0, 60);
   const tags = parseTags(document.getElementById('f-tags').value);
@@ -5450,14 +5709,9 @@ function addTrade() {
     return;
   }
 
-  const prevTrades = trades.slice();
+  const fields = { date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
   if (editingTradeId !== null) {
-    const idx = trades.findIndex(t => t.id === editingTradeId);
-    if (idx !== -1) {
-      trades[idx] = { ...trades[idx], date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, caps, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
-    }
-    sortTradesChrono();
-    if (!save()) { trades = prevTrades; return; }   // stockage plein : rien n'est perdu, le formulaire reste tel quel
+    if (!TradeStore.update(editingTradeId, fields, images)) return;   // stockage plein : rien n'est perdu, le formulaire reste tel quel
     editingTradeId = null;
     const banner = document.getElementById('edit-trade-banner');
     if (banner) banner.style.display = 'none';
@@ -5472,9 +5726,7 @@ function addTrade() {
     return;
   }
 
-  trades.unshift({ id: Date.now(), date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, caps, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice });
-  sortTradesChrono();
-  if (!save()) { trades = prevTrades; return; }   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
+  if (!TradeStore.add(fields, images)) return;   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
   resetTradeForm();
   closeTradePanel();
   renderAll();
@@ -5587,14 +5839,13 @@ function renderDDBanner() {
 function deleteTrade(id) {
   openModal('Supprimer ce trade ?', 'Il sera déplacé dans la corbeille (Export/Import) — récupérable si besoin.', () => {
     const t = trades.find(t => t.id === id);
-    const prevTrades = trades;
-    trades = trades.filter(t => t.id !== id);
-    if (!save()) { trades = prevTrades; return; }   // stockage refusé : le trade reste en place
-    if (t) {
+    const full = t ? tradeWithImages(t) : null;   // captures recopiées dans l'entrée de corbeille
+    if (!TradeStore.remove([id])) return;   // stockage refusé : le trade reste en place
+    if (full) {
       const trash = loadTrash();
-      trash.unshift({ trade: t, deletedAt: Date.now() });
-      // La corbeille garde les captures seulement si la place le permet ; sinon elle garde le trade sans sa capture.
-      if (!saveTrash(trash.slice(0, 20))) saveTrash(trash.slice(0, 20).map(e => e.trade && e.trade.cap ? { ...e, trade: { ...e.trade, cap: '' } } : e));
+      trash.unshift({ trade: full, deletedAt: Date.now() });
+      // La corbeille garde les captures seulement si la place le permet ; sinon elle garde le trade sans ses captures.
+      if (!saveTrash(trash.slice(0, 20))) saveTrash(trash.slice(0, 20).map(e => e.trade && e.trade._images ? { ...e, trade: { ...e.trade, _images: [] } } : e));
     }
     renderAll();
     renderTrashUI();
@@ -6385,8 +6636,9 @@ function openTradeDetail(id) {
 }
 function saveTradeReview(id, value) {
   const t = trades.find(x => x.id === id); if (!t) return;
-  const prev = t.review; t.review = String(value || '').trim();
-  if (!save()) { t.review = prev; return; }
+  const review = String(value || '').trim();
+  if (review === (t.review || '')) return;
+  if (!TradeStore.update(id, { review })) return;
   DATA_VERSION++;
   showToast('Note après coup enregistrée ✓', 'success');
 }
@@ -7245,8 +7497,8 @@ function removeSetup(i) { planData.setups.splice(i, 1); savePlanData(); renderSe
 function renameSetup(i, oldV, newV) {
   newV = String(newV || '').trim().slice(0, 60); if (!newV) { renderSetupsEditor(); return; }
   planData.setups[i] = newV; savePlanData();
-  const touched = trades.filter(t => t.setup === oldV && oldV !== newV);
-  if (touched.length) { touched.forEach(t => { t.setup = newV; }); if (save()) showToast('Setup renommé dans ' + touched.length + ' trade(s) ✓', 'success'); }
+  const touched = oldV !== newV ? TradeStore.mutate(list => list.filter(t => t.setup === oldV).map(t => { t.setup = newV; return t; })) : [];
+  if (touched && touched.length) showToast('Setup renommé dans ' + touched.length + ' trade(s) ✓', 'success');
   if (FILTER.setup === oldV) { FILTER.setup = newV; DB.setItem(JP + 'global_filter', JSON.stringify(FILTER)); }
   renderSetupsEditor(); refreshSetupList(); renderAll();
 }
@@ -7559,7 +7811,8 @@ function isValidTradesArray(arr) {
 }
 
 function exportData() {
-  const data = { version: 2, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, watchData, planData, settings: collectAllSettings() };
+  // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
+  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -7734,9 +7987,8 @@ function importData(input) {
       const msg = `${warn}${data.trades.length} trades seront restaurés${hasSettings ? ', ainsi que tes thèmes et réglages' : ''}. Tes données actuelles seront remplacées.`;
       openModal('Importer ce backup ?', msg, () => {
         createSafetySnapshot('avant import de backup');
-        const prevTrades = trades.slice();
-        trades = sanitizeTrades(data.trades); sortTradesChrono();
-        if (!save()) { trades = prevTrades; return; }   // rien n'est modifié si le stockage refuse
+        const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
+        if (!TradeStore.replaceAll(data.trades, imgs)) return;   // rien n'est modifié si le stockage refuse
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
@@ -7767,15 +8019,13 @@ function importData(input) {
 function confirmReset() {
   openModal('Réinitialiser le journal ?', 'Tous tes trades seront supprimés. Une copie de sécurité sera gardée localement (restaurable depuis cette page) au cas où.', () => {
     if (trades.length > 0) {
-      try { DB.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
+      try { DB.setItem((JP + 'reset_backup'), JSON.stringify({ trades: trades.map(tradeWithImages), at: Date.now() })); }
       catch (e) {
         // Pas la place de garder une copie locale : on télécharge un backup complet AVANT d'effacer quoi que ce soit.
         try { exportData(); } catch (e2) { showToast('Impossible de sauvegarder avant réinitialisation — rien n\'a été effacé', 'error'); return; }
       }
     }
-    const prevTrades = trades;
-    trades = [];
-    if (!save()) { trades = prevTrades; return; }
+    if (!TradeStore.replaceAll([])) return;
     renderAll();
     renderTrashUI();
     showToast('Journal réinitialisé — sauvegarde disponible dans Export/Import');
@@ -7789,9 +8039,7 @@ function restoreResetBackup() {
   const backup = loadResetBackup();
   if (!backup || !backup.trades) return;
   openModal('Restaurer cette sauvegarde ?', backup.trades.length + ' trades vont remplacer ton journal actuel.', () => {
-    const prevTrades = trades;
-    trades = sanitizeTrades(backup.trades); sortTradesChrono();
-    if (!save()) { trades = prevTrades; return; }
+    if (!TradeStore.replaceAll(backup.trades)) return;
     DB.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
     renderAll();
     renderTrashUI();
@@ -7813,11 +8061,7 @@ function restoreTrashItem(idx) {
   const trash = loadTrash();
   const entry = trash[idx];
   if (!entry) return;
-  const prevTrades = trades.slice();
-  const restored = sanitizeTrade(entry.trade);
-  if (!restored) return;
-  trades.unshift(restored); sortTradesChrono();
-  if (!save()) { trades = prevTrades; return; }   // pas restauré : il reste dans la corbeille
+  if (!entry.trade || !TradeStore.addMany([entry.trade])) return;   // pas restauré : il reste dans la corbeille
   trash.splice(idx, 1);
   saveTrash(trash);
   renderAll();
@@ -8351,7 +8595,7 @@ function renderBilan() {
   ];
   const HEAD = ['Asset', 'TF', 'Session', 'Entrée', 'Sortie', 'Dir.', 'Résultat', 'RR', 'P&L', 'Humeur', 'Capture'];
   const row = t => {
-    const src = safeImgSrc(t.cap);
+    const src = tradeImages(t)[0] || '';
     return html`<tr>
       <td class="strong">${t.asset}</td><td class="c2">${t.tf}</td><td class="c3">${t.session || '—'}</td>
       <td class="c2">${t.entry || '—'}</td><td class="c2">${t.exit || '—'}</td><td>${t.dir || '—'}</td>
@@ -9039,12 +9283,8 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
     return;
   }
 
-  const prevTrades = trades.slice();
   createSafetySnapshot('avant import CSV');
-  trades = trades.concat(sanitizeTrades(allNew));
-  sortTradesChrono();
-  if (!save()) {
-    trades = prevTrades;
+  if (!TradeStore.addMany(allNew)) {
     const m = 'Import annulé : stockage plein — aucun trade ajouté. Libère de la place puis recommence.';
     if (statusEl) statusEl.textContent = m;
     showToast(m, 'error');
@@ -9702,11 +9942,9 @@ function saveQuickAdd() {
   const now = new Date(), hh = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   const date = document.getElementById('qa-date').value || localDateStr();
   const cr = computeRWithSource(pnlEur, res);
-  const t = sanitizeTrade({ id: Date.now(), date, asset, dir: document.getElementById('qa-dir').value, res, pnlEur, pnl: cr.r, rr: Math.abs(cr.r) || null, rSrc: cr.src,
+  const t = TradeStore.add({ date, asset, dir: document.getElementById('qa-dir').value, res, pnlEur, pnl: cr.r, rr: Math.abs(cr.r) || null, rSrc: cr.src,
     setup: document.getElementById('qa-setup').value.trim().slice(0, 60), entry: date === localDateStr() ? hh : '', session: date === localDateStr() ? sessionFromHour(now.getHours(), 0) : '', emotion: null, tf: '', desc: '' });
-  const prev = trades.slice();
-  trades.unshift(t); sortTradesChrono();
-  if (!save()) { trades = prev; return; }
+  if (!t) return;
   closeQuickAdd();
   refreshAssetDropdowns();
   renderAll();

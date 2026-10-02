@@ -254,8 +254,9 @@ function openTradeDetail(id) {
 }
 function saveTradeReview(id, value) {
   const t = trades.find(x => x.id === id); if (!t) return;
-  const prev = t.review; t.review = String(value || '').trim();
-  if (!save()) { t.review = prev; return; }
+  const review = String(value || '').trim();
+  if (review === (t.review || '')) return;
+  if (!TradeStore.update(id, { review })) return;
   DATA_VERSION++;
   showToast('Note après coup enregistrée ✓', 'success');
 }

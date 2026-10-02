@@ -52,7 +52,7 @@ function renderBilan() {
   ];
   const HEAD = ['Asset', 'TF', 'Session', 'Entrée', 'Sortie', 'Dir.', 'Résultat', 'RR', 'P&L', 'Humeur', 'Capture'];
   const row = t => {
-    const src = safeImgSrc(t.cap);
+    const src = tradeImages(t)[0] || '';
     return html`<tr>
       <td class="strong">${t.asset}</td><td class="c2">${t.tf}</td><td class="c3">${t.session || '—'}</td>
       <td class="c2">${t.entry || '—'}</td><td class="c2">${t.exit || '—'}</td><td>${t.dir || '—'}</td>

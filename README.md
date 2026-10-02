@@ -35,6 +35,8 @@ src/
     00-core             état, constantes, nettoyage des trades
     00a-calc            calculs purs (win rate, R, CSV, drawdown, Monte-Carlo) — testés unitairement
     00b-ui              composants : html`` échappé + mount(), UI.stat / card / tile / meter / table / empty…
+    00c-store           point d'entrée unique des données : TradeStore (ajout / modif / suppression / import),
+                        ImageStore (captures à part), uid + dates + traces de suppression, registre des réglages
     03b-state           filtre global, rendu ciblé par page
     06-charts-kit       réglages communs des graphiques
     11b-analyses        Monte-Carlo, MAE/MFE, R réalisé vs visé, équité par setup

@@ -169,7 +169,10 @@ test('parcours complet : ajout d’un trade avec setup, tags et 2 captures, tout
   const t = await page.evaluate(() => trades[0]);
   assert.equal(t.setup, 'OB + FVG');
   assert.deepEqual(t.tags, ['news', 'contre-tendance']);
-  assert.equal(t.caps.length, 2); assert.equal(t.review, 'Bonne patience.');
+  assert.equal(t.imgs.length, 2); assert.equal(t.review, 'Bonne patience.');
+  assert.ok(t.uid && t.createdAt > 0 && t.updatedAt >= t.createdAt, 'identifiant universel et dates');
+  assert.equal(t.cap, undefined, 'captures rangées à part, plus dans le trade');
+  assert.equal(await page.evaluate(() => tradeImages(trades[0]).length), 2);
   assert.equal(t.checklistTotal, 6);
   for (const p of ['trades', 'stats', 'calendrier', 'bilan', 'scaling', 'plan', 'watchlist', 'export', 'parametres', 'revue', 'dashboard']) await goto(page, p);
   for (const st of ['timing', 'behavior', 'advanced', 'overview']) await page.evaluate(s => showStatsSubtab(s), st);

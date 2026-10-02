@@ -1,6 +1,6 @@
 // ── CAPTURES : plusieurs images par trade ────────────────────────────
-// Les captures du formulaire vivent dans currentImgs ; à l'enregistrement elles vont dans t.caps (t.cap = la première,
-// gardée pour la compatibilité avec les anciens backups). Chaque image est réduite (1400 px, JPEG) avant stockage.
+// Les captures du formulaire vivent dans currentImgs ; à l'enregistrement elles vont dans le magasin d'images
+// (TradeStore / ImageStore) et le trade n'en garde que les références (t.imgs). Chaque image est réduite (1400 px, JPEG).
 let currentImgs = [];
 const MAX_CAPS = 8;
 
@@ -67,10 +67,7 @@ function openLightboxById(id, index) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
   openGallery(tradeImages(t), index || 0, (j, dataUrl) => {
-    const imgs = tradeImages(t).slice(); imgs[j] = dataUrl;
-    const prev = { cap: t.cap, caps: t.caps };
-    t.caps = imgs; t.cap = imgs[0] || '';
-    if (!save()) { Object.assign(t, prev); return; }
+    if (!TradeStore.replaceImage(t.id, j, dataUrl)) return;
     showToast('Annotation enregistrée ✓', 'success');
     if (document.getElementById('trade-drawer-overlay').classList.contains('show')) openTradeDetail(t.id);
   });

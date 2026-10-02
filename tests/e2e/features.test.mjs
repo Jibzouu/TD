@@ -504,3 +504,50 @@ test('règles du jour : 1 TP max et 2 SL max en alerte ; export CSV lisible par 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('modèle prêt pour la sync : migration, uid, dates, captures à part, traces de suppression, réglages datés', async () => {
+  const A = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const B = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAEjDAGNzYAAB1uAxEu4BwIAAAAAElFTkSuQmCC';
+  // Ancien format : première capture en double (cap + caps[0]).
+  const old = [T({ id: 1717000000000, date: '2026-06-10', cap: A, caps: [A, B] }), T({ id: 1717000000001, date: '2026-06-11' })];
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: old } });
+  let st = await page.evaluate(() => trades.map(t => ({ uid: t.uid, c: t.createdAt, u: t.updatedAt, imgs: t.imgs.length, cap: t.cap, n: tradeImages(t).length })));
+  const withImg = st.find(x => x.imgs);
+  assert.equal(withImg.n, 2, '2 captures, plus de doublon');
+  assert.equal(withImg.cap, undefined);
+  assert.ok(st.every(x => x.uid && x.c === x.u && x.c > 0));
+  assert.notEqual(st[0].uid, st[1].uid);
+  assert.equal(await page.evaluate(() => JSON.parse(DB.getItem('tj_trades')).some(t => t.cap || t.caps)), false, 'stockage migré');
+  // Modification : updatedAt avance, uid et createdAt ne bougent pas.
+  const id = await page.evaluate(() => trades.find(t => t.imgs.length).id);
+  const upd = await page.evaluate(id => { const b = trades.find(t => t.id === id); const a = TradeStore.update(id, { desc: 'revu' }); return { same: a.uid === b.uid && a.createdAt === b.createdAt, later: a.updatedAt >= b.updatedAt }; }, id);
+  assert.ok(upd.same && upd.later);
+  // Export v3 : captures à part, réimport identique.
+  const exp = await page.evaluate(() => ({ trades, images: imagesOf(trades), tombstones: TradeStore.tombstones() }));
+  assert.equal(Object.keys(exp.images).length, 2);
+  // Suppression : trace + corbeille avec captures ; restauration : captures et uid revenus, trace retirée.
+  await page.evaluate(id => deleteTrade(id), id);
+  await page.click('#modal-confirm');
+  assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 1);
+  assert.equal(await page.evaluate(() => ImageStore.allIds().length), 0, 'captures du trade supprimé retirées du magasin');
+  assert.equal(await page.evaluate(() => loadTrash()[0].trade._images.length), 2, 'la corbeille garde les captures');
+  await page.evaluate(() => restoreTrashItem(0));
+  const back = await page.evaluate(uid => { const t = trades.find(x => x.uid === uid); return t && tradeImages(t).length; }, withImg.uid);
+  assert.equal(back, 2);
+  assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 0);
+  // Import d'un ancien backup (captures dans le trade) et d'un backup v3 (captures à part).
+  await page.evaluate(([A, B]) => TradeStore.replaceAll([{ id: 5, date: '2026-01-02', res: 'TP', cap: B, caps: [B, A] }]), [A, B]);
+  assert.equal(await page.evaluate(() => tradeImages(trades[0]).length), 2);
+  assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 2, 'les trades remplacés laissent une trace');
+  await page.evaluate(exp => TradeStore.replaceAll(exp.trades, exp.images), exp);
+  assert.equal(await page.evaluate(() => trades.length), 2);
+  assert.equal(await page.evaluate(() => trades.reduce((n, t) => n + tradeImages(t).length, 0)), 2);
+  assert.equal(await page.evaluate(() => ImageStore.allIds().length), 2, 'aucune capture orpheline');
+  // Réglages : registre + date de modification.
+  await page.evaluate(() => DB.setItem(JP + 'account', '2500'));
+  const snap = await page.evaluate(() => settingsSnapshot());
+  assert.equal(snap.tj_account.v, '2500');
+  assert.ok(snap.tj_account.t > 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

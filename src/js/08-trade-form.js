@@ -191,8 +191,7 @@ function addTrade() {
   const pnlEur = pnlEurRaw !== '' ? parseFloat(pnlEurRaw) : null;
   const sizeRaw = document.getElementById('f-size').value;
   const size = sizeRaw !== '' ? parseFloat(sizeRaw) : null;
-  const caps = currentImgs.map(safeImgSrc).filter(Boolean);
-  const cap = caps[0] || '';
+  const images = currentImgs.map(safeImgSrc).filter(Boolean);
   const desc = document.getElementById('f-desc').value.trim();
   const setup = document.getElementById('f-setup').value.trim().slice(0, 60);
   const tags = parseTags(document.getElementById('f-tags').value);
@@ -226,14 +225,9 @@ function addTrade() {
     return;
   }
 
-  const prevTrades = trades.slice();
+  const fields = { date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
   if (editingTradeId !== null) {
-    const idx = trades.findIndex(t => t.id === editingTradeId);
-    if (idx !== -1) {
-      trades[idx] = { ...trades[idx], date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, caps, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
-    }
-    sortTradesChrono();
-    if (!save()) { trades = prevTrades; return; }   // stockage plein : rien n'est perdu, le formulaire reste tel quel
+    if (!TradeStore.update(editingTradeId, fields, images)) return;   // stockage plein : rien n'est perdu, le formulaire reste tel quel
     editingTradeId = null;
     const banner = document.getElementById('edit-trade-banner');
     if (banner) banner.style.display = 'none';
@@ -248,9 +242,7 @@ function addTrade() {
     return;
   }
 
-  trades.unshift({ id: Date.now(), date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, cap, caps, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice });
-  sortTradesChrono();
-  if (!save()) { trades = prevTrades; return; }   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
+  if (!TradeStore.add(fields, images)) return;   // stockage plein : le trade n'est PAS ajouté, le formulaire garde ta saisie
   resetTradeForm();
   closeTradePanel();
   renderAll();
@@ -363,14 +355,13 @@ function renderDDBanner() {
 function deleteTrade(id) {
   openModal('Supprimer ce trade ?', 'Il sera déplacé dans la corbeille (Export/Import) — récupérable si besoin.', () => {
     const t = trades.find(t => t.id === id);
-    const prevTrades = trades;
-    trades = trades.filter(t => t.id !== id);
-    if (!save()) { trades = prevTrades; return; }   // stockage refusé : le trade reste en place
-    if (t) {
+    const full = t ? tradeWithImages(t) : null;   // captures recopiées dans l'entrée de corbeille
+    if (!TradeStore.remove([id])) return;   // stockage refusé : le trade reste en place
+    if (full) {
       const trash = loadTrash();
-      trash.unshift({ trade: t, deletedAt: Date.now() });
-      // La corbeille garde les captures seulement si la place le permet ; sinon elle garde le trade sans sa capture.
-      if (!saveTrash(trash.slice(0, 20))) saveTrash(trash.slice(0, 20).map(e => e.trade && e.trade.cap ? { ...e, trade: { ...e.trade, cap: '' } } : e));
+      trash.unshift({ trade: full, deletedAt: Date.now() });
+      // La corbeille garde les captures seulement si la place le permet ; sinon elle garde le trade sans ses captures.
+      if (!saveTrash(trash.slice(0, 20))) saveTrash(trash.slice(0, 20).map(e => e.trade && e.trade._images ? { ...e, trade: { ...e.trade, _images: [] } } : e));
     }
     renderAll();
     renderTrashUI();

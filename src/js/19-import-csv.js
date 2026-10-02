@@ -488,12 +488,8 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
     return;
   }
 
-  const prevTrades = trades.slice();
   createSafetySnapshot('avant import CSV');
-  trades = trades.concat(sanitizeTrades(allNew));
-  sortTradesChrono();
-  if (!save()) {
-    trades = prevTrades;
+  if (!TradeStore.addMany(allNew)) {
     const m = 'Import annulé : stockage plein — aucun trade ajouté. Libère de la place puis recommence.';
     if (statusEl) statusEl.textContent = m;
     showToast(m, 'error');

@@ -52,11 +52,9 @@ function saveQuickAdd() {
   const now = new Date(), hh = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   const date = document.getElementById('qa-date').value || localDateStr();
   const cr = computeRWithSource(pnlEur, res);
-  const t = sanitizeTrade({ id: Date.now(), date, asset, dir: document.getElementById('qa-dir').value, res, pnlEur, pnl: cr.r, rr: Math.abs(cr.r) || null, rSrc: cr.src,
+  const t = TradeStore.add({ date, asset, dir: document.getElementById('qa-dir').value, res, pnlEur, pnl: cr.r, rr: Math.abs(cr.r) || null, rSrc: cr.src,
     setup: document.getElementById('qa-setup').value.trim().slice(0, 60), entry: date === localDateStr() ? hh : '', session: date === localDateStr() ? sessionFromHour(now.getHours(), 0) : '', emotion: null, tf: '', desc: '' });
-  const prev = trades.slice();
-  trades.unshift(t); sortTradesChrono();
-  if (!save()) { trades = prev; return; }
+  if (!t) return;
   closeQuickAdd();
   refreshAssetDropdowns();
   renderAll();

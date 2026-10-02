@@ -90,8 +90,8 @@ function removeSetup(i) { planData.setups.splice(i, 1); savePlanData(); renderSe
 function renameSetup(i, oldV, newV) {
   newV = String(newV || '').trim().slice(0, 60); if (!newV) { renderSetupsEditor(); return; }
   planData.setups[i] = newV; savePlanData();
-  const touched = trades.filter(t => t.setup === oldV && oldV !== newV);
-  if (touched.length) { touched.forEach(t => { t.setup = newV; }); if (save()) showToast('Setup renommé dans ' + touched.length + ' trade(s) ✓', 'success'); }
+  const touched = oldV !== newV ? TradeStore.mutate(list => list.filter(t => t.setup === oldV).map(t => { t.setup = newV; return t; })) : [];
+  if (touched && touched.length) showToast('Setup renommé dans ' + touched.length + ' trade(s) ✓', 'success');
   if (FILTER.setup === oldV) { FILTER.setup = newV; DB.setItem(JP + 'global_filter', JSON.stringify(FILTER)); }
   renderSetupsEditor(); refreshSetupList(); renderAll();
 }

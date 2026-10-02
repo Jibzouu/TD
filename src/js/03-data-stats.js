@@ -24,7 +24,6 @@ function sortTradesChrono() {
 // Stockage : IndexedDB (place accordée par le navigateur, souvent plusieurs centaines de Mo) ; en repli localStorage ≈ 5 Mo.
 // La place est PARTAGÉE par les trois journaux.
 const STORAGE_LIMIT_CHARS = 5 * 1024 * 1024;
-function tradeImages(t) { return [t.cap].concat(Array.isArray(t.caps) ? t.caps : []).filter(Boolean); }
 function storageUsage() {
   let total = 0, mine = 0;
   DB.keys().forEach(k => { const n = k.length + (DB.getItem(k) || '').length; total += n; if (k.indexOf(JP) === 0) mine += n; });
@@ -86,12 +85,13 @@ function compressDataUrl(dataUrl, cb) {
 }
 function compressDataUrlAsync(dataUrl) { return new Promise(res => compressDataUrl(dataUrl, res)); }
 async function recompressStoredImages() {
-  const targets = trades.filter(t => t.cap && safeImgSrc(t.cap) && t.cap.length > 150000);
+  const targets = ImageStore.allIds().map(id => [id, ImageStore.get(id)]).filter(([, src]) => src && src.length > 150000);
   if (!targets.length) { showToast('Toutes tes captures sont déjà légères'); return; }
-  const before = targets.reduce((n, t) => n + t.cap.length, 0), originals = new Map(targets.map(t => [t.id, t.cap]));
-  for (const t of targets) t.cap = await compressDataUrlAsync(t.cap);
-  const after = targets.reduce((n, t) => n + t.cap.length, 0);
-  if (!save()) { targets.forEach(t => { t.cap = originals.get(t.id); }); return; }
+  let before = 0, after = 0;
+  for (const [id, src] of targets) {
+    const out = await compressDataUrlAsync(src);
+    if (out && out.length < src.length) { try { ImageStore.replace(id, out); before += src.length; after += out.length; } catch (e) { reportStorageError(e); break; } }
+  }
   renderAll(); renderTrashUI();
   showToast(targets.length + ' capture(s) compressée(s) — ' + Math.round((before - after) / 1024) + ' Ko libérés', 'success');
 }
@@ -100,7 +100,8 @@ async function recompressStoredImages() {
 // Si même cela ne tient pas, un backup complet est téléchargé automatiquement.
 function createSafetySnapshot(label) {
   try {
-    const snap = { at: Date.now(), label, trades: trades.map(t => t.cap ? Object.assign({}, t, { cap: '' }) : t), planData, watchData, imagesDropped: trades.filter(t => t.cap).length };
+    // Les captures restent dans le magasin d'images (non effacées par un import) : la copie ne garde que leurs références.
+    const snap = { at: Date.now(), label, trades, planData, watchData, imagesDropped: 0 };
     DB.setItem((JP + 'safety_snapshot'), JSON.stringify(snap));
     return true;
   } catch (e) {
@@ -113,9 +114,7 @@ function restoreSafetySnapshot() {
   const snap = loadSafetySnapshot();
   if (!snap || !Array.isArray(snap.trades)) return;
   openModal('Annuler la dernière importation ?', snap.trades.length + ' trades seront restaurés (état « ' + (snap.label || 'avant import') + ' »)' + (snap.imagesDropped ? ' — les ' + snap.imagesDropped + ' capture(s) d\'écran ne sont pas incluses dans cette copie.' : '.'), () => {
-    const prev = trades.slice();
-    trades = sanitizeTrades(snap.trades); sortTradesChrono();
-    if (!save()) { trades = prev; return; }
+    if (!TradeStore.replaceAll(snap.trades)) return;
     if (snap.planData) { planData = snap.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
     if (snap.watchData) { watchData = snap.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
     DB.removeItem((JP + 'safety_snapshot'));
@@ -271,11 +270,8 @@ function migrateChecklistLabels() {
 // Renommer un critère ou une erreur dans le Plan renomme aussi ce libellé dans les trades déjà saisis (sinon les stats se coupent en deux).
 function renameLabelInTrades(field, oldV, newV) {
   if (oldV === undefined || oldV === null || oldV === newV || String(newV).trim() === '') return;
-  const touched = trades.filter(t => Array.isArray(t[field]) && t[field].includes(oldV));
-  if (!touched.length) return;
-  const before = touched.map(t => t[field].slice());
-  touched.forEach(t => { t[field] = [...new Set(t[field].map(v => v === oldV ? newV : v))]; });
-  if (!save()) { touched.forEach((t, i) => { t[field] = before[i]; }); return; }
+  const touched = TradeStore.mutate(list => list.filter(t => Array.isArray(t[field]) && t[field].includes(oldV)).map(t => { t[field] = [...new Set(t[field].map(v => v === oldV ? newV : v))]; return t; }));
+  if (!touched || !touched.length) return;
   renderAll();
   showToast('« ' + oldV + ' » renommé dans ' + touched.length + ' trade(s) ✓', 'success');
 }

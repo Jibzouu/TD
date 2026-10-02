@@ -98,6 +98,10 @@ function sanitizeTrade(t) {
   o.cap = safeImgSrc(o.cap);
   if ('caps' in o) o.caps = Array.isArray(o.caps) ? o.caps.map(safeImgSrc).filter(Boolean).slice(0, 8) : [];
   if (o.caps && o.caps.length && !o.cap) o.cap = o.caps[0];
+  // Modèle prêt pour la synchronisation : identifiant universel, dates de création / modification, captures par référence.
+  o.uid = /^[\w-]{6,64}$/.test(String(o.uid || '')) ? String(o.uid) : '';
+  ['createdAt', 'updatedAt'].forEach(k => { const v = Number(o[k]); o[k] = isFinite(v) && v > 0 ? v : 0; });
+  o.imgs = Array.isArray(o.imgs) ? o.imgs.map(String).filter(id => /^i[0-9a-z]{6,40}$/i.test(id)).slice(0, 8) : [];
   return o;
 }
 function sanitizeTrades(arr) { return (Array.isArray(arr) ? arr : []).map(sanitizeTrade).filter(Boolean); }
@@ -120,19 +124,16 @@ function saveTZOffset() {
 }
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
 function recalcSessions() {
-  let n = 0;
-  const before = trades.map(t => t.session);
-  trades.forEach(t => {
-    if (!t.entry) return;
+  const touched = TradeStore.mutate(list => list.filter(t => {
+    if (!t.entry) return false;
     const h = parseInt(t.entry.split(':')[0], 10);
-    if (isNaN(h)) return;
+    if (isNaN(h)) return false;
     const ns = sessionFromHour(h);
-    if (ns && ns !== t.session) { t.session = ns; n++; }
-  });
-  if (n > 0) {
-    if (!save()) { trades.forEach((t, i) => { t.session = before[i]; }); return; }
-    renderAll(); showToast(n + ' session(s) recalculée(s) ✓', 'success');
-  }
+    if (ns && ns !== t.session) { t.session = ns; return true; }
+    return false;
+  }));
+  if (touched === null) return;
+  if (touched.length) { renderAll(); showToast(touched.length + ' session(s) recalculée(s) ✓', 'success'); }
   else showToast('Aucune session à recalculer — déjà à jour');
 }
 
@@ -166,8 +167,8 @@ function reconvertImportedTrades() {
   if (!known.length && !legacy.length) { showToast('Aucun trade importé en devise étrangère'); return; }
   const msg = known.length + ' trade(s) importé(s) en devise étrangère' + (legacy.length ? ' et ' + legacy.length + ' ancien(s) import(s) TradingView (devise non enregistrée, supposée USD)' : '') + ' seront recalculés avec 1 = ' + rate + ' €.';
   openModal('Appliquer le taux de conversion ?', msg, () => {
-    const before = JSON.stringify(trades);
-    known.concat(legacy).forEach(t => {
+    const ids = new Set(known.concat(legacy).map(t => t.id));
+    const done = TradeStore.mutate(list => list.filter(t => ids.has(t.id)).map(t => {
       const old = t.fxRate || 1;
       const conv = v => (v === null || v === undefined) ? v : Math.round(v / old * rate * 100) / 100;
       t.pnlEur = conv(t.pnlEur); t.mfe = conv(t.mfe); t.mae = conv(t.mae);
@@ -175,8 +176,9 @@ function reconvertImportedTrades() {
       t.fxRate = rate;
       // R estimé à partir du P&L € (ancien réglage « risque € ») : il suit la conversion dans la même proportion.
       if (rSource(t) === 'risque' && t.pnl != null) { t.pnl = Math.round(t.pnl / old * rate * 100) / 100; t.rr = t.pnl; }
-    });
-    if (!save()) { trades = JSON.parse(before); return; }
+      return t;
+    }));
+    if (!done) return;
     renderAll();
     showToast((known.length + legacy.length) + ' trade(s) convertis ✓', 'success');
   });

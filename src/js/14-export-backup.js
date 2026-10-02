@@ -41,7 +41,8 @@ function isValidTradesArray(arr) {
 }
 
 function exportData() {
-  const data = { version: 2, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, watchData, planData, settings: collectAllSettings() };
+  // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
+  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -216,9 +217,8 @@ function importData(input) {
       const msg = `${warn}${data.trades.length} trades seront restaurés${hasSettings ? ', ainsi que tes thèmes et réglages' : ''}. Tes données actuelles seront remplacées.`;
       openModal('Importer ce backup ?', msg, () => {
         createSafetySnapshot('avant import de backup');
-        const prevTrades = trades.slice();
-        trades = sanitizeTrades(data.trades); sortTradesChrono();
-        if (!save()) { trades = prevTrades; return; }   // rien n'est modifié si le stockage refuse
+        const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
+        if (!TradeStore.replaceAll(data.trades, imgs)) return;   // rien n'est modifié si le stockage refuse
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
@@ -249,15 +249,13 @@ function importData(input) {
 function confirmReset() {
   openModal('Réinitialiser le journal ?', 'Tous tes trades seront supprimés. Une copie de sécurité sera gardée localement (restaurable depuis cette page) au cas où.', () => {
     if (trades.length > 0) {
-      try { DB.setItem((JP + 'reset_backup'), JSON.stringify({ trades, at: Date.now() })); }
+      try { DB.setItem((JP + 'reset_backup'), JSON.stringify({ trades: trades.map(tradeWithImages), at: Date.now() })); }
       catch (e) {
         // Pas la place de garder une copie locale : on télécharge un backup complet AVANT d'effacer quoi que ce soit.
         try { exportData(); } catch (e2) { showToast('Impossible de sauvegarder avant réinitialisation — rien n\'a été effacé', 'error'); return; }
       }
     }
-    const prevTrades = trades;
-    trades = [];
-    if (!save()) { trades = prevTrades; return; }
+    if (!TradeStore.replaceAll([])) return;
     renderAll();
     renderTrashUI();
     showToast('Journal réinitialisé — sauvegarde disponible dans Export/Import');
@@ -271,9 +269,7 @@ function restoreResetBackup() {
   const backup = loadResetBackup();
   if (!backup || !backup.trades) return;
   openModal('Restaurer cette sauvegarde ?', backup.trades.length + ' trades vont remplacer ton journal actuel.', () => {
-    const prevTrades = trades;
-    trades = sanitizeTrades(backup.trades); sortTradesChrono();
-    if (!save()) { trades = prevTrades; return; }
+    if (!TradeStore.replaceAll(backup.trades)) return;
     DB.removeItem((JP + 'reset_backup'));   // restaurée : la copie de secours n'a plus lieu d'être
     renderAll();
     renderTrashUI();
@@ -295,11 +291,7 @@ function restoreTrashItem(idx) {
   const trash = loadTrash();
   const entry = trash[idx];
   if (!entry) return;
-  const prevTrades = trades.slice();
-  const restored = sanitizeTrade(entry.trade);
-  if (!restored) return;
-  trades.unshift(restored); sortTradesChrono();
-  if (!save()) { trades = prevTrades; return; }   // pas restauré : il reste dans la corbeille
+  if (!entry.trade || !TradeStore.addMany([entry.trade])) return;   // pas restauré : il reste dans la corbeille
   trash.splice(idx, 1);
   saveTrash(trash);
   renderAll();
