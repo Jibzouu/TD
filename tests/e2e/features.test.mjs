@@ -870,3 +870,28 @@ test('traduction : français par défaut ; en anglais, toute l\'interface (pages
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('charte premium : le thème personnel « 02 » devient « Néon », en tête des thèmes ; un ancien thème prédéfini prend la nouvelle charte', async () => {
+  const neon = { '--bg': '#07010f', '--bg2': '#12052a', '--bg3': '#1b0a3a', '--accent': '#ff2bd6', '--green': '#00ffa3', '--red': '#ff3b6b', '--purple': '#b14bff', '--font-mono': "'Space Mono',monospace" };
+  let { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })],
+    g_custom_themes: JSON.stringify([{ id: 11, name: 'Bleu', theme: { '--bg': '#000010' } }, { id: 22, name: '02', theme: neon }]),
+    g_theme: JSON.stringify(neon) } });
+  const list = await page.evaluate(() => getCustomThemes().map(t => [t.name, !!t.neon]));
+  assert.deepEqual(list, [['Bleu', false], ['Néon', true]]);
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#ff2bd6', 'ton thème appliqué reste tel quel');
+  await goto(page, 'parametres');
+  const first = page.locator('#theme-preset-grid .theme-swatch').first();
+  assert.match(await first.innerText(), /Néon/);
+  assert.match(await first.getAttribute('class'), /active/);
+  await page.locator('#theme-preset-grid .theme-swatch', { hasText: 'Graphite' }).click();
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#5d6cf6');
+  await first.click();
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#ff2bd6');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+  // Ancien thème prédéfini « Terminal pro » enregistré : il passe sur Graphite et perd ses anciens réglages de structure.
+  ({ page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], g_theme: JSON.stringify({ '--preset-key': 'default', '--bg': '#0a0c10', '--accent': '#4c8dff', '--font-mono': "'JetBrains Mono',monospace" }) } }));
+  assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), getComputedStyle(document.documentElement).getPropertyValue('--mono').trim().startsWith("'Inter'")]), ['#5d6cf6', true]);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

@@ -35,18 +35,10 @@ const THEME_VARS = [
 ];
 
 const THEME_PRESETS = {
-  default:  { name:'Terminal pro', emoji:'📟', colors:{'--bg':'#0a0c10','--bg2':'#10131a','--bg3':'#161a23','--bg4':'#1e2330','--border':'#222836','--border2':'#2e3545','--txt':'#e6e9ef','--txt2':'#9aa3b5','--txt3':'#7d879b','--accent':'#4c8dff','--green':'#26a69a','--red':'#ef5350','--amber':'#c98500','--blue':'#4c8dff','--purple':'#9d8cff','--nav-icon-color':'#7d879b','--nav-text-color':'#9aa3b5','--logo-color':'#4c8dff'} },
-  proclair: { name:'Terminal clair', emoji:'💎', colors:{'--bg':'#f5f6f9','--bg2':'#ffffff','--bg3':'#f8f9fb','--bg4':'#eceef3','--border':'#e2e5ec','--border2':'#cfd4de','--txt':'#151823','--txt2':'#4b5268','--txt3':'#687087','--accent':'#2f6fe0','--green':'#0f8f7e','--red':'#d63d3a','--amber':'#b7791f','--blue':'#2f6fe0','--purple':'#6d4fd8','--nav-icon-color':'#687087','--nav-text-color':'#4b5268','--logo-color':'#2f6fe0'} },
-  midnight: { name:'Minuit bleu', emoji:'🌌', colors:{'--bg':'#05070f','--bg2':'#0b0f1e','--bg3':'#111834','--bg4':'#182247','--border':'#1f2a4d','--border2':'#2c3a66','--txt':'#e6ecff','--txt2':'#8e9bd1','--txt3':'#7280b8','--accent':'#38bdf8','--green':'#34d399','--red':'#fb7185','--amber':'#fbbf24','--blue':'#38bdf8','--purple':'#c084fc'} },
-  forest:   { name:'Forêt', emoji:'🌲', colors:{'--bg':'#0c1210','--bg2':'#121b17','--bg3':'#1a2620','--bg4':'#22332a','--border':'#2b3d33','--border2':'#3a5245','--txt':'#eaf3ec','--txt2':'#93ab9c','--txt3':'#7a9383','--accent':'#67e8f9','--green':'#4ade80','--red':'#f87171','--amber':'#facc15','--blue':'#67e8f9','--purple':'#bef264'} },
-  paper:    { name:'Papier', emoji:'📄', colors:{'--bg':'#f5f3ee','--bg2':'#ffffff','--bg3':'#efece4','--bg4':'#e6e2d6','--border':'#d8d3c4','--border2':'#c3bca8','--txt':'#20211d','--txt2':'#5b5a4f','--txt3':'#6f6c5e','--accent':'#1d4ed8','--green':'#15803d','--red':'#b91c1c','--amber':'#b45309','--blue':'#1d4ed8','--purple':'#7c3aed'} },
-  neon:     { name:'Synthwave', emoji:'🌆', colors:{'--bg':'#0a0118','--bg2':'#150726','--bg3':'#1f0d38','--bg4':'#2a1450','--border':'#3d1f66','--border2':'#562b8a','--txt':'#f5e9ff','--txt2':'#b79ddb','--txt3':'#9a7fc4','--accent':'#00d4ff','--green':'#00f5d4','--red':'#ff2975','--amber':'#ffb800','--blue':'#00d4ff','--purple':'#f222ff'} },
-  sunset:   { name:'Coucher de soleil', emoji:'🌇', colors:{'--bg':'#1a0f0a','--bg2':'#241610','--bg3':'#2f1d15','--bg4':'#3d2620','--border':'#4a2f24','--border2':'#614030','--txt':'#fff1e6','--txt2':'#d9a789','--txt3':'#b08670','--accent':'#ffa94d','--green':'#4ade80','--red':'#ff6b5b','--amber':'#ffa94d','--blue':'#7dd3fc','--purple':'#fb923c'} },
-  ocean:    { name:'Océan profond', emoji:'🌊', colors:{'--bg':'#051419','--bg2':'#0a2129','--bg3':'#0f303b','--bg4':'#164252','--border':'#1d5468','--border2':'#276b82','--txt':'#e0f7fa','--txt2':'#7fb8c9','--txt3':'#6a9fb0','--accent':'#38bdf8','--green':'#2dd4bf','--red':'#f87171','--amber':'#fbbf24','--blue':'#38bdf8','--purple':'#a78bfa'} },
-  contrast: { name:'Contraste', emoji:'⬛', colors:{'--bg':'#000000','--bg2':'#0a0a0a','--bg3':'#141414','--bg4':'#1f1f1f','--border':'#333333','--border2':'#4d4d4d','--txt':'#ffffff','--txt2':'#b3b3b3','--txt3':'#8c8c8c','--accent':'#3399ff','--green':'#00ff66','--red':'#ff3333','--amber':'#ffcc00','--blue':'#3399ff','--purple':'#cc66ff'} },
-  matrix:   { name:'Matrix', emoji:'🖥️', colors:{'--bg':'#000800','--bg2':'#001a00','--bg3':'#002e00','--bg4':'#004400','--border':'#0a5c0a','--border2':'#147814','--txt':'#c8ffc8','--txt2':'#6fcf6f','--txt3':'#5aad5a','--accent':'#33ffcc','--green':'#00ff41','--red':'#ff4444','--amber':'#ffcc00','--blue':'#33ffcc','--purple':'#66ff99'} },
-  ledger:   { name:'Ledger', emoji:'📖', colors:{'--bg':'#f0e6d2','--bg2':'#f8f1e0','--bg3':'#ece0c8','--bg4':'#e3d4b0','--border':'#c9b896','--border2':'#b3a074','--txt':'#2b1f14','--txt2':'#6b5940','--txt3':'#7d6a4c','--accent':'#2c4a6e','--green':'#2d5a3d','--red':'#8b2635','--amber':'#a67c00','--blue':'#2c4a6e','--purple':'#6b4571'} },
-  mono:     { name:'Mono', emoji:'◼️', colors:{'--bg':'#0a0a0a','--bg2':'#131313','--bg3':'#1a1a1a','--bg4':'#232323','--border':'#2a2a2a','--border2':'#383838','--txt':'#f5f5f5','--txt2':'#a0a0a0','--txt3':'#858585','--accent':'#b0b0b0','--green':'#6b8f71','--red':'#a85d5d','--amber':'#a08b5c','--blue':'#6b7a8f','--purple':'#8f7a8f'} },
+  default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#a3a9b6','--txt3':'#757c8a','--accent':'#5d6cf6','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#757c8a','--nav-text-color':'#a3a9b6','--logo-color':'#5d6cf6'} },
+  proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#4b5161','--txt3':'#737a8a','--accent':'#4f5fe8','--green':'#11975f','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#737a8a','--nav-text-color':'#4b5161','--logo-color':'#4f5fe8'} },
+  midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#9ca5bf','--txt3':'#6f7894','--accent':'#7aa2ff','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#6f7894','--nav-text-color':'#9ca5bf','--logo-color':'#7aa2ff'} },
+  contrast: { name:'Contraste', emoji:'●', colors:{'--bg':'#000000','--bg2':'#0b0b0c','--bg3':'#151517','--bg4':'#202023','--border':'#3a3a3f','--border2':'#55555c','--txt':'#ffffff','--txt2':'#d0d0d6','--txt3':'#a5a5ad','--accent':'#8c9bff','--green':'#4be3a0','--red':'#ff6b70','--amber':'#ffc04d','--blue':'#6fb8ff','--purple':'#c4adff','--nav-icon-color':'#a5a5ad','--nav-text-color':'#d0d0d6','--logo-color':'#8c9bff'} },
 };
 // Anciens réglages : un journal resté sur l'ancien thème « Sombre » par défaut bascule sur la nouvelle charte « Terminal pro ».
 // Un thème personnalisé (couleur modifiée à la main → plus de --preset-key) n'est jamais touché.
@@ -68,6 +60,39 @@ const THEME_PRESETS = {
       DB.setItem('g_theme', JSON.stringify(th));
     }
     DB.setItem('g_charter_v2', '1');
+  } catch (e) {}
+})();
+
+
+// Charte « Premium sobre » (une seule fois) :
+//  - le thème personnel « 02 » devient « Néon » et passe en tête des thèmes ;
+//  - un journal resté sur un thème prédéfini reprend les nouvelles couleurs de ce thème (ou Graphite si son thème
+//    n'existe plus) ; un thème personnel appliqué (couleurs modifiées à la main) n'est jamais touché ;
+//  - les anciens réglages de structure (police, arrondi, style des cartes…) des thèmes prédéfinis sont retirés
+//    pour laisser place à la nouvelle charte.
+(function migrateToPremiumCharter() {
+  try {
+    if (DB.getItem('g_charter_v3')) return;
+    const list = JSON.parse(DB.getItem('g_custom_themes') || '[]');
+    if (Array.isArray(list)) {
+      const neon = list.find(t => t && String(t.name).trim() === '02') || list.find(t => t && /^n[ée]on$/i.test(String(t.name).trim()));
+      if (neon) { neon.name = 'Néon'; neon.neon = true; DB.setItem('g_custom_themes', JSON.stringify(list)); }
+    }
+    const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
+    const key = th['--preset-key'];
+    if (key) {
+      const STRUCT = ['--radius', '--r', '--r2', '--r3', '--font-sans', '--font-mono', '--sans', '--mono', '--card-style', '--bg-style', '--glow', '--bstyle'];
+      Object.keys(th).forEach(k => { if (/^--(bg|bg2|bg3|bg4|border|border2|txt|txt2|txt3|green|red|amber|blue|purple|accent|nav-icon-color|nav-text-color|logo-color)(-d|-dd)?$/.test(k) || STRUCT.includes(k)) delete th[k]; });
+      const next = THEME_PRESETS[key] ? key : 'default';
+      Object.entries(THEME_PRESETS[next].colors).forEach(([k, v]) => {
+        th[k] = v;
+        if (['--green', '--red', '--amber', '--blue', '--purple', '--accent'].includes(k)) th[k + '-d'] = hexToRgba(v, .13);
+        if (k === '--green' || k === '--red') th[k + '-dd'] = hexToRgba(v, .06);
+      });
+      th['--preset-key'] = next;
+      DB.setItem('g_theme', JSON.stringify(th));
+    }
+    DB.setItem('g_charter_v3', '1');
   } catch (e) {}
 })();
 
@@ -258,9 +283,18 @@ function renderThemePresetGrid() {
   if (!cont) return;
   const theme = loadThemeObj();
   const activeKey = theme['--preset-key'] || 'default';
-  mount(cont, html`${Object.entries(THEME_PRESETS).map(([key, p]) => {
+  // Ton thème personnel « Néon » en premier, puis les thèmes de la charte.
+  const neon = getCustomThemes().find(t => t.neon);
+  const neonCard = neon ? (() => {
+    const c = neon.theme || {}, active = !theme['--preset-key'] && ['--bg', '--accent', '--green'].every(k => theme[k] === c[k]);
+    return html`<div class="theme-swatch neon${raw(active ? ' active' : '')}" onclick="applyCustomTheme(${raw(Number(neon.id) || 0)})">
+      ${swatchStrip([c['--bg'], c['--bg3'], c['--green'], c['--red'], c['--accent'] || c['--purple'] || c['--blue']])}
+      <div class="swatch-name">✦ Néon</div>
+    </div>`;
+  })() : '';
+  mount(cont, html`${neonCard}${Object.entries(THEME_PRESETS).map(([key, p]) => {
     const c = p.colors;
-    return html`<div class="theme-swatch${raw(key === activeKey ? ' active' : '')}" onclick="applyPreset('${key}')">
+    return html`<div class="theme-swatch${raw(key === activeKey && !(neonCard && !theme['--preset-key']) ? ' active' : '')}" onclick="applyPreset('${key}')">
       ${swatchStrip([c['--bg'], c['--bg3'], c['--green'], c['--red'], c['--accent'] || c['--blue']])}
       <div class="swatch-name">${p.emoji} ${p.name}</div>
     </div>`;
@@ -360,7 +394,7 @@ function renderSettingsPage() {
   const fontSelect = document.getElementById('font-select');
   if (fontSelect) fontSelect.value = theme['--font-sans'] || "'Inter',system-ui,sans-serif";
   const fontMonoSelect = document.getElementById('font-mono-select');
-  if (fontMonoSelect) fontMonoSelect.value = theme['--font-mono'] || "'JetBrains Mono',ui-monospace,monospace";
+  if (fontMonoSelect) fontMonoSelect.value = theme['--font-mono'] || "'Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
   const borderStyleSelect = document.getElementById('border-style-select');
   if (borderStyleSelect) borderStyleSelect.value = theme['--bstyle'] || 'solid';
   const chartLineSelect = document.getElementById('chart-line-style-select');
