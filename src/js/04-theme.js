@@ -35,9 +35,9 @@ const THEME_VARS = [
 ];
 
 const THEME_PRESETS = {
-  default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#a3a9b6','--txt3':'#757c8a','--accent':'#5d6cf6','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#757c8a','--nav-text-color':'#a3a9b6','--logo-color':'#5d6cf6'} },
-  proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#4b5161','--txt3':'#737a8a','--accent':'#4f5fe8','--green':'#11975f','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#737a8a','--nav-text-color':'#4b5161','--logo-color':'#4f5fe8'} },
-  midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#9ca5bf','--txt3':'#6f7894','--accent':'#7aa2ff','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#6f7894','--nav-text-color':'#9ca5bf','--logo-color':'#7aa2ff'} },
+  default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#c0c5cf','--txt3':'#99a0ad','--accent':'#5d6cf6','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#99a0ad','--nav-text-color':'#c0c5cf','--logo-color':'#5d6cf6'} },
+  proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#3f4554','--txt3':'#5f6676','--accent':'#4f5fe8','--green':'#11975f','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#5f6676','--nav-text-color':'#3f4554','--logo-color':'#4f5fe8'} },
+  midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#bcc3d8','--txt3':'#959db6','--accent':'#7aa2ff','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#959db6','--nav-text-color':'#bcc3d8','--logo-color':'#7aa2ff'} },
   contrast: { name:'Contraste', emoji:'●', colors:{'--bg':'#000000','--bg2':'#0b0b0c','--bg3':'#151517','--bg4':'#202023','--border':'#3a3a3f','--border2':'#55555c','--txt':'#ffffff','--txt2':'#d0d0d6','--txt3':'#a5a5ad','--accent':'#8c9bff','--green':'#4be3a0','--red':'#ff6b70','--amber':'#ffc04d','--blue':'#6fb8ff','--purple':'#c4adff','--nav-icon-color':'#a5a5ad','--nav-text-color':'#d0d0d6','--logo-color':'#8c9bff'} },
 };
 // Anciens réglages : un journal resté sur l'ancien thème « Sombre » par défaut bascule sur la nouvelle charte « Terminal pro ».
@@ -93,6 +93,27 @@ const THEME_PRESETS = {
       DB.setItem('g_theme', JSON.stringify(th));
     }
     DB.setItem('g_charter_v3', '1');
+  } catch (e) {}
+})();
+
+
+// Thème prédéfini appliqué : ses couleurs suivent les retouches de la charte (ex. textes secondaires plus lisibles).
+// Un thème personnel (Néon, ou couleurs modifiées à la main) n'est jamais touché.
+(function refreshPresetColors() {
+  try {
+    const VER = '4';
+    if (DB.getItem('g_preset_colors_ver') === VER) return;
+    const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
+    const p = th['--preset-key'] && THEME_PRESETS[th['--preset-key']];
+    if (p) {
+      Object.entries(p.colors).forEach(([k, v]) => {
+        th[k] = v;
+        if (['--green', '--red', '--amber', '--blue', '--purple', '--accent'].includes(k)) th[k + '-d'] = hexToRgba(v, .13);
+        if (k === '--green' || k === '--red') th[k + '-dd'] = hexToRgba(v, .06);
+      });
+      DB.setItem('g_theme', JSON.stringify(th));
+    }
+    DB.setItem('g_preset_colors_ver', VER);
   } catch (e) {}
 })();
 

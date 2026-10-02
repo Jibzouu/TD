@@ -84,7 +84,7 @@ function applyChartDefaults() {
   if (typeof Chart === 'undefined') return;
   const t = chartTokens();
   Chart.defaults.font.family = chartFontFamily();
-  Chart.defaults.font.size = 11;
+  Chart.defaults.font.size = 12;
   Chart.defaults.color = t.txt3;
   Chart.defaults.borderColor = t.border;
   Chart.defaults.animation.duration = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 350;
