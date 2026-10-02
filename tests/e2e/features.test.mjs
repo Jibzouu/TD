@@ -365,7 +365,7 @@ test('scaling : taille suivie dans l’historique, alerte de palier et respect d
   await ctx.close();
 });
 
-test('chiffres fiables : Edge Finder, coût réel des erreurs, calculateur relié au Scaling, win rate hors BE', async () => {
+test('chiffres fiables : Détecteur d’edge, coût réel des erreurs, calculateur relié au Scaling, win rate hors BE', async () => {
   const extra = [T({ id: 2000, date: '2026-06-16', res: 'TP', pnl: 1, pnlEur: 100, mfe: 300, mistakes: ['Sorti trop tôt'] }),
     T({ id: 2001, date: '2026-06-16', res: 'BE', pnl: 0, pnlEur: 0 })];
   const sc = { version: 4, start: 1000, riskPct: 3, step: 1000, cushion1: 500, goal: 10000, auto: true, riskSteps: [] };
