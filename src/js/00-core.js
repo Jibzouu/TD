@@ -98,7 +98,7 @@ function chartsAvailable(canvasId) {
 // Normalise un trade venant du stockage ou d'un fichier importé : types attendus, valeurs inconnues neutralisées.
 // Empêche qu'un backup ou un CSV piégé injecte du HTML/JS via un champ affiché (heure, taille, prix, résultat…).
 const TRADE_NUM_FIELDS = ['rr', 'pnl', 'pnlEur', 'fees', 'size', 'ddUsed', 'emotion', 'entryPrice', 'slPrice', 'tpPrice', 'exitPrice', 'mfe', 'mae', 'fxRate', 'checklistTotal'];
-const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy', 'setup', 'review'];
+const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy', 'setup', 'review', 'importSource'];
 function sanitizeTrade(t) {
   if (!t || typeof t !== 'object') return null;
   const o = Object.assign({}, t);

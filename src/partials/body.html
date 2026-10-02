@@ -987,10 +987,10 @@
         </div>
         <div class="export-card span-2">
           <div class="export-icon">📊</div>
-          <div class="export-title">Importer un ou plusieurs CSV (broker / TradingView)</div>
-          <div class="export-desc">Sélectionne en une fois tous les fichiers exportés (liste des trades, ordres, solde, activité, positions…) — le journal reconnaît chaque type, n'utilise que ceux qui contiennent de vrais trades, ignore les doublons si tu réimportes un export plus récent, et calcule tout automatiquement.</div>
-          <input type="file" id="csv-import-file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCsvImport(this)">
-          <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers CSV…</button>
+          <div class="export-title">Importer l'historique de ton broker</div>
+          <div class="export-desc"><b>MetaTrader 4 / 5</b> : onglet Historique → clic droit → « Rapport » / « Enregistrer comme rapport détaillé » (fichier .htm). <b>cTrader</b> : export de l'historique (HTML ou CSV). <b>TradingView</b> et autres brokers : fichiers CSV. Sélectionne-les en une fois : le journal reconnaît chaque format, calcule les frais, le P&amp;L net et le R, et ignore les doublons si tu réimportes un export plus récent.</div>
+          <input type="file" id="csv-import-file" accept=".csv,text/csv,.htm,.html,text/html" multiple style="display:none" onchange="handleCsvImport(this)">
+          <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers (HTML, CSV)…</button>
           <p id="csv-import-status"></p>
           <details class="fold" id="import-settings">
             <summary>Réglages d'import <span class="fold-hint">fuseau horaire et devise — seulement si ton broker exporte en UTC ou dans une autre devise</span></summary>

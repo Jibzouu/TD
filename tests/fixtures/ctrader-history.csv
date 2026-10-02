@@ -1,0 +1,3 @@
+Position ID,Symbol,Opening Direction,Opening Time (UTC+0),Closing Time (UTC+0),Entry Price,Closing Price,Closing Quantity,Commissions,Swap,Net USD,Balance USD
+8801,EURUSD,Buy,15/06/2026 07:10:00.123,15/06/2026 08:00:05.000,1.08,1.082,1.00 Lots,-6.00,0.00,194.00,10194.00
+8802,US500,Sell,16/06/2026 13:31:00.000,16/06/2026 14:02:00.000,5300.5,5310.5,2.00 Lots,-4.00,-0.50,-24.50,10169.50

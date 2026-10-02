@@ -416,12 +416,13 @@ async function handleCsvImport(input) {
 
   // Lecture de tous les fichiers d'abord, pour pouvoir construire la table
   // des ordres (SL/TP) avant de traiter les fichiers de trades, quel que soit l'ordre de sélection.
+  // Encodage détecté (les rapports MetaTrader 5 sont en UTF-16) ; une page HTML (relevé MT4/MT5, cTrader) est lue tableau par tableau.
   const fileData = [];
   for (const file of files) {
     try {
-      const text = await readFileAsText(file);
-      const rows = parseCSVGeneric(text);
-      fileData.push({ name: file.name, rows });
+      const text = decodeFileBuffer(await readFileAsBuffer(file));
+      if (looksLikeHTML(text)) { const t = htmlTablesToRows(text); fileData.push({ name: file.name, rows: t.rows, text: t.text, html: true }); }
+      else fileData.push({ name: file.name, rows: parseCSVGeneric(text), text: '' });
     } catch {
       fileData.push({ name: file.name, rows: null });
     }
@@ -449,15 +450,17 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
     if (!fd.rows || fd.rows.length < 2) { emptyFilesCount++; return; }
     const headers = fd.rows[0];
     const dataRows = fd.rows.slice(1);
-    const kind = classifyImportFile(fd.name);
+    const kind = fd.html ? 'trades' : classifyImportFile(fd.name);
 
     if (kind === 'orders' || kind === 'balance' || kind === 'activity' || kind === 'positions') {
       secondaryFilesCount++;
       return;
     }
 
-    let imported = tryParseTVPairsForJournal(headers, dataRows, fd.name, ordersLookup);
-    if (!imported || imported.length === 0) imported = tryGenericSingleRowImport(headers, dataRows);
+    // Relevé de plateforme (MetaTrader 4/5, cTrader…) d'abord pour une page HTML ; pour un CSV : TradingView, puis relevé, puis format générique.
+    let imported = fd.html ? tryParsePlatformStatement(fd.rows, fd.name + ' ' + fd.text) : tryParseTVPairsForJournal(headers, dataRows, fd.name, ordersLookup);
+    if (!fd.html && (!imported || imported.length === 0)) imported = tryParsePlatformStatement(fd.rows, fd.name);
+    if (!fd.html && (!imported || imported.length === 0)) imported = tryGenericSingleRowImport(headers, dataRows);
     if (!imported || imported.length === 0) return;
 
     tradesFilesCount++;

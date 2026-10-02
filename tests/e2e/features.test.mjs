@@ -682,3 +682,25 @@ test('frais et commissions : saisie, P&L net / brut, statistiques, export', asyn
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('import MetaTrader 4 (HTML), MetaTrader 5 (HTML UTF-16) et cTrader (CSV) : frais, devise, R, sans doublon', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_import_fx_rate: '0.9' } });
+  const F = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
+  const files = ['mt4-statement.htm', 'mt5-ReportHistory-123456.html', 'ctrader-history.csv'].map(f => join(F, f));
+  await page.setInputFiles('#csv-import-file', files);
+  await page.waitForTimeout(600);
+  const get = () => page.evaluate(() => Object.fromEntries(trades.map(t => [t.tvKey, { a: t.asset, dir: t.dir, e: t.pnlEur, f: t.fees, c: t.ccy, r: t.pnl, src: t.importSource }])));
+  const t = await get();
+  assert.equal(Object.keys(t).length, 6, 'balance, ordre annulé, sous-total et positions ouvertes ignorés');
+  assert.deepEqual(t['mt4:1001'], { a: 'EUR/USD', dir: 'Long', e: 176.85, f: 3.15, c: 'USD', r: 2, src: 'MT4' });
+  assert.deepEqual(t['mt4:1002'], { a: 'GBP/USD', dir: 'Short', e: -187.38, f: 7.38, c: 'USD', r: -1, src: 'MT4' });
+  assert.deepEqual(t['mt5:555001'], { a: 'DE40', dir: 'Long', e: 98, f: 2, c: 'EUR', r: 2, src: 'MT5' });
+  assert.equal(t['mt5:555002'].e, -21); assert.equal(t['mt5:555002'].f, 1);
+  assert.equal(t['ctrader:8801'].e, 174.6); assert.equal(t['ctrader:8801'].src, 'cTrader');
+  assert.equal(t['ctrader:8802'].dir, 'Short'); assert.equal(t['ctrader:8802'].f, 4.05);
+  await page.setInputFiles('#csv-import-file', files);
+  await page.waitForTimeout(600);
+  assert.equal(await page.evaluate(() => trades.length), 6, 'réimport : aucun doublon');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
