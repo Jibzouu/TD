@@ -7,8 +7,8 @@ const SCALING_KEY = (JP + 'scaling');
 let scalingState = null;
 
 function scRound(v, d) { const f = Math.pow(10, d); return Math.round(v * f) / f; }
-function scPct(v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %'; }
-function scNum1(v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+function scPct(v) { return v.toLocaleString(UI_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %'; }
+function scNum1(v) { return v.toLocaleString(UI_LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
 function scNiceStep(v) { return Math.pow(10, Math.floor(Math.log10(Math.max(v, 1)))); }
 // Montant compact pour la frise (« 120 € » plutôt que « 120,00 € »).
 function scEurShort(v) { return Math.abs(v - Math.round(v)) < 0.005 ? fmtEUR(Math.round(v)) : fmtEUR(v, false, 2); }
@@ -353,7 +353,7 @@ function scalingCompliance(limit) {
   const last = rows.slice(-(limit || 20));
   return { rows: last, ok: last.filter(r => r.verdict === 'ok').length, big: last.filter(r => r.verdict === 'big'), small: last.filter(r => r.verdict === 'small'), total: rows.length };
 }
-function scRatioTxt(r) { return '×' + r.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function scRatioTxt(r) { return '×' + r.toLocaleString(UI_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function renderScalingCompliance(st, model) {
   const cont = document.getElementById('sc-compliance');
   if (!cont) return;

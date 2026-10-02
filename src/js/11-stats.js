@@ -159,7 +159,7 @@ function renderEdgeFinder() {
     mount(cont, UI.hint(`Encore trop peu de trades fermés (${closedCount}) pour un scan fiable — reviens à partir d'une trentaine de trades.`));
     return;
   }
-  const WD_NAMES = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'};
+  const WD_NAMES = LANG === 'en' ? {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'} : {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'};
   const dims = [
     { label: 'Jour de la semaine', segs: computeDimensionSegments(t => { if(!t.date) return null; const d=new Date(t.date+'T00:00:00'); return isNaN(d)?null:WD_NAMES[d.getDay()]; }) },
     { label: "Heure d'entrée", segs: computeDimensionSegments(t => { if(!t.entry) return null; const h=parseInt(t.entry.split(':')[0],10); return isNaN(h)?null:String(h).padStart(2,'0')+'h'; }) },

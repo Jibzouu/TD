@@ -57,7 +57,7 @@ function renderWeeklyReview() {
   const mon = revueMonday, sun = addDays(mon, 6), prevMon = addDays(mon, -7);
   const label = document.getElementById('revue-week-label');
   const iso = getISOWeek(mon);
-  if (label) label.textContent = 'Semaine ' + iso.week + ' · ' + mon.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' → ' + sun.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (label) label.textContent = 'Semaine ' + iso.week + ' · ' + mon.toLocaleDateString(UI_LOCALE, { day: 'numeric', month: 'short' }) + ' → ' + sun.toLocaleDateString(UI_LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
   const list = weekTrades(mon, base), prevList = weekTrades(prevMon, base);
   const M = weekMetrics(list), P = weekMetrics(prevList);
   const answers = loadReviews()[localDateStr(mon)] || {};
@@ -112,7 +112,7 @@ function renderWeeklyReview() {
     const counts = days.map(d => list.filter(x => x.date === localDateStr(d)).length);
     revueDaysChartInst = new Chart(document.getElementById('revueDaysChart').getContext('2d'), {
       type: 'bar',
-      data: { labels: days.map(d => d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })), datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 0 ? t.green : t.red), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 32 }] },
+      data: { labels: days.map(d => d.toLocaleDateString(UI_LOCALE, { weekday: 'short', day: 'numeric' })), datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 0 ? t.green : t.red), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 32 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { label: c => (useEur ? fmtEUR(c.raw, true) : (c.raw >= 0 ? '+' : '') + c.raw + 'R') + ' · ' + counts[c.dataIndex] + ' trade(s)' } }) },
         scales: proScales({ yWidth: 64, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } }) },
       plugins: [refLinePlugin('rvZero', 0, '')]
@@ -126,7 +126,7 @@ function mountSetups(setups) {
 function reviewQuestionsHtml(answers) {
   return UI.card('Questions de revue', 'tes réponses sont enregistrées pour cette semaine', html`<div class="rv-questions">
     ${REVUE_QUESTIONS.map(([k, q, ph]) => html`<div class="field"><label for="rv-${raw(k)}">${q}</label><textarea id="rv-${raw(k)}" placeholder="${ph}" oninput="clearTimeout(window.__rvT);window.__rvT=setTimeout(()=>saveReviewAnswer('${raw(k)}', this.value),400)">${answers[k] || ''}</textarea><div class="print-answer">${answers[k] || '—'}</div></div>`)}
-    <div class="ui-muted" id="revue-saved">${answers.updatedAt ? 'Dernière modification : ' + new Date(answers.updatedAt).toLocaleString('fr-FR') : 'Enregistrement automatique pendant que tu écris.'}</div>
+    <div class="ui-muted" id="revue-saved">${answers.updatedAt ? 'Dernière modification : ' + fmtDateTime(answers.updatedAt) : 'Enregistrement automatique pendant que tu écris.'}</div>
   </div>`);
 }
 // Export PDF : la mise en page d'impression masque le menu et les boutons, puis on ouvre la boîte « Imprimer / Enregistrer en PDF ».

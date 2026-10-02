@@ -89,6 +89,7 @@ function applyChartDefaults() {
   Chart.defaults.borderColor = t.border;
   Chart.defaults.animation.duration = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 350;
   Chart.defaults.plugins.legend.display = false;
+  if (LANG !== 'fr' && !Chart.registry.plugins.get('i18n')) Chart.register(I18N_CHART_PLUGIN);
   if (!Chart.registry.plugins.get('proCrosshair')) {
     // Ligne verticale qui suit la souris et s'aligne sur la date la plus proche (courbes uniquement).
     Chart.register({
@@ -114,6 +115,7 @@ function refLinePlugin(id, value, label) {
       c.save(); c.strokeStyle = t.txt3; c.lineWidth = 1; c.setLineDash([4, 4]);
       c.beginPath(); c.moveTo(left, py); c.lineTo(right, py); c.stroke(); c.setLineDash([]);
       if (label) {
+        label = tr(label);
         c.font = '500 11px ' + chartFontFamily(); const w = c.measureText(label).width + 10;
         const lx = right - w - 4;   // à droite : l'étiquette ne masque pas le début de la courbe
         c.fillStyle = t.bg2; c.fillRect(lx, py - 8, w, 16);
@@ -126,6 +128,7 @@ function refLinePlugin(id, value, label) {
 // Pastille d'annotation sur un point (plus haut, drawdown max…) : texte en encre neutre, repère coloré à côté.
 function drawPointLabel(chart, datasetIndex, index, text, color, above) {
   const meta = chart.getDatasetMeta(datasetIndex); const el = meta && meta.data[index]; if (!el) return;
+  text = tr(text);
   const t = chartTokens(), c = chart.ctx; c.save();
   c.font = '600 11px ' + chartFontFamily();
   const w = c.measureText(text).width + 20, h = 18;
@@ -141,14 +144,21 @@ function drawPointLabel(chart, datasetIndex, index, text, color, above) {
 function fmtEURCompact(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   const a = Math.abs(n), sign = n < 0 ? '-' : '';
-  if (a >= 1e6) return sign + (a / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' M€';
-  if (a >= 1e4) return sign + (a / 1e3).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' k€';
-  return sign + Math.round(a).toLocaleString('fr-FR') + ' €';
+  if (a >= 1e6) return sign + (a / 1e6).toLocaleString(UI_LOCALE, { maximumFractionDigits: 1 }) + ' M€';
+  if (a >= 1e4) return sign + (a / 1e3).toLocaleString(UI_LOCALE, { maximumFractionDigits: 1 }) + ' k€';
+  return sign + Math.round(a).toLocaleString(UI_LOCALE) + ' €';
 }
 function fmtDateFR(iso, withYear) {
   const d = new Date(String(iso) + 'T00:00:00');
   if (isNaN(d)) return String(iso || '');
-  return d.toLocaleDateString('fr-FR', withYear ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+  const s = d.toLocaleDateString(UI_LOCALE, withYear ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+  return s.replace(/,/g, '');   // « Wed, 17 Jun 2026 » → « Wed 17 Jun 2026 » (même forme dans toutes les langues)
+}
+// Date et heure courtes (« 17/06/2026 16:00 »), même forme dans toutes les langues.
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString(UI_LOCALE, { hour: '2-digit', minute: '2-digit' });
 }
 // Cellule de tableau : barre divergente autour de zéro (vert à droite, rouge à gauche) + valeur alignée.
 function divBarCell(v, maxAbs, label) {
@@ -159,15 +169,15 @@ function divBarCell(v, maxAbs, label) {
 function wrBarCell(rate, thr, n) {
   if (rate === null || rate === undefined || isNaN(rate)) return '—';
   const tone = thr === null || thr === undefined ? 'accent' : (rate >= thr ? 'green' : 'red');
-  return html`<div class="cell-bar"><div class="meter"><div class="meter-fill fill-${raw(tone)}${raw(n < 10 ? ' dim' : '')}" style="${raw('width:' + rate * 100 + '%')}"></div>${thr != null ? html`<div class="meter-tick cb-tick" style="${raw(`left:calc(${thr * 100}% - 1px)`)}"></div>` : ''}</div><span class="cb-val">${(rate * 100).toFixed(1).replace('.', ',')} %</span></div>`;
+  return html`<div class="cell-bar"><div class="meter"><div class="meter-fill fill-${raw(tone)}${raw(n < 10 ? ' dim' : '')}" style="${raw('width:' + rate * 100 + '%')}"></div>${thr != null ? html`<div class="meter-tick cb-tick" style="${raw(`left:calc(${thr * 100}% - 1px)`)}"></div>` : ''}</div><span class="cb-val">${fmtNum(rate * 100, 1)} %</span></div>`;
 }
 // Formats FR uniques : virgule décimale, espace avant % (« 53,3 % »), R signé (« +1,80R »).
-function fmtNum(v, d) { return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
+function fmtNum(v, d) { return Number(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
 function fmtR(v, d, noSign) { if (v === null || v === undefined || isNaN(v)) return '—'; return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R'; }
 // Date numérique FR : « 15/06/2026 ».
-function fmtDateNum(iso) { const d = new Date(String(iso) + 'T00:00:00'); return isNaN(d) ? String(iso || '—') : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+function fmtDateNum(iso) { const d = new Date(String(iso) + 'T00:00:00'); return isNaN(d) ? String(iso || '—') : d.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' }); }
 function fmtRate(v, d) { return (v === null || v === undefined || isNaN(v)) ? '—' : fmtNum(v, d ?? 0) + ' %'; }
-function fmtPct(v, digits) { return (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR', { minimumFractionDigits: digits ?? 1, maximumFractionDigits: digits ?? 1 }) + ' %'; }
+function fmtPct(v, digits) { return (v >= 0 ? '+' : '') + v.toLocaleString(UI_LOCALE, { minimumFractionDigits: digits ?? 1, maximumFractionDigits: digits ?? 1 }) + ' %'; }
 // Seuil de rentabilité du win rate : avec un payoff P (gain moyen ÷ perte moyenne), on est rentable au-dessus de 1 / (1 + P).
 function breakevenWinRate(list) {
   list = list || viewTrades();
@@ -198,7 +208,7 @@ function fmtEUR(n, showPlus, decimals) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   decimals = decimals || 0;
   const sign = n < 0 ? '-' : (showPlus ? '+' : '');
-  return sign + Math.abs(n).toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €';
+  return sign + Math.abs(n).toLocaleString(UI_LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €';
 }
 let lastHeroValue = null;
 let heroAnimFrame = null;

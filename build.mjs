@@ -31,7 +31,18 @@ function fontFaces() {
   })).join('\n');
 }
 
+// Dictionnaires de traduction (tools/i18n/<langue>.json) → src/js/00d-a-i18n-dict.js, chargé avant le moteur (00d-i18n.js).
+function writeI18nDict() {
+  const dir = join(ROOT, 'tools', 'i18n'), langs = {};
+  for (const f of readdirSync(dir).filter(f => /^[a-z]{2}\.json$/.test(f))) langs[f.slice(0, 2)] = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+  const js = '// Généré par build.mjs depuis tools/i18n/*.json — ne pas modifier à la main.\nconst I18N_TEXT = ' + JSON.stringify(langs) + ';\n';
+  const out = join(SRC, 'js', '00d-a-i18n-dict.js');
+  let prev = ''; try { prev = readFileSync(out, 'utf8'); } catch (e) {}
+  if (prev !== js) writeFileSync(out, js);
+}
+
 export function build({ quiet } = {}) {
+  writeI18nDict();
   let html = readFileSync(join(SRC, 'index.html'), 'utf8');
   const chartJs = readFileSync(join(NM, 'chart.js/dist/chart.umd.js'), 'utf8');
   const vendor = `<style>\n/* Polices intégrées (fonctionnent hors ligne) */\n${fontFaces()}\n</style>\n<script>\n/* Chart.js ${JSON.parse(readFileSync(join(NM, 'chart.js/package.json'), 'utf8')).version} — MIT © Chart.js Contributors */\n${safeScript(chartJs)}\n</script>`;

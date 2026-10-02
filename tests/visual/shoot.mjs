@@ -47,13 +47,14 @@ async function run(journal, pages, vp, tag, data = tr) {
   const errs = []; page.on('pageerror', e => errs.push(String(e)));
   await page.clock.setFixedTime(new Date('2026-06-17T14:00:00Z'));
   await page.route('https://fonts.googleapis.com/**', r => r.abort());
-  await page.addInitScript(({ tr, journal }) => {
+  await page.addInitScript(({ tr, journal, lang }) => {
     if (navigator.storage) navigator.storage.estimate = async () => ({ usage: 58000, quota: 1e9 });   // quota disque : varie d'une machine à l'autre
     let C; Object.defineProperty(window, 'Chart', { configurable: true, get: () => C, set: v => { C = v; v.defaults.animation = false; } });
     if (sessionStorage.s) return; sessionStorage.s = 1; localStorage.clear();
     localStorage.setItem('journal_active', journal);
+    if (lang) localStorage.setItem('g_lang', lang);
     localStorage.setItem(journal + '_trades', JSON.stringify(tr)); localStorage.setItem(journal + '_welcome_dismissed', '1'); localStorage.setItem(journal + '_onboarded', '1'); localStorage.setItem(journal + '_last_export', String(Date.parse('2026-06-16')));
-  }, { tr: data, journal });
+  }, { tr: data, journal, lang: process.env.SHOOT_LANG || '' });
   await page.goto(URL);
   await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   await page.addStyleTag({ content: '*{caret-color:transparent!important}' });   // curseur clignotant

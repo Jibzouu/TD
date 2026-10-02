@@ -156,7 +156,7 @@ function renderWeekdayBars() {
   const useEur = trades.some(t => t.pnlEur !== null && t.pnlEur !== undefined);
   const val = t => useEur ? (t.pnlEur !== null && t.pnlEur !== undefined ? t.pnlEur : 0) : (t.pnl || 0);
   const order = [1,2,3,4,5,6,0]; // Lundi → Dimanche
-  const names = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'};
+  const names = LANG === 'en' ? {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'} : {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'};
   const map = {};
   trades.forEach(t => {
     if (!t.date || !['TP','SL','BE'].includes(t.res)) return;

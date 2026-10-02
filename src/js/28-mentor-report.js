@@ -130,7 +130,12 @@ td{border-bottom:1px solid #f0f2f5;padding:7px 8px;vertical-align:top;font-varia
 td img{display:block;max-width:320px;width:100%;margin-top:6px;border-radius:6px;border:1px solid #e3e6ec}.rev{color:#4a5263;margin-top:3px}.mis{color:#b26b00;font-size:12px;margin-top:3px}
 .disc,.lessons{margin:0;padding-left:18px}.disc li,.lessons li{margin:4px 0}.lessons .d{color:#6b7385;font-variant-numeric:tabular-nums}footer{margin-top:32px;font-size:12px;color:#8a91a1}
 @media (max-width:700px){body{padding:16px}.cols{grid-template-columns:1fr}}@media print{body{padding:0}section{break-inside:avoid}}`;
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${css}</style></head><body>${body}</body></html>`;
+  const docHtml = `<!doctype html><html lang="${LANG}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${css}</style></head><body>${body}</body></html>`;
+  if (LANG === 'fr') return docHtml;
+  // Autre langue : le rapport est traduit comme l'interface.
+  const d = new DOMParser().parseFromString(docHtml, 'text/html');
+  translateNode(d.documentElement);
+  return '<!doctype html>' + d.documentElement.outerHTML;
 }
 
 async function downloadMentorReport() {

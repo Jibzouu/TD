@@ -841,21 +841,32 @@ test('rapport mentor : fichier HTML autonome, période, R uniquement, contenu é
   await ctx.close();
 });
 
-test('traduction : français par défaut, anglais pour la navigation et les titres, repli en français', async () => {
-  let { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+test('traduction : français par défaut ; en anglais, toute l\'interface (pages, fenêtres, messages, dates) est traduite', async () => {
+  let { page, ctx, errors } = await openJournal({ seed: { tj_trades: sampleTrades() }, time: NOW });
   assert.equal(await page.evaluate(() => document.documentElement.lang), 'fr');
   assert.equal(await page.locator('.nav-item[data-page="stats"]').innerText(), 'Statistiques');
   assert.equal(await page.evaluate(() => t('cle.inconnue')), 'cle.inconnue');
   await ctx.close();
-  ({ page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], g_lang: 'en' } }));
+  ({ page, ctx, errors } = await openJournal({ seed: { tj_trades: sampleTrades(), g_lang: 'en' }, time: NOW }));
   assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
   assert.equal(await page.locator('.nav-item[data-page="stats"]').innerText(), 'Statistics');
+  assert.match(await page.locator('#page-dashboard').innerText(), /Overall performance/);
   await goto(page, 'stats');
   assert.equal(await page.locator('#page-stats h2').innerText(), 'Statistics');
-  assert.equal(await page.evaluate(() => t('nav.revue_long')), 'Weekly review');
+  assert.match(await page.locator('#page-stats .subtab-bar').innerText(), /Overview[\s\S]*Timing & behavior[\s\S]*Advanced analysis/);
+  // Texte affiché après coup (rendu dynamique, fenêtre, message) : traduit à l'apparition.
+  await goto(page, 'bilan');
+  assert.match(await page.locator('#bilan-journal').innerText(), /Session journal — Wed 17 Jun 2026[\s\S]*Before the session[\s\S]*Daily bias/i);
+  await page.evaluate(() => deleteTrade(trades[0].id));
+  assert.match(await page.locator('#modal-title').innerText(), /Delete this trade\?/);
+  await page.evaluate(() => closeModal());
+  await page.evaluate(() => showToast('Trade enregistré ✓', 'success'));
+  assert.match(await page.locator('.toast').last().innerText(), /Trade saved ✓/);
+  // Phrase avec un nom libre (actif) : modèle générique.
+  assert.equal(await page.evaluate(() => tr('Biais du jour DAX 40')), 'Daily bias DAX 40');
+  assert.equal(await page.evaluate(() => tr('Live · 10 000 € · 1 % par trade (100 €)')), 'Live · 10 000 € · 1 % per trade (100 €)');
   await goto(page, 'parametres');
   assert.equal(await page.inputValue('#lang-select'), 'en');
-  assert.equal(await page.locator('#lang-note').isVisible(), true);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

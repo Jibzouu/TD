@@ -127,8 +127,8 @@ function renderStorageCard() {
   const el = document.getElementById('storage-card-body');
   if (!el) return;
   const u = storageUsage(), tone = u.pct >= 92 ? 'red' : (u.pct >= 80 ? 'amber' : 'green');
-  const kb = n => Math.round(n / 1024).toLocaleString('fr-FR') + ' Ko';
-  const limit = u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit);
+  const kb = n => Math.round(n / 1024).toLocaleString(UI_LOCALE) + ' Ko';
+  const limit = u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString(UI_LOCALE, { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit);
   mount(el, html`<div class="stor-bar"><div class="fill-${raw(tone)}" style="${raw('width:' + Math.min(100, u.pct).toFixed(1) + '%')}"></div></div>
     <div class="stor-txt"><b class="tone-${raw(tone)}">${fmtRate(u.pct, 1)}</b> utilisé · ${kb(u.total)} sur ${limit} disponibles · ${u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)'} · partagé par les 3 journaux<br>Ce journal : ${kb(u.mine)} · dont ${u.imgCount} capture(s) = ${kb(u.images)}</div>`);
 }

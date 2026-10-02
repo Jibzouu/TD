@@ -193,11 +193,11 @@ async function renderBackupSettings() {
   if (info) {
     const last = parseInt(DB.getItem((GP + 'last_backup_run')));
     const lastTry = parseInt(DB.getItem((GP + 'last_backup_attempt')));
-    if (!last) { info.textContent = lastTry ? 'Aucune sauvegarde réussie pour l\'instant — dernière tentative le ' + new Date(lastTry).toLocaleString('fr-FR') + ' : échec (vérifie l\'autorisation des dossiers).' : 'Aucune sauvegarde automatique effectuée pour l\'instant.'; }
+    if (!last) { info.textContent = lastTry ? 'Aucune sauvegarde réussie pour l\'instant — dernière tentative le ' + fmtDateTime(lastTry) + ' : échec (vérifie l\'autorisation des dossiers).' : 'Aucune sauvegarde automatique effectuée pour l\'instant.'; }
     else {
       let results = []; try { results = JSON.parse(DB.getItem((GP + 'last_backup_results')) || '[]'); } catch (e) {}
       const ok = results.filter(r => r.ok).length;
-      info.textContent = 'Dernière sauvegarde : ' + new Date(last).toLocaleString('fr-FR') + ' (' + ok + '/' + BACKUP_SLOTS.length + ' dossier(s) réussi(s)). La sauvegarde automatique se déclenche quand le journal est ouvert : le jour choisi, ou dès la prochaine ouverture si plus de 7 jours se sont écoulés.';
+      info.textContent = 'Dernière sauvegarde : ' + fmtDateTime(last) + ' (' + ok + '/' + BACKUP_SLOTS.length + ' dossier(s) réussi(s)). La sauvegarde automatique se déclenche quand le journal est ouvert : le jour choisi, ou dès la prochaine ouverture si plus de 7 jours se sont écoulés.';
     }
   }
 }
@@ -387,7 +387,7 @@ function renderTrashUI() {
   if (snapCard) {
     const snap = loadSafetySnapshot();
     snapCard.style.display = snap ? 'block' : 'none';
-    if (snap) document.getElementById('safety-snapshot-info').textContent = snap.trades.length + ' trades · ' + (snap.label || 'avant import') + ' · ' + new Date(snap.at).toLocaleString('fr-FR') + (snap.imagesDropped ? ' · captures non incluses' : '');
+    if (snap) document.getElementById('safety-snapshot-info').textContent = snap.trades.length + ' trades · ' + (snap.label || 'avant import') + ' · ' + fmtDateTime(snap.at) + (snap.imagesDropped ? ' · captures non incluses' : '');
   }
   const cont = document.getElementById('trash-list');
   const backupCard = document.getElementById('reset-backup-card');
@@ -395,7 +395,7 @@ function renderTrashUI() {
     const backup = loadResetBackup();
     backupCard.style.display = backup ? 'block' : 'none';
     if (backup) {
-      const dateStr = new Date(backup.at).toLocaleString('fr-FR');
+      const dateStr = fmtDateTime(backup.at);
       document.getElementById('reset-backup-info').textContent = backup.trades.length + ' trades · réinitialisé le ' + dateStr;
     }
   }

@@ -324,7 +324,7 @@ function renderMonthlyReturnsTable() {
   const years = [...new Set(keys.map(k => k.slice(0, 4)))];
   const yearStart = {}; years.forEach(y => { yearStart[y] = startBal[keys.find(k => k.startsWith(y))]; });
   const maxAbs = Math.max(...Object.values(byMonth).map(Math.abs), 1);
-  const M = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const M = LANG === 'en' ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] : ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
   const pctTxt = (v, base) => base > 0 ? fmtPct(v / base * 100) : '';
   // Colonnes : du premier au dernier mois tradé (toutes années confondues) — pas de rangée de « — » pour les mois vides.
   const mNums = keys.map(k => parseInt(k.slice(5, 7), 10) - 1);
@@ -361,7 +361,7 @@ function renderHeatmapDH() {
   });
   if (maxH < 0) { mount(cont, html`<p class="empty-note">Renseigne l'heure d'entrée de tes trades pour voir tes meilleurs créneaux.</p>`); if (sub) sub.textContent = ''; return; }
   const days = [0, 1, 2, 3, 4].concat([5, 6].filter(d => dows.has(d)));
-  const DN = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], DL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const DN = LANG === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], DL = LANG === 'en' ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] : ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
   const hours = []; for (let h = minH; h <= maxH; h++) hours.push(h);
   const maxAbs = Math.max(...Object.values(grid).map(g => Math.abs(g.net)), 1e-9);
   const fmtV = v => useEur ? fmtEUR(v, true, 0) : fmtR(v, 2);

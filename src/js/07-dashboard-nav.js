@@ -4,7 +4,7 @@ function renderSummaryBanner() {
   const box = document.getElementById('summary-banner'), strip = document.getElementById('today-strip');
   if (!box) return;
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
-  const WD_NAMES = { 0: 'dimanche', 1: 'lundi', 2: 'mardi', 3: 'mercredi', 4: 'jeudi', 5: 'vendredi', 6: 'samedi' };
+  const WD_NAMES = LANG === 'en' ? { 0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday' } : { 0: 'dimanche', 1: 'lundi', 2: 'mardi', 3: 'mercredi', 4: 'jeudi', 5: 'vendredi', 6: 'samedi' };
   // Cumul sur TOUT l'historique filtré (tous les mardis, toutes les entrées à 13h…) : gains ET pertes, en R signé.
   const agg = () => ({ net: 0, win: 0, loss: 0, n: 0, days: new Set() });
   const wdMap = {}, hMap = {};
