@@ -37,6 +37,7 @@ export async function openJournal({ journal = 'tj', seed = {}, time = null, view
     sessionStorage.setItem('__seeded', '1');
     localStorage.clear();
     localStorage.setItem('journal_active', journal);
+    localStorage.setItem(journal + '_onboarded', '1');   // assistant de premier lancement déjà passé (sauf test dédié)
     Object.entries(seed).forEach(([k, v]) => localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)));
   }, { journal, seed });
   await page.goto(APP_URL);

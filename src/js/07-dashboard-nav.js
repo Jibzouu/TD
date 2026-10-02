@@ -43,18 +43,12 @@ function renderSummaryBanner() {
   if (strip) strip.classList.toggle('no-insights', !chips.length);
 }
 
+// Dashboard d'un compte vide : trois façons de démarrer (trade, import, démo) + accès à l'assistant de réglage.
 function renderWelcomeCard() {
   const card = document.getElementById('welcome-card');
   if (!card) return;
-  const dismissed = DB.getItem((JP + 'welcome_dismissed')) === '1';
-  card.style.display = (!dismissed && trades.length === 0) ? 'block' : 'none';
+  card.style.display = trades.length === 0 ? 'block' : 'none';
 }
-function dismissWelcome() {
-  DB.setItem((JP + 'welcome_dismissed'), '1');
-  const card = document.getElementById('welcome-card');
-  if (card) card.style.display = 'none';
-}
-
 function renderAll() {
   invalidateViews();
   DATA_VERSION++;

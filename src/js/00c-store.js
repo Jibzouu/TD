@@ -149,12 +149,12 @@ const TradeStore = (() => {
       return this.update(id, {}) ? true : (ImageStore.replace(t.imgs[index], before), false);
     },
     // Supprime des trades : trace de suppression + captures retirées (sauf si on les garde pour la corbeille).
-    remove(ids, keepImages) {
+    remove(ids, keepImages, opts) {
       const set = new Set(ids), prev = trades.slice();
       const gone = trades.filter(t => set.has(t.id));
       if (!gone.length) return [];
       trades = trades.filter(t => !set.has(t.id));
-      if (!commit(prev, 'remove', gone, () => { addTombstones(gone); if (!keepImages) removeImages(gone.flatMap(t => t.imgs)); })) return null;
+      if (!commit(prev, 'remove', gone, () => { if (!(opts && opts.noTrace)) addTombstones(gone); if (!keepImages) removeImages(gone.flatMap(t => t.imgs)); })) return null;
       return gone;
     },
     // Remplace tout le journal (backup, restauration) ; les traces de suppression des trades disparus sont ajoutées.

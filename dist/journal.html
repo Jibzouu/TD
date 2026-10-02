@@ -1622,6 +1622,38 @@ tr.more-row .btn-ghost{margin-right:8px}
 .rule-alert.crit{background:var(--red-d);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
 .rule-alert-txt{flex:1;display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--txt2)}.rule-alert-txt b{color:var(--txt)}
 @media (max-width:640px){.rule-alert{flex-wrap:wrap}}
+/* Compte vide : trois façons de démarrer */
+.empty-start{text-align:center;padding:36px 24px;margin-bottom:20px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r2)}
+.es-icon{font-size:34px;margin-bottom:8px}
+.es-title{font:600 18px var(--sans);color:var(--txt);margin-bottom:6px}
+.es-text{font-size:13px;color:var(--txt2);max-width:520px;margin:0 auto 18px;line-height:1.55}
+.es-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.es-setup{display:inline-block;margin-top:14px;font-size:12px}
+.page:not(.is-empty) > .page-empty{display:none}
+.page.is-empty > :not(.page-hdr):not(.page-empty){display:none}
+.page-empty{background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r2);padding:10px 20px 28px;margin-bottom:20px}
+/* Bandeau du mode démo */
+.demo-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:16px 28px 0;padding:10px 16px;border-radius:var(--r2);background:color-mix(in srgb,var(--purple) 14%,var(--bg2));border:1px solid color-mix(in srgb,var(--purple) 45%,transparent);font-size:12.5px;color:var(--txt2)}
+.demo-banner[hidden]{display:none}
+.demo-banner span{flex:1;min-width:200px}.demo-banner b{color:var(--txt)}
+@media (max-width:640px){.demo-banner{margin:12px 12px 0}}
+/* Assistant de premier lancement */
+.ob-overlay{position:fixed;inset:0;z-index:300;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
+.ob-overlay[hidden]{display:none}
+.ob-card{width:100%;max-width:560px;max-height:calc(100vh - 32px);overflow:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:calc(var(--r2) * 1.2);padding:28px;box-shadow:0 30px 60px -20px rgba(0,0,0,.6)}
+.ob-card h2{font:600 21px var(--sans);color:var(--txt);margin:14px 0 6px}
+.ob-lead{font-size:13px;color:var(--txt2);line-height:1.55;margin-bottom:18px}
+.ob-dots{display:flex;gap:6px}.ob-dots span{height:4px;flex:1;border-radius:4px;background:var(--bg4)}.ob-dots .on,.ob-dots .done{background:var(--accent)}.ob-dots .done{opacity:.5}
+.ob-fields{display:grid;gap:14px}.ob-fields.two{grid-template-columns:1fr 1fr}
+.ob-fields .field span{display:block;font-size:11.5px;color:var(--txt3);margin-bottom:5px}
+.ob-fields .field small{display:block;font-size:11px;color:var(--txt3);margin-top:5px}
+.ob-fields input,.ob-fields select{width:100%}
+.ob-choices{display:grid;gap:10px}
+.ob-choice{text-align:left;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--txt)}
+.ob-choice:hover,.ob-choice:focus-visible{border-color:var(--accent);outline:none}
+.ob-choice b{display:block;font:600 14px var(--sans);margin-bottom:3px}.ob-choice span{font-size:12px;color:var(--txt3)}
+.ob-foot{display:flex;align-items:center;gap:10px;margin-top:22px}
+@media (max-width:520px){.ob-fields.two{grid-template-columns:1fr}.ob-card{padding:20px}}
 
 </style>
 </head>
@@ -1713,6 +1745,10 @@ tr.more-row .btn-ghost{margin-right:8px}
 
   <!-- MAIN -->
   <main class="main">
+    <div class="demo-banner" id="demo-banner" role="status" hidden>
+      <span>🧪 Tu explores <b>des trades d'exemple</b> : rien n'est réel, efface-les quand tu veux.</span>
+      <button class="btn-primary" onclick="clearDemoTrades()">Effacer la démo et commencer</button>
+    </div>
     <!-- ═══ FILTRE GLOBAL : s'applique au Dashboard, au Journal, aux Statistiques, au Calendrier, au Bilan et à la Revue ═══ -->
     <div class="filter-bar" id="filter-bar" role="search" aria-label="Filtre global">
       <div class="fb-group">
@@ -1899,32 +1935,16 @@ tr.more-row .btn-ghost{margin-right:8px}
 
     <!-- ═══ DASHBOARD ═══ -->
     <div id="page-dashboard" class="page active">
-      <div id="welcome-card" style="display:none">
-        <div class="welcome-head">
-          <div>
-            <div class="welcome-title">👋 Bienvenue dans ton journal de trading</div>
-            <div class="welcome-sub">Quelques repères pour bien démarrer :</div>
-          </div>
-          <button class="btn-ghost btn-welcome-x" onclick="dismissWelcome()">J'ai compris</button>
+      <div id="welcome-card" class="empty-start" style="display:none">
+        <div class="es-icon" aria-hidden="true">📒</div>
+        <div class="es-title">Ton journal est vide pour l'instant</div>
+        <div class="es-text">Ajoute ton premier trade, importe l'historique de ton broker, ou explore le journal avec des trades d'exemple.</div>
+        <div class="es-actions">
+          <button class="btn-primary" onclick="openTradePanel()">＋ Ajouter un trade</button>
+          <button class="btn-ghost" onclick="goImportCSV()">Importer un CSV</button>
+          <button class="btn-ghost" onclick="loadDemoTrades()">Voir une démo</button>
         </div>
-        <div class="welcome-steps">
-          <div class="wc-tip">
-            <div class="wc-tip-title">1. Ajoute un trade</div>
-            <div class="wc-tip-text">Bouton « ＋ Nouveau trade » en haut à droite (ou touche N pour une saisie rapide), ou importe un CSV TradingView depuis Export/Import.</div>
-          </div>
-          <div class="wc-tip">
-            <div class="wc-tip-title">2. Personnalise ton plan</div>
-            <div class="wc-tip-text">Édite ta checklist, tes règles de risque et tes erreurs à suivre dans Plan de trading.</div>
-          </div>
-          <div class="wc-tip">
-            <div class="wc-tip-title">3. Configure ton compte</div>
-            <div id="welcome-step3" class="wc-tip-text">Solde de départ et limite de perte journalière dans Paramètres, et challenge Prop Firm si tu en fais un.</div>
-          </div>
-          <div class="wc-tip">
-            <div class="wc-tip-title">4. Fais-le tien</div>
-            <div class="wc-tip-text">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd class="kbd">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
-          </div>
-        </div>
+        <button class="link-btn es-setup" onclick="openOnboarding()">Régler mon compte, mon risque et mes règles</button>
       </div>
       <div id="export-reminder" style="display:none">
         <span class="fs-16">💾</span>
@@ -2875,6 +2895,11 @@ tr.more-row .btn-ghost{margin-right:8px}
   </main>
 </div>
 
+<!-- PREMIER LANCEMENT -->
+<div class="ob-overlay" id="onboard" role="dialog" aria-modal="true" aria-labelledby="ob-title" hidden>
+  <div class="ob-card" id="ob-card"></div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -3150,7 +3175,7 @@ function loadAccounts() {
   if (!list || !list.length) {
     // Migration : Live toujours ; Backtest et PropFirm seulement s'ils contiennent déjà des données (ou sont ouverts).
     const active = DB.getItem('journal_active');
-    const used = id => id === active || DB.keys().some(k => k.indexOf(id + '_') === 0 && k !== id + '_welcome_dismissed');
+    const used = id => id === active || DB.keys().some(k => k.indexOf(id + '_') === 0 && !/_(welcome_dismissed|onboarded)$/.test(k));
     const hadAny = DB.keys().some(k => /^(tj|bt|pf)_/.test(k));
     list = [{ id: 'tj', name: hadAny ? 'Live' : 'Mon compte', type: 'live', createdAt: 0 }];
     if (used('bt')) list.push({ id: 'bt', name: 'Backtest', type: 'backtest', createdAt: 0 });
@@ -3264,6 +3289,7 @@ function sanitizeTrade(t) {
   // Modèle prêt pour la synchronisation : identifiant universel, dates de création / modification, captures par référence.
   o.uid = /^[\w-]{6,64}$/.test(String(o.uid || '')) ? String(o.uid) : '';
   ['createdAt', 'updatedAt'].forEach(k => { const v = Number(o[k]); o[k] = isFinite(v) && v > 0 ? v : 0; });
+  if (o.demo === true) o.demo = true; else delete o.demo;   // trade d'exemple (mode démo), effaçable en un clic
   o.imgs = Array.isArray(o.imgs) ? o.imgs.map(String).filter(id => /^i[0-9a-z]{6,40}$/i.test(id)).slice(0, 8) : [];
   return o;
 }
@@ -3730,12 +3756,12 @@ const TradeStore = (() => {
       return this.update(id, {}) ? true : (ImageStore.replace(t.imgs[index], before), false);
     },
     // Supprime des trades : trace de suppression + captures retirées (sauf si on les garde pour la corbeille).
-    remove(ids, keepImages) {
+    remove(ids, keepImages, opts) {
       const set = new Set(ids), prev = trades.slice();
       const gone = trades.filter(t => set.has(t.id));
       if (!gone.length) return [];
       trades = trades.filter(t => !set.has(t.id));
-      if (!commit(prev, 'remove', gone, () => { addTombstones(gone); if (!keepImages) removeImages(gone.flatMap(t => t.imgs)); })) return null;
+      if (!commit(prev, 'remove', gone, () => { if (!(opts && opts.noTrace)) addTombstones(gone); if (!keepImages) removeImages(gone.flatMap(t => t.imgs)); })) return null;
       return gone;
     },
     // Remplace tout le journal (backup, restauration) ; les traces de suppression des trades disparus sont ajoutées.
@@ -5474,18 +5500,12 @@ function renderSummaryBanner() {
   if (strip) strip.classList.toggle('no-insights', !chips.length);
 }
 
+// Dashboard d'un compte vide : trois façons de démarrer (trade, import, démo) + accès à l'assistant de réglage.
 function renderWelcomeCard() {
   const card = document.getElementById('welcome-card');
   if (!card) return;
-  const dismissed = DB.getItem((JP + 'welcome_dismissed')) === '1';
-  card.style.display = (!dismissed && trades.length === 0) ? 'block' : 'none';
+  card.style.display = trades.length === 0 ? 'block' : 'none';
 }
-function dismissWelcome() {
-  DB.setItem((JP + 'welcome_dismissed'), '1');
-  const card = document.getElementById('welcome-card');
-  if (card) card.style.display = 'none';
-}
-
 function renderAll() {
   invalidateViews();
   DATA_VERSION++;
@@ -8174,13 +8194,14 @@ function checkExportReminder() {
   const el = document.getElementById('export-reminder');
   if (!el) return;
   if (sessionStorage.getItem((JP + 'export_reminder_dismissed'))) { el.style.display = 'none'; return; }
-  if (trades.length < 5) { el.style.display = 'none'; return; }
+  const real = trades.filter(t => !t.demo).length;   // les trades d'exemple ne justifient pas un rappel de backup
+  if (real < 5) { el.style.display = 'none'; return; }
   const last = parseInt(DB.getItem((JP + 'last_export')) || '0', 10);
   const days = last ? (Date.now() - last) / 86400000 : Infinity;
   if (days >= 7) {
     document.getElementById('export-reminder-text').textContent = last
-      ? `Ça fait ${Math.floor(days)} jours que tu n'as pas exporté de backup — ${trades.length} trades sont uniquement dans ce navigateur.`
-      : `${trades.length} trades enregistrés, mais aucun backup exporté pour l'instant — tout vit uniquement dans ce navigateur.`;
+      ? `Ça fait ${Math.floor(days)} jours que tu n'as pas exporté de backup — ${real} trades sont uniquement dans ce navigateur.`
+      : `${real} trades enregistrés, mais aucun backup exporté pour l'instant — tout vit uniquement dans ce navigateur.`;
     el.style.display = 'flex';
   } else {
     el.style.display = 'none';
@@ -10356,6 +10377,209 @@ function exportTradesCSV() {
   URL.revokeObjectURL(url);
   showToast(list.length + ' trade' + (list.length > 1 ? 's' : '') + ' exporté' + (list.length > 1 ? 's' : '') + ' en CSV' + (filterActive() ? ' (filtre appliqué)' : '') + ' ✓', 'success');
 }
+
+/* ═══ js/26-onboarding.js ═══ */
+// ── PREMIER LANCEMENT, MODE DÉMO ET ÉCRANS VIDES ─────────────────────────
+// Assistant en 3 étapes à l'ouverture d'un compte vide jamais configuré : 1) le compte (nom, type, capital),
+// 2) le risque et les règles du jour, 3) comment démarrer (premier trade, import CSV ou démo).
+// Tout reste modifiable ensuite (Paramètres, Plan, Scaling) ; « Passer » ferme l'assistant sans rien changer.
+let obStep = 0, obData = null;
+function onboardingNeeded() { return !trades.length && DB.getItem(JP + 'onboarded') !== '1' && DB.getItem(JP + 'welcome_dismissed') !== '1'; }
+function openOnboarding() {
+  const acc = ACCOUNTS.find(a => a.id === JOURNAL_ID) || { name: JOURNALS[JOURNAL_ID].title, type: JOURNAL_TYPE };
+  const st = getScalingState();
+  obData = { name: acc.name, type: acc.type, capital: accountSize > 0 ? accountSize : 10000, riskPct: st.riskPct || 1,
+    ddPct: loadDDLimitPct(), maxTP: planData && planData.maxTP > 0 ? planData.maxTP : 1, maxSL: planData && planData.maxSL > 0 ? planData.maxSL : 2 };
+  obStep = 0;
+  const ov = document.getElementById('onboard');
+  ov.hidden = false;
+  rememberFocus();
+  renderOnboarding();
+}
+function closeOnboarding(markDone) {
+  if (markDone !== false) DB.setItem(JP + 'onboarded', '1');
+  const ov = document.getElementById('onboard');
+  if (ov && !ov.hidden) { ov.hidden = true; restoreFocus(); }
+}
+function obReadStep() {
+  const v = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const num = id => parseFloat(String(v(id)).replace(',', '.'));
+  if (obStep === 0) {
+    const name = v('ob-name').trim().slice(0, 40), capital = num('ob-capital');
+    if (!name) { showToast('Donne un nom à ton compte', 'error'); return false; }
+    if (!(capital > 0)) { showToast('Indique ton capital de départ', 'error'); return false; }
+    Object.assign(obData, { name, type: v('ob-type'), capital });
+  } else if (obStep === 1) {
+    const riskPct = num('ob-risk'), ddPct = num('ob-dd');
+    if (!(riskPct > 0 && riskPct < 100)) { showToast('Indique un risque par trade entre 0 et 100 %', 'error'); return false; }
+    Object.assign(obData, { riskPct, ddPct: ddPct > 0 ? ddPct : obData.ddPct, maxTP: parseInt(v('ob-tp'), 10) || null, maxSL: parseInt(v('ob-sl'), 10) || null });
+  }
+  return true;
+}
+function obNext() { if (!obReadStep()) return; obStep = Math.min(2, obStep + 1); renderOnboarding(); }
+function obBack() { obReadStep(); obStep = Math.max(0, obStep - 1); renderOnboarding(); }
+// Applique les réglages choisis (compte, capital, risque, règles), puis lance l'action de départ.
+function finishOnboarding(action) {
+  const d = obData;
+  const prevType = JOURNAL_TYPE;
+  const me = ACCOUNTS.find(a => a.id === JOURNAL_ID);
+  if (me) { me.name = d.name; me.type = d.type; }
+  JOURNALS[JOURNAL_ID].title = JOURNALS[JOURNAL_ID].tab = d.name;
+  saveAccounts(ACCOUNTS);
+  accountSize = d.capital;
+  DB.setItem(JP + 'account', String(d.capital));
+  const acc = document.getElementById('account-size'); if (acc) acc.value = d.capital;
+  const st = getScalingState();
+  Object.assign(st, { start: d.capital, riskPct: d.riskPct, step: scNiceStep(d.capital), cushion1: scNiceStep(d.capital) / 2, goal: d.capital * 10, auto: true });
+  saveScalingState();
+  DB.setItem(JP + 'dd_limit_pct', String(d.ddPct));
+  if (planData) { planData.maxTP = d.maxTP; planData.maxSL = d.maxSL; DB.setItem(JP + 'plan', JSON.stringify(planData)); }
+  closeOnboarding(true);
+  // Type changé (ex. prop firm) : le menu et les pages dépendent du type → on recharge puis on lance l'action.
+  if (d.type !== prevType) {
+    try { sessionStorage.setItem('ob_action', action || ''); } catch (e) {}
+    DB.flush().then(() => location.reload());
+    return;
+  }
+  applyJournalIdentity();
+  renderAll();
+  runStartAction(action);
+}
+function runStartAction(action) {
+  if (action === 'trade') openTradePanel();
+  else if (action === 'csv') goImportCSV();
+  else if (action === 'demo') loadDemoTrades();
+}
+onReady(() => { let a = ''; try { a = sessionStorage.getItem('ob_action') || ''; sessionStorage.removeItem('ob_action'); } catch (e) {} if (a) setTimeout(() => runStartAction(a), 50); });
+function goImportCSV() {
+  showPage('export', document.querySelector('.nav-item[data-page=export]'));
+  setTimeout(() => { const b = document.querySelector('#page-export input[type=file][accept*=csv], #page-export .export-card:nth-of-type(3)'); const card = b && b.closest('.export-card'); if (card) card.scrollIntoView({ block: 'center' }); }, 60);
+}
+function renderOnboarding() {
+  const card = document.getElementById('ob-card');
+  if (!card || !obData) return;
+  const d = obData, dots = html`<div class="ob-dots" aria-label="Étape ${obStep + 1} sur 3">${[0, 1, 2].map(i => html`<span class="${raw(i === obStep ? 'on' : i < obStep ? 'done' : '')}"></span>`)}</div>`;
+  const riskEur = d.capital * d.riskPct / 100;
+  const steps = [
+    () => html`<h2 id="ob-title">Bienvenue 👋</h2><p class="ob-lead">Trois questions pour régler ton journal. Tu pourras tout modifier ensuite.</p>
+      <div class="ob-fields">
+        <label class="field"><span>Nom du compte</span><input type="text" id="ob-name" maxlength="40" value="${d.name}" placeholder="ex. Compte perso, FTMO 100k…"></label>
+        <label class="field"><span>Type de compte</span><select id="ob-type">${Object.entries(ACCOUNT_TYPES).map(([k, t]) => html`<option value="${k}"${raw(k === d.type ? ' selected' : '')}>${t.label} — ${t.sub}</option>`)}</select></label>
+        <label class="field"><span>Capital de départ (€)</span><input type="number" id="ob-capital" min="1" step="100" value="${d.capital}"></label>
+      </div>`,
+    () => html`<h2 id="ob-title">Ton risque et tes règles</h2><p class="ob-lead">Le journal s'en sert pour ta taille de position (Scaling), la perte max du jour et les alertes du Dashboard.</p>
+      <div class="ob-fields two">
+        <label class="field"><span>Risque par trade (%)</span><input type="number" id="ob-risk" min="0.05" max="99" step="0.25" value="${d.riskPct}" oninput="document.getElementById('ob-risk-eur').textContent = fmtEUR(${raw(String(d.capital))} * (parseFloat(this.value) || 0) / 100, false, 2)"><small>= <b id="ob-risk-eur">${fmtEUR(riskEur, false, 2)}</b> par trade</small></label>
+        <label class="field"><span>Perte max du jour (% du solde)</span><input type="number" id="ob-dd" min="0.1" step="0.5" value="${d.ddPct}"></label>
+        <label class="field"><span>TP max par jour</span><input type="number" id="ob-tp" min="0" step="1" value="${d.maxTP || ''}" placeholder="aucun"><small>objectif atteint : la journée s'arrête</small></label>
+        <label class="field"><span>SL max par jour</span><input type="number" id="ob-sl" min="0" step="1" value="${d.maxSL || ''}" placeholder="aucun"><small>limite atteinte : stop pour aujourd'hui</small></label>
+      </div>`,
+    () => html`<h2 id="ob-title">C'est prêt ! Comment veux-tu commencer ?</h2><p class="ob-lead">${d.name} · ${fmtEUR(d.capital)} · ${fmtRate(d.riskPct, d.riskPct % 1 ? 2 : 0)} par trade (${fmtEUR(riskEur, false, 2)})</p>
+      <div class="ob-choices">
+        <button class="ob-choice" onclick="finishOnboarding('trade')"><b>＋ Ajouter mon premier trade</b><span>Formulaire complet : résultat, prix, captures, erreurs…</span></button>
+        <button class="ob-choice" onclick="finishOnboarding('csv')"><b>📥 Importer mon historique</b><span>Fichiers CSV de ton broker ou de TradingView</span></button>
+        <button class="ob-choice" onclick="finishOnboarding('demo')"><b>🧪 Explorer avec une démo</b><span>60 trades d'exemple pour voir le journal rempli, effaçables en un clic</span></button>
+      </div>`
+  ];
+  mount(card, html`${dots}${steps[obStep]()}
+    <div class="ob-foot">
+      <button class="link-btn" onclick="closeOnboarding(true)">Passer</button>
+      <span class="flex-1"></span>
+      ${obStep > 0 ? html`<button class="btn-ghost" onclick="obBack()">Retour</button>` : ''}
+      ${obStep < 2 ? html`<button class="btn-primary" onclick="obNext()">Suivant</button>` : html`<button class="btn-ghost" onclick="finishOnboarding('')">Terminer</button>`}
+    </div>`);
+  setTimeout(() => { const f = card.querySelector('input, .ob-choice'); if (f) f.focus(); }, 30);
+}
+document.addEventListener('keydown', e => {
+  const ov = document.getElementById('onboard');
+  if (!ov || ov.hidden) return;
+  if (e.key === 'Escape') { e.stopPropagation(); closeOnboarding(true); }
+  else if (e.key === 'Enter' && obStep < 2 && e.target.tagName === 'INPUT') { e.preventDefault(); obNext(); }
+}, true);
+onReady(() => { if (onboardingNeeded()) openOnboarding(); });
+
+// ── MODE DÉMO : trades d'exemple réalistes, marqués demo, effaçables en un clic ──
+function buildDemoTrades(n) {
+  const rnd = mulberry32(20260617), pick = a => a[Math.floor(rnd() * a.length)];
+  const assets = ['EUR/USD', 'GBP/USD', 'DAX 40', 'NAS 100', 'XAU/USD'];
+  const setups = (planData && planData.setups && planData.setups.length ? planData.setups : ['Break & retest', 'OB + FVG', 'Sweep LQ']);
+  const mistakes = getMistakeTags();
+  const risk = Math.max(1, (accountSize > 0 ? accountSize : 10000) * (getScalingState().riskPct || 1) / 100);
+  const out = [], today = new Date(localDateStr() + 'T00:00:00');
+  let day = new Date(today); day.setDate(day.getDate() - 1);
+  while (out.length < n) {
+    const wd = day.getDay();
+    if (wd !== 0 && wd !== 6) {
+      const k = 1 + Math.floor(rnd() * 3);
+      for (let j = 0; j < k && out.length < n; j++) {
+        const h = 8 + Math.floor(rnd() * 9), m = Math.floor(rnd() * 60), dur = 20 + Math.floor(rnd() * 120);
+        const asset = pick(assets), dir = rnd() < .55 ? 'Long' : 'Short', u = rnd();
+        const res = u < .5 ? 'TP' : u < .9 ? 'SL' : 'BE';
+        const pnl = res === 'TP' ? Math.round((1.2 + rnd() * 2) * 100) / 100 : res === 'SL' ? -Math.round((.8 + rnd() * .25) * 100) / 100 : 0;
+        const ex = new Date(day); ex.setHours(h, m + dur);
+        out.push({
+          demo: true, date: localDateStr(day), entry: String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'),
+          exit: String(ex.getHours()).padStart(2, '0') + ':' + String(ex.getMinutes()).padStart(2, '0'),
+          asset, dir, res, pnl, rr: 2, rSrc: 'manuel', pnlEur: Math.round(pnl * risk * 100) / 100, setup: pick(setups),
+          session: sessionFromHour(h, 0), tf: pick(['M5', 'M15', 'H1']), emotion: 2 + Math.floor(rnd() * 4),
+          mfe: Math.round(risk * (res === 'SL' ? rnd() * .8 : 1 + rnd() * 2.5) * 100) / 100, mae: Math.round(risk * (res === 'TP' ? rnd() * .6 : .5 + rnd() * .5) * 100) / 100,
+          checklist: [0, 1, 2, 3, 4, 5].filter(() => rnd() < .8), mistakes: res === 'SL' && rnd() < .4 ? [pick(mistakes)] : [],
+          tags: [], desc: res === 'TP' ? 'Exemple : plan respecté, sortie à l\'objectif.' : res === 'SL' ? 'Exemple : stop touché.' : 'Exemple : sorti au point d\'entrée.'
+        });
+      }
+    }
+    day.setDate(day.getDate() - 1);
+  }
+  return out;
+}
+function loadDemoTrades() {
+  if (trades.some(t => t.demo)) { showToast('La démo est déjà chargée'); return; }
+  if (!TradeStore.addMany(buildDemoTrades(60))) return;
+  DB.setItem(JP + 'onboarded', '1');
+  refreshAssetDropdowns();
+  showPage('dashboard', document.querySelector('.nav-item[data-page=dashboard]'));
+  renderAll();
+  showToast('60 trades d\'exemple chargés — efface-les quand tu veux', 'success');
+}
+function clearDemoTrades() {
+  const ids = trades.filter(t => t.demo).map(t => t.id);
+  if (!ids.length) { renderDemoBanner(); return; }
+  if (!TradeStore.remove(ids, false, { noTrace: true })) return;
+  renderAll();
+  showToast('Démo effacée — à toi de jouer !', 'success');
+}
+function renderDemoBanner() {
+  const b = document.getElementById('demo-banner');
+  if (b) b.hidden = !trades.some(t => t.demo);
+}
+
+// ── ÉCRANS VIDES : chaque page d'analyse explique quoi faire quand le compte n'a encore aucun trade ──
+const EMPTY_PAGES = {
+  trades: null,   // le tableau a déjà son propre écran vide
+  stats: ['📊', 'Tes statistiques apparaîtront ici', 'Win rate, profit factor, meilleurs créneaux, coût de tes erreurs… tout se calcule à partir de tes trades.'],
+  calendrier: ['📅', 'Ton calendrier se remplira jour après jour', 'Chaque journée tradée prend la couleur de son résultat, avec tes séries de gains et de pertes.'],
+  bilan: ['🧾', 'Le bilan de tes journées', 'Le détail de chaque journée tradée : trades, résultat, humeur et captures.'],
+  revue: ['🗓️', 'Ta revue de la semaine', 'Chaque semaine : résultats, meilleurs et pires trades, erreurs récurrentes et tes questions de revue.']
+};
+function renderEmptyStates() {
+  const empty = trades.length === 0;
+  Object.entries(EMPTY_PAGES).forEach(([id, txt]) => {
+    const page = document.getElementById('page-' + id);
+    if (!page || !txt) return;
+    let box = page.querySelector(':scope > .page-empty');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'page-empty';
+      const hdr = page.querySelector(':scope > .page-hdr');
+      if (hdr) hdr.after(box); else page.prepend(box);
+    }
+    if (empty) mount(box, html`${UI.empty(txt[0], txt[1], txt[2])}<div class="es-actions"><button class="btn-primary" onclick="openTradePanel()">＋ Ajouter un trade</button><button class="btn-ghost" onclick="goImportCSV()">Importer un CSV</button><button class="btn-ghost" onclick="loadDemoTrades()">Voir une démo</button></div>`);
+    page.classList.toggle('is-empty', empty);
+  });
+  renderDemoBanner();
+}
+TradeStore.onChange(() => { renderEmptyStates(); });
+onReady(renderEmptyStates);
 
 </script>
 </body>

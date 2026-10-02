@@ -14,7 +14,7 @@ function loadAccounts() {
   if (!list || !list.length) {
     // Migration : Live toujours ; Backtest et PropFirm seulement s'ils contiennent déjà des données (ou sont ouverts).
     const active = DB.getItem('journal_active');
-    const used = id => id === active || DB.keys().some(k => k.indexOf(id + '_') === 0 && k !== id + '_welcome_dismissed');
+    const used = id => id === active || DB.keys().some(k => k.indexOf(id + '_') === 0 && !/_(welcome_dismissed|onboarded)$/.test(k));
     const hadAny = DB.keys().some(k => /^(tj|bt|pf)_/.test(k));
     list = [{ id: 'tj', name: hadAny ? 'Live' : 'Mon compte', type: 'live', createdAt: 0 }];
     if (used('bt')) list.push({ id: 'bt', name: 'Backtest', type: 'backtest', createdAt: 0 });
@@ -128,6 +128,7 @@ function sanitizeTrade(t) {
   // Modèle prêt pour la synchronisation : identifiant universel, dates de création / modification, captures par référence.
   o.uid = /^[\w-]{6,64}$/.test(String(o.uid || '')) ? String(o.uid) : '';
   ['createdAt', 'updatedAt'].forEach(k => { const v = Number(o[k]); o[k] = isFinite(v) && v > 0 ? v : 0; });
+  if (o.demo === true) o.demo = true; else delete o.demo;   // trade d'exemple (mode démo), effaçable en un clic
   o.imgs = Array.isArray(o.imgs) ? o.imgs.map(String).filter(id => /^i[0-9a-z]{6,40}$/i.test(id)).slice(0, 8) : [];
   return o;
 }

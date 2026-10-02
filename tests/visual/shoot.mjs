@@ -49,7 +49,7 @@ async function run(journal, pages, vp, tag, data = tr) {
     let C; Object.defineProperty(window, 'Chart', { configurable: true, get: () => C, set: v => { C = v; v.defaults.animation = false; } });
     if (sessionStorage.s) return; sessionStorage.s = 1; localStorage.clear();
     localStorage.setItem('journal_active', journal);
-    localStorage.setItem(journal + '_trades', JSON.stringify(tr)); localStorage.setItem(journal + '_welcome_dismissed', '1'); localStorage.setItem(journal + '_last_export', String(Date.parse('2026-06-16')));
+    localStorage.setItem(journal + '_trades', JSON.stringify(tr)); localStorage.setItem(journal + '_welcome_dismissed', '1'); localStorage.setItem(journal + '_onboarded', '1'); localStorage.setItem(journal + '_last_export', String(Date.parse('2026-06-16')));
   }, { tr: data, journal });
   await page.goto(URL);
   await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));

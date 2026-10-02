@@ -566,6 +566,8 @@ test('comptes multiples : migration, création, type prop firm, renommage, suppr
   await page.selectOption('#acc-f-type', 'propfirm');
   await page.click('#modal-confirm');
   await page.waitForEvent('load'); await ready();
+  assert.equal(await page.locator('#onboard').isVisible(), true, 'un nouveau compte ouvre l’assistant de réglage');
+  await page.locator('#onboard').getByText('Passer').click();
   assert.match(await page.locator('#acc-current').innerText(), /FTMO 100k[\s\S]*Prop firm/);
   assert.equal(await page.evaluate(() => trades.length), 0, 'nouveau compte vide');
   assert.equal(await page.locator('.nav-item[data-page="propfirm"]').count(), 1, 'suivi de challenge disponible');
@@ -597,6 +599,50 @@ test('comptes multiples : migration, création, type prop firm, renommage, suppr
   await page.waitForEvent('load'); await ready();
   assert.equal(await page.evaluate(() => trades.length), 3);
   assert.equal(await page.locator('.nav-item[data-page="propfirm"]').count(), 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('premier lancement : assistant 3 étapes, réglages appliqués, démo effaçable, écrans vides', async () => {
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_onboarded: '' } });
+  const ob = page.locator('#onboard');
+  assert.equal(await ob.isVisible(), true, 'assistant ouvert sur un compte vide');
+  // Étape 1 : compte.
+  await page.fill('#ob-name', 'Compte perso');
+  await page.fill('#ob-capital', '2000');
+  await ob.getByText('Suivant').click();
+  // Étape 2 : risque et règles.
+  await page.fill('#ob-risk', '2');
+  assert.match(await page.locator('#ob-risk-eur').textContent(), /40,00/);
+  await page.fill('#ob-tp', '1'); await page.fill('#ob-sl', '2');
+  await ob.getByText('Suivant').click();
+  assert.match(await ob.innerText(), /Compte perso · 2\s000\s€ · 2 % par trade \(40,00\s€\)/);
+  // Étape 3 : démo.
+  await ob.getByText('Explorer avec une démo').click();
+  assert.equal(await ob.isVisible(), false);
+  const st = await page.evaluate(() => ({ acc: accountSize, name: ACCOUNTS[0].name, sc: getScalingState(), tp: planData.maxTP, sl: planData.maxSL, n: trades.length, demo: trades.every(t => t.demo), onb: DB.getItem(JP + 'onboarded') }));
+  assert.equal(st.acc, 2000); assert.equal(st.name, 'Compte perso');
+  assert.equal(st.sc.start, 2000); assert.equal(st.sc.riskPct, 2);
+  assert.equal(st.tp, 1); assert.equal(st.sl, 2);
+  assert.equal(st.n, 60); assert.ok(st.demo); assert.equal(st.onb, '1');
+  assert.match(await page.locator('#acc-current').innerText(), /Compte perso/);
+  assert.equal(await page.locator('#demo-banner').isVisible(), true);
+  assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 0);
+  // Effacer la démo : pas de trace de suppression (rien à synchroniser), retour à l'écran vide.
+  await page.locator('#demo-banner').getByText('Effacer la démo').click();
+  assert.equal(await page.evaluate(() => trades.length), 0);
+  assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 0);
+  assert.equal(await page.locator('#demo-banner').isVisible(), false);
+  assert.equal(await page.locator('#welcome-card').isVisible(), true);
+  await goto(page, 'stats');
+  assert.match(await page.locator('#page-stats > .page-empty').innerText(), /Tes statistiques apparaîtront ici/);
+  assert.equal(await page.locator('#edge-finder-body').isVisible(), false);
+  // Un premier vrai trade : les pages se remplissent.
+  await page.evaluate(() => TradeStore.add({ date: '2026-06-16', asset: 'EUR/USD', res: 'TP', pnl: 2, pnlEur: 80 }));
+  assert.equal(await page.locator('#page-stats > .page-empty').isVisible(), false);
+  // L'assistant ne revient pas au rechargement.
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  assert.equal(await page.locator('#onboard').isVisible(), false);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

@@ -354,13 +354,14 @@ function checkExportReminder() {
   const el = document.getElementById('export-reminder');
   if (!el) return;
   if (sessionStorage.getItem((JP + 'export_reminder_dismissed'))) { el.style.display = 'none'; return; }
-  if (trades.length < 5) { el.style.display = 'none'; return; }
+  const real = trades.filter(t => !t.demo).length;   // les trades d'exemple ne justifient pas un rappel de backup
+  if (real < 5) { el.style.display = 'none'; return; }
   const last = parseInt(DB.getItem((JP + 'last_export')) || '0', 10);
   const days = last ? (Date.now() - last) / 86400000 : Infinity;
   if (days >= 7) {
     document.getElementById('export-reminder-text').textContent = last
-      ? `Ça fait ${Math.floor(days)} jours que tu n'as pas exporté de backup — ${trades.length} trades sont uniquement dans ce navigateur.`
-      : `${trades.length} trades enregistrés, mais aucun backup exporté pour l'instant — tout vit uniquement dans ce navigateur.`;
+      ? `Ça fait ${Math.floor(days)} jours que tu n'as pas exporté de backup — ${real} trades sont uniquement dans ce navigateur.`
+      : `${real} trades enregistrés, mais aucun backup exporté pour l'instant — tout vit uniquement dans ce navigateur.`;
     el.style.display = 'flex';
   } else {
     el.style.display = 'none';

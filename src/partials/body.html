@@ -85,6 +85,10 @@
 
   <!-- MAIN -->
   <main class="main">
+    <div class="demo-banner" id="demo-banner" role="status" hidden>
+      <span>🧪 Tu explores <b>des trades d'exemple</b> : rien n'est réel, efface-les quand tu veux.</span>
+      <button class="btn-primary" onclick="clearDemoTrades()">Effacer la démo et commencer</button>
+    </div>
     <!-- ═══ FILTRE GLOBAL : s'applique au Dashboard, au Journal, aux Statistiques, au Calendrier, au Bilan et à la Revue ═══ -->
     <div class="filter-bar" id="filter-bar" role="search" aria-label="Filtre global">
       <div class="fb-group">
@@ -271,32 +275,16 @@
 
     <!-- ═══ DASHBOARD ═══ -->
     <div id="page-dashboard" class="page active">
-      <div id="welcome-card" style="display:none">
-        <div class="welcome-head">
-          <div>
-            <div class="welcome-title">👋 Bienvenue dans ton journal de trading</div>
-            <div class="welcome-sub">Quelques repères pour bien démarrer :</div>
-          </div>
-          <button class="btn-ghost btn-welcome-x" onclick="dismissWelcome()">J'ai compris</button>
+      <div id="welcome-card" class="empty-start" style="display:none">
+        <div class="es-icon" aria-hidden="true">📒</div>
+        <div class="es-title">Ton journal est vide pour l'instant</div>
+        <div class="es-text">Ajoute ton premier trade, importe l'historique de ton broker, ou explore le journal avec des trades d'exemple.</div>
+        <div class="es-actions">
+          <button class="btn-primary" onclick="openTradePanel()">＋ Ajouter un trade</button>
+          <button class="btn-ghost" onclick="goImportCSV()">Importer un CSV</button>
+          <button class="btn-ghost" onclick="loadDemoTrades()">Voir une démo</button>
         </div>
-        <div class="welcome-steps">
-          <div class="wc-tip">
-            <div class="wc-tip-title">1. Ajoute un trade</div>
-            <div class="wc-tip-text">Bouton « ＋ Nouveau trade » en haut à droite (ou touche N pour une saisie rapide), ou importe un CSV TradingView depuis Export/Import.</div>
-          </div>
-          <div class="wc-tip">
-            <div class="wc-tip-title">2. Personnalise ton plan</div>
-            <div class="wc-tip-text">Édite ta checklist, tes règles de risque et tes erreurs à suivre dans Plan de trading.</div>
-          </div>
-          <div class="wc-tip">
-            <div class="wc-tip-title">3. Configure ton compte</div>
-            <div id="welcome-step3" class="wc-tip-text">Solde de départ et limite de perte journalière dans Paramètres, et challenge Prop Firm si tu en fais un.</div>
-          </div>
-          <div class="wc-tip">
-            <div class="wc-tip-title">4. Fais-le tien</div>
-            <div class="wc-tip-text">12 thèmes, couleurs et formes personnalisables dans Paramètres. Astuce : <kbd class="kbd">Ctrl/Cmd+K</kbd> ouvre la recherche rapide.</div>
-          </div>
-        </div>
+        <button class="link-btn es-setup" onclick="openOnboarding()">Régler mon compte, mon risque et mes règles</button>
       </div>
       <div id="export-reminder" style="display:none">
         <span class="fs-16">💾</span>
@@ -1245,6 +1233,11 @@
     </div>
 
   </main>
+</div>
+
+<!-- PREMIER LANCEMENT -->
+<div class="ob-overlay" id="onboard" role="dialog" aria-modal="true" aria-labelledby="ob-title" hidden>
+  <div class="ob-card" id="ob-card"></div>
 </div>
 
 <!-- TOAST -->
