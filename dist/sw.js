@@ -1,8 +1,8 @@
 // Service worker du journal : met la page en cache pour qu'elle s'ouvre sans connexion.
 // Stratégie « réseau d'abord, cache en secours » pour la page (toujours la dernière version quand on est en ligne),
 // « cache d'abord » pour le manifeste et l'icône. Les données du journal ne passent jamais par ici (IndexedDB).
-const CACHE = 'journal-b23671fdc4';
-const FILES = ['./journal.html', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'journal-c95596b63e';
+const FILES = ['./journal.html', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

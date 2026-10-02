@@ -3148,6 +3148,12 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
   const link = document.createElement('link');
   link.rel = 'manifest'; link.href = 'manifest.webmanifest';
   document.head.appendChild(link);
+  // iPhone / iPad : icône d'écran d'accueil et ouverture en plein écran comme une application.
+  [['link', { rel: 'apple-touch-icon', href: 'apple-touch-icon.png' }], ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
+   ['meta', { name: 'mobile-web-app-capable', content: 'yes' }], ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }],
+   ['meta', { name: 'apple-mobile-web-app-title', content: 'Journal' }]].forEach(([tag, attrs]) => {
+    const el = document.createElement(tag); Object.assign(el, attrs); if (attrs.content) el.setAttribute('content', attrs.content); document.head.appendChild(el);
+  });
   const theme = document.createElement('meta');
   theme.name = 'theme-color'; theme.content = '#0a0c10';
   document.head.appendChild(theme);

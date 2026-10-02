@@ -126,9 +126,9 @@ test('fiche trade : navigation ←/→ dans l’ordre du tableau, profil, note a
 
 test('application installable : manifeste, service worker, ouverture hors ligne', async () => {
   const DIST = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'dist');
-  const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
+  const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
   const server = createServer((req, res) => {
-    const f = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'journal.html';
+    const f = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'index.html';
     try { const body = readFileSync(join(DIST, f.replace(/\.\./g, ''))); res.writeHead(200, { 'content-type': TYPES[extname(f)] || 'application/octet-stream' }); res.end(body); }
     catch { res.writeHead(404); res.end(); }
   });
@@ -146,6 +146,18 @@ test('application installable : manifeste, service worker, ouverture hors ligne'
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
     const manifest = await (await page.request.get(url.replace('journal.html', 'manifest.webmanifest'))).json();
     assert.equal(manifest.display, 'standalone');
+    // Icônes PNG pour Android / Windows (dont « maskable ») et icône Apple.
+    for (const ic of manifest.icons.filter(i => i.type === 'image/png')) {
+      const r = await page.request.get(url.replace('journal.html', ic.src));
+      assert.equal(r.status(), 200, ic.src); assert.equal(r.headers()['content-type'], 'image/png');
+    }
+    assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.sizes === '512x512'));
+    assert.equal(await page.locator('link[rel=apple-touch-icon]').count(), 1);
+    // L'adresse du site ouvre directement le journal.
+    const root = await ctx.newPage();
+    await root.goto(url.replace('journal.html', ''));
+    await root.waitForURL(/journal\.html$/);
+    await root.close();
     await ctx.setOffline(true);
     await page.reload();
     await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));

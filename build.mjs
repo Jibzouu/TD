@@ -50,7 +50,7 @@ export function build({ quiet } = {}) {
   // Fichiers d'installation (servis en http(s) uniquement). Le cache du service worker porte l'empreinte du build :
   // chaque nouvelle version remplace proprement l'ancienne chez l'utilisateur.
   const hash = createHash('sha256').update(html).digest('hex').slice(0, 10);
-  for (const f of ['manifest.webmanifest', 'icon.svg']) copyFileSync(join(SRC, 'pwa', f), join(DIST, f));
+  for (const f of ['manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'index.html']) copyFileSync(join(SRC, 'pwa', f), join(DIST, f));
   writeFileSync(join(DIST, 'sw.js'), readFileSync(join(SRC, 'pwa', 'sw.js'), 'utf8').replace('__BUILD__', hash));
   writeFileSync(join(ROOT, 'journal-complet.html'), html);
   if (!quiet) console.log(`✓ dist/journal.html — ${(html.length / 1024).toFixed(0)} Ko (copié en journal-complet.html)`);
