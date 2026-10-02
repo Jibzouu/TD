@@ -232,3 +232,12 @@ select.fb-select.on{background-color:var(--accent-d);border-color:var(--accent);
 /* Formulaire de trade : jamais caché sous le menu latéral ouvert. */
 @media (min-width:861px){body.sidebar-open .nt-panel{width:min(880px,calc(100vw - 220px - 48px))}}
 @media (max-width:860px){.rt-step{flex-wrap:wrap}.rt-go{margin-left:42px}}
+
+/* Étapes de la routine : texte sur toute la largeur, bouton en dessous (aucune police ne peut l'écraser). */
+.rt-step{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;column-gap:12px;row-gap:10px;flex-wrap:nowrap}
+.rt-step .rt-check{grid-row:1}
+.rt-step .rt-text{min-width:0}
+.rt-step .rt-label,.rt-step .rt-hint{overflow-wrap:normal;word-break:normal;hyphens:none}
+.rt-step .rt-go{grid-column:2;justify-self:start;margin-left:0!important;max-width:100%}
+.rt-steps{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.rt-step{grid-template-rows:1fr auto}.rt-step .rt-go{align-self:end}
