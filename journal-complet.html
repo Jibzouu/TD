@@ -1227,7 +1227,7 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .fold-body > .center-row:first-child{margin-top:0}
 .link-btn{background:none;border:none;padding:0;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .settings-adv{margin:0 0 20px;border-top:none;padding-top:0}.settings-adv > summary{font-size:13px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px}.settings-adv .fold-sub{font-weight:400;color:var(--txt3);font-size:11.5px}
-.export-card .btn-primary + .btn-ghost{margin-left:8px}
+.export-actions{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;align-self:stretch;width:100%}.export-actions > button{margin:0;flex:1 1 190px;white-space:nowrap;text-align:center;justify-content:center}
 
 /* ═══ styles/50-body.css ═══ */
 /* ═══ Styles de la structure (partials/body.html), auparavant écrits en ligne ═══ */
@@ -2596,8 +2596,10 @@ tr.more-row .btn-ghost{margin-right:8px}
           <div class="export-icon">💾</div>
           <div class="export-title">Exporter mes trades</div>
           <div class="export-desc">Backup complet (JSON, réimportable à tout moment) ou tableau CSV de tes trades pour Excel, LibreOffice ou Google Sheets.</div>
-          <button class="btn-primary" onclick="exportData()">Télécharger le backup</button>
-          <button class="btn-ghost" onclick="exportTradesCSV()" title="Tableau lisible dans Excel, LibreOffice ou Google Sheets (filtre global appliqué)">Exporter en CSV (Excel)</button>
+          <div class="export-actions">
+            <button class="btn-primary" onclick="exportData()">Télécharger le backup</button>
+            <button class="btn-ghost" onclick="exportTradesCSV()" title="Tableau lisible dans Excel, LibreOffice ou Google Sheets (filtre global appliqué)">Exporter en CSV (Excel)</button>
+          </div>
         </div>
         <div class="export-card">
           <div class="export-icon">📂</div>
