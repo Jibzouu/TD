@@ -1,22 +1,23 @@
 // ── RÈGLES DU JOUR (alertes) ET EXPORT CSV ───────────────────────────────
-// Règles chiffrées du Plan (max trades / jour, stop après N SL d'affilée) + perte max du jour : vérifiées sur les trades
+// Règles chiffrées du Plan (TP max et SL max par jour) + perte max du jour : vérifiées sur les trades
 // du jour, affichées en constat dans la barre « Aujourd'hui » et en alerte quand une règle est atteinte ou dépassée.
 function todayRuleStatus() {
   const today = localDateStr();
-  const list = trades.filter(t => t.date === today).sort((a, b) => (a.entry || '').localeCompare(b.entry || '') || (a.id || 0) - (b.id || 0));
-  const maxT = planData && planData.maxTrades > 0 ? planData.maxTrades : null;
-  const maxSL = planData && planData.maxConsecSL > 0 ? planData.maxConsecSL : null;
-  let streak = 0;
-  for (let i = list.length - 1; i >= 0 && list[i].res === 'SL'; i--) streak++;
+  const list = trades.filter(t => t.date === today);
+  const maxTP = planData && planData.maxTP > 0 ? planData.maxTP : null;
+  const maxSL = planData && planData.maxSL > 0 ? planData.maxSL : null;
+  const tp = list.filter(t => t.res === 'TP').length, sl = list.filter(t => t.res === 'SL').length;
   const pnl = list.reduce((s, t) => s + (typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
   const startBal = accountSize + trades.reduce((s, t) => s + (t.date && t.date < today && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
   const ddLimit = Math.max(0, startBal) * loadDDLimitPct() / 100;
   const alerts = [];
-  if (maxT && list.length > maxT) alerts.push({ lvl: 'crit', txt: `${list.length} trades aujourd'hui pour un maximum de ${maxT} : tu es au-delà de ton plan.` });
-  else if (maxT && list.length === maxT) alerts.push({ lvl: 'warn', txt: `${maxT} trades sur ${maxT} aujourd'hui : maximum atteint, la journée est terminée.` });
-  if (maxSL && streak >= maxSL) alerts.push({ lvl: 'crit', txt: `${streak} SL d'affilée aujourd'hui : ta règle dit d'arrêter après ${maxSL}.` });
+  // Limite atteinte = journée terminée (orange) ; dépassée = hors plan (rouge).
+  if (maxTP && tp > maxTP) alerts.push({ lvl: 'crit', txt: `${tp} TP aujourd'hui pour un maximum de ${maxTP} : tu as continué après ton objectif.` });
+  else if (maxTP && tp === maxTP) alerts.push({ lvl: 'warn', txt: `${tp} TP sur ${maxTP} : objectif du jour atteint, la journée est terminée.` });
+  if (maxSL && sl > maxSL) alerts.push({ lvl: 'crit', txt: `${sl} SL aujourd'hui pour un maximum de ${maxSL} : tu es au-delà de ton plan.` });
+  else if (maxSL && sl === maxSL) alerts.push({ lvl: 'warn', txt: `${sl} SL sur ${maxSL} : limite atteinte, stop pour aujourd'hui.` });
   if (ddLimit > 0 && pnl < 0 && -pnl >= ddLimit) alerts.push({ lvl: 'crit', txt: `Perte du jour ${fmtEUR(pnl)} : limite de ${fmtEUR(ddLimit)} atteinte, stop pour aujourd'hui.` });
-  return { n: list.length, maxT, streak, maxSL, alerts };
+  return { tp, sl, maxTP, maxSL, alerts };
 }
 function renderRuleAlerts() {
   const el = document.getElementById('rule-alert');
@@ -25,16 +26,16 @@ function renderRuleAlerts() {
   if (!s.alerts.length) { el.style.display = 'none'; return; }
   const crit = s.alerts.some(a => a.lvl === 'crit');
   el.className = 'rule-alert ' + (crit ? 'crit' : 'warn');
-  mount(el, html`<span class="fs-16" aria-hidden="true">${crit ? '🛑' : '⚠️'}</span><div class="rule-alert-txt"><b>${crit ? 'Règle de ton plan dépassée' : 'Limite de ton plan atteinte'}</b>${s.alerts.map(a => html`<span>${a.txt}</span>`)}</div><button class="btn-ghost" onclick="showPage('plan', document.querySelector('.nav-item[data-page=plan]'))">Voir le plan</button>`);
+  mount(el, html`<span class="fs-16" aria-hidden="true">${crit ? '🛑' : '✋'}</span><div class="rule-alert-txt"><b>${crit ? 'Règle de ton plan dépassée' : 'Journée terminée selon ton plan'}</b>${s.alerts.map(a => html`<span>${a.txt}</span>`)}</div><button class="btn-ghost" onclick="showPage('plan', document.querySelector('.nav-item[data-page=plan]'))">Voir le plan</button>`);
   el.style.display = 'flex';
 }
 // Constat permanent dans la barre « Aujourd'hui » quand des règles chiffrées existent.
 function ruleInsightChips(chip) {
   const s = todayRuleStatus();
-  if (!s.maxT && !s.maxSL) return [];
-  const parts = [s.maxT ? s.n + '/' + s.maxT + ' trades' : '', s.maxSL ? s.streak + '/' + s.maxSL + ' SL d’affilée' : ''].filter(Boolean).join(' · ');
+  if (!s.maxTP && !s.maxSL) return [];
+  const parts = [s.maxTP ? s.tp + '/' + s.maxTP + ' TP' : '', s.maxSL ? s.sl + '/' + s.maxSL + ' SL' : ''].filter(Boolean).join(' · ');
   const lvl = s.alerts.some(a => a.lvl === 'crit') ? 'red' : s.alerts.length ? 'amber' : 'green';
-  return [chip('📏', 'Règles du jour', parts, lvl === 'green' ? 'OK' : lvl === 'red' ? 'dépassé' : 'limite', lvl, "showPage('plan', document.querySelector('.nav-item[data-page=plan]'))", '', 'Max trades par jour et SL d’affilée, réglés dans Plan de trading')];
+  return [chip('📏', 'Règles du jour', parts, lvl === 'green' ? 'OK' : lvl === 'red' ? 'dépassé' : 'journée terminée', lvl, "showPage('plan', document.querySelector('.nav-item[data-page=plan]'))", '', 'TP max et SL max par jour, réglés dans Plan de trading')];
 }
 
 // Export CSV pour Excel (FR) : séparateur « ; », virgule décimale, BOM UTF-8 pour les accents.

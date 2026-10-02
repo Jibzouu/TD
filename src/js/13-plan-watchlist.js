@@ -13,7 +13,7 @@ const CHECKLIST_FILTERS = [
   'Marché en range sans structure claire',
   '2 SL consécutifs dans la journée',
 ];
-// Règles libres (texte). Le risque par trade, la perte max du jour, le nombre de trades par jour et les SL consécutifs
+// Règles libres (texte). Le risque par trade, la perte max du jour, le TP max et le SL max par jour
 // sont des règles RELIÉES (chiffrées, vérifiées par le journal) : voir renderRiskRules.
 const RISK_RULES = [
   ['RR minimum','2R'],
@@ -49,15 +49,13 @@ function initPlan() {
   if (Array.isArray(planData.risk)) planData.risk = planData.risk.filter(r => Array.isArray(r)).map(r => [String(r[0] ?? ''), String(r[1] ?? '')]);
   ['entryItems', 'filterItems', 'mistakeTags'].forEach(k => { if (Array.isArray(planData[k])) planData[k] = planData[k].map(v => String(v ?? '')); });
   if (!Array.isArray(planData.risk)) planData.risk = RISK_RULES.map(r => r.slice());
-  // Migration : les anciennes règles texte deviennent des règles reliées (risque → Scaling, perte du jour → Paramètres,
-  // trades/jour et SL consécutifs → nombres vérifiés par les alertes).
-  if (planData.maxTrades === undefined) {
-    const row = planData.risk.find(r => /max.*trades/i.test(r[0]));
-    const n = row ? parseInt(String(row[1]).replace(/\D/g, ''), 10) : NaN;
-    planData.maxTrades = n > 0 ? n : 3;
-    const f = (planData.filterItems || CHECKLIST_FILTERS).map(x => String(x).match(/(\d+)\s*SL\s*cons/i)).find(Boolean);
-    planData.maxConsecSL = f ? parseInt(f[1], 10) : 2;
+  // Migration : les anciennes règles texte deviennent des règles reliées (risque → Scaling, perte du jour → Paramètres) ;
+  // la journée se limite à 1 TP max et 2 SL max (remplacent « max trades / jour » et « SL d'affilée »).
+  if (planData.maxTP === undefined) {
     planData.risk = planData.risk.filter(r => !/max.*trades|risque par trade|perte journali/i.test(r[0]));
+    planData.maxTP = 1;
+    planData.maxSL = 2;
+    delete planData.maxTrades; delete planData.maxConsecSL;
     DB.setItem((JP + 'plan'), JSON.stringify(planData));
   }
   if (!Array.isArray(planData.entryItems) || planData.entryItems.length === 0) planData.entryItems = CHECKLIST_ENTRY.slice();
@@ -183,8 +181,8 @@ function renderRiskRules() {
   mount(cont, html`<div class="ui-subtitle">Règles reliées <span class="tone-muted">· vérifiées par le journal</span></div>
     <div class="risk-row tight linked"><span class="grow-13">Risque par trade<small>taille de ton palier, depuis le Scaling</small></span><button class="link-btn rule-val" onclick="${raw(go('scaling'))}">${plan ? fmtEUR(plan.risk, false, 2) + ' · ' + plan.label.split(' · ')[0] : 'à régler'}</button></div>
     <div class="risk-row tight linked"><span class="grow-13">Perte max du jour<small>du solde en début de journée, depuis Paramètres</small></span><button class="link-btn rule-val" onclick="${raw(go('parametres'))}">${fmtRate(ddPct, ddPct % 1 ? 1 : 0)}</button></div>
-    ${num('maxTrades', 'Max trades par jour', 'alerte sur le Dashboard au-delà')}
-    ${num('maxConsecSL', 'Stop après N SL d’affilée', 'dans la même journée')}
+    ${num('maxTP', 'TP max par jour', 'objectif atteint : la journée s’arrête')}
+    ${num('maxSL', 'SL max par jour', 'limite atteinte : stop pour aujourd’hui')}
     <div class="ui-subtitle mt-10">Autres règles</div>
     ${planData.risk.map((row, i) => html`
     <div class="risk-row tight">

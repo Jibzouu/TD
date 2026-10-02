@@ -449,13 +449,14 @@ test('watchlist (biais du jour daté, avec/contre), plan relié, personnalisatio
   await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   await goto(page, 'watchlist');
   assert.equal(await page.inputValue('select[aria-label="Biais du jour EUR/USD"]'), 'Bullish', 'biais conservé');
-  // Plan : règles reliées, ancien « Max trades / jour » repris en nombre.
+  // Plan : règles reliées ; la journée se limite à 1 TP et 2 SL.
   await goto(page, 'plan');
   const rules = await page.locator('#risk-rules').innerText();
   assert.match(rules, /Risque par trade[\s\S]*à régler/);
   assert.match(rules, /Perte max du jour[\s\S]*1 %/);
-  assert.equal(await page.inputValue('input[aria-label="Max trades par jour"]'), '4');
-  assert.equal(await page.inputValue('input[aria-label="Stop après N SL d’affilée"]'), '2');
+  assert.equal(await page.inputValue('input[aria-label="TP max par jour"]'), '1');
+  assert.equal(await page.inputValue('input[aria-label="SL max par jour"]'), '2');
+  assert.doesNotMatch(rules, /Max trades/, 'ancienne règle « max trades / jour » retirée');
   assert.doesNotMatch(rules, /0\.5%/, 'ancienne règle texte du risque retirée');
   await goto(page, 'parametres');
   assert.equal(await page.evaluate(() => document.getElementById('settings-adv').open), false);
@@ -464,32 +465,39 @@ test('watchlist (biais du jour daté, avec/contre), plan relié, personnalisatio
   await ctx.close();
 });
 
-test('règles du jour : max trades et SL d’affilée en alerte ; export CSV lisible par Excel', async () => {
+test('règles du jour : 1 TP max et 2 SL max en alerte ; export CSV lisible par Excel', async () => {
   const today = '2026-06-17';
-  const tr = [T({ id: 1, date: today, entry: '09:00', res: 'TP', pnl: 2, pnlEur: 60 }), T({ id: 2, date: today, entry: '10:00', res: 'SL', pnl: -1, pnlEur: -30 }),
+  const tr = [T({ id: 1, date: today, entry: '09:00', res: 'SL', pnl: -1, pnlEur: -30 }), T({ id: 2, date: today, entry: '10:00', res: 'TP', pnl: 2, pnlEur: 60 }),
     T({ id: 3, date: today, entry: '11:00', res: 'SL', pnl: -1, pnlEur: -30, asset: 'DAX; "40"', desc: 'note\nsur deux lignes' })];
-  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: tr, tj_plan: { ce: [], cf: [], notes: '', risk: [], maxTrades: 3, maxConsecSL: 2 } } });
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: tr, tj_plan: { ce: [], cf: [], notes: '', risk: [], maxTP: 1, maxSL: 2 } } });
   const alert = page.locator('#rule-alert');
   assert.equal(await alert.isVisible(), true);
-  const txt = await alert.innerText();
+  let txt = await alert.innerText();
+  assert.match(txt, /Journée terminée selon ton plan/);
+  assert.match(txt, /1 TP sur 1 : objectif du jour atteint/);
+  assert.match(txt, /2 SL sur 2 : limite atteinte, stop pour aujourd'hui/);
+  assert.match(await page.locator('#summary-banner').innerText(), /Règles du jour\s*1\/1 TP · 2\/2 SL/);
+  // Un 2e TP : au-delà du plan → rouge.
+  await page.evaluate(() => { trades.unshift(Object.assign({}, trades[0], { id: 99, entry: '12:00', res: 'TP', pnl: 1, pnlEur: 30, asset: 'EUR/USD', desc: '' })); renderAll(); });
+  txt = await alert.innerText();
   assert.match(txt, /Règle de ton plan dépassée/);
-  assert.match(txt, /3 trades sur 3 aujourd'hui/);
-  assert.match(txt, /2 SL d'affilée aujourd'hui : ta règle dit d'arrêter après 2/);
-  assert.match(await page.locator('#summary-banner').innerText(), /Règles du jour\s*3\/3 trades · 2\/2 SL d’affilée/);
-  // Règle assouplie dans le Plan : plus d'alerte SL.
+  assert.match(txt, /2 TP aujourd'hui pour un maximum de 1/);
+  assert.equal(await alert.getAttribute('class'), 'rule-alert crit');
+  // SL max relevé à 3 dans le Plan : plus d'alerte SL.
   await goto(page, 'plan');
-  await page.fill('input[aria-label="Stop après N SL d’affilée"]', '3'); await page.dispatchEvent('input[aria-label="Stop après N SL d’affilée"]', 'change');
+  await page.fill('input[aria-label="SL max par jour"]', '3'); await page.dispatchEvent('input[aria-label="SL max par jour"]', 'change');
   await goto(page, 'dashboard');
-  assert.doesNotMatch(await page.locator('#rule-alert').innerText(), /SL d'affilée/);
+  assert.doesNotMatch(await page.locator('#rule-alert').innerText(), /SL sur/);
   // CSV : BOM, « ; », virgule décimale, guillemets échappés, une ligne par trade.
   const csv = await page.evaluate(() => tradesToCSV(trades));
   assert.ok(csv.startsWith('﻿Date;Entrée;Sortie;Actif;Sens'));
   const lines = csv.slice(1).split('\r\n');
-  assert.equal(lines.length, 4);
+  assert.equal(lines.length, 5);
   assert.match(lines[1], /^2026-06-17;09:00;/);
   assert.match(lines[3], /;"DAX; ""40""";/);
   assert.match(lines[3], /;-1;-30;/);
   assert.match(lines[3], /note sur deux lignes/);
+  assert.match(lines[4], /^2026-06-17;12:00;/);
   const dl = page.waitForEvent('download');
   await page.evaluate(() => exportTradesCSV());
   assert.match((await dl).suggestedFilename(), /^journal-.*-trades-\d{4}-\d{2}-\d{2}\.csv$/);

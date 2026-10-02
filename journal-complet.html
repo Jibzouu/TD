@@ -7166,7 +7166,7 @@ const CHECKLIST_FILTERS = [
   'Marché en range sans structure claire',
   '2 SL consécutifs dans la journée',
 ];
-// Règles libres (texte). Le risque par trade, la perte max du jour, le nombre de trades par jour et les SL consécutifs
+// Règles libres (texte). Le risque par trade, la perte max du jour, le TP max et le SL max par jour
 // sont des règles RELIÉES (chiffrées, vérifiées par le journal) : voir renderRiskRules.
 const RISK_RULES = [
   ['RR minimum','2R'],
@@ -7202,15 +7202,13 @@ function initPlan() {
   if (Array.isArray(planData.risk)) planData.risk = planData.risk.filter(r => Array.isArray(r)).map(r => [String(r[0] ?? ''), String(r[1] ?? '')]);
   ['entryItems', 'filterItems', 'mistakeTags'].forEach(k => { if (Array.isArray(planData[k])) planData[k] = planData[k].map(v => String(v ?? '')); });
   if (!Array.isArray(planData.risk)) planData.risk = RISK_RULES.map(r => r.slice());
-  // Migration : les anciennes règles texte deviennent des règles reliées (risque → Scaling, perte du jour → Paramètres,
-  // trades/jour et SL consécutifs → nombres vérifiés par les alertes).
-  if (planData.maxTrades === undefined) {
-    const row = planData.risk.find(r => /max.*trades/i.test(r[0]));
-    const n = row ? parseInt(String(row[1]).replace(/\D/g, ''), 10) : NaN;
-    planData.maxTrades = n > 0 ? n : 3;
-    const f = (planData.filterItems || CHECKLIST_FILTERS).map(x => String(x).match(/(\d+)\s*SL\s*cons/i)).find(Boolean);
-    planData.maxConsecSL = f ? parseInt(f[1], 10) : 2;
+  // Migration : les anciennes règles texte deviennent des règles reliées (risque → Scaling, perte du jour → Paramètres) ;
+  // la journée se limite à 1 TP max et 2 SL max (remplacent « max trades / jour » et « SL d'affilée »).
+  if (planData.maxTP === undefined) {
     planData.risk = planData.risk.filter(r => !/max.*trades|risque par trade|perte journali/i.test(r[0]));
+    planData.maxTP = 1;
+    planData.maxSL = 2;
+    delete planData.maxTrades; delete planData.maxConsecSL;
     DB.setItem((JP + 'plan'), JSON.stringify(planData));
   }
   if (!Array.isArray(planData.entryItems) || planData.entryItems.length === 0) planData.entryItems = CHECKLIST_ENTRY.slice();
@@ -7336,8 +7334,8 @@ function renderRiskRules() {
   mount(cont, html`<div class="ui-subtitle">Règles reliées <span class="tone-muted">· vérifiées par le journal</span></div>
     <div class="risk-row tight linked"><span class="grow-13">Risque par trade<small>taille de ton palier, depuis le Scaling</small></span><button class="link-btn rule-val" onclick="${raw(go('scaling'))}">${plan ? fmtEUR(plan.risk, false, 2) + ' · ' + plan.label.split(' · ')[0] : 'à régler'}</button></div>
     <div class="risk-row tight linked"><span class="grow-13">Perte max du jour<small>du solde en début de journée, depuis Paramètres</small></span><button class="link-btn rule-val" onclick="${raw(go('parametres'))}">${fmtRate(ddPct, ddPct % 1 ? 1 : 0)}</button></div>
-    ${num('maxTrades', 'Max trades par jour', 'alerte sur le Dashboard au-delà')}
-    ${num('maxConsecSL', 'Stop après N SL d’affilée', 'dans la même journée')}
+    ${num('maxTP', 'TP max par jour', 'objectif atteint : la journée s’arrête')}
+    ${num('maxSL', 'SL max par jour', 'limite atteinte : stop pour aujourd’hui')}
     <div class="ui-subtitle mt-10">Autres règles</div>
     ${planData.risk.map((row, i) => html`
     <div class="risk-row tight">
@@ -9901,24 +9899,25 @@ function printWeeklyReview() {
 
 /* ═══ js/25-rules.js ═══ */
 // ── RÈGLES DU JOUR (alertes) ET EXPORT CSV ───────────────────────────────
-// Règles chiffrées du Plan (max trades / jour, stop après N SL d'affilée) + perte max du jour : vérifiées sur les trades
+// Règles chiffrées du Plan (TP max et SL max par jour) + perte max du jour : vérifiées sur les trades
 // du jour, affichées en constat dans la barre « Aujourd'hui » et en alerte quand une règle est atteinte ou dépassée.
 function todayRuleStatus() {
   const today = localDateStr();
-  const list = trades.filter(t => t.date === today).sort((a, b) => (a.entry || '').localeCompare(b.entry || '') || (a.id || 0) - (b.id || 0));
-  const maxT = planData && planData.maxTrades > 0 ? planData.maxTrades : null;
-  const maxSL = planData && planData.maxConsecSL > 0 ? planData.maxConsecSL : null;
-  let streak = 0;
-  for (let i = list.length - 1; i >= 0 && list[i].res === 'SL'; i--) streak++;
+  const list = trades.filter(t => t.date === today);
+  const maxTP = planData && planData.maxTP > 0 ? planData.maxTP : null;
+  const maxSL = planData && planData.maxSL > 0 ? planData.maxSL : null;
+  const tp = list.filter(t => t.res === 'TP').length, sl = list.filter(t => t.res === 'SL').length;
   const pnl = list.reduce((s, t) => s + (typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
   const startBal = accountSize + trades.reduce((s, t) => s + (t.date && t.date < today && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
   const ddLimit = Math.max(0, startBal) * loadDDLimitPct() / 100;
   const alerts = [];
-  if (maxT && list.length > maxT) alerts.push({ lvl: 'crit', txt: `${list.length} trades aujourd'hui pour un maximum de ${maxT} : tu es au-delà de ton plan.` });
-  else if (maxT && list.length === maxT) alerts.push({ lvl: 'warn', txt: `${maxT} trades sur ${maxT} aujourd'hui : maximum atteint, la journée est terminée.` });
-  if (maxSL && streak >= maxSL) alerts.push({ lvl: 'crit', txt: `${streak} SL d'affilée aujourd'hui : ta règle dit d'arrêter après ${maxSL}.` });
+  // Limite atteinte = journée terminée (orange) ; dépassée = hors plan (rouge).
+  if (maxTP && tp > maxTP) alerts.push({ lvl: 'crit', txt: `${tp} TP aujourd'hui pour un maximum de ${maxTP} : tu as continué après ton objectif.` });
+  else if (maxTP && tp === maxTP) alerts.push({ lvl: 'warn', txt: `${tp} TP sur ${maxTP} : objectif du jour atteint, la journée est terminée.` });
+  if (maxSL && sl > maxSL) alerts.push({ lvl: 'crit', txt: `${sl} SL aujourd'hui pour un maximum de ${maxSL} : tu es au-delà de ton plan.` });
+  else if (maxSL && sl === maxSL) alerts.push({ lvl: 'warn', txt: `${sl} SL sur ${maxSL} : limite atteinte, stop pour aujourd'hui.` });
   if (ddLimit > 0 && pnl < 0 && -pnl >= ddLimit) alerts.push({ lvl: 'crit', txt: `Perte du jour ${fmtEUR(pnl)} : limite de ${fmtEUR(ddLimit)} atteinte, stop pour aujourd'hui.` });
-  return { n: list.length, maxT, streak, maxSL, alerts };
+  return { tp, sl, maxTP, maxSL, alerts };
 }
 function renderRuleAlerts() {
   const el = document.getElementById('rule-alert');
@@ -9927,16 +9926,16 @@ function renderRuleAlerts() {
   if (!s.alerts.length) { el.style.display = 'none'; return; }
   const crit = s.alerts.some(a => a.lvl === 'crit');
   el.className = 'rule-alert ' + (crit ? 'crit' : 'warn');
-  mount(el, html`<span class="fs-16" aria-hidden="true">${crit ? '🛑' : '⚠️'}</span><div class="rule-alert-txt"><b>${crit ? 'Règle de ton plan dépassée' : 'Limite de ton plan atteinte'}</b>${s.alerts.map(a => html`<span>${a.txt}</span>`)}</div><button class="btn-ghost" onclick="showPage('plan', document.querySelector('.nav-item[data-page=plan]'))">Voir le plan</button>`);
+  mount(el, html`<span class="fs-16" aria-hidden="true">${crit ? '🛑' : '✋'}</span><div class="rule-alert-txt"><b>${crit ? 'Règle de ton plan dépassée' : 'Journée terminée selon ton plan'}</b>${s.alerts.map(a => html`<span>${a.txt}</span>`)}</div><button class="btn-ghost" onclick="showPage('plan', document.querySelector('.nav-item[data-page=plan]'))">Voir le plan</button>`);
   el.style.display = 'flex';
 }
 // Constat permanent dans la barre « Aujourd'hui » quand des règles chiffrées existent.
 function ruleInsightChips(chip) {
   const s = todayRuleStatus();
-  if (!s.maxT && !s.maxSL) return [];
-  const parts = [s.maxT ? s.n + '/' + s.maxT + ' trades' : '', s.maxSL ? s.streak + '/' + s.maxSL + ' SL d’affilée' : ''].filter(Boolean).join(' · ');
+  if (!s.maxTP && !s.maxSL) return [];
+  const parts = [s.maxTP ? s.tp + '/' + s.maxTP + ' TP' : '', s.maxSL ? s.sl + '/' + s.maxSL + ' SL' : ''].filter(Boolean).join(' · ');
   const lvl = s.alerts.some(a => a.lvl === 'crit') ? 'red' : s.alerts.length ? 'amber' : 'green';
-  return [chip('📏', 'Règles du jour', parts, lvl === 'green' ? 'OK' : lvl === 'red' ? 'dépassé' : 'limite', lvl, "showPage('plan', document.querySelector('.nav-item[data-page=plan]'))", '', 'Max trades par jour et SL d’affilée, réglés dans Plan de trading')];
+  return [chip('📏', 'Règles du jour', parts, lvl === 'green' ? 'OK' : lvl === 'red' ? 'dépassé' : 'journée terminée', lvl, "showPage('plan', document.querySelector('.nav-item[data-page=plan]'))", '', 'TP max et SL max par jour, réglés dans Plan de trading')];
 }
 
 // Export CSV pour Excel (FR) : séparateur « ; », virgule décimale, BOM UTF-8 pour les accents.
