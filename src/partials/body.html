@@ -977,6 +977,26 @@
           </div>
         </div>
         <div class="export-card span-2">
+          <div class="export-icon">🎓</div>
+          <div class="export-title">Rapport pour ton mentor</div>
+          <div class="export-desc">Un fichier unique (HTML) à envoyer à ton mentor, ton coach ou ta prop firm : chiffres clés, courbe, setups, actifs, discipline, leçons de ton journal de séance et liste des trades. Il s'ouvre dans n'importe quel navigateur et s'imprime en PDF.</div>
+          <div class="mentor-opts">
+            <label class="fb-label" for="mentor-period">Période</label>
+            <select id="mentor-period" class="filter-select">
+              <option value="7d">7 derniers jours</option>
+              <option value="30d" selected>30 derniers jours</option>
+              <option value="month">Ce mois-ci</option>
+              <option value="90d">3 derniers mois</option>
+              <option value="year">Cette année</option>
+              <option value="all">Tout l'historique</option>
+              <option value="filter">Filtre global actuel</option>
+            </select>
+            <label class="check-label"><input type="checkbox" id="mentor-caps"> Inclure les captures</label>
+            <label class="check-label"><input type="checkbox" id="mentor-ronly"> Masquer les montants en € (R uniquement)</label>
+          </div>
+          <div class="export-actions"><button class="btn-primary" onclick="downloadMentorReport()">Télécharger le rapport</button></div>
+        </div>
+        <div class="export-card span-2">
           <div class="export-icon">📊</div>
           <div class="export-title">Importer l'historique de ton broker</div>
           <div class="export-desc"><b>MetaTrader 4 / 5</b> : onglet Historique → clic droit → « Rapport » / « Enregistrer comme rapport détaillé » (fichier .htm). <b>cTrader</b> : export de l'historique (HTML ou CSV). <b>TradingView</b> et autres brokers : fichiers CSV. Sélectionne-les en une fois : le journal reconnaît chaque format, calcule les frais, le P&amp;L net et le R, et ignore les doublons si tu réimportes un export plus récent.</div>

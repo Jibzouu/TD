@@ -268,3 +268,4 @@
 .dj-rv-day{font-family:var(--mono);font-size:12px;color:var(--txt3);white-space:nowrap}
 .dj-rv-txt{flex:1;font-size:13px}
 @media (max-width:760px){.dj-cols{grid-template-columns:1fr;gap:8px}}
+.mentor-opts{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:4px 0 14px}

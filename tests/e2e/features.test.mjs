@@ -814,3 +814,29 @@ test('journal de séance : préparation du jour sans trade, bilan et leçon, rev
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('rapport mentor : fichier HTML autonome, période, R uniquement, contenu échappé', async () => {
+  const list = sampleTrades();
+  list[0].desc = '<script>alert(1)</script> entrée propre';
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: list, tj_daily: JSON.stringify({ '2026-06-10': { lesson: 'Attendre la confirmation', discipline: 'oui', updatedAt: 1 } }) }, time: NOW });
+  await goto(page, 'export');
+  await page.selectOption('#mentor-period', 'all');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Télécharger le rapport")')]);
+  assert.match(dl.suggestedFilename(), /^rapport-live-2026-06-17\.html$/);
+  const doc = readFileSync(await dl.path(), 'utf8');
+  assert.ok(!/<script/i.test(doc), 'aucun script dans le rapport');
+  assert.match(doc, /&lt;script&gt;alert\(1\)&lt;\/script&gt; entrée propre/);
+  assert.match(doc, /30 trades sur \d+ jours/);
+  assert.match(doc, /Par setup[\s\S]*Break &amp; retest/);
+  assert.match(doc, /Attendre la confirmation <em>— plan respecté<\/em>/);
+  assert.match(doc, /<svg viewBox="0 0 760 180" class="eq"/);
+  assert.match(doc, /Résultat net/);
+  // R uniquement : plus aucun montant en €.
+  await page.check('#mentor-ronly');
+  const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('button:has-text("Télécharger le rapport")')]);
+  const doc2 = readFileSync(await dl2.path(), 'utf8');
+  assert.ok(!/\d\s?€/.test(doc2), 'aucun montant en €');
+  assert.match(doc2, /montants en R uniquement/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
