@@ -3,7 +3,7 @@ let editingTradeId = null;
 
 function resetTradeForm() {
   ['f-asset','f-tf','f-dir','f-session','f-res','f-emotion'].forEach(id => document.getElementById(id).value = '');
-  ['f-rr','f-pnl','f-pnleur','f-size','f-desc','f-entry','f-exit','f-setup','f-tags','f-review'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['f-rr','f-pnl','f-pnleur','f-size','f-fees','f-desc','f-entry','f-exit','f-setup','f-tags','f-review'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['f-entry-price','f-sl-price','f-tp-price','f-exit-price'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const preview = document.getElementById('distance-r-preview');
   if (preview) preview.style.display = 'none';
@@ -31,6 +31,7 @@ function startEditTrade(id) {
   document.getElementById('f-pnl').value = (t.pnl != null) ? t.pnl : '';
   document.getElementById('f-pnleur').value = (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : '';
   document.getElementById('f-size').value = (t.size !== null && t.size !== undefined) ? t.size : '';
+  document.getElementById('f-fees').value = (t.fees !== null && t.fees !== undefined) ? t.fees : '';
   document.getElementById('f-desc').value = t.desc || '';
   document.getElementById('f-setup').value = t.setup || '';
   document.getElementById('f-tags').value = Array.isArray(t.tags) ? t.tags.join(', ') : '';
@@ -191,6 +192,8 @@ function addTrade() {
   const pnlEur = pnlEurRaw !== '' ? parseFloat(pnlEurRaw) : null;
   const sizeRaw = document.getElementById('f-size').value;
   const size = sizeRaw !== '' ? parseFloat(sizeRaw) : null;
+  const feesRaw = document.getElementById('f-fees').value;
+  const fees = feesRaw !== '' ? parseFloat(feesRaw) : null;   // P&L € = net ; frais = information (brut = net + frais)
   const images = currentImgs.map(safeImgSrc).filter(Boolean);
   const desc = document.getElementById('f-desc').value.trim();
   const setup = document.getElementById('f-setup').value.trim().slice(0, 60);
@@ -225,7 +228,7 @@ function addTrade() {
     return;
   }
 
-  const fields = { date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
+  const fields = { date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, fees, size, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
   if (editingTradeId !== null) {
     if (!TradeStore.update(editingTradeId, fields, images)) return;   // stockage plein : rien n'est perdu, le formulaire reste tel quel
     editingTradeId = null;

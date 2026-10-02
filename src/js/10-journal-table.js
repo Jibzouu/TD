@@ -228,7 +228,7 @@ function openTradeDetail(id) {
     </div>
     <div class="dw-rsrc tone-${raw(rMethod[1])}">${rMethod[0]}</div>
     <div class="dw-stats">
-      ${UI.stat('P&L', UI.pnl(t.pnlEur, '€'))}
+      ${UI.stat('P&L net', UI.pnl(t.pnlEur, '€'), t.fees ? { sub: 'brut ' + fmtEUR(t.pnlEur + t.fees, true, 2) + ' · frais ' + fmtEUR(t.fees, false, 2) } : {})}
       ${UI.stat('Résultat en R', UI.pnl(t.pnl, 'R'))}
       ${UI.stat('Qualité (RR)', t.rr ? quality + ' · ' + t.rr + 'R' : '—')}
       ${UI.stat('Humeur', t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—')}

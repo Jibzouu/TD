@@ -658,3 +658,27 @@ test('premier lancement : assistant 3 étapes, réglages appliqués, démo effa�
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('frais et commissions : saisie, P&L net / brut, statistiques, export', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1, date: '2026-06-10', pnlEur: 96.5, fees: 3.5 }), T({ id: 2, date: '2026-06-11', res: 'SL', pnl: -1, pnlEur: -52, fees: 2 })] } });
+  assert.match(await page.locator('#k-pnleur-sub').textContent(), /net de 6\s€ de frais/);
+  await goto(page, 'stats');
+  const pnl = await page.locator('#stats-pnl').innerText();
+  assert.match(pnl, /P&L brut \(avant frais\)\s+\+50,00\s€/);
+  assert.match(pnl, /Frais payés \(commission \+ swap\)\s+−5,50\s€|Frais payés \(commission \+ swap\)\s+-5,50\s€/);
+  // Saisie dans le formulaire.
+  await page.evaluate(() => openTradePanel());
+  await page.selectOption('#f-asset', 'EUR/USD'); await page.selectOption('#f-res', 'TP');
+  await page.evaluate(() => openFormSectionById('section-context'));
+  await page.fill('#f-pnleur', '120'); await page.fill('#f-fees', '4.2');
+  await page.click('#trade-submit-btn');
+  const t = await page.evaluate(() => trades.find(x => x.pnlEur === 120));
+  assert.equal(t.fees, 4.2);
+  await page.evaluate(id => openTradeDetail(id), t.id);
+  assert.match(await page.locator('#trade-drawer .dw-stats').innerText(), /brut \+124,20\s€ · frais 4,20\s€/);
+  const csv = await page.evaluate(() => tradesToCSV(trades));
+  assert.match(csv.split('\r\n')[0], /P&L net \(€\);Frais \(€\)/);
+  assert.match(csv, /;120;4,2;/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

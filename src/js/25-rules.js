@@ -49,7 +49,7 @@ function tradesToCSV(list) {
   const cols = [
     ['Date', t => t.date], ['Entrée', t => t.entry], ['Sortie', t => t.exit], ['Actif', t => t.asset], ['Sens', t => t.dir],
     ['Session', t => t.session], ['UT', t => t.tf], ['Setup', t => t.setup], ['Résultat', t => t.res],
-    ['R visé', t => t.rr], ['R réalisé', t => t.pnl], ['P&L (€)', t => t.pnlEur],
+    ['R visé', t => t.rr], ['R réalisé', t => t.pnl], ['P&L net (€)', t => t.pnlEur], ['Frais (€)', t => t.fees],
     ['Prix d\'entrée', t => t.entryPrice], ['Stop', t => t.slPrice], ['Objectif', t => t.tpPrice], ['Prix de sortie', t => t.exitPrice],
     ['Taille', t => t.size], ['MAE (€)', t => t.mae], ['MFE (€)', t => t.mfe], ['Humeur (1-5)', t => t.emotion],
     ['Erreurs', t => (t.mistakes || []).join(', ')], ['Tags', t => (t.tags || []).join(', ')],

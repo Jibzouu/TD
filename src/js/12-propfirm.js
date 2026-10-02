@@ -239,6 +239,8 @@ function renderStats() {
 
   mount('stats-pnl', html`${[
     statRow('P&L Total (R)', pnlArr.length>0?fmtR(totalPnl, 2):'—', totalPnl>0?'pnl-p':totalPnl<0?'pnl-n':''),
+    ...(() => { const fe = trades.reduce((s, t) => s + (typeof t.fees === 'number' ? t.fees : 0), 0); if (!fe) return []; const net = trades.reduce((s, t) => s + (t.pnlEur != null ? t.pnlEur : 0), 0);
+      return [statRow('P&L brut (avant frais)', fmtEUR(net + fe, true, 2), net + fe >= 0 ? 'pnl-p' : 'pnl-n'), statRow('Frais payés (commission + swap)', fmtEUR(-fe, true, 2), 'pnl-n')]; })(),
     statRow('P&L Total (€)', (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?fmtEUR(et, true, 2):'—'})(), (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>0?'pnl-p':et<0?'pnl-n':''):''})()), 
     statRow('P&L Moyen/trade', pnlArr.length>0?fmtR(totalPnl/pnlArr.length, 2):'—'),
     statRow('Gains bruts', gw>0?fmtR(gw, 2):'—', 'pnl-p'),

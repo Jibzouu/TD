@@ -1856,9 +1856,10 @@ tr.more-row .btn-ghost{margin-right:8px}
                 <div class="field"><label>Heure d'entrée</label><input type="time" id="f-entry"></div>
                 <div class="field"><label>Heure de sortie</label><input type="time" id="f-exit"></div>
               </div>
-              <div class="form-row f3 mb-0">
+              <div class="form-row f4 mb-0">
                 <div class="field"><label for="f-tags">Tags libres</label><input type="text" id="f-tags" placeholder="ex : news, contre-tendance" maxlength="200" autocomplete="off"></div>
                 <div class="field"><label>Taille de position (lots)</label><input type="number" id="f-size" placeholder="ex : 0.10" step="0.01" min="0"></div>
+                <div class="field"><label for="f-fees" title="Commission + swap payés sur ce trade. Le P&amp;L en € reste le résultat NET (frais déjà déduits).">Frais (commission + swap, €)</label><input type="number" id="f-fees" placeholder="ex : 3.50" step="0.01"></div>
                 <div class="field"><label>Note émotionnelle</label>
                   <select id="f-emotion">
                     <option value="">Sélectionner…</option>
@@ -3264,7 +3265,7 @@ function chartsAvailable(canvasId) {
 }
 // Normalise un trade venant du stockage ou d'un fichier importé : types attendus, valeurs inconnues neutralisées.
 // Empêche qu'un backup ou un CSV piégé injecte du HTML/JS via un champ affiché (heure, taille, prix, résultat…).
-const TRADE_NUM_FIELDS = ['rr', 'pnl', 'pnlEur', 'size', 'ddUsed', 'emotion', 'entryPrice', 'slPrice', 'tpPrice', 'exitPrice', 'mfe', 'mae', 'fxRate', 'checklistTotal'];
+const TRADE_NUM_FIELDS = ['rr', 'pnl', 'pnlEur', 'fees', 'size', 'ddUsed', 'emotion', 'entryPrice', 'slPrice', 'tpPrice', 'exitPrice', 'mfe', 'mae', 'fxRate', 'checklistTotal'];
 const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy', 'setup', 'review'];
 function sanitizeTrade(t) {
   if (!t || typeof t !== 'object') return null;
@@ -5563,7 +5564,7 @@ let editingTradeId = null;
 
 function resetTradeForm() {
   ['f-asset','f-tf','f-dir','f-session','f-res','f-emotion'].forEach(id => document.getElementById(id).value = '');
-  ['f-rr','f-pnl','f-pnleur','f-size','f-desc','f-entry','f-exit','f-setup','f-tags','f-review'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['f-rr','f-pnl','f-pnleur','f-size','f-fees','f-desc','f-entry','f-exit','f-setup','f-tags','f-review'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['f-entry-price','f-sl-price','f-tp-price','f-exit-price'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const preview = document.getElementById('distance-r-preview');
   if (preview) preview.style.display = 'none';
@@ -5591,6 +5592,7 @@ function startEditTrade(id) {
   document.getElementById('f-pnl').value = (t.pnl != null) ? t.pnl : '';
   document.getElementById('f-pnleur').value = (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : '';
   document.getElementById('f-size').value = (t.size !== null && t.size !== undefined) ? t.size : '';
+  document.getElementById('f-fees').value = (t.fees !== null && t.fees !== undefined) ? t.fees : '';
   document.getElementById('f-desc').value = t.desc || '';
   document.getElementById('f-setup').value = t.setup || '';
   document.getElementById('f-tags').value = Array.isArray(t.tags) ? t.tags.join(', ') : '';
@@ -5751,6 +5753,8 @@ function addTrade() {
   const pnlEur = pnlEurRaw !== '' ? parseFloat(pnlEurRaw) : null;
   const sizeRaw = document.getElementById('f-size').value;
   const size = sizeRaw !== '' ? parseFloat(sizeRaw) : null;
+  const feesRaw = document.getElementById('f-fees').value;
+  const fees = feesRaw !== '' ? parseFloat(feesRaw) : null;   // P&L € = net ; frais = information (brut = net + frais)
   const images = currentImgs.map(safeImgSrc).filter(Boolean);
   const desc = document.getElementById('f-desc').value.trim();
   const setup = document.getElementById('f-setup').value.trim().slice(0, 60);
@@ -5785,7 +5789,7 @@ function addTrade() {
     return;
   }
 
-  const fields = { date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, size, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
+  const fields = { date, asset, tf, dir, session, entry, exit, emotion, res, rr, pnl, rSrc, pnlEur, fees, size, desc, setup, tags, review, checklist, checklistLabels, checklistTotal, mistakes, entryPrice, slPrice, tpPrice, exitPrice };
   if (editingTradeId !== null) {
     if (!TradeStore.update(editingTradeId, fields, images)) return;   // stockage plein : rien n'est perdu, le formulaire reste tel quel
     editingTradeId = null;
@@ -5973,7 +5977,8 @@ function renderKPIs() {
   if (eurArr.length > 0) {
     animateHeroValue(totalEur);
     eurEl.style.color = totalEur > 0 ? 'var(--green)' : totalEur < 0 ? 'var(--red)' : 'var(--txt)';
-    document.getElementById('k-pnleur-sub').textContent = fmtEUR(totalEur / eurArr.length, true, 2) + ' en moyenne par trade · ' + eurArr.length + ' trade(s) avec montant';
+    const fees = eurArr.reduce((s, t) => s + (typeof t.fees === 'number' ? t.fees : 0), 0);
+    document.getElementById('k-pnleur-sub').textContent = fmtEUR(totalEur / eurArr.length, true, 2) + ' en moyenne par trade · ' + eurArr.length + ' trade(s) avec montant' + (fees ? ' · net de ' + fmtEUR(fees, false, 0) + ' de frais' : '');
     document.title = fmtEUR(totalEur, true) + ' · ' + JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
   } else { eurEl.textContent = '—'; lastHeroValue = null; eurEl.style.color = 'var(--txt3)'; document.getElementById('k-pnleur-sub').textContent = 'en euros'; document.title = JOURNALS[JOURNAL_ID].title; }
 
@@ -6686,7 +6691,7 @@ function openTradeDetail(id) {
     </div>
     <div class="dw-rsrc tone-${raw(rMethod[1])}">${rMethod[0]}</div>
     <div class="dw-stats">
-      ${UI.stat('P&L', UI.pnl(t.pnlEur, '€'))}
+      ${UI.stat('P&L net', UI.pnl(t.pnlEur, '€'), t.fees ? { sub: 'brut ' + fmtEUR(t.pnlEur + t.fees, true, 2) + ' · frais ' + fmtEUR(t.fees, false, 2) } : {})}
       ${UI.stat('Résultat en R', UI.pnl(t.pnl, 'R'))}
       ${UI.stat('Qualité (RR)', t.rr ? quality + ' · ' + t.rr + 'R' : '—')}
       ${UI.stat('Humeur', t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—')}
@@ -7409,6 +7414,8 @@ function renderStats() {
 
   mount('stats-pnl', html`${[
     statRow('P&L Total (R)', pnlArr.length>0?fmtR(totalPnl, 2):'—', totalPnl>0?'pnl-p':totalPnl<0?'pnl-n':''),
+    ...(() => { const fe = trades.reduce((s, t) => s + (typeof t.fees === 'number' ? t.fees : 0), 0); if (!fe) return []; const net = trades.reduce((s, t) => s + (t.pnlEur != null ? t.pnlEur : 0), 0);
+      return [statRow('P&L brut (avant frais)', fmtEUR(net + fe, true, 2), net + fe >= 0 ? 'pnl-p' : 'pnl-n'), statRow('Frais payés (commission + swap)', fmtEUR(-fe, true, 2), 'pnl-n')]; })(),
     statRow('P&L Total (€)', (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?fmtEUR(et, true, 2):'—'})(), (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>0?'pnl-p':et<0?'pnl-n':''):''})()), 
     statRow('P&L Moyen/trade', pnlArr.length>0?fmtR(totalPnl/pnlArr.length, 2):'—'),
     statRow('Gains bruts', gw>0?fmtR(gw, 2):'—', 'pnl-p'),
@@ -10361,7 +10368,7 @@ function tradesToCSV(list) {
   const cols = [
     ['Date', t => t.date], ['Entrée', t => t.entry], ['Sortie', t => t.exit], ['Actif', t => t.asset], ['Sens', t => t.dir],
     ['Session', t => t.session], ['UT', t => t.tf], ['Setup', t => t.setup], ['Résultat', t => t.res],
-    ['R visé', t => t.rr], ['R réalisé', t => t.pnl], ['P&L (€)', t => t.pnlEur],
+    ['R visé', t => t.rr], ['R réalisé', t => t.pnl], ['P&L net (€)', t => t.pnlEur], ['Frais (€)', t => t.fees],
     ['Prix d\'entrée', t => t.entryPrice], ['Stop', t => t.slPrice], ['Objectif', t => t.tpPrice], ['Prix de sortie', t => t.exitPrice],
     ['Taille', t => t.size], ['MAE (€)', t => t.mae], ['MFE (€)', t => t.mfe], ['Humeur (1-5)', t => t.emotion],
     ['Erreurs', t => (t.mistakes || []).join(', ')], ['Tags', t => (t.tags || []).join(', ')],
