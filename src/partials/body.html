@@ -867,7 +867,11 @@
     <!-- ═══ WATCHLIST ═══ -->
     <div id="page-watchlist" class="page">
       <div class="page-hdr">
-        <div class="page-hdr-left"><h2>Watchlist</h2><p>Suivi des biais et niveaux clés</p></div>
+        <div class="page-hdr-left"><h2>Watchlist</h2><p>Ton biais du jour et tes niveaux clés, reliés à tes trades</p></div>
+      </div>
+      <div class="panel mb-20">
+        <div class="panel-hdr"><span>Avec ou contre ton biais ?<small class="panel-sub">résultats de tes trades selon le biais noté ce jour-là</small></span></div>
+        <div id="watch-stats"></div>
       </div>
       <div class="watch-grid" id="watchlist-grid"></div>
     </div>
@@ -1118,6 +1122,8 @@
         <div id="theme-preset-grid"></div>
       </div>
 
+      <details class="fold settings-adv" id="settings-adv">
+        <summary>Personnalisation avancée <span class="fold-sub">mes thèmes, couleurs une par une, ambiance, formes et polices</span></summary>
       <div class="panel mb-20">
         <div class="panel-hdr hdr-between">
           <span>Mes thèmes</span>
@@ -1227,6 +1233,7 @@
           </div>
         </div>
       </div>
+      </details>
     </div>
 
   </main>

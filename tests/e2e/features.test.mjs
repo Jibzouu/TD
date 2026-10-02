@@ -425,3 +425,41 @@ test('journal : 25 trades puis « Afficher plus », bilan ← →, cartes lisibl
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('watchlist (biais du jour daté, avec/contre), plan relié, personnalisation repliée', async () => {
+  const tr = [T({ id: 1, date: '2026-06-17', asset: 'EUR/USD', dir: 'Long', res: 'TP', pnl: 2, pnlEur: 100 }),
+    T({ id: 2, date: '2026-06-17', asset: 'EUR/USD', dir: 'Short', res: 'SL', pnl: -1, pnlEur: -50 }),
+    T({ id: 3, date: '2026-06-16', asset: 'BTC/USD', dir: 'Long', res: 'TP', pnl: 1, pnlEur: 40 })];
+  // Ancien format de watchlist + ancien plan avec règles texte.
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: tr,
+    tj_watch: { 'EUR/USD': { biais: 'Bearish', niveaux: '1.08', notes: '' } },
+    tj_plan: { ce: [], cf: [], notes: '', risk: [['Risque par trade', '0.5%'], ['Max trades / jour', '4'], ['RR minimum', '2R']] } } });
+  await goto(page, 'watchlist');
+  assert.match(await page.locator('#watchlist-grid').innerText(), /EUR\/USD[\s\S]*pas de biais|EUR\/USD/);
+  assert.match(await page.locator('#watch-stats').innerText(), /Renseigne ton biais du jour/);
+  // Biais Bullish aujourd'hui sur EUR/USD : le Long gagnant est « avec », le Short perdant « contre ».
+  await page.selectOption('select[aria-label="Biais du jour EUR/USD"]', 'Bullish');
+  const stats = await page.locator('#watch-stats').innerText();
+  assert.match(stats, /Avec ton biais\s+100 % gagnants\s+1 trade/);
+  assert.match(stats, /Contre ton biais\s+0 % gagnants\s+1 trade/);
+  assert.match(await page.locator('#watchlist-grid').innerText(), /biais aujourd'hui/);
+  // Actif tradé absent de la liste : proposé en un clic.
+  await page.locator('.watch-sugg button', { hasText: 'BTC/USD' }).click();
+  assert.match(await page.locator('#watchlist-grid').innerText(), /Crypto[\s\S]*BTC\/USD/);
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'watchlist');
+  assert.equal(await page.inputValue('select[aria-label="Biais du jour EUR/USD"]'), 'Bullish', 'biais conservé');
+  // Plan : règles reliées, ancien « Max trades / jour » repris en nombre.
+  await goto(page, 'plan');
+  const rules = await page.locator('#risk-rules').innerText();
+  assert.match(rules, /Risque par trade[\s\S]*à régler/);
+  assert.match(rules, /Perte max du jour[\s\S]*1 %/);
+  assert.equal(await page.inputValue('input[aria-label="Max trades par jour"]'), '4');
+  assert.equal(await page.inputValue('input[aria-label="Stop après N SL d’affilée"]'), '2');
+  assert.doesNotMatch(rules, /0\.5%/, 'ancienne règle texte du risque retirée');
+  await goto(page, 'parametres');
+  assert.equal(await page.evaluate(() => document.getElementById('settings-adv').open), false);
+  assert.equal(await page.locator('#theme-preset-grid').isVisible(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
