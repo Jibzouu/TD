@@ -64,7 +64,7 @@ function renderStorageWarning() {
   const red = u.pct >= 92;
   el.className = 'storage-warn' + (red ? ' red' : '');
   el.onclick = () => showPage('export', document.querySelector('.nav-item[data-page=export]'));
-  mount(el, html`${red ? '🛑 ' : '⚠️ '}<b>Stockage utilisé à ${u.pct.toFixed(0)} %</b> (partagé par les 3 journaux). ${red ? 'Les prochains enregistrements peuvent échouer. ' : ''}<u>Libérer de la place →</u>`);
+  mount(el, html`${red ? '🛑 ' : '⚠️ '}<b>Stockage utilisé à ${fmtRate(u.pct, 0)}</b> (partagé par les 3 journaux). ${red ? 'Les prochains enregistrements peuvent échouer. ' : ''}<u>Libérer de la place →</u>`);
 }
 
 // Images : réduites (1400 px max) et recompressées en JPEG avant stockage : ~100–200 Ko au lieu de plusieurs Mo.
@@ -131,7 +131,7 @@ function renderStorageCard() {
   const kb = n => Math.round(n / 1024).toLocaleString('fr-FR') + ' Ko';
   const limit = u.limit >= 1024 * 1024 * 1024 ? (u.limit / 1024 / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' Go' : kb(u.limit);
   mount(el, html`<div class="stor-bar"><div class="fill-${raw(tone)}" style="${raw('width:' + Math.min(100, u.pct).toFixed(1) + '%')}"></div></div>
-    <div class="stor-txt"><b class="tone-${raw(tone)}">${u.pct.toFixed(1)} %</b> utilisé · ${kb(u.total)} sur ${limit} disponibles · ${u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)'} · partagé par les 3 journaux<br>Ce journal : ${kb(u.mine)} · dont ${u.imgCount} capture(s) = ${kb(u.images)}</div>`);
+    <div class="stor-txt"><b class="tone-${raw(tone)}">${fmtRate(u.pct, 1)}</b> utilisé · ${kb(u.total)} sur ${limit} disponibles · ${u.mode === 'indexeddb' ? 'IndexedDB' : 'localStorage (mode de secours)'} · partagé par les 3 journaux<br>Ce journal : ${kb(u.mine)} · dont ${u.imgCount} capture(s) = ${kb(u.images)}</div>`);
 }
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────

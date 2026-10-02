@@ -46,13 +46,13 @@ function tradeRowHtml(t, num) {
   const rsrc = rSource(t), approx = rsrc === 'risque' ? '≈' : '';
   const nImg = tradeImages(t).length;
   const id = raw(t.id);
-  return html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date || '—'} sur ${t.asset || '—'}">
+  return html`<tr class="trade-row" tabindex="0" onclick="openTradeDetail(${id})" onkeydown="if(event.key==='Enter'){openTradeDetail(${id})}" aria-label="Trade du ${t.date ? fmtDateNum(t.date) : '—'} sur ${t.asset || '—'}">
     <td class="muted-num">${num}</td>
-    <td>${t.date || '—'}</td>
+    <td>${t.date ? fmtDateNum(t.date) : '—'}</td>
     <td><span class="row-asset">${t.asset || '—'}</span>${t.setup ? html`<span class="row-setup">${t.setup}</span>` : ''}</td>
     <td>${t.dir ? html`<span class="badge ${raw(t.dir === 'Long' ? 'b-long' : 'b-short')}">${t.dir}</span>` : '—'}</td>
     <td>${UI.badgeRes(t.res)}</td>
-    <td>${t.rr ? t.rr + 'R' : '—'}</td>
+    <td>${t.rr ? fmtR(t.rr, Number.isInteger(t.rr) ? 0 : 2, true) : '—'}</td>
     <td title="${R_SRC_LABELS[rsrc]}">${t.pnl != null ? html`${approx}${UI.pnl(t.pnl, 'R')}` : '—'}</td>
     <td>${UI.pnl(t.pnlEur, '€')}</td>
     <td class="row-icons">${nImg ? html`<span title="${nImg} capture(s)">📷${nImg > 1 ? nImg : ''}</span>` : ''}${Array.isArray(t.tags) && t.tags.length ? html` <span title="${t.tags.map(x => '#' + x).join(' ')}">#</span>` : ''}${t.review ? html` <span title="Note après coup">✎</span>` : ''}${t.emotion ? html` <span title="Humeur ${t.emotion}/5" class="tone-${raw(t.emotion >= 4 ? 'green' : t.emotion >= 3 ? 'amber' : 'red')}">●</span>` : ''}</td>
@@ -88,8 +88,8 @@ function renderTable() {
       const totalEur = eurArr.reduce((s, t) => s + t.pnlEur, 0);
       mount(miniEl, html`
         ${UI.stat('Trades', String(filtered.length), { compact: true })}
-        ${UI.stat('Win rate', W.n ? (W.rate * 100).toFixed(0) + ' %' : '—', { compact: true, tone: !W.n || be === null ? null : (W.rate >= be ? 'green' : 'red'), sub: be !== null && W.n ? 'seuil ' + Math.round(be * 100) + ' %' : '' })}
-        ${UI.stat('P&L (R)', (totalR >= 0 ? '+' : '') + totalR.toFixed(1) + 'R', { compact: true, tone: totalR >= 0 ? 'green' : 'red' })}
+        ${UI.stat('Win rate', W.n ? fmtRate(W.rate * 100, 0) : '—', { compact: true, tone: !W.n || be === null ? null : (W.rate >= be ? 'green' : 'red'), sub: be !== null && W.n ? 'seuil ' + Math.round(be * 100) + ' %' : '' })}
+        ${UI.stat('P&L (R)', fmtR(totalR, 1), { compact: true, tone: totalR >= 0 ? 'green' : 'red' })}
         ${UI.stat('P&L (€)', eurArr.length ? fmtEUR(totalEur, true) : '—', { compact: true, tone: totalEur >= 0 ? 'green' : 'red' })}`);
     }
   }
@@ -130,7 +130,7 @@ function renderTable() {
       const dayTrades = byDay[day];
       const dayR = dayTrades.reduce((s,t) => s+(t.pnl||0), 0);
       const dayEur = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur, 0);
-      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day} — ${dayTrades.length} trade(s) · ${dayR>=0?'+':''}${dayR.toFixed(1)}R · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
+      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day} — ${dayTrades.length} trade(s) · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
     })}`);
   } else {
     mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`);
@@ -169,7 +169,7 @@ function tradeProfileHtml(t) {
     return html`<div class="tp-profile" role="img" aria-label="Profil du trade : ${pts.map(p => p[0] + ' ' + p[1]).join(', ')}">
       <div class="tp-track">${t.exitPrice != null ? html`<div class="tp-move ${raw((short ? t.exitPrice < t.entryPrice : t.exitPrice > t.entryPrice) ? 'pos' : 'neg')}" style="${raw('left:' + Math.min(x(t.entryPrice), x(t.exitPrice)) + '%;width:' + Math.abs(x(t.exitPrice) - x(t.entryPrice)) + '%')}"></div>` : ''}
       ${tpMarks(pts.map(p => [p[0], p[1], p[2], x(p[1])]))}</div>
-      <div class="tp-foot"><span>${short ? 'Short ↓' : 'Long ↑'}</span><span>R visé ${planned != null ? planned.toFixed(2) + 'R' : '—'} · R réalisé ${done != null ? (done >= 0 ? '+' : '') + done.toFixed(2) + 'R' : '—'}${planned && done != null ? html` · <b>${Math.round(done / planned * 100)} %</b> de l'objectif` : ''}</span></div>
+      <div class="tp-foot"><span>${short ? 'Short ↓' : 'Long ↑'}</span><span>R visé ${planned != null ? fmtR(planned, 2, true) : '—'} · R réalisé ${done != null ? fmtR(done, 2) : '—'}${planned && done != null ? html` · <b>${Math.round(done / planned * 100)} %</b> de l'objectif` : ''}</span></div>
     </div>`;
   }
   if (t.mfe != null || t.mae != null) {

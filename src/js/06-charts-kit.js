@@ -161,6 +161,12 @@ function wrBarCell(rate, thr, n) {
   const tone = thr === null || thr === undefined ? 'accent' : (rate >= thr ? 'green' : 'red');
   return html`<div class="cell-bar"><div class="meter"><div class="meter-fill fill-${raw(tone)}${raw(n < 10 ? ' dim' : '')}" style="${raw('width:' + rate * 100 + '%')}"></div>${thr != null ? html`<div class="meter-tick cb-tick" style="${raw(`left:calc(${thr * 100}% - 1px)`)}"></div>` : ''}</div><span class="cb-val">${(rate * 100).toFixed(1).replace('.', ',')} %</span></div>`;
 }
+// Formats FR uniques : virgule décimale, espace avant % (« 53,3 % »), R signé (« +1,80R »).
+function fmtNum(v, d) { return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
+function fmtR(v, d, noSign) { if (v === null || v === undefined || isNaN(v)) return '—'; return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R'; }
+// Date numérique FR : « 15/06/2026 ».
+function fmtDateNum(iso) { const d = new Date(String(iso) + 'T00:00:00'); return isNaN(d) ? String(iso || '—') : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+function fmtRate(v, d) { return (v === null || v === undefined || isNaN(v)) ? '—' : fmtNum(v, d ?? 0) + ' %'; }
 function fmtPct(v, digits) { return (v >= 0 ? '+' : '') + v.toLocaleString('fr-FR', { minimumFractionDigits: digits ?? 1, maximumFractionDigits: digits ?? 1 }) + ' %'; }
 // Seuil de rentabilité du win rate : avec un payoff P (gain moyen ÷ perte moyenne), on est rentable au-dessus de 1 / (1 + P).
 function breakevenWinRate(list) {
@@ -221,7 +227,7 @@ function trendBadge(elId, delta, suffix, digits, title, dirOverride) {
   if (!el) return;
   if (delta === null || delta === undefined || isNaN(delta)) { el.textContent = ''; el.className = 'kpi-trend'; el.removeAttribute('title'); return; }
   const dir = dirOverride || (Math.abs(delta) < 0.05 ? 'flat' : (delta > 0 ? 'up' : 'down'));
-  el.textContent = (dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '→ ') + (delta >= 0 ? '+' : '') + delta.toFixed(digits ?? 1).replace('.', ',') + (suffix || '');
+  el.textContent = (dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '→ ') + (delta >= 0 ? '+' : '−') + fmtNum(Math.abs(delta), digits ?? 1) + (suffix || '');
   el.className = 'kpi-trend ' + dir;
   el.title = title || '';
 }

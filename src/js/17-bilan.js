@@ -9,7 +9,7 @@ function renderBilan() {
   // on retombe sur la plus récente au lieu de garder une sélection fantôme.
   const dates = [...new Set(trades.map(t=>t.date))].sort().reverse();
   const curVal = (sel.value && dates.includes(sel.value)) ? sel.value : (dates[0]||'');
-  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${d}</option>`)}`);
+  mount(sel, html`${dates.map(d => html`<option value="${d}"${raw(d === curVal ? ' selected' : '')}>${fmtDateFR(d, true)}</option>`)}`);
 
   const dayTrades = curVal ? trades.filter(t => t.date === curVal) : [];
   const content = document.getElementById('bilan-content');
@@ -24,9 +24,9 @@ function renderBilan() {
   const pnlR = dayTrades.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
   const eurDay = dayTrades.filter(t=>t.pnlEur!=null);
   const pnlEur = eurDay.reduce((s,t)=>s+t.pnlEur,0);
-  const wr = (tp+sl+be)>0 ? (tp/(tp+sl+be)*100).toFixed(0)+'%' : '—';
+  const wr = (tp+sl+be)>0 ? fmtRate(tp/(tp+sl+be)*100, 0) : '—';
   const withEmo = dayTrades.filter(t=>t.emotion);
-  const avgEmotion = withEmo.length ? (withEmo.reduce((s,t)=>s+t.emotion,0)/withEmo.length).toFixed(1) : '—';
+  const avgEmotion = withEmo.length ? fmtNum(withEmo.reduce((s,t)=>s+t.emotion,0)/withEmo.length, 1) : '—';
   const emoTone = e => e >= 4 ? 'green' : e >= 3 ? 'amber' : 'red';
   const kpis = [
     ['Trades', dayTrades.length, ''],
@@ -34,7 +34,7 @@ function renderBilan() {
     ['SL', sl, 'red'],
     ['Win Rate', wr, tp/(tp+sl+be||1) >= .5 ? 'green' : 'red'],
     ['P&L (€)', eurDay.length ? fmtEUR(pnlEur,true) : '—', !eurDay.length ? 'muted' : pnlEur >= 0 ? 'green' : 'red'],
-    ['P&L (R)', (pnlR>=0?'+':'')+pnlR.toFixed(2)+'R', pnlR >= 0 ? 'green' : 'red'],
+    ['P&L (R)', fmtR(pnlR, 2), pnlR >= 0 ? 'green' : 'red'],
     ['Humeur moy.', avgEmotion+'/5', avgEmotion !== '—' ? emoTone(avgEmotion) : 'muted'],
   ];
   const HEAD = ['Asset', 'TF', 'Session', 'Entrée', 'Sortie', 'Dir.', 'Résultat', 'RR', 'P&L', 'Humeur', 'Capture'];
@@ -45,7 +45,7 @@ function renderBilan() {
       <td class="c2">${t.entry || '—'}</td><td class="c2">${t.exit || '—'}</td><td>${t.dir || '—'}</td>
       <td><span class="bl-res res-${raw(['TP','SL','BE'].includes(t.res) ? t.res : 'OPEN')}">${t.res}</span></td>
       <td class="c2">${t.rr ? t.rr + 'R' : '—'}</td>
-      <td class="strong tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : '—'}</td>
+      <td class="strong tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? fmtR(t.pnl, 1) : '—'}</td>
       <td class="tone-${raw(t.emotion ? emoTone(t.emotion) : 'muted')}">${t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—'}</td>
       <td>${src ? html`<img class="bl-cap" src="${src}" alt="Capture" onclick="openLightboxById(${raw(t.id)})">` : '—'}</td>
     </tr>`;
@@ -81,7 +81,7 @@ function renderHeatmap() {
   if (!chartsAvailable('bilanHourChart')) return;
   const hours = []; for (let h = hs[0]; h <= hs[hs.length - 1]; h++) hours.push(h);
   const t = chartTokens(), data = hours.map(h => hMap[h] ? +hMap[h].net.toFixed(2) : 0);
-  const fmtV = v => useEur ? fmtEUR(v, true, 0) : (v >= 0 ? '+' : '') + v.toFixed(2) + 'R';
+  const fmtV = v => useEur ? fmtEUR(v, true, 0) : fmtR(v, 2);
   bilanHourChartInst = new Chart(document.getElementById('bilanHourChart').getContext('2d'), {
     type: 'bar',
     data: { labels: hours.map(h => String(h).padStart(2, '0') + 'h'), datasets: [{ data, backgroundColor: data.map((v, i) => withAlpha(v >= 0 ? t.green : t.red, hMap[hours[i]] && hMap[hours[i]].n < 3 ? .45 : 1)), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 24, barPercentage: .85 }] },
@@ -109,7 +109,7 @@ function perfRowHtml(name, v, useEur, tag) {
     ${UI.meter(rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}
     <span class="asset-num">${Math.round(rate * 100)} %</span>
     <span class="asset-num muted">${v.n}${low ? ' ⚠' : ''}</span>
-    <span class="asset-num tone-${raw(v.net >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(v.net, true, 0) : (v.net >= 0 ? '+' : '') + v.net.toFixed(1) + 'R'}</span>
+    <span class="asset-num tone-${raw(v.net >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(v.net, true, 0) : fmtR(v.net, 1)}</span>
   </div>`;
 }
 

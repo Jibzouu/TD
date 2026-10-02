@@ -12,24 +12,24 @@ function renderKPIs() {
   if (W.n > 0) {
     // Vert / rouge selon le seuil de rentabilité réel (payoff), pas selon 50 % : 45 % de réussite peut être très rentable.
     const beWR = breakevenWinRate();
-    wrEl.textContent = (W.rate * 100).toFixed(1).replace('.', ',') + ' %';
+    wrEl.textContent = fmtRate(W.rate * 100, 1);
     wrEl.className = 'kpi-val ' + (beWR === null ? 'neu' : (W.rate >= beWR ? 'pos' : 'neg'));
   } else { wrEl.textContent = '—'; wrEl.className = 'kpi-val neu'; }
   const wrSub = document.getElementById('k-wr-sub');
   const beW = W.n ? breakevenWinRate() : null;
   // Une seule ligne : gagnants / perdants et seuil ; le détail (BE, intervalle de confiance) est dans l'info-bulle.
   wrSub.textContent = W.n ? W.wins + ' G · ' + W.losses + ' P' + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') : 'aucun trade fermé';
-  wrSub.title = W.n ? fmtWinLine(W) + ' · win rate = gagnants ÷ trades clos (break-even inclus) · ' + fmtCI(W) : '';
+  wrSub.title = W.n ? fmtWinLine(W) + ' · win rate = gagnants ÷ trades clos (break-even inclus)' + (W.be ? ' · hors break-even : ' + fmtRate(W.wins / Math.max(1, W.wins + W.losses) * 100, 1) : '') + ' · ' + fmtCI(W) : '';
 
   // P&L
   const pnlArr = trades.filter(t => t.pnl != null);
   const total = pnlArr.reduce((s, t) => s + t.pnl, 0);
   const pnlEl = document.getElementById('k-pnl');
   if (pnlArr.length > 0) {
-    pnlEl.textContent = (total >= 0 ? '+' : '') + total.toFixed(1) + 'R';
+    pnlEl.textContent = fmtR(total, 1);
     pnlEl.className = 'kpi-val ' + (total > 0 ? 'pos' : total < 0 ? 'neg' : 'neu');
     const pnlSub = document.getElementById('k-pnl-sub');
-    pnlSub.textContent = (total / pnlArr.length >= 0 ? '+' : '') + (total / pnlArr.length).toFixed(2).replace('.', ',') + 'R par trade' + (pnlArr.length < n ? ' · ' + pnlArr.length + '/' + n + ' avec R' : '');
+    pnlSub.textContent = fmtR(total / pnlArr.length, 2) + ' par trade' + (pnlArr.length < n ? ' · ' + pnlArr.length + '/' + n + ' avec R' : '');
     pnlSub.title = 'Seuls les trades dont le R est connu sont comptés : ' + pnlArr.length + ' sur ' + n + ' trades clos.';
   } else { pnlEl.textContent = '—'; pnlEl.className = 'kpi-val neu'; document.getElementById('k-pnl-sub').textContent = 'en R'; }
 
@@ -67,7 +67,7 @@ function renderKPIs() {
   const avgWinE = eW.length ? eW.reduce((s, t) => s + t.pnlEur, 0) / eW.length : null;
   const avgLossE = eL.length ? Math.abs(eL.reduce((s, t) => s + t.pnlEur, 0) / eL.length) : null;
   const rrEl = document.getElementById('k-rr');
-  rrEl.textContent = (avgWinE !== null && avgLossE) ? (avgWinE / avgLossE).toFixed(2) : '—';
+  rrEl.textContent = (avgWinE !== null && avgLossE) ? fmtNum(avgWinE / avgLossE, 2) : '—';
   const rrSub = document.getElementById('k-rr-sub');
   if (rrSub) rrSub.textContent = (avgWinE !== null && avgLossE) ? fmtEUR(avgWinE, false, 0) + ' gagné / ' + fmtEUR(avgLossE, false, 0) + ' perdu' : 'gain moyen ÷ perte moyenne';
 
@@ -76,14 +76,14 @@ function renderKPIs() {
   const gw = useEurPF ? eurArr.filter(t => t.res === 'TP').reduce((s, t) => s + t.pnlEur, 0) : wins.reduce((s, t) => s + (t.pnl || 0), 0);
   const gl = Math.abs(useEurPF ? eurArr.filter(t => t.res === 'SL').reduce((s, t) => s + t.pnlEur, 0) : losses.reduce((s, t) => s + (t.pnl || 0), 0));
   const pfEl = document.getElementById('k-pf');
-  if (gl > 0) { pfEl.textContent = (gw/gl).toFixed(2); pfEl.className = 'kpi-val '+(gw/gl>=1?'pos':'neg'); }
+  if (gl > 0) { pfEl.textContent = fmtNum(gw / gl, 2); pfEl.className = 'kpi-val '+(gw/gl>=1?'pos':'neg'); }
   else if (gw > 0) { pfEl.textContent = '∞'; pfEl.className = 'kpi-val pos'; }
   else { pfEl.textContent = '—'; pfEl.className = 'kpi-val neu'; }
-  document.getElementById('k-pf-sub').textContent = gl > 0 ? (useEurPF ? '+' + fmtEUR(gw, false, 0) + ' / −' + fmtEUR(gl, false, 0) : '+' + gw.toFixed(1) + 'R / −' + gl.toFixed(1) + 'R') : 'gains / pertes';
+  document.getElementById('k-pf-sub').textContent = gl > 0 ? (useEurPF ? '+' + fmtEUR(gw, false, 0) + ' / −' + fmtEUR(gl, false, 0) : fmtR(gw, 1) + ' / ' + fmtR(-gl, 1)) : 'gains / pertes';
 
   // Subtitle
   const sub = document.getElementById('dash-subtitle');
-  sub.textContent = trades.length > 0 ? 'Dernière entrée : ' + trades[0].date + ' · ' + trades[0].asset : 'Aucune entrée pour l\'instant';
+  sub.textContent = trades.length > 0 ? 'Dernière entrée : ' + fmtDateFR(trades[0].date, true) + ' · ' + trades[0].asset : 'Aucune entrée pour l\'instant';
 
   document.getElementById('trades-subtitle').textContent = trades.length + ' trade' + (trades.length !== 1 ? 's' : '') + ' enregistrés';
   updateSidebarCount();
@@ -121,7 +121,7 @@ function equitySeries() {
   pts.forEach((p, i) => { const v = useEur ? p.ddPct : p.ddAbs; if (v < 0 && (maxDD === null || v < maxDD.v)) maxDD = { i, v, abs: p.ddAbs, date: p.date }; });
   let peakIdx = -1;
   pts.forEach((p, i) => { if (p.bal > start && (peakIdx < 0 || p.bal > pts[peakIdx].bal)) peakIdx = i; });
-  return { useEur, start, pts, maxDD, peakIdx, fmt: v => useEur ? fmtEUR(v, false, 0) : (v >= 0 ? '+' : '') + v.toFixed(2) + 'R', fmtS: v => useEur ? fmtEUR(v, true, 0) : (v >= 0 ? '+' : '') + v.toFixed(2) + 'R' };
+  return { useEur, start, pts, maxDD, peakIdx, fmt: v => useEur ? fmtEUR(v, false, 0) : fmtR(v, 2), fmtS: v => useEur ? fmtEUR(v, true, 0) : fmtR(v, 2) };
 }
 function renderYearProgress() {
   const canvas = document.getElementById('yearProgressChart');
@@ -180,7 +180,7 @@ function renderYearProgress() {
         plugins: { tooltip: proTooltip({ callbacks: {
           title: titleCb,
           label: c => (E.useEur ? 'Solde  ' : 'R cumulé  ') + E.fmt(c.raw),
-          afterLabel: c => { const p = ptOf(c.dataIndex); if (!p) return []; const dd = E.useEur ? p.ddPct : p.ddAbs; return ['Jour  ' + E.fmtS(p.day) + ' · ' + p.n + ' trade(s)', 'Drawdown  ' + (dd ? (E.useEur ? fmtPct(dd) : dd.toFixed(2) + 'R') : '—')]; }
+          afterLabel: c => { const p = ptOf(c.dataIndex); if (!p) return []; const dd = E.useEur ? p.ddPct : p.ddAbs; return ['Jour  ' + E.fmtS(p.day) + ' · ' + p.n + ' trade(s)', 'Drawdown  ' + (dd ? (E.useEur ? fmtPct(dd) : fmtR(dd, 2)) : '—')]; }
         } }) },
         scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : v + 'R' } } })
       },
@@ -195,7 +195,7 @@ function renderUnderwater(E, daily) {
   if (underwaterChartInst) { underwaterChartInst.destroy(); underwaterChartInst = null; }
   const canvas = document.getElementById('underwaterChart');
   const sub = document.getElementById('drawdown-sub');
-  if (sub) sub.textContent = E.maxDD ? 'max ' + (E.useEur ? fmtPct(E.maxDD.v) + ' (' + fmtEUR(E.maxDD.abs) + ')' : E.maxDD.v.toFixed(2) + 'R') + ' le ' + fmtDateFR(E.maxDD.date, true) : (E.pts.length ? 'aucun drawdown' : '');
+  if (sub) sub.textContent = E.maxDD ? 'max ' + (E.useEur ? fmtPct(E.maxDD.v) + ' (' + fmtEUR(E.maxDD.abs) + ')' : fmtR(E.maxDD.v, 2)) + ' le ' + fmtDateFR(E.maxDD.date, true) : (E.pts.length ? 'aucun drawdown' : '');
   if (!canvas || !E.pts.length || !chartsAvailable('underwaterChart')) return;
   const t = chartTokens();
   const dd = E.pts.map(p => +((E.useEur ? p.ddPct : p.ddAbs) || 0).toFixed(2));
@@ -218,7 +218,7 @@ function renderHeroSide(E, endBal, perf, curDD) {
   if (!side) return;
   if (!E.pts.length) { mount(side, ''); return; }
   const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
-  const dd = v => v ? (E.useEur ? fmtPct(v) : v.toFixed(2) + 'R') : (E.useEur ? '0 %' : '0R');
+  const dd = v => v ? (E.useEur ? fmtPct(v) : fmtR(v, 2)) : (E.useEur ? '0 %' : '0R');
   mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
 }
 
@@ -240,7 +240,7 @@ function renderWinRateMeters() {
     const status = low ? html`<span class="wr-status tone-muted">● échantillon faible (n=${n})</span>`
       : ok === null ? '' : html`<span class="wr-status tone-${raw(tone)}">${ok ? '▲ au-dessus' : '▼ en dessous'} du seuil</span>`;
     return html`<div class="wr-row">
-      <div class="wr-top"><span><span class="wr-name">${name}</span><br><span class="wr-val">${(rate * 100).toFixed(1).replace('.', ',')} %</span></span>${status}</div>
+      <div class="wr-top"><span><span class="wr-name">${name}</span><br><span class="wr-val">${fmtRate(rate * 100, 1)}</span></span>${status}</div>
       <div class="meter" title="Intervalle de confiance 95 % : ${Math.round(lo * 100)}–${Math.round(hi * 100)} %">
         <div class="meter-ci" style="${raw(`left:${lo * 100}%;width:${Math.max(0, (hi - lo) * 100)}%`)}"></div>
         <div class="meter-fill fill-${raw(tone)}${raw(low ? ' dim' : '')}" style="${raw(`width:${rate * 100}%`)}"></div>
@@ -272,8 +272,8 @@ function renderRDistribution() {
   const nb = Math.max(1, Math.round((b1 - b0) / bw));
   const buckets = new Array(nb).fill(0);
   rValues.forEach(r => { buckets[Math.max(0, Math.min(nb - 1, Math.floor((r - b0) / bw)))]++; });
-  const fmtR = v => (v > 0 ? '+' : '') + v.toFixed(1).replace('.', ',');
-  const labels = buckets.map((_, i) => fmtR(b0 + i * bw));
+  const fmtB = v => fmtR(v, 1).replace(/R$/, '');
+  const labels = buckets.map((_, i) => fmtB(b0 + i * bw));
   const colors = buckets.map((_, i) => (b0 + i * bw + bw / 2) >= 0 ? t.green : t.red);
   const wins = rValues.filter(v => v > 0), losses = rValues.filter(v => v < 0);
   const avgW = wins.length ? wins.reduce((a, b) => a + b, 0) / wins.length : null;
@@ -363,7 +363,7 @@ function renderHeatmapDH() {
   const DN = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], DL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
   const hours = []; for (let h = minH; h <= maxH; h++) hours.push(h);
   const maxAbs = Math.max(...Object.values(grid).map(g => Math.abs(g.net)), 1e-9);
-  const fmtV = v => useEur ? fmtEUR(v, true, 0) : (v >= 0 ? '+' : '') + v.toFixed(2) + 'R';
+  const fmtV = v => useEur ? fmtEUR(v, true, 0) : fmtR(v, 2);
   heatDHCells = [];
   const cells = [];
   days.forEach(d => {
@@ -374,7 +374,7 @@ function renderHeatmapDH() {
       const hc = heatColors(g.net, maxAbs, { boost: true }), i = heatDHCells.length;
       heatDHCells.push({ title: DL[d] + ' · ' + String(h).padStart(2, '0') + 'h – ' + String((h + 1) % 24).padStart(2, '0') + 'h', g });
       // Montant écrit seulement dans les cases marquantes (≥ 45 % du plus grand écart, 3 trades ou plus) : le reste passe par l'info-bulle.
-      const label = g.n >= 3 && Math.abs(g.net) >= maxAbs * 0.45 ? (useEur ? fmtEURCompact(g.net).replace(/^(?!-)/, g.net > 0 ? '+' : '') : (g.net >= 0 ? '+' : '') + g.net.toFixed(1) + 'R') : '';
+      const label = g.n >= 3 && Math.abs(g.net) >= maxAbs * 0.45 ? (useEur ? fmtEURCompact(g.net).replace(/^(?!-)/, g.net > 0 ? '+' : '') : fmtR(g.net, 1)) : '';
       cells.push(html`<div class="hm-cell has${raw(g.n < 3 ? ' dim' : '')}" tabindex="0" data-i="${i}" style="${raw(`background:${hc.bg};--hm-ink:${hc.strong ? hc.onFill : 'var(--txt)'}`)}" aria-label="${heatDHCells[i].title} : ${fmtV(g.net)}, ${g.n} trade(s)">${label ? html`<span class="hm-v">${label}</span>` : ''}</div>`);
     });
   });
@@ -460,7 +460,7 @@ function renderAssetBars() {
         ${UI.meter(w.rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}
         <span class="asset-num">${Math.round(w.rate * 100)} %</span>
         <span class="asset-num muted">${w.n}${low ? ' ⚠' : ''}</span>
-        <span class="asset-num tone-${raw(pnl >= 0 ? 'green' : 'red')}">${eur !== null ? fmtEUR(eur, true) : (r >= 0 ? '+' : '') + r.toFixed(1) + 'R'}</span>
+        <span class="asset-num tone-${raw(pnl >= 0 ? 'green' : 'red')}">${eur !== null ? fmtEUR(eur, true) : fmtR(r, 1)}</span>
       </div>`;
     })}
     ${rest.length ? html`<p class="empty-note mt-8">+ ${rest.length} autre(s) actif(s) — détail dans Statistiques › Performance par asset</p>` : ''}`);
@@ -490,9 +490,9 @@ function renderWinDonuts() {
   const fmtP = p => p === null ? '—' : p + ' %';
 
   drawDonut('trades', [['Gagnants', W.wins, 'green'], ['Perdants', W.losses, 'red'], ['Break-even', W.be, 'muted']],
-    W.n ? (W.rate * 100).toFixed(0).replace('.', ',') + ' %' : '—', 'gagnants',
-    W.n ? (be !== null ? html`seuil <b class="tone-${raw(W.rate >= be ? 'green' : 'red')}">${Math.round(be * 100)} %</b>` : W.n + ' trades clos') : 'aucun trade clos',
-    W.n ? fmtWinLine(W) + ' · ' + fmtCI(W) + (be !== null ? ' · seuil de rentabilité ' + Math.round(be * 100) + ' %' : '') : '');
+    W.n ? fmtRate(W.rate * 100, 0) : '—', 'gagnants',
+    W.n ? html`${W.be && W.wins + W.losses ? html`hors BE <b>${fmtRate(W.wins / (W.wins + W.losses) * 100, 0)}</b> · ` : ''}${be !== null ? html`seuil <b class="tone-${raw(W.rate >= be ? 'green' : 'red')}">${Math.round(be * 100)} %</b>` : W.n + ' trades clos'}` : 'aucun trade clos',
+    W.n ? fmtWinLine(W) + ' · ' + fmtCI(W) + (be !== null ? ' · seuil de rentabilité ' + Math.round(be * 100) + ' %' : '') + (W.be ? ' · les break-even comptent comme non gagnants ; sans eux : ' + fmtRate(W.wins / Math.max(1, W.wins + W.losses) * 100, 1) : '') : '');
   drawDonut('days', [['Gagnantes', dC.w, 'green'], ['Perdantes', dC.l, 'red'], ['Neutres', dC.n - dC.w - dC.l, 'muted']],
     fmtP(pct(dC.w, dC.n)), 'gagnantes', dC.n ? dC.n + ' jour' + (dC.n > 1 ? 's' : '') + ' tradé' + (dC.n > 1 ? 's' : '') : 'aucune journée', 'Journée gagnante = résultat net du jour positif');
   drawDonut('weeks', [['Gagnantes', wC.w, 'green'], ['Perdantes', wC.l, 'red'], ['Neutres', wC.n - wC.w - wC.l, 'muted']],

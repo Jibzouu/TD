@@ -148,6 +148,12 @@ function onScalingInput(field) {
   if (field !== 'auto' && field !== 'current') scAckPalier();   // plan modifié : pas d'alerte « nouveau palier » fantôme
   renderScaling();
 }
+function alignScalingStart() {
+  const el = document.getElementById('sc-start');
+  if (!el || !(accountSize > 0)) return;
+  el.value = accountSize;
+  onScalingInput('start');
+}
 // Risque d'un palier (tableau) : vide = même % que le palier précédent.
 function setScalingPalierRisk(bal, oldFrom, value) {
   const st = getScalingState();
@@ -170,6 +176,11 @@ function renderScaling(opts) {
   const curInput = document.getElementById('sc-current');
   if (curInput) { curInput.disabled = !!st.auto; if (st.auto) curInput.value = scRound(current, 2); }
   const model = computeScalingPaliers(st, current);
+  // Une seule référence de capital : on signale quand le plan ne part pas du solde de départ du journal (Paramètres).
+  const sh = document.getElementById('sc-start-hint');
+  if (sh) mount(sh, accountSize > 0 && Math.abs(accountSize - st.start) >= 0.5
+    ? html`<span class="tone-amber">≠ solde de départ du journal (${fmtEUR(accountSize)})</span> · <button class="link-btn" onclick="alignScalingStart()">utiliser ${fmtEUR(accountSize)}</button>`
+    : (accountSize > 0 ? 'même solde que le journal (Paramètres)' : ''));
   const hint = document.getElementById('sc-cushion-hint');
   if (hint) hint.textContent = model.error || !(st.cushion1 > 0) ? 'aucun : tu augmentes dès le palier'
     : `= ${scNum1(model.N)} pertes à ${fmtEUR(model.pts[1].risk, false, 2)}, gardé à chaque palier`;

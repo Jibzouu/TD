@@ -194,12 +194,14 @@ test('page Export : réglages d’import repliés, ouverts si un réglage est ac
 test('dashboard v3 : barre Aujourd’hui, réglages dans Paramètres, sections, ancienne disposition migrée', async () => {
   const today = '2026-06-17';
   const { page, ctx, errors } = await openJournal({ time: NOW, seed: {
-    tj_trades: [T({ id: 1, date: today, res: 'SL', pnl: -1, pnlEur: -80 }), T({ id: 2, date: today, res: 'TP', pnl: 0.1, pnlEur: 5 }), ...sampleTrades()],
+    tj_trades: [T({ id: 1, date: today, res: 'SL', pnl: -1, pnlEur: -100 }), T({ id: 2, date: today, res: 'TP', pnl: 0.1, pnlEur: 5 }), ...sampleTrades()],
     tj_dash_layout_v2: { order: ['radar', 'year-progress'], widths: { radar: 'w-third' }, sizes: {} },
   } });
-  assert.equal(await page.locator('#dd-amount').textContent(), '-75 €');
+  assert.equal(await page.locator('#dd-amount').textContent(), '-95 €');
+  // Limite = 1 % du solde en début de journée : 10 000 € + 1 500 € gagnés les jours précédents.
+  assert.match(await page.locator('#dd-limit-label').textContent(), /limite 115\s€/);
   assert.match(await page.locator('#today-sub').textContent(), /2 trades · 1 G · 1 P/);
-  assert.equal(await page.getAttribute('#dd-status-badge', 'class'), 'st-chip warn', '75 € sur 100 € : seuil d’alerte (75 %) atteint');
+  assert.equal(await page.getAttribute('#dd-status-badge', 'class'), 'st-chip warn', '95 € sur 115 € : seuil d’alerte (75 %) atteint');
   assert.ok(await page.locator('#summary-banner .insight').count() >= 1, 'constats affichés');
   assert.equal(await page.locator('#page-dashboard #account-size, #page-dashboard #dd-limit-pct').count(), 0, 'réglages hors du Dashboard');
   assert.equal(await page.locator('#page-parametres #account-size').count(), 1);
@@ -209,7 +211,7 @@ test('dashboard v3 : barre Aujourd’hui, réglages dans Paramètres, sections, 
   await goto(page, 'parametres');
   await page.fill('#dd-limit-pct', '0.5');
   await goto(page, 'dashboard');
-  assert.equal(await page.getAttribute('#dd-status-badge', 'class'), 'st-chip crit', 'limite abaissée à 50 € : dépassée');
+  assert.equal(await page.getAttribute('#dd-status-badge', 'class'), 'st-chip crit', 'limite abaissée à 0,5 % (57,50 €) : dépassée');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -226,7 +228,7 @@ test('constat « meilleur jour » : pertes soustraites, cumul de tous les mardis
   assert.match(text, /mardi/);
   assert.match(text, /\+6,1R/, 'somme signée des deux mardis (5,09 − 1 − 1 + 4 − 1), pas la somme des RR (12,09)');
   assert.match(text, /cumul de 2 mardis/);
-  assert.match(await chip.getAttribute('title'), /\+9,1R de gains -3,0R de pertes = \+6,1R · 5 trades/);
+  assert.match(await chip.getAttribute('title'), /\+9,1R de gains −3,0R de pertes = \+6,1R · 5 trades/);
   await ctx.close();
 });
 
@@ -359,6 +361,38 @@ test('scaling : taille suivie dans l’historique, alerte de palier et respect d
   await page.evaluate(() => { trades.unshift(Object.assign({}, trades[0], { id: 9999, date: '2026-05-30', res: 'SL', pnl: -1, pnlEur: -250 })); renderAll(); });
   await goto(page, 'dashboard');
   assert.match(await page.locator('#scaling-alert').innerText(), /repassé sous P1 \(2\s000\s€\).*30,00\s€/s);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('chiffres fiables : Edge Finder, coût réel des erreurs, calculateur relié au Scaling, win rate hors BE', async () => {
+  const extra = [T({ id: 2000, date: '2026-06-16', res: 'TP', pnl: 1, pnlEur: 100, mfe: 300, mistakes: ['Sorti trop tôt'] }),
+    T({ id: 2001, date: '2026-06-16', res: 'BE', pnl: 0, pnlEur: 0 })];
+  const sc = { version: 4, start: 1000, riskPct: 3, step: 1000, cushion1: 500, goal: 10000, auto: true, riskSteps: [] };
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: [...extra, ...sampleTrades()], tj_account: '1000', tj_scaling: sc } });
+  // Win rate : BE comptés comme non gagnants, valeur hors BE affichée à côté.
+  assert.match(await page.locator('#dn-trades-sub').innerText(), /hors BE 68 %/);   // 21 G / (21 G + 10 P)
+  await goto(page, 'stats');
+  // Tous les segments gagnent : pas de faux « point faible ».
+  const edge = await page.locator('#edge-finder-body').innerText();
+  assert.match(edge, /Aucun point faible/); assert.match(edge, /Aucun segment perdant/);
+  assert.doesNotMatch(edge, /plus gros point faible/);
+  await page.evaluate(() => showStatsSubtab('behavior'));
+  const cost = await page.locator('#mistake-cost-body').innerText();
+  assert.match(cost, /Entrée trop tôt\s+10× · pertes sur ces trades/);
+  assert.match(cost, /−500\s€/);
+  assert.match(cost, /Sorti trop tôt\s+1× · 0\s€ perdus \+ 200\s€ de gain manqué/, 'le gain laissé sur la table est un coût, pas un gain');
+  assert.match(cost, /Coût total estimé de tes erreurs taguées : −700\s€/);
+  // Calculateur : risque du palier (solde 2 600 € → P1 atteint à 2 500 € → 60 €).
+  await goto(page, 'plan');
+  assert.equal(await page.inputValue('#calc-risk-eur'), '60');
+  assert.match(await page.locator('#calc-risk-src').innerText(), /ton plan de Scaling \(palier P1/);
+  await page.fill('#calc-stop-dist', '20'); await page.fill('#calc-point-value', '1');
+  assert.match(await page.locator('#calc-result').innerText(), /3,00 unités\/lots/);
+  await page.fill('#calc-risk-eur', '40');
+  assert.match(await page.locator('#calc-risk-src').innerText(), /reprendre le plan \(60,00\s€\)/);
+  await page.locator('#calc-risk-src button').click();
+  assert.equal(await page.inputValue('#calc-risk-eur'), '60');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

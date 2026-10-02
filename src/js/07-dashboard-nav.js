@@ -20,8 +20,8 @@ function renderSummaryBanner() {
   const bDow = best(wdMap), bHour = best(hMap);
   const tilt = typeof computeTiltTrades === 'function' ? computeTiltTrades().flagged : [];
   const tiltCost = tilt.reduce((s, f) => s + (f.trade.pnlEur < 0 ? Math.abs(f.trade.pnlEur) : 0), 0);
-  const fmtR = v => (v >= 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + 'R';
-  const detail = g => fmtR(g.win) + ' de gains ' + fmtR(g.loss).replace('+', '') + ' de pertes = ' + fmtR(g.net) + ' · ' + g.n + ' trade' + (g.n > 1 ? 's' : '');
+  const fmtR1 = v => fmtR(v, 1);
+  const detail = g => fmtR1(g.win) + ' de gains ' + fmtR1(g.loss).replace('+', '') + ' de pertes = ' + fmtR1(g.net) + ' · ' + g.n + ' trade' + (g.n > 1 ? 's' : '');
   const goBilan = "showPage('bilan', document.querySelector('.nav-item[data-page=bilan]'))";
   const goTilt = "showPage('stats', document.querySelector('.nav-item[data-page=stats]'));showStatsSubtab('behavior')";
   const chip = (icon, key, val, extra, tone, go, note, title) => html`<button class="insight" onclick="${raw(go)}"${raw(title ? ` title="${esc(title)}"` : '')}><span class="insight-ic" aria-hidden="true">${icon}</span><span class="insight-txt"><span class="insight-k">${key}</span><b>${val}</b>${extra ? html` <span class="tone-${raw(tone)}">${extra}</span>` : ''}${note ? html` <span class="insight-note">${note}</span>` : ''}</span></button>`;
@@ -29,11 +29,11 @@ function renderSummaryBanner() {
   if (closed.length >= 5) {
     if (bDow && bDow[1].net > 0) {
       const g = bDow[1], nd = g.days.size, day = WD_NAMES[bDow[0]];
-      chips.push(chip('📅', 'Meilleur jour', day, fmtR(g.net), 'green', goBilan, 'cumul de ' + nd + ' ' + day + (nd > 1 ? 's' : ''), 'Tous tes ' + day + 's réunis (' + nd + ' journée' + (nd > 1 ? 's' : '') + ') : ' + detail(g)));
+      chips.push(chip('📅', 'Meilleur jour', day, fmtR1(g.net), 'green', goBilan, 'cumul de ' + nd + ' ' + day + (nd > 1 ? 's' : ''), 'Tous tes ' + day + 's réunis (' + nd + ' journée' + (nd > 1 ? 's' : '') + ') : ' + detail(g)));
     }
     if (bHour && bHour[1].net > 0) {
       const g = bHour[1], hh = String(bHour[0]).padStart(2, '0') + 'h';
-      chips.push(chip('🕐', "Meilleure heure d'entrée", hh, fmtR(g.net), 'green', goBilan, 'sur ' + g.n + ' trade' + (g.n > 1 ? 's' : ''), 'Trades entrés entre ' + hh + ' et ' + String((+bHour[0] + 1) % 24).padStart(2, '0') + 'h : ' + detail(g)));
+      chips.push(chip('🕐', "Meilleure heure d'entrée", hh, fmtR1(g.net), 'green', goBilan, 'sur ' + g.n + ' trade' + (g.n > 1 ? 's' : ''), 'Trades entrés entre ' + hh + ' et ' + String((+bHour[0] + 1) % 24).padStart(2, '0') + 'h : ' + detail(g)));
     }
     if (tilt.length && tiltCost > 0) chips.push(chip('⚠️', 'Tilt', tilt.length + ' trade' + (tilt.length > 1 ? 's' : '') + ' signalé' + (tilt.length > 1 ? 's' : ''), '−' + fmtEUR(tiltCost), 'amber', goTilt, '', 'Ré-entrées rapides ou taille augmentée juste après une perte'));
   }
@@ -82,7 +82,7 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   if (window.matchMedia('(max-width: 860px)').matches) closeMobileSidebar();
   // Pages dont le contenu vit hors du journal (réglages, sauvegardes) : toujours rafraîchies à l'ouverture.
-  renderPage(id, ['scaling', 'export', 'propfirm'].includes(id));
+  renderPage(id, ['scaling', 'export', 'propfirm', 'plan'].includes(id));
   safeRun(renderFilterBar, 'renderFilterBar');
   window.scrollTo({ top: 0 });
 }

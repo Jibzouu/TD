@@ -106,6 +106,7 @@ const PAGE_RENDERERS = {
   propfirm: () => JOURNAL_ID === 'pf' ? [applyChartDefaults, renderPropFirm] : [],
   scaling: () => [fillScalingForm, () => renderScaling({ center: true })],
   export: () => [renderTrashUI, renderBackupSettings],
+  plan: () => [renderPositionCalc],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }

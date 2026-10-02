@@ -584,10 +584,10 @@
                 <th class="sortable" data-sort="asset" onclick="sortTable('asset')">Asset <span class="sort-arrow">▾</span></th>
                 <th>Sens</th>
                 <th>Résultat</th>
-                <th class="sortable" data-sort="rr" onclick="sortTable('rr')">RR <span class="sort-arrow">▾</span></th>
+                <th class="sortable" data-sort="rr" onclick="sortTable('rr')" title="R visé (objectif prévu)">R visé <span class="sort-arrow">▾</span></th>
                 <th class="sortable" data-sort="pnl" onclick="sortTable('pnl')">P&L (R) <span class="sort-arrow">▾</span></th>
                 <th class="sortable" data-sort="pnlEur" onclick="sortTable('pnlEur')">P&L (€) <span class="sort-arrow">▾</span></th>
-                <th></th>
+                <th title="📷 captures · # tags · ✎ note · ● humeur">Infos</th>
                 <th></th>
               </tr>
             </thead>
@@ -656,7 +656,7 @@
             <div class="panel-hdr">Meilleurs jours de la semaine</div>
             <div class="scroll-x">
               <table>
-                <thead><tr><th>Jour</th><th>Trades</th><th>Win Rate</th><th>RR total</th></tr></thead>
+                <thead><tr><th>Jour</th><th>Trades</th><th>Win Rate</th><th>R total</th></tr></thead>
                 <tbody id="stats-weekday-tbody"></tbody>
               </table>
             </div>
@@ -665,7 +665,7 @@
             <div class="panel-hdr">Meilleures heures pour trader (entrée)</div>
             <div class="scroll-x">
               <table>
-                <thead><tr><th>Heure</th><th>Trades</th><th>Win Rate</th><th>RR total</th></tr></thead>
+                <thead><tr><th>Heure</th><th>Trades</th><th>Win Rate</th><th>R total</th></tr></thead>
                 <tbody id="stats-hour-tbody"></tbody>
               </table>
             </div>
@@ -683,7 +683,7 @@
           <div id="tilt-meter-body"></div>
         </div>
         <div class="panel">
-          <div class="panel-hdr"><span>Coût de tes erreurs<small class="panel-sub">€ perdus par type d'erreur taguée</small></span></div>
+          <div class="panel-hdr"><span>Coût de tes erreurs<small class="panel-sub">pertes et gains manqués par type d'erreur taguée</small></span></div>
           <div id="mistake-cost-body"></div>
         </div>
       </div>
@@ -779,7 +779,7 @@
 
       <div class="panel sc-setup">
         <div class="sc-params">
-          <div class="field"><label for="sc-start">Capital de départ (€)</label><input type="number" id="sc-start" min="1" step="100" oninput="onScalingInput('start')"></div>
+          <div class="field"><label for="sc-start">Capital de départ (€)</label><input type="number" id="sc-start" min="1" step="100" oninput="onScalingInput('start')"><div class="sc-field-hint" id="sc-start-hint"></div></div>
           <div class="field"><label for="sc-risk-pct">Risque par trade</label><div class="sc-pair"><input type="number" id="sc-risk-pct" min="0.05" max="99" step="0.25" aria-label="Risque par trade (%)" oninput="onScalingInput('riskPct')"><span>%</span><input type="number" id="sc-risk-eur" min="0.01" step="1" aria-label="Risque par trade (€)" oninput="onScalingInput('riskEur')"><span>€</span></div><div class="sc-field-hint">% du palier atteint</div></div>
           <div class="field"><label for="sc-step">Écart entre paliers (€)</label><input type="number" id="sc-step" min="1" step="100" oninput="onScalingInput('step')"><div class="sc-field-hint">ex. 1 000 € → paliers à 2 000, 3 000…</div></div>
           <div class="field"><label for="sc-cushion1">Coussin au 1er palier (€)</label><input type="number" id="sc-cushion1" min="0" step="50" oninput="onScalingInput('cushion1')"><div class="sc-field-hint" id="sc-cushion-hint"></div></div>
@@ -850,16 +850,15 @@
           <textarea id="plan-notes" placeholder="Tes notes personnelles, observations de marché…" oninput="savePlanNotes()"></textarea>
         </div>
         <div class="plan-card span-2">
-          <div class="plan-card-title"><div class="plan-dot dot-purple"></div>Calculateur de taille de position (RR)</div>
-          <div class="form-row f4 mb-14">
-            <div class="field"><label>Solde (€)</label><input type="number" id="calc-balance" step="1" placeholder="ex : 10000" oninput="renderPositionCalc()"></div>
-            <div class="field"><label>Risque par trade (%)</label><input type="number" id="calc-risk-pct" step="0.1" placeholder="ex : 0.5" oninput="renderPositionCalc()"></div>
-            <div class="field"><label>Distance au stop (points/pips)</label><input type="number" id="calc-stop-dist" step="0.1" placeholder="ex : 20" oninput="renderPositionCalc()"></div>
-            <div class="field"><label>Valeur par point/pip (€)</label><input type="number" id="calc-point-value" step="0.01" placeholder="ex : 10" oninput="renderPositionCalc()"></div>
+          <div class="plan-card-title"><div class="plan-dot dot-purple"></div>Calculateur de taille de position</div>
+          <div class="form-row f3 mb-14">
+            <div class="field"><label for="calc-risk-eur">Risque par trade (€)</label><input type="number" id="calc-risk-eur" step="1" min="0" placeholder="ex : 60" oninput="onCalcRiskInput()"><div class="sc-field-hint" id="calc-risk-src"></div></div>
+            <div class="field"><label for="calc-stop-dist">Distance au stop (points/pips)</label><input type="number" id="calc-stop-dist" step="0.1" placeholder="ex : 20" oninput="renderPositionCalc()"></div>
+            <div class="field"><label for="calc-point-value">Valeur par point/pip (€)</label><input type="number" id="calc-point-value" step="0.01" placeholder="ex : 10" oninput="renderPositionCalc()"></div>
           </div>
           <div id="calc-result"></div>
           <p class="note-mono">
-            Risque en € = Solde × Risque%. Taille suggérée = Risque € ÷ (Distance au stop × Valeur du point). La valeur du point dépend de l'instrument et du courtier — vérifie-la dans la fiche produit de ta plateforme.
+            Le risque vient de ton plan de Scaling (taille de ton palier actuel) ; tu peux le modifier pour un trade particulier. Taille suggérée = Risque € ÷ (Distance au stop × Valeur du point). La valeur du point dépend de l'instrument et du courtier — vérifie-la dans la fiche produit de ta plateforme.
           </p>
         </div>
       </div>
@@ -917,13 +916,13 @@
 
       <div class="charts-row cols-2 mt-24">
         <div class="panel">
-          <div class="panel-hdr">Total RR par semaine</div>
+          <div class="panel-hdr">Total R par semaine</div>
           <div class="scroll-360">
             <table class="rr-table" id="rr-week-table"></table>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-hdr">Total RR par mois</div>
+          <div class="panel-hdr">Total R par mois</div>
           <div class="scroll-360">
             <table class="rr-table" id="rr-month-table"></table>
           </div>
@@ -1101,8 +1100,8 @@
             <small>Base de la courbe d'équité, du rendement et de la limite de perte.</small>
           </label>
           <label class="acct-field"><span>Perte journalière max</span>
-            <span class="acct-input"><input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()"><span>% du solde</span></span>
-            <small>Jauge « Perte max du jour » du Dashboard et critère de Discipline.</small>
+            <span class="acct-input"><input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()"><span>% du solde du jour</span></span>
+            <small>Calculée sur ton solde en début de journée. Jauge « Perte max du jour » du Dashboard et critère de Discipline.</small>
           </label>
           <div class="acct-field"><span>Disposition du Dashboard</span>
             <button class="btn-ghost" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>

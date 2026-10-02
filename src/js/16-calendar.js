@@ -93,8 +93,8 @@ function showCalTooltip(e, dateStr) {
   const tip = document.getElementById('cal-tooltip');
   const data = calDayDataCache[dateStr];
   if (!tip || !data || !data.dayTrades.length) return;
-  const rows = data.dayTrades.slice(0, 5).map(t => html`<div class="ct-row"><span>${t.asset || '—'} ${t.res || ''}</span><span class="tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? ((rSource(t) === 'defaut' || rSource(t) === 'risque') ? '≈' : '') + (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : '—'}</span></div>`);
-  mount(tip, html`<div class="ct-head">${dateStr} · ${fmtEUR(data.pnlEurSum, true)}</div>${rows}${data.dayTrades.length > 5 ? html`<div class="ct-more">+ ${data.dayTrades.length - 5} autre(s)</div>` : ''}`);
+  const rows = data.dayTrades.slice(0, 5).map(t => html`<div class="ct-row"><span>${t.asset || '—'} ${t.res || ''}</span><span class="tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? ((rSource(t) === 'defaut' || rSource(t) === 'risque') ? '≈' : '') + fmtR(t.pnl, 1) : '—'}</span></div>`);
+  mount(tip, html`<div class="ct-head">${fmtDateFR(dateStr, true)} · ${fmtEUR(data.pnlEurSum, true)}</div>${rows}${data.dayTrades.length > 5 ? html`<div class="ct-more">+ ${data.dayTrades.length - 5} autre(s)</div>` : ''}`);
   tip.classList.add('show');
   positionCalTooltip(e);
 }
@@ -189,6 +189,9 @@ function renderCalendrier() {
   for (let w = 0; w < cells.length / 7; w++) {
     let weekEur = 0, weekDays = 0;
     const days = [];
+    // Semaine ISO (même numérotation que « S25 » dans les totaux et la revue hebdo).
+    const rowDate = cells.slice(w * 7, w * 7 + 7).find(Boolean);
+    const wkLbl = rowDate ? 'S' + getISOWeek(new Date(rowDate + 'T00:00:00')).week : 'Semaine ' + (w + 1);
     for (let i = 0; i < 7; i++) {
       const dateStr = cells[w * 7 + i];
       if (!dateStr) { days.push(html`<div></div>`); continue; }
@@ -210,12 +213,12 @@ function renderCalendrier() {
       days.push(html`<div class="${cls}"${raw(vars ? ` style="${vars}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}>
         ${hasBestWorst && dateStr === bestDate && bestVal > 0 ? html`<span class="cal-badge" title="Meilleur jour du mois">🏆</span>` : ''}${hasBestWorst && dateStr === worstDate && worstVal < 0 ? html`<span class="cal-badge" title="Jour le plus coûteux">⚠️</span>` : ''}${streak ? html`<span class="cal-badge streak" title="${streak.length} jours ${streak.type === 'win' ? 'gagnants' : 'perdants'} d'affilée">${streak.type === 'win' ? '🔥' : '❄️'}${streak.length}</span>` : ''}
         <div class="cal-dnum">${d}</div>
-        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${data.pnlSum >= 0 ? '+' : ''}${data.pnlSum.toFixed(1)}R</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗ · ${data.winPct}%</div>` : ''}
+        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗ · ${data.winPct} %</div>` : ''}
       </div>`);
     }
     const week = weekDays > 0
-      ? html`<div class="cal-week"><div class="cal-week-lbl">Semaine ${w + 1}</div><div class="cal-week-val tone-${raw(weekEur > 0 ? 'green' : weekEur < 0 ? 'red' : 'txt2')}">${fmtEUR(weekEur, true)}</div><div class="cal-week-sub">${weekDays} jour(s)</div></div>`
-      : html`<div class="cal-week empty"><div class="cal-week-lbl">Semaine ${w + 1}</div><div class="cal-week-val tone-muted">0 €</div><div class="cal-week-sub">0 jour</div></div>`;
+      ? html`<div class="cal-week"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-${raw(weekEur > 0 ? 'green' : weekEur < 0 ? 'red' : 'txt2')}">${fmtEUR(weekEur, true)}</div><div class="cal-week-sub">${weekDays} jour(s)</div></div>`
+      : html`<div class="cal-week empty"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-muted">0 €</div><div class="cal-week-sub">0 jour</div></div>`;
     weeks.push(html`<div class="cal-row">${days}${week}</div>`);
   }
   mount('cal-grid', html`<div class="cal-row">${DAYS_FR.map(d => html`<div class="cal-dow">${d}</div>`)}<div></div></div>${weeks}`);
@@ -317,14 +320,14 @@ function renderRRTables() {
   const weekKeys = Object.keys(weekMap).sort().reverse();
   const monthKeys = Object.keys(monthMap).sort().reverse();
   const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? ' ' + v.be + 'be' : ''})</span>`;
-  const rrCell = v => html`<td class="r strong tone-${raw(v.rr > 0 ? 'green' : v.rr < 0 ? 'red' : 'txt2')}">${v.rr >= 0 ? '+' : ''}${v.rr.toFixed(2)}R</td>`;
+  const rrCell = v => html`<td class="r strong tone-${raw(v.rr > 0 ? 'green' : v.rr < 0 ? 'red' : 'txt2')}">${fmtR(v.rr, 2)}</td>`;
   const table = (el, first, keys, label, map) => {
     if (!el) return;
     mount(el, keys.length === 0
       ? html`<tr><td class="rr-empty">Aucun trade daté pour le moment.</td></tr>`
-      : html`<thead><tr><th>${first}</th><th class="r">Trades</th><th class="r">RR total</th></tr></thead><tbody>${keys.map(k => html`<tr><td>${label(k, map[k])}</td><td class="r c2">${counts(map[k])}</td>${rrCell(map[k])}</tr>`)}</tbody>`);
+      : html`<thead><tr><th>${first}</th><th class="r">Trades</th><th class="r">R total</th></tr></thead><tbody>${keys.map(k => html`<tr><td>${label(k, map[k])}</td><td class="r c2">${counts(map[k])}</td>${rrCell(map[k])}</tr>`)}</tbody>`);
   };
-  table(document.getElementById('rr-week-table'), 'Semaine', weekKeys, (k, v) => html`S${k.split('-W')[1]} <span class="tone-muted">· dès le ${v.monday}</span>`, weekMap);
+  table(document.getElementById('rr-week-table'), 'Semaine', weekKeys, (k, v) => html`S${k.split('-W')[1]} <span class="tone-muted">· dès le ${fmtDateFR(v.monday)}</span>`, weekMap);
   table(document.getElementById('rr-month-table'), 'Mois', monthKeys, k => { const [y, m] = k.split('-'); return MONTHS_FR[parseInt(m, 10) - 1] + ' ' + y; }, monthMap);
 }
 

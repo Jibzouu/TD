@@ -343,7 +343,7 @@ function renderTrashUI() {
   mount(cont, html`${trash.map((entry, i) => {
     const t = entry.trade;
     return html`<div class="trash-row">
-      <span class="tone-txt2">${t.date || '—'} · ${t.asset || '—'} <span class="tone-${raw(t.res === 'TP' ? 'green' : t.res === 'SL' ? 'red' : 'txt2')}">${t.res || ''}</span></span>
+      <span class="tone-txt2">${t.date ? fmtDateNum(t.date) : '—'} · ${t.asset || '—'} <span class="tone-${raw(t.res === 'TP' ? 'green' : t.res === 'SL' ? 'red' : 'txt2')}">${t.res || ''}</span></span>
       <button class="btn-ghost btn-xs" onclick="restoreTrashItem(${raw(i)})">Restaurer</button>
     </div>`;
   })}`);

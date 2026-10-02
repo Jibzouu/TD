@@ -37,7 +37,7 @@ test('dates locales, semaine ISO et thèmes', async () => {
   const { page, ctx, errors } = await openJournal({ time: new Date('2026-09-28T22:30:00Z'), seed: { tj_trades: [T({ id: 5, date: '2026-09-28' })] } });
   assert.equal(await page.inputValue('#f-date'), '2026-09-29');
   await goto(page, 'calendrier');
-  assert.match(await page.locator('#rr-week-table').innerText(), /2026-09-28/);
+  assert.match(await page.locator('#rr-week-table').innerText(), /S40 · dès le 28\/09/);
   await goto(page, 'parametres');
   assert.equal(await page.locator('#theme-preset-grid .theme-swatch').count(), 12);
   await page.keyboard.press('Escape');

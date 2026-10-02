@@ -18,7 +18,7 @@ function renderMonteCarlo() {
   const n = parseInt(document.getElementById('mc-n').value, 10) || 100, ddPct = parseInt(document.getElementById('mc-dd').value, 10) || 10;
   const start = useEur ? (balanceBeforeFilter() + viewTrades().filter(t => t.pnlEur != null).reduce((s, t) => s + t.pnlEur, 0)) : 0;
   const R = monteCarlo(vals, n, 1000, start, useEur ? ddPct / 100 : null, vals.length * 7919 + n);
-  const f = v => useEur ? fmtEUR(v, false, 0) : (v >= 0 ? '+' : '') + v.toFixed(1) + 'R';
+  const f = v => useEur ? fmtEUR(v, false, 0) : fmtR(v, 1);
   const tk = chartTokens();
   mount(statsEl, html`
     ${stat2('Médiane après ' + n + ' trades', f(percentile(R.finals, .5)), percentile(R.finals, .5) >= start ? 'green' : 'red')}

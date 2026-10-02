@@ -42,7 +42,7 @@ const UI = {
   pnl(v, unit) {
     if (v === null || v === undefined || isNaN(v)) return html`<span class="pnl-z">—</span>`;
     const cls = v > 0 ? 'pnl-p' : v < 0 ? 'pnl-n' : 'pnl-z';
-    const txt = unit === 'R' ? (v > 0 ? '+' : '') + Number(v).toFixed(2) + 'R' : fmtEUR(v, true, 2);
+    const txt = unit === 'R' ? fmtR(Number(v), 2) : fmtEUR(v, true, 2);
     return html`<span class="${raw(cls)}">${txt}</span>`;
   },
   // Tuile encadrée (analyses) : tone = green | red | amber | blue | purple | muted ; accent = liseré gauche coloré.

@@ -55,7 +55,7 @@ function startEditTrade(id) {
   const banner = document.getElementById('edit-trade-banner');
   const bannerText = document.getElementById('edit-trade-banner-text');
   if (banner) banner.style.display = 'flex';
-  if (bannerText) bannerText.textContent = `Modification du trade du ${t.date || '—'} (${t.asset || '—'})`;
+  if (bannerText) bannerText.textContent = `Modification du trade du ${t.date ? fmtDateNum(t.date) : '—'} (${t.asset || '—'})`;
   const titleText = document.getElementById('form-title-text');
   if (titleText) titleText.textContent = 'Modifier le trade';
   const btnText = document.getElementById('trade-submit-btn-text');
@@ -142,7 +142,7 @@ function updateDistanceRPreview() {
   const parts = [];
   if (!isNaN(entryPrice) && !isNaN(slPrice) && !isNaN(tpPrice)) {
     const riskDist = Math.abs(entryPrice - slPrice);
-    if (riskDist > 0) parts.push(`RR visé : ${(Math.abs(tpPrice - entryPrice) / riskDist).toFixed(2)}R`);
+    if (riskDist > 0) parts.push(`RR visé : ${fmtR(Math.abs(tpPrice - entryPrice) / riskDist, 2, true)}`);
   }
   if (!isNaN(entryPrice) && !isNaN(slPrice) && !isNaN(exitPrice)) {
     const r = computeDistanceR(entryPrice, slPrice, exitPrice, dir);
@@ -330,7 +330,9 @@ function renderDDBanner() {
   const dayTrades = allDay.filter(t => t.pnlEur !== null && t.pnlEur !== undefined);
   const dayPnlEur = isManual ? manualMap[date] : dayTrades.reduce((s, t) => s + t.pnlEur, 0);
   const hasData = isManual || dayTrades.length > 0;
-  const ddLimit = accountSize * (limitPct / 100);
+  // Limite calculée sur le solde en DÉBUT de journée (solde de départ + tous les trades des jours précédents).
+  const dayStartBal = accountSize + trades.reduce((sum, t) => sum + (t.date && t.date < date && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
+  const ddLimit = Math.max(0, dayStartBal) * (limitPct / 100);
   const ddLoss = dayPnlEur < 0 ? Math.abs(dayPnlEur) : 0;
   const ddPct = ddLimit > 0 ? (ddLoss / ddLimit * 100) : 0;
   const level = !hasData ? 'none' : ddPct >= 100 ? 'crit' : ddPct >= 75 ? 'warn' : 'ok';
@@ -349,8 +351,8 @@ function renderDDBanner() {
   });
   set('dd-bar', el => { el.style.width = Math.min(ddPct, 100) + '%'; el.className = 'fill-' + ({ none: 'muted', ok: 'green', warn: 'amber', crit: 'red' })[level]; });
   set('dd-bar-wrap', el => el.setAttribute('aria-label', 'Perte du jour : ' + Math.round(ddPct) + ' % de la limite de ' + fmtEUR(ddLimit)));
-  set('dd-pct-label', el => { el.textContent = !hasData ? '—' : dayPnlEur >= 0 ? 'Aucune perte' : ddPct.toFixed(0) + ' % de la limite utilisée'; });
-  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; });
+  set('dd-pct-label', el => { el.textContent = !hasData ? '—' : dayPnlEur >= 0 ? 'Aucune perte' : fmtRate(ddPct, 0) + ' de la limite utilisée'; });
+  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; el.title = limitPct + ' % du solde en début de journée (' + fmtEUR(dayStartBal) + ')'; });
   set('dd-status-badge', el => {
     el.textContent = ({ none: 'Pas de trade', ok: '✓ Dans les clous', warn: '⚡ Attention', crit: '🚨 Limite dépassée' })[level];
     el.className = 'st-chip ' + level;

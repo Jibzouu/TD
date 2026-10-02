@@ -142,7 +142,7 @@ function renderPropFirm() {
         <div class="pf-block">
           <div class="pf-head"><span class="pf-big tone-${raw(ok(s.totalPnl >= 0, 'green', 'red'))}">${fmtEUR(s.totalPnl, true)}</span><span class="pf-small">objectif : ${fmtEUR(s.targetAmount)}</span></div>
           ${bar(s.targetProgress, ok(s.targetReached, 'green', 'blue'))}
-          <div class="pf-note">${s.targetProgress.toFixed(0)}% de l'objectif ${s.targetReached ? '— atteint ✓' : ''}</div>
+          <div class="pf-note">${fmtRate(s.targetProgress, 0)} de l'objectif ${s.targetReached ? '— atteint ✓' : ''}</div>
         </div>
       </div>
     </div>
@@ -162,7 +162,7 @@ function renderPropFirm() {
       <div class="panel">
         <div class="panel-hdr">Règle de consistance ${s.consistencyOn ? '' : '(désactivée)'}</div>
         ${s.consistencyOn
-          ? html`<div class="pf-line"><span class="pf-big tone-${raw(ok(s.consistencyOk, 'green', 'red'))}">${s.bestDayPct.toFixed(0)}%</span><span class="pf-sub">meilleur jour / profit total (max ${s.consistencyPct}%) ${s.consistencyOk ? '✓' : '✗'}</span></div>`
+          ? html`<div class="pf-line"><span class="pf-big tone-${raw(ok(s.consistencyOk, 'green', 'red'))}">${fmtRate(s.bestDayPct, 0)}</span><span class="pf-sub">meilleur jour / profit total (max ${s.consistencyPct}%) ${s.consistencyOk ? '✓' : '✗'}</span></div>`
           : html`<p class="empty-note">Active-la dans les paramètres si ta firme l'impose (ex : FTMO).</p>`}
       </div>
     </div>`);
@@ -225,7 +225,7 @@ function renderStats() {
   function statRow(label, val, cls='') {
     return html`<div class="stat-row"><span class="stat-row-label">${label}</span><span class="stat-row-val ${raw(cls)}">${val}</span></div>`;
   }
-  function pct(a,b) { return b>0?(a/b*100).toFixed(1)+'%':'—'; }
+  function pct(a,b) { return b>0?fmtRate(a/b*100, 1):'—'; }
 
   mount('stats-perf', html`${[
     statRow('Total trades', trades.length),
@@ -238,20 +238,20 @@ function renderStats() {
   ]}`);
 
   mount('stats-pnl', html`${[
-    statRow('P&L Total (R)', pnlArr.length>0?(totalPnl>=0?'+':'')+totalPnl.toFixed(2)+'R':'—', totalPnl>0?'pnl-p':totalPnl<0?'pnl-n':''),
-    statRow('P&L Total (€)', (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>=0?'+':'')+et.toFixed(2)+' €':'—'})(), (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>0?'pnl-p':et<0?'pnl-n':''):''})()), 
-    statRow('P&L Moyen/trade', pnlArr.length>0?(totalPnl/pnlArr.length>=0?'+':'')+(totalPnl/pnlArr.length).toFixed(2)+'R':'—'),
-    statRow('Gains bruts', gw>0?'+'+gw.toFixed(2)+'R':'—', 'pnl-p'),
-    statRow('Pertes brutes', gl>0?'-'+gl.toFixed(2)+'R':'—', 'pnl-n'),
-    statRow('Profit Factor', gl>0?(gw/gl).toFixed(2):wins.length>0?'∞':'—', gl>0&&gw/gl>=1?'pnl-p':''),
-    statRow('Max gain', wins.length>0?'+'+Math.max(...wins.map(t=>t.pnl||0)).toFixed(2)+'R':'—', 'pnl-p'),
-    statRow('Max perte', losses.length>0?'-'+Math.abs(Math.min(...losses.map(t=>t.pnl||0))).toFixed(2)+'R':'—', 'pnl-n'),
+    statRow('P&L Total (R)', pnlArr.length>0?fmtR(totalPnl, 2):'—', totalPnl>0?'pnl-p':totalPnl<0?'pnl-n':''),
+    statRow('P&L Total (€)', (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?fmtEUR(et, true, 2):'—'})(), (()=>{const ea=trades.filter(t=>t.pnlEur!=null);const et=ea.reduce((s,t)=>s+t.pnlEur,0);return ea.length>0?(et>0?'pnl-p':et<0?'pnl-n':''):''})()), 
+    statRow('P&L Moyen/trade', pnlArr.length>0?fmtR(totalPnl/pnlArr.length, 2):'—'),
+    statRow('Gains bruts', gw>0?fmtR(gw, 2):'—', 'pnl-p'),
+    statRow('Pertes brutes', gl>0?fmtR(-gl, 2):'—', 'pnl-n'),
+    statRow('Profit Factor', gl>0?fmtNum(gw/gl, 2):wins.length>0?'∞':'—', gl>0&&gw/gl>=1?'pnl-p':''),
+    statRow('Max gain', wins.length>0?fmtR(Math.max(...wins.map(t=>t.pnl||0)), 2):'—', 'pnl-p'),
+    statRow('Max perte', losses.length>0?fmtR(-Math.abs(Math.min(...losses.map(t=>t.pnl||0))), 2):'—', 'pnl-n'),
   ]}`);
 
   mount('stats-rr', html`${[
-    statRow('RR Moyen', rrArr.length>0?(rrArr.reduce((s,t)=>s+t.rr,0)/rrArr.length).toFixed(2)+'R':'—'),
-    statRow('RR Max', rrArr.length>0?Math.max(...rrArr.map(t=>t.rr)).toFixed(2)+'R':'—'),
-    statRow('RR Min', rrArr.length>0?Math.min(...rrArr.map(t=>t.rr)).toFixed(2)+'R':'—'),
+    statRow('RR Moyen', rrArr.length>0?fmtR(rrArr.reduce((s,t)=>s+t.rr,0)/rrArr.length, 2, true):'—'),
+    statRow('RR Max', rrArr.length>0?fmtR(Math.max(...rrArr.map(t=>t.rr)), 2, true):'—'),
+    statRow('RR Min', rrArr.length>0?fmtR(Math.min(...rrArr.map(t=>t.rr)), 2, true):'—'),
     statRow('Trades A+ (RR≥3)', trades.filter(t=>t.rr>=3).length),
     statRow('Trades A  (RR≥2)', trades.filter(t=>t.rr>=2&&t.rr<3).length),
     statRow('Trades B  (RR≥1.5)', trades.filter(t=>t.rr>=1.5&&t.rr<2).length),
@@ -274,7 +274,7 @@ function renderStats() {
     const awr = ac.length>0?pct(atp,ac.length):'—';
     const apnl = at.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
     const arr = at.filter(t=>t.rr);
-    const avgRR = arr.length>0?(arr.reduce((s,t)=>s+t.rr,0)/arr.length).toFixed(2)+'R':'—';
+    const avgRR = arr.length>0?fmtR(arr.reduce((s,t)=>s+t.rr,0)/arr.length, 2, true):'—';
     const wrNum = ac.length>0?atp/ac.length:0;
     return html`<tr>
       <td class="fw-500">${asset}</td>
@@ -283,7 +283,7 @@ function renderStats() {
       <td class="tone-red">${asl}</td>
       <td class="tone-amber">${abe}</td>
       <td>${ac.length ? wrBarCell(wrNum, beWR, ac.length) : '—'}</td>
-      <td class="${raw(apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z')}">${at.filter(t=>t.pnl != null).length>0?(apnl>=0?'+':'')+apnl.toFixed(2)+'R':'—'}</td>
+      <td class="${raw(apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z')}">${at.filter(t=>t.pnl != null).length>0?fmtR(apnl, 2):'—'}</td>
       <td>${avgRR}</td>
     </tr>`;
   })}`);
@@ -304,7 +304,7 @@ function renderStats() {
       <td class="fw-500">${tf}</td>
       <td>${tt.length}</td>
       <td>${tc.length ? wrBarCell(wrNum, beWR, tc.length) : '—'}</td>
-      <td class="${raw(tpnl>0?'pnl-p':tpnl<0?'pnl-n':'pnl-z')}">${tt.filter(t=>t.pnl != null).length>0?(tpnl>=0?'+':'')+tpnl.toFixed(2)+'R':'—'}</td>
+      <td class="${raw(tpnl>0?'pnl-p':tpnl<0?'pnl-n':'pnl-z')}">${tt.filter(t=>t.pnl != null).length>0?fmtR(tpnl, 2):'—'}</td>
     </tr>`;
   })}`);
 }
