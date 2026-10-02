@@ -159,7 +159,6 @@ tbody tr:hover td{background:color-mix(in srgb,var(--txt) 3%,transparent)}
 .field input,.field select,.field textarea{font-size:12.5px;border-radius:var(--r)}
 .form-section-toggle .fs-hint{font-size:11.5px}
 .sidebar-footer p,.logo p{font-size:11px}
-.jr-tab{font-size:11px}
 
 
 /* ── Charte appliquée aux autres pages ── */

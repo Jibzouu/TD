@@ -103,11 +103,12 @@ const PAGE_RENDERERS = {
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
   bilan: () => [applyChartDefaults, renderBilan],
-  propfirm: () => JOURNAL_ID === 'pf' ? [applyChartDefaults, renderPropFirm] : [],
+  propfirm: () => IS_PROPFIRM ? [applyChartDefaults, renderPropFirm] : [],
   scaling: () => [fillScalingForm, () => renderScaling({ center: true })],
   export: () => [renderTrashUI, renderBackupSettings],
   plan: () => [renderPositionCalc, renderRiskRules],
   watchlist: () => [renderWatchlist],
+  parametres: () => [renderAccountsCard],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }

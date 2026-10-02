@@ -7,7 +7,7 @@ function savePfSetting(key, val) {
   DB.setItem((JP + 'pf_') + key, val);
 }
 function initPropFirmSettings() {
-  const enabled = loadPfSetting('enabled', JOURNAL_ID === 'pf' ? '1' : '0');
+  const enabled = loadPfSetting('enabled', IS_PROPFIRM ? '1' : '0');
   document.getElementById('pf-enabled').checked = enabled === '1' || enabled === 1;
   document.getElementById('pf-target-pct').value = loadPfSetting('target_pct', '10');
   document.getElementById('pf-maxdd-pct').value = loadPfSetting('maxdd_pct', '10');

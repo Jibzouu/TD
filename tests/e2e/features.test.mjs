@@ -551,3 +551,52 @@ test('modèle prêt pour la sync : migration, uid, dates, captures à part, trac
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('comptes multiples : migration, création, type prop firm, renommage, suppression, données isolées', async () => {
+  // Données existantes dans Live et Backtest, rien dans PropFirm.
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: sampleTrades().slice(0, 3), bt_trades: sampleTrades().slice(0, 5) } });
+  const ready = () => page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  assert.deepEqual(await page.evaluate(() => ACCOUNTS.map(a => a.id + ':' + a.type)), ['tj:live', 'bt:backtest'], 'PropFirm vide non recréé');
+  assert.match(await page.locator('#acc-current').innerText(), /Live/);
+  // Création d'un compte prop firm depuis le sélecteur.
+  await page.click('#acc-current');
+  assert.equal(await page.locator('#acc-menu').isVisible(), true);
+  await page.locator('#acc-menu .acc-action', { hasText: 'Nouveau compte' }).click();
+  await page.fill('#acc-f-name', 'FTMO 100k');
+  await page.selectOption('#acc-f-type', 'propfirm');
+  await page.click('#modal-confirm');
+  await page.waitForEvent('load'); await ready();
+  assert.match(await page.locator('#acc-current').innerText(), /FTMO 100k[\s\S]*Prop firm/);
+  assert.equal(await page.evaluate(() => trades.length), 0, 'nouveau compte vide');
+  assert.equal(await page.locator('.nav-item[data-page="propfirm"]').count(), 1, 'suivi de challenge disponible');
+  const newId = await page.evaluate(() => JOURNAL_ID);
+  assert.match(newId, /^a[a-z0-9]{5}$/);
+  // Un trade dans ce compte ne touche pas les autres.
+  await page.evaluate(() => TradeStore.add({ date: '2026-06-01', asset: 'DAX 40', res: 'TP', pnl: 1, pnlEur: 50 }));
+  assert.equal(await page.evaluate(() => JSON.parse(DB.getItem('tj_trades')).length), 3);
+  // Renommer (Paramètres).
+  await goto(page, 'parametres');
+  assert.match(await page.locator('#accounts-list').innerText(), /FTMO 100k[\s\S]*1 trade/);
+  await page.locator('#accounts-list .acc-row.on').getByText('Modifier').click();
+  await page.fill('#acc-f-name', 'FTMO 200k');
+  await page.click('#modal-confirm');
+  await page.waitForEvent('load'); await ready();
+  assert.match(await page.locator('#acc-current').innerText(), /FTMO 200k/);
+  // Supprimer le Backtest : ses clés disparaissent, le compte ouvert reste.
+  await goto(page, 'parametres');
+  await page.locator('#accounts-list .acc-row', { hasText: 'Backtest' }).locator('.del-btn').click();
+  assert.match(await page.locator('#modal-msg').textContent(), /5 trade\(s\)/);
+  await page.click('#modal-confirm');
+  await page.waitForEvent('load'); await ready();
+  assert.equal(await page.evaluate(() => DB.keys().filter(k => k.startsWith('bt_')).length), 0);
+  assert.deepEqual(await page.evaluate(() => ACCOUNTS.map(a => a.name)), ['Live', 'FTMO 200k']);
+  assert.equal(await page.evaluate(() => JOURNAL_ID), newId);
+  // Basculer vers Live.
+  await page.click('#acc-current');
+  await page.locator('#acc-menu .acc-item', { hasText: 'Live' }).click();
+  await page.waitForEvent('load'); await ready();
+  assert.equal(await page.evaluate(() => trades.length), 3);
+  assert.equal(await page.locator('.nav-item[data-page="propfirm"]').count(), 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

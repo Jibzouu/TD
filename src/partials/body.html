@@ -18,10 +18,9 @@
           <p id="jr-sub">Trades réels · Forex · Indices</p>
         </div>
       </div>
-      <div class="jr-tabs" id="jr-tabs" role="tablist" aria-label="Journal">
-        <button class="jr-tab" data-journal="tj" role="tab" onclick="switchJournal('tj')">Live</button>
-        <button class="jr-tab" data-journal="bt" role="tab" onclick="switchJournal('bt')">Backtest</button>
-        <button class="jr-tab" data-journal="pf" role="tab" onclick="switchJournal('pf')">PropFirm</button>
+      <div class="acc-switch" id="acc-switch">
+        <button class="acc-current" id="acc-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="acc-menu" onclick="toggleAccountMenu()"></button>
+        <div class="acc-menu" id="acc-menu" role="listbox" aria-label="Mes comptes" hidden></div>
       </div>
     </div>
     <button class="sidebar-search-btn" onclick="openGlobalSearch()">
@@ -1100,8 +1099,13 @@
         <div class="page-hdr-left"><h2>Paramètres</h2><p>Ton compte, puis l'apparence (commune aux trois journaux) — tout est sauvegardé localement</p></div>
       </div>
 
+      <div class="panel mb-20" id="accounts-card">
+        <div class="panel-hdr"><span>Mes comptes<small class="panel-sub">chaque compte a ses propres trades, plan, scaling et réglages · l'apparence est commune</small></span></div>
+        <div id="accounts-list" class="acc-list"></div>
+      </div>
+
       <div class="panel mb-20">
-        <div class="panel-hdr"><span>Compte &amp; Dashboard<small class="panel-sub">propre au journal actif (Live, Backtest ou PropFirm)</small></span></div>
+        <div class="panel-hdr"><span>Compte &amp; Dashboard<small class="panel-sub">propre au compte ouvert</small></span></div>
         <div class="acct-grid">
           <label class="acct-field"><span>Solde de départ</span>
             <span class="acct-input"><input type="number" id="account-size" placeholder="10000" min="0" step="100" oninput="saveAccountSize()"><span>€</span></span>
@@ -1251,6 +1255,7 @@
   <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-msg">
     <h3 id="modal-title">Confirmer la suppression</h3>
     <p id="modal-msg">Cette action est irréversible.</p>
+    <div id="modal-body"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
       <button class="btn-danger" id="modal-confirm">Supprimer</button>

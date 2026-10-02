@@ -76,14 +76,14 @@ function closeMobileSidebar() {
   document.body.classList.remove('sidebar-open');
 }
 function showPage(id, btn) {
-  if (id === 'propfirm' && JOURNAL_ID !== 'pf') { id = 'dashboard'; btn = document.querySelector('.nav-item[data-page="dashboard"]'); }
+  if (id === 'propfirm' && !IS_PROPFIRM) { id = 'dashboard'; btn = document.querySelector('.nav-item[data-page="dashboard"]'); }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (window.matchMedia('(max-width: 860px)').matches) closeMobileSidebar();
   // Pages dont le contenu vit hors du journal (réglages, sauvegardes) : toujours rafraîchies à l'ouverture.
-  renderPage(id, ['scaling', 'export', 'propfirm', 'plan', 'watchlist'].includes(id));
+  renderPage(id, ['scaling', 'export', 'propfirm', 'plan', 'watchlist', 'parametres'].includes(id));
   safeRun(renderFilterBar, 'renderFilterBar');
   window.scrollTo({ top: 0 });
 }

@@ -18,9 +18,9 @@ function restoreAllSettings(settings) {
   if (!settings || typeof settings !== 'object') return;
   // On compare les réglages par leur NOM (sans préfixe de journal) : un ancien backup (tj_theme…) ou un backup venant
   // d'un autre journal est ainsi rangé au bon endroit — l'apparence va dans le stockage commun, le reste dans ce journal.
-  const allowed = new Set(BACKUP_SETTINGS_KEYS.map(k => k.replace(/^(tj|bt|pf|g)_/, '')));
+  const allowed = new Set(BACKUP_SETTINGS_KEYS.map(k => k.replace(/^[a-z0-9]{1,12}_/, '')));
   Object.entries(settings).forEach(([k, v]) => {
-    const m = /^(tj|bt|pf|g)_(.+)$/.exec(k);
+    const m = /^([a-z0-9]{1,12})_(.+)$/.exec(k);
     if (!m || typeof v !== 'string' || !allowed.has(m[2])) return;
     DB.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
   });
@@ -213,7 +213,7 @@ function importData(input) {
       if (!isValidTradesArray(data.trades)) throw new Error('Format invalide');
       const hasSettings = data.settings && typeof data.settings === 'object';
       const other = data.journal && data.journal !== JOURNAL_ID && JOURNALS[data.journal];
-      const warn = other ? `⚠️ Ce backup vient du journal « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
+      const warn = other ? `⚠️ Ce backup vient du compte « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
       const msg = `${warn}${data.trades.length} trades seront restaurés${hasSettings ? ', ainsi que tes thèmes et réglages' : ''}. Tes données actuelles seront remplacées.`;
       openModal('Importer ce backup ?', msg, () => {
         createSafetySnapshot('avant import de backup');

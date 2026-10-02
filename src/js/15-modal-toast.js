@@ -8,10 +8,13 @@ function openModal(title, msg, onConfirm, opts = {}) {
   const destructive = opts.destructive ?? /^(supprimer|vider|réinitialiser|effacer)/i.test(title);
   btn.textContent = opts.confirmLabel || (destructive ? (title.match(/^(\S+)/)[1].replace(/\W+$/, '') || 'Confirmer') : 'Confirmer');
   btn.className = destructive ? 'btn-danger' : 'btn-primary';
-  btn.onclick = () => { closeModal(); onConfirm(); };
+  // opts.body : petit formulaire dans la fenêtre ; opts.validate() renvoie false pour la garder ouverte (saisie invalide).
+  const body = document.getElementById('modal-body');
+  if (body) mount(body, opts.body || '');
+  btn.onclick = () => { if (opts.validate && !opts.validate()) return; closeModal(); onConfirm(); };
   rememberFocus();
   document.getElementById('modal').classList.add('open');
-  setTimeout(() => { const c = document.querySelector('#modal .btn-cancel'); if (c) c.focus(); }, 30);
+  setTimeout(() => { const f = opts.body && document.querySelector('#modal-body input, #modal-body select'); const c = f || document.querySelector('#modal .btn-cancel'); if (c) c.focus(); }, 30);
 }
 function closeModal() {
   const m = document.getElementById('modal');

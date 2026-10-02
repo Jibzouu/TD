@@ -21,9 +21,9 @@ const SEARCH_ACTIONS = [
   { icon:'📅', label:'Aller à aujourd\'hui (Calendrier)', run: () => { closeGlobalSearch(); showPage('calendrier', document.querySelector('.nav-item[data-page=calendrier]')); calToday(); } },
   { icon:'🎨', label:'Changer de thème', run: () => { closeGlobalSearch(); showPage('parametres', document.querySelector('.nav-item[data-page=parametres]')); } },
 ];
-Object.keys(JOURNALS).filter(k => k !== JOURNAL_ID).forEach(k => SEARCH_ACTIONS.push({ icon: '🔀', label: 'Passer au journal ' + JOURNALS[k].tab, run: () => { closeGlobalSearch(); switchJournal(k); } }));
+Object.keys(JOURNALS).filter(k => k !== JOURNAL_ID).forEach(k => SEARCH_ACTIONS.push({ icon: '🔀', label: 'Passer au compte ' + JOURNALS[k].tab, run: () => { closeGlobalSearch(); switchJournal(k); } }));
 
-if (JOURNAL_ID !== 'pf') { const pi = SEARCH_PAGES.findIndex(p => p.page === 'propfirm'); if (pi > -1) SEARCH_PAGES.splice(pi, 1); }
+if (!IS_PROPFIRM) { const pi = SEARCH_PAGES.findIndex(p => p.page === 'propfirm'); if (pi > -1) SEARCH_PAGES.splice(pi, 1); }
 
 let searchSelectedIndex = 0;
 let searchCurrentItems = [];

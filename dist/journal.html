@@ -117,13 +117,6 @@ body.sidebar-open .sidebar{transform:translateX(0)}
 .logo-row{display:flex;align-items:center;gap:11px}
 .logo-row > div{min-width:0;min-height:68px}
 /* ── ONGLETS JOURNAUX (Live · Backtest · PropFirm) ── */
-.jr-tabs{display:flex;gap:4px;margin:14px -24px 0 0}
-.jr-tab{flex:1;min-width:0;padding:7px 2px;font-family:var(--mono);font-size:11px;color:var(--txt3);background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .7);cursor:pointer;white-space:nowrap;transition:color .15s,background .15s,border-color .15s}
-.jr-tab:hover{color:var(--txt);border-color:var(--border2)}
-.jr-tab.active{font-weight:700}
-.jr-tab.active[data-journal="tj"]{color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent);border-color:color-mix(in srgb,var(--blue) 50%,transparent)}
-.jr-tab.active[data-journal="bt"]{color:var(--purple);background:color-mix(in srgb,var(--purple) 14%,transparent);border-color:color-mix(in srgb,var(--purple) 50%,transparent)}
-.jr-tab.active[data-journal="pf"]{color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent);border-color:color-mix(in srgb,var(--amber) 50%,transparent)}
 .logo-mark{width:26px;height:26px;flex-shrink:0}
 .logo h1{font-size:14.5px;font-weight:600;letter-spacing:-.2px;color:var(--txt);line-height:1.25}
 .logo p{font-size:11px;font-family:var(--mono);color:var(--txt3);margin-top:3px}
@@ -556,6 +549,31 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
 .risk-row.linked .link-btn.rule-val:hover{text-decoration:underline}
 .mt-10{margin-top:10px}
 .watch-table td:nth-child(2){min-width:112px}
+/* Comptes : sélecteur de la barre latérale + liste dans Paramètres */
+.acc-switch{position:relative;margin:14px -24px 0 0}
+.acc-current{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:calc(var(--r) * .8);color:var(--txt);font:600 12.5px var(--sans);cursor:pointer;text-align:left}
+.acc-current:hover,.acc-current[aria-expanded="true"]{border-color:var(--border2)}
+.acc-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-caret{color:var(--txt3);font-size:11px}
+.acc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.acc-type{font:500 10px var(--mono);padding:1px 6px;border-radius:999px;background:var(--bg4);white-space:nowrap}
+.acc-menu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:4px;box-shadow:0 12px 30px -10px rgba(0,0,0,.55);max-height:60vh;overflow:auto}
+.acc-item{width:100%;display:flex;align-items:center;gap:8px;padding:8px;border:none;background:none;color:var(--txt2);font:500 12.5px var(--sans);border-radius:calc(var(--r) * .7);cursor:pointer;text-align:left}
+.acc-item:hover,.acc-item:focus-visible{background:var(--bg3);color:var(--txt)}
+.acc-item.on{color:var(--txt);background:var(--bg3)}
+.acc-action{color:var(--accent);font-weight:600}
+.acc-sep{height:1px;background:var(--border);margin:4px 2px}
+.acc-list{display:flex;flex-direction:column;gap:2px}
+.acc-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border);font-size:13px}
+.acc-row.on .acc-name{font-weight:600}
+.acc-count{font:11px var(--mono);white-space:nowrap}
+.acc-row .btn-sm{padding:4px 10px;font-size:11.5px}
+.acc-form{display:flex;flex-direction:column;gap:12px;margin:14px 0 4px;text-align:left}
+.acc-form .field span{display:block;font-size:11.5px;color:var(--txt3);margin-bottom:5px}
+.acc-form input,.acc-form select{width:100%}
+.acc-dot.fill-purple{background:var(--purple)}
+.acc-menu{right:auto;min-width:100%;width:max-content;max-width:320px}
+.acc-form{margin-bottom:18px}
 
 /* ═══ styles/20-charte-terminal.css ═══ */
 /* ══════════════════════════════════════════════════════════════════════
@@ -719,7 +737,6 @@ tbody tr:hover td{background:color-mix(in srgb,var(--txt) 3%,transparent)}
 .field input,.field select,.field textarea{font-size:12.5px;border-radius:var(--r)}
 .form-section-toggle .fs-hint{font-size:11.5px}
 .sidebar-footer p,.logo p{font-size:11px}
-.jr-tab{font-size:11px}
 
 
 /* ── Charte appliquée aux autres pages ── */
@@ -1629,10 +1646,9 @@ tr.more-row .btn-ghost{margin-right:8px}
           <p id="jr-sub">Trades réels · Forex · Indices</p>
         </div>
       </div>
-      <div class="jr-tabs" id="jr-tabs" role="tablist" aria-label="Journal">
-        <button class="jr-tab" data-journal="tj" role="tab" onclick="switchJournal('tj')">Live</button>
-        <button class="jr-tab" data-journal="bt" role="tab" onclick="switchJournal('bt')">Backtest</button>
-        <button class="jr-tab" data-journal="pf" role="tab" onclick="switchJournal('pf')">PropFirm</button>
+      <div class="acc-switch" id="acc-switch">
+        <button class="acc-current" id="acc-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="acc-menu" onclick="toggleAccountMenu()"></button>
+        <div class="acc-menu" id="acc-menu" role="listbox" aria-label="Mes comptes" hidden></div>
       </div>
     </div>
     <button class="sidebar-search-btn" onclick="openGlobalSearch()">
@@ -2711,8 +2727,13 @@ tr.more-row .btn-ghost{margin-right:8px}
         <div class="page-hdr-left"><h2>Paramètres</h2><p>Ton compte, puis l'apparence (commune aux trois journaux) — tout est sauvegardé localement</p></div>
       </div>
 
+      <div class="panel mb-20" id="accounts-card">
+        <div class="panel-hdr"><span>Mes comptes<small class="panel-sub">chaque compte a ses propres trades, plan, scaling et réglages · l'apparence est commune</small></span></div>
+        <div id="accounts-list" class="acc-list"></div>
+      </div>
+
       <div class="panel mb-20">
-        <div class="panel-hdr"><span>Compte &amp; Dashboard<small class="panel-sub">propre au journal actif (Live, Backtest ou PropFirm)</small></span></div>
+        <div class="panel-hdr"><span>Compte &amp; Dashboard<small class="panel-sub">propre au compte ouvert</small></span></div>
         <div class="acct-grid">
           <label class="acct-field"><span>Solde de départ</span>
             <span class="acct-input"><input type="number" id="account-size" placeholder="10000" min="0" step="100" oninput="saveAccountSize()"><span>€</span></span>
@@ -2862,6 +2883,7 @@ tr.more-row .btn-ghost{margin-right:8px}
   <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-msg">
     <h3 id="modal-title">Confirmer la suppression</h3>
     <p id="modal-msg">Cette action est irréversible.</p>
+    <div id="modal-body"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
       <button class="btn-danger" id="modal-confirm">Supprimer</button>
@@ -3112,15 +3134,42 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 </script>
 <script type="text/plain" id="app-src">
 /* ═══ js/00-core.js ═══ */
-// ── JOURNAUX : Live · Backtest · PropFirm (un seul fichier, trois jeux de données isolés) ─────────
-const JOURNALS = {
-  tj: { tab: 'Live',     title: 'Journal de Trading',  sub: 'Trades réels · Forex · Indices',   slug: 'live' },
-  bt: { tab: 'Backtest', title: 'Journal de Backtest', sub: 'Stratégies · Historique testé',     slug: 'backtest' },
-  pf: { tab: 'PropFirm', title: 'Journal PropFirm',    sub: 'Challenges · Comptes financés',     slug: 'propfirm' }
+// ── COMPTES (journaux) : créés par l'utilisateur, chacun avec ses données isolées sous un préfixe (tj_, a1b2c_…) ──
+// Un compte = { id, name, type } ; type : live (réel), backtest, propfirm (active le suivi de challenge).
+// Les trois journaux historiques gardent leurs identifiants (tj, bt, pf) : aucune donnée n'est déplacée.
+const ACCOUNT_TYPES = {
+  live:     { label: 'Réel',      sub: 'Trades réels',              color: 'blue' },
+  backtest: { label: 'Backtest',  sub: 'Stratégies · historique testé', color: 'purple' },
+  propfirm: { label: 'Prop firm', sub: 'Challenge · compte financé', color: 'amber' }
 };
-const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return JOURNALS[v] ? v : 'tj'; } catch (e) { return 'tj'; } })();
-const JP = JOURNAL_ID + '_';   // préfixe de stockage : tj_ (live) · bt_ (backtest) · pf_ (propfirm)
-document.title = JOURNALS[JOURNAL_ID].title;
+function loadAccounts() {
+  let list = null;
+  try { list = JSON.parse(DB.getItem('g_journals') || 'null'); } catch (e) {}
+  if (Array.isArray(list)) list = list.filter(a => a && /^[a-z0-9]{2,12}$/.test(a.id) && a.id !== 'g' && ACCOUNT_TYPES[a.type])
+    .map(a => ({ id: a.id, name: String(a.name || 'Compte').slice(0, 40), type: a.type, createdAt: Number(a.createdAt) || 0 }));
+  if (!list || !list.length) {
+    // Migration : Live toujours ; Backtest et PropFirm seulement s'ils contiennent déjà des données (ou sont ouverts).
+    const active = DB.getItem('journal_active');
+    const used = id => id === active || DB.keys().some(k => k.indexOf(id + '_') === 0 && k !== id + '_welcome_dismissed');
+    const hadAny = DB.keys().some(k => /^(tj|bt|pf)_/.test(k));
+    list = [{ id: 'tj', name: hadAny ? 'Live' : 'Mon compte', type: 'live', createdAt: 0 }];
+    if (used('bt')) list.push({ id: 'bt', name: 'Backtest', type: 'backtest', createdAt: 0 });
+    if (used('pf')) list.push({ id: 'pf', name: 'PropFirm', type: 'propfirm', createdAt: 0 });
+    try { DB.setItem('g_journals', JSON.stringify(list)); } catch (e) {}
+  }
+  return list;
+}
+const ACCOUNTS = loadAccounts();
+// Vue « journal » de chaque compte (forme historique utilisée par le reste du code).
+const JOURNALS = Object.fromEntries(ACCOUNTS.map(a => [a.id, {
+  tab: a.name, title: a.name, sub: ACCOUNT_TYPES[a.type].sub, type: a.type,
+  slug: (a.name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || a.id)
+}]));
+const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return JOURNALS[v] ? v : ACCOUNTS[0].id; } catch (e) { return ACCOUNTS[0].id; } })();
+const JOURNAL_TYPE = JOURNALS[JOURNAL_ID].type;
+const IS_PROPFIRM = JOURNAL_TYPE === 'propfirm';
+const JP = JOURNAL_ID + '_';   // préfixe de stockage du compte ouvert
+document.title = JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
 
 // ── APPARENCE COMMUNE aux trois journaux (thème, thèmes enregistrés, grain, auto clair/sombre, intensités) ──
 const GP = 'g_';
@@ -4558,11 +4607,12 @@ const PAGE_RENDERERS = {
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
   bilan: () => [applyChartDefaults, renderBilan],
-  propfirm: () => JOURNAL_ID === 'pf' ? [applyChartDefaults, renderPropFirm] : [],
+  propfirm: () => IS_PROPFIRM ? [applyChartDefaults, renderPropFirm] : [],
   scaling: () => [fillScalingForm, () => renderScaling({ center: true })],
   export: () => [renderTrashUI, renderBackupSettings],
   plan: () => [renderPositionCalc, renderRiskRules],
   watchlist: () => [renderWatchlist],
+  parametres: () => [renderAccountsCard],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }
@@ -5457,14 +5507,14 @@ function closeMobileSidebar() {
   document.body.classList.remove('sidebar-open');
 }
 function showPage(id, btn) {
-  if (id === 'propfirm' && JOURNAL_ID !== 'pf') { id = 'dashboard'; btn = document.querySelector('.nav-item[data-page="dashboard"]'); }
+  if (id === 'propfirm' && !IS_PROPFIRM) { id = 'dashboard'; btn = document.querySelector('.nav-item[data-page="dashboard"]'); }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (window.matchMedia('(max-width: 860px)').matches) closeMobileSidebar();
   // Pages dont le contenu vit hors du journal (réglages, sauvegardes) : toujours rafraîchies à l'ouverture.
-  renderPage(id, ['scaling', 'export', 'propfirm', 'plan', 'watchlist'].includes(id));
+  renderPage(id, ['scaling', 'export', 'propfirm', 'plan', 'watchlist', 'parametres'].includes(id));
   safeRun(renderFilterBar, 'renderFilterBar');
   window.scrollTo({ top: 0 });
 }
@@ -5898,7 +5948,7 @@ function renderKPIs() {
     animateHeroValue(totalEur);
     eurEl.style.color = totalEur > 0 ? 'var(--green)' : totalEur < 0 ? 'var(--red)' : 'var(--txt)';
     document.getElementById('k-pnleur-sub').textContent = fmtEUR(totalEur / eurArr.length, true, 2) + ' en moyenne par trade · ' + eurArr.length + ' trade(s) avec montant';
-    document.title = fmtEUR(totalEur, true) + ' · ' + JOURNALS[JOURNAL_ID].title;
+    document.title = fmtEUR(totalEur, true) + ' · ' + JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
   } else { eurEl.textContent = '—'; lastHeroValue = null; eurEl.style.color = 'var(--txt3)'; document.getElementById('k-pnleur-sub').textContent = 'en euros'; document.title = JOURNALS[JOURNAL_ID].title; }
 
   // Streak
@@ -7101,7 +7151,7 @@ function savePfSetting(key, val) {
   DB.setItem((JP + 'pf_') + key, val);
 }
 function initPropFirmSettings() {
-  const enabled = loadPfSetting('enabled', JOURNAL_ID === 'pf' ? '1' : '0');
+  const enabled = loadPfSetting('enabled', IS_PROPFIRM ? '1' : '0');
   document.getElementById('pf-enabled').checked = enabled === '1' || enabled === 1;
   document.getElementById('pf-target-pct').value = loadPfSetting('target_pct', '10');
   document.getElementById('pf-maxdd-pct').value = loadPfSetting('maxdd_pct', '10');
@@ -7788,9 +7838,9 @@ function restoreAllSettings(settings) {
   if (!settings || typeof settings !== 'object') return;
   // On compare les réglages par leur NOM (sans préfixe de journal) : un ancien backup (tj_theme…) ou un backup venant
   // d'un autre journal est ainsi rangé au bon endroit — l'apparence va dans le stockage commun, le reste dans ce journal.
-  const allowed = new Set(BACKUP_SETTINGS_KEYS.map(k => k.replace(/^(tj|bt|pf|g)_/, '')));
+  const allowed = new Set(BACKUP_SETTINGS_KEYS.map(k => k.replace(/^[a-z0-9]{1,12}_/, '')));
   Object.entries(settings).forEach(([k, v]) => {
-    const m = /^(tj|bt|pf|g)_(.+)$/.exec(k);
+    const m = /^([a-z0-9]{1,12})_(.+)$/.exec(k);
     if (!m || typeof v !== 'string' || !allowed.has(m[2])) return;
     DB.setItem((SHARED_SETTINGS.includes(m[2]) ? GP : JP) + m[2], v);
   });
@@ -7983,7 +8033,7 @@ function importData(input) {
       if (!isValidTradesArray(data.trades)) throw new Error('Format invalide');
       const hasSettings = data.settings && typeof data.settings === 'object';
       const other = data.journal && data.journal !== JOURNAL_ID && JOURNALS[data.journal];
-      const warn = other ? `⚠️ Ce backup vient du journal « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
+      const warn = other ? `⚠️ Ce backup vient du compte « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
       const msg = `${warn}${data.trades.length} trades seront restaurés${hasSettings ? ', ainsi que tes thèmes et réglages' : ''}. Tes données actuelles seront remplacées.`;
       openModal('Importer ce backup ?', msg, () => {
         createSafetySnapshot('avant import de backup');
@@ -8173,10 +8223,13 @@ function openModal(title, msg, onConfirm, opts = {}) {
   const destructive = opts.destructive ?? /^(supprimer|vider|réinitialiser|effacer)/i.test(title);
   btn.textContent = opts.confirmLabel || (destructive ? (title.match(/^(\S+)/)[1].replace(/\W+$/, '') || 'Confirmer') : 'Confirmer');
   btn.className = destructive ? 'btn-danger' : 'btn-primary';
-  btn.onclick = () => { closeModal(); onConfirm(); };
+  // opts.body : petit formulaire dans la fenêtre ; opts.validate() renvoie false pour la garder ouverte (saisie invalide).
+  const body = document.getElementById('modal-body');
+  if (body) mount(body, opts.body || '');
+  btn.onclick = () => { if (opts.validate && !opts.validate()) return; closeModal(); onConfirm(); };
   rememberFocus();
   document.getElementById('modal').classList.add('open');
-  setTimeout(() => { const c = document.querySelector('#modal .btn-cancel'); if (c) c.focus(); }, 30);
+  setTimeout(() => { const f = opts.body && document.querySelector('#modal-body input, #modal-body select'); const c = f || document.querySelector('#modal .btn-cancel'); if (c) c.focus(); }, 30);
 }
 function closeModal() {
   const m = document.getElementById('modal');
@@ -9728,9 +9781,9 @@ const SEARCH_ACTIONS = [
   { icon:'📅', label:'Aller à aujourd\'hui (Calendrier)', run: () => { closeGlobalSearch(); showPage('calendrier', document.querySelector('.nav-item[data-page=calendrier]')); calToday(); } },
   { icon:'🎨', label:'Changer de thème', run: () => { closeGlobalSearch(); showPage('parametres', document.querySelector('.nav-item[data-page=parametres]')); } },
 ];
-Object.keys(JOURNALS).filter(k => k !== JOURNAL_ID).forEach(k => SEARCH_ACTIONS.push({ icon: '🔀', label: 'Passer au journal ' + JOURNALS[k].tab, run: () => { closeGlobalSearch(); switchJournal(k); } }));
+Object.keys(JOURNALS).filter(k => k !== JOURNAL_ID).forEach(k => SEARCH_ACTIONS.push({ icon: '🔀', label: 'Passer au compte ' + JOURNALS[k].tab, run: () => { closeGlobalSearch(); switchJournal(k); } }));
 
-if (JOURNAL_ID !== 'pf') { const pi = SEARCH_PAGES.findIndex(p => p.page === 'propfirm'); if (pi > -1) SEARCH_PAGES.splice(pi, 1); }
+if (!IS_PROPFIRM) { const pi = SEARCH_PAGES.findIndex(p => p.page === 'propfirm'); if (pi > -1) SEARCH_PAGES.splice(pi, 1); }
 
 let searchSelectedIndex = 0;
 let searchCurrentItems = [];
@@ -9835,26 +9888,47 @@ document.addEventListener('keydown', e => {
 
 
 /* ═══ js/22-journals.js ═══ */
-// ── BASCULE ENTRE JOURNAUX ───────────────────────────────────────────
+// ── COMPTES : sélecteur, création, renommage, suppression ─────────────
+// Chaque compte a ses propres trades et réglages (préfixe de stockage = id du compte). Changer de compte recharge
+// la page sur le compte choisi ; l'apparence est commune à tous les comptes.
+function accountBadge(type) { const t = ACCOUNT_TYPES[type]; return html`<span class="acc-type tone-${raw(t.color)}">${t.label}</span>`; }
 function applyJournalIdentity() {
   const j = JOURNALS[JOURNAL_ID];
   const t = document.getElementById('jr-title'), sub = document.getElementById('jr-sub');
   if (t) t.textContent = j.title;
   if (sub) sub.textContent = j.sub;
-  document.querySelectorAll('#jr-tabs .jr-tab').forEach(b => {
-    const on = b.dataset.journal === JOURNAL_ID;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-selected', on ? 'true' : 'false');
-  });
+  const cur = document.getElementById('acc-current');
+  if (cur) mount(cur, html`<span class="acc-dot fill-${raw(ACCOUNT_TYPES[JOURNAL_TYPE].color)}"></span><span class="acc-name">${j.title}</span>${accountBadge(JOURNAL_TYPE)}<span class="acc-caret" aria-hidden="true">▾</span>`);
+  renderAccountMenu();
   document.body.dataset.journal = JOURNAL_ID;
-  // Le suivi Prop Firm n'existe que dans le journal PropFirm : on retire son bouton du menu des deux autres.
-  if (JOURNAL_ID !== 'pf') {
+  document.body.dataset.accountType = JOURNAL_TYPE;
+  // Le suivi Prop Firm n'existe que dans un compte de type « Prop firm ».
+  if (!IS_PROPFIRM) {
     const pn = document.querySelector('.nav-item[data-page="propfirm"]');
     if (pn) pn.remove();
   }
   const w3 = document.getElementById('welcome-step3');
-  if (w3) w3.textContent = JOURNAL_ID === 'pf' ? 'Solde, limite de perte journalière et règles de ton challenge (onglet Prop Firm).' : 'Solde et limite de perte journalière.';
+  if (w3) w3.textContent = IS_PROPFIRM ? 'Solde, limite de perte journalière et règles de ton challenge (onglet Prop Firm).' : 'Solde et limite de perte journalière.';
 }
+function renderAccountMenu() {
+  const menu = document.getElementById('acc-menu');
+  if (!menu) return;
+  mount(menu, html`${ACCOUNTS.map(a => html`<button class="acc-item${raw(a.id === JOURNAL_ID ? ' on' : '')}" role="option" aria-selected="${a.id === JOURNAL_ID ? 'true' : 'false'}" onclick="switchJournal('${raw(a.id)}')"><span class="acc-dot fill-${raw(ACCOUNT_TYPES[a.type].color)}"></span><span class="acc-name">${a.name}</span>${accountBadge(a.type)}</button>`)}
+    <div class="acc-sep"></div>
+    <button class="acc-item acc-action" onclick="openNewAccount()">＋ Nouveau compte</button>
+    <button class="acc-item acc-action" onclick="closeAccountMenu();showPage('parametres', document.querySelector('.nav-item[data-page=parametres]'));setTimeout(() => { const c = document.getElementById('accounts-card'); if (c) c.scrollIntoView({ block: 'start' }); }, 50)">⚙ Gérer mes comptes</button>`);
+}
+function toggleAccountMenu(force) {
+  const menu = document.getElementById('acc-menu'), btn = document.getElementById('acc-current');
+  if (!menu || !btn) return;
+  const open = force !== undefined ? force : menu.hidden;
+  menu.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function closeAccountMenu() { toggleAccountMenu(false); }
+document.addEventListener('pointerdown', e => { const sw = document.getElementById('acc-switch'); if (sw && !sw.contains(e.target)) closeAccountMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAccountMenu(); });
+
 function currentPageId() {
   const p = document.querySelector('.page.active');
   return p ? p.id.replace('page-', '') : 'dashboard';
@@ -9868,15 +9942,86 @@ function journalFormDirty() {
 function doSwitchJournal(id) {
   try { sessionStorage.setItem('journal_return_page', currentPageId()); } catch (e) {}
   DB.setItem('journal_active', id);
-  location.reload();
+  DB.flush().then(() => location.reload());
 }
 function switchJournal(id) {
+  closeAccountMenu();
   if (!JOURNALS[id] || id === JOURNAL_ID) return;
-  if (journalFormDirty()) openModal('Changer de journal ?', 'Le formulaire de trade en cours de saisie sera perdu.', () => doSwitchJournal(id));
+  if (journalFormDirty()) openModal('Changer de compte ?', 'Le formulaire de trade en cours de saisie sera perdu.', () => doSwitchJournal(id));
   else doSwitchJournal(id);
 }
+
+// ── Création / renommage / suppression ──
+function saveAccounts(list) { DB.setItem('g_journals', JSON.stringify(list)); }
+function newAccountId() {
+  const taken = new Set(ACCOUNTS.map(a => a.id).concat(['g', 'tj', 'bt', 'pf']));
+  let id;
+  do { id = 'a' + Math.random().toString(36).slice(2, 7); } while (taken.has(id) || DB.keys().some(k => k.indexOf(id + '_') === 0));
+  return id;
+}
+function accountForm(name, type) {
+  return html`<div class="acc-form">
+    <label class="field"><span>Nom du compte</span><input type="text" id="acc-f-name" maxlength="40" value="${name || ''}" placeholder="ex. FTMO 100k, Compte perso…"></label>
+    <label class="field"><span>Type</span><select id="acc-f-type">${Object.entries(ACCOUNT_TYPES).map(([k, t]) => html`<option value="${k}"${raw(k === (type || 'live') ? ' selected' : '')}>${t.label} — ${t.sub}</option>`)}</select></label>
+  </div>`;
+}
+function readAccountForm() {
+  const name = (document.getElementById('acc-f-name').value || '').trim().slice(0, 40);
+  const type = document.getElementById('acc-f-type').value;
+  if (!name) { showToast('Donne un nom au compte', 'error'); return null; }
+  if (!ACCOUNT_TYPES[type]) return null;
+  return { name, type };
+}
+function openNewAccount() {
+  closeAccountMenu();
+  let form = null;
+  openModal('Nouveau compte', 'Chaque compte a ses propres trades, son plan, son scaling et ses réglages.', () => {
+    const list = ACCOUNTS.slice(), id = newAccountId();
+    list.push({ id, name: form.name, type: form.type, createdAt: Date.now() });
+    saveAccounts(list);
+    doSwitchJournal(id);
+  }, { body: accountForm('', 'live'), confirmLabel: 'Créer et ouvrir', validate: () => !!(form = readAccountForm()) });
+}
+function openRenameAccount(id) {
+  const a = ACCOUNTS.find(x => x.id === id);
+  if (!a) return;
+  let form = null;
+  openModal('Modifier le compte', 'Le type « Prop firm » active le suivi de challenge pour ce compte.', () => {
+    saveAccounts(ACCOUNTS.map(x => x.id === id ? Object.assign({}, x, form) : x));
+    DB.flush().then(() => location.reload());
+  }, { body: accountForm(a.name, a.type), confirmLabel: 'Enregistrer', validate: () => !!(form = readAccountForm()) });
+}
+function deleteAccount(id) {
+  const a = ACCOUNTS.find(x => x.id === id);
+  if (!a) return;
+  if (ACCOUNTS.length <= 1) { showToast('Il faut garder au moins un compte', 'error'); return; }
+  const n = (() => { try { return (JSON.parse(DB.getItem(id + '_trades') || '[]') || []).length; } catch (e) { return 0; } })();
+  openModal('Supprimer le compte « ' + a.name + ' » ?', (n ? n + ' trade(s), leurs captures, ' : '') + 'son plan, son scaling et ses réglages seront supprimés définitivement. Pense à exporter un backup avant.', () => {
+    DB.keys().filter(k => k.indexOf(id + '_') === 0).forEach(k => DB.removeItem(k));
+    saveAccounts(ACCOUNTS.filter(x => x.id !== id));
+    if (id === JOURNAL_ID) DB.setItem('journal_active', ACCOUNTS.find(x => x.id !== id).id);
+    DB.flush().then(() => location.reload());
+  }, { destructive: true, confirmLabel: 'Supprimer' });
+}
+// Carte « Mes comptes » (Paramètres).
+function renderAccountsCard() {
+  const cont = document.getElementById('accounts-list');
+  if (!cont) return;
+  const count = id => { try { return (JSON.parse(DB.getItem(id + '_trades') || '[]') || []).length; } catch (e) { return 0; } };
+  mount(cont, html`${ACCOUNTS.map(a => html`<div class="acc-row${raw(a.id === JOURNAL_ID ? ' on' : '')}">
+      <span class="acc-dot fill-${raw(ACCOUNT_TYPES[a.type].color)}"></span>
+      <span class="acc-name">${a.name}${a.id === JOURNAL_ID ? html` <small class="tone-muted">· ouvert</small>` : ''}</span>
+      ${accountBadge(a.type)}
+      <span class="acc-count tone-muted">${count(a.id)} trade${count(a.id) > 1 ? 's' : ''}</span>
+      ${a.id !== JOURNAL_ID ? html`<button class="btn-ghost btn-sm" onclick="switchJournal('${raw(a.id)}')">Ouvrir</button>` : ''}
+      <button class="btn-ghost btn-sm" onclick="openRenameAccount('${raw(a.id)}')">Modifier</button>
+      <button class="del-btn" onclick="deleteAccount('${raw(a.id)}')" title="Supprimer ce compte" aria-label="Supprimer le compte ${a.name}">×</button>
+    </div>`)}
+    <button class="btn-ghost btn-add" onclick="openNewAccount()">＋ Nouveau compte</button>`);
+}
 applyJournalIdentity();
-// Après un changement de journal, on revient sur la page où l'on était.
+onReady(renderAccountsCard);
+// Après un changement de compte, on revient sur la page où l'on était.
 onReady(() => {
   let ret = null;
   try { ret = sessionStorage.getItem('journal_return_page'); sessionStorage.removeItem('journal_return_page'); } catch (e) {}

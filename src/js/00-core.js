@@ -1,12 +1,39 @@
-// ── JOURNAUX : Live · Backtest · PropFirm (un seul fichier, trois jeux de données isolés) ─────────
-const JOURNALS = {
-  tj: { tab: 'Live',     title: 'Journal de Trading',  sub: 'Trades réels · Forex · Indices',   slug: 'live' },
-  bt: { tab: 'Backtest', title: 'Journal de Backtest', sub: 'Stratégies · Historique testé',     slug: 'backtest' },
-  pf: { tab: 'PropFirm', title: 'Journal PropFirm',    sub: 'Challenges · Comptes financés',     slug: 'propfirm' }
+// ── COMPTES (journaux) : créés par l'utilisateur, chacun avec ses données isolées sous un préfixe (tj_, a1b2c_…) ──
+// Un compte = { id, name, type } ; type : live (réel), backtest, propfirm (active le suivi de challenge).
+// Les trois journaux historiques gardent leurs identifiants (tj, bt, pf) : aucune donnée n'est déplacée.
+const ACCOUNT_TYPES = {
+  live:     { label: 'Réel',      sub: 'Trades réels',              color: 'blue' },
+  backtest: { label: 'Backtest',  sub: 'Stratégies · historique testé', color: 'purple' },
+  propfirm: { label: 'Prop firm', sub: 'Challenge · compte financé', color: 'amber' }
 };
-const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return JOURNALS[v] ? v : 'tj'; } catch (e) { return 'tj'; } })();
-const JP = JOURNAL_ID + '_';   // préfixe de stockage : tj_ (live) · bt_ (backtest) · pf_ (propfirm)
-document.title = JOURNALS[JOURNAL_ID].title;
+function loadAccounts() {
+  let list = null;
+  try { list = JSON.parse(DB.getItem('g_journals') || 'null'); } catch (e) {}
+  if (Array.isArray(list)) list = list.filter(a => a && /^[a-z0-9]{2,12}$/.test(a.id) && a.id !== 'g' && ACCOUNT_TYPES[a.type])
+    .map(a => ({ id: a.id, name: String(a.name || 'Compte').slice(0, 40), type: a.type, createdAt: Number(a.createdAt) || 0 }));
+  if (!list || !list.length) {
+    // Migration : Live toujours ; Backtest et PropFirm seulement s'ils contiennent déjà des données (ou sont ouverts).
+    const active = DB.getItem('journal_active');
+    const used = id => id === active || DB.keys().some(k => k.indexOf(id + '_') === 0 && k !== id + '_welcome_dismissed');
+    const hadAny = DB.keys().some(k => /^(tj|bt|pf)_/.test(k));
+    list = [{ id: 'tj', name: hadAny ? 'Live' : 'Mon compte', type: 'live', createdAt: 0 }];
+    if (used('bt')) list.push({ id: 'bt', name: 'Backtest', type: 'backtest', createdAt: 0 });
+    if (used('pf')) list.push({ id: 'pf', name: 'PropFirm', type: 'propfirm', createdAt: 0 });
+    try { DB.setItem('g_journals', JSON.stringify(list)); } catch (e) {}
+  }
+  return list;
+}
+const ACCOUNTS = loadAccounts();
+// Vue « journal » de chaque compte (forme historique utilisée par le reste du code).
+const JOURNALS = Object.fromEntries(ACCOUNTS.map(a => [a.id, {
+  tab: a.name, title: a.name, sub: ACCOUNT_TYPES[a.type].sub, type: a.type,
+  slug: (a.name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || a.id)
+}]));
+const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return JOURNALS[v] ? v : ACCOUNTS[0].id; } catch (e) { return ACCOUNTS[0].id; } })();
+const JOURNAL_TYPE = JOURNALS[JOURNAL_ID].type;
+const IS_PROPFIRM = JOURNAL_TYPE === 'propfirm';
+const JP = JOURNAL_ID + '_';   // préfixe de stockage du compte ouvert
+document.title = JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
 
 // ── APPARENCE COMMUNE aux trois journaux (thème, thèmes enregistrés, grain, auto clair/sombre, intensités) ──
 const GP = 'g_';
