@@ -497,4 +497,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
 .sc-lbl-mid{top:120px;font-size:10.5px;font-family:var(--mono);color:var(--txt3);white-space:nowrap}
 .sc-risk-pct{font-size:10.5px;font-family:var(--mono);color:var(--txt3);margin-top:2px}
 .sc-dot.beyond{opacity:.55;border-style:dashed}
-.sc-tl .sc-lbl-bot{top:142px}.sc-tl{height:198px}
+.sc-tl{height:196px}
+/* Scaling v4 : coussin par palier et point d'augmentation */
+.sc-pair{display:flex;align-items:center;gap:6px}.sc-pair input{flex:1;min-width:0}.sc-pair span{font-size:12px;color:var(--txt3)}
+.sc-cz{position:absolute;top:92px;height:24px;border-radius:6px;border:1px dashed color-mix(in srgb,var(--green) 40%,transparent);background:color-mix(in srgb,var(--green) 9%,transparent);z-index:1;overflow:hidden}
+.sc-cz.on{background:color-mix(in srgb,var(--green) 22%,transparent);border-style:solid}
+.sc-up{position:absolute;top:98px;width:12px;height:12px;margin-left:-6px;transform:rotate(45deg);background:var(--bg2);border:2px solid var(--green);z-index:4}
+.sc-up.reached{background:var(--green)}
+.sc-up-lbl{position:absolute;top:126px;width:104px;margin-left:-52px;text-align:center;z-index:4;line-height:1.35;pointer-events:none}
+.sc-up-lbl b{display:block;font-size:11px;font-family:var(--mono);color:var(--green)}
+.sc-up-lbl span{display:block;font-size:11.5px;font-weight:700;font-family:var(--mono);color:var(--blue)}
+.sc-up-lbl i{display:block;font-style:normal;font-size:10px;font-family:var(--mono);color:var(--txt3)}
