@@ -749,3 +749,38 @@ test('synchronisation par fichier : fusion d’un backup (plus récent gagne, su
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('playbooks : fiche par setup, règles rappelées dans le formulaire, exemples protégés et exportés', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: sampleTrades(), tj_plan: JSON.stringify({ ce: [], cf: [], notes: '', setups: ['Break & retest', 'OB + FVG'] }) } });
+  await goto(page, 'playbooks');
+  assert.equal(await page.locator('.pb-card').count(), 2);
+  assert.match(await page.locator('.pb-card').first().innerText(), /Break & retest\s+15 trades · \d+ %/);
+  await page.locator('.pb-card').nth(1).click();
+  assert.match(await page.locator('.pb-detail .panel-hdr').innerText(), /OB \+ FVG/);
+  await page.fill('#pb-desc', 'Retour sur OB H1 après sweep');
+  await page.dispatchEvent('#pb-desc', 'change');
+  await page.click('#pb-rules .btn-add');
+  await page.fill('#pb-rules input >> nth=0', 'Sweep de liquidité avant l’entrée');
+  await page.dispatchEvent('#pb-rules input >> nth=0', 'change');
+  const png = join(mkdtempSync(join(tmpdir(), 'pb-')), 'exemple.png');
+  writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAEjDAGNzYAAB1uAxEu4BwIAAAAAElFTkSuQmCC', 'base64'));
+  await page.setInputFiles('.pb-img-add input', png);
+  await page.waitForSelector('.pb-img img');
+  const pb = await page.evaluate(() => planData.playbooks['OB + FVG']);
+  assert.equal(pb.desc, 'Retour sur OB H1 après sweep');
+  assert.deepEqual(pb.rules, ['Sweep de liquidité avant l’entrée']);
+  assert.equal(pb.imgs.length, 1);
+  // Rappel dans le formulaire
+  await page.evaluate(() => openTradePanel());
+  assert.equal(await page.locator('#f-setup-rules').isHidden(), true);
+  await page.fill('#f-setup', 'OB + FVG');
+  assert.match(await page.locator('#f-setup-rules').innerText(), /Règles du playbook « OB \+ FVG »[\s\S]*Sweep de liquidité/);
+  // L'exemple survit au ménage des captures et part dans le backup.
+  await page.evaluate(() => TradeStore.replaceAll(trades.slice(), null));
+  assert.ok(await page.evaluate(id => !!ImageStore.get(id), pb.imgs[0]));
+  // Renommer le setup dans le plan renomme la fiche.
+  await page.evaluate(() => renameSetup(1, 'OB + FVG', 'OB H1'));
+  assert.equal(await page.evaluate(() => !!planData.playbooks['OB H1'] && !planData.playbooks['OB + FVG']), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

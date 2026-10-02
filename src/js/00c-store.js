@@ -91,7 +91,7 @@ const TradeStore = (() => {
     return true;
   }
   function removeImages(ids) { ids.forEach(id => ImageStore.remove(id)); }
-  function referencedImages() { const s = new Set(); trades.forEach(t => (t.imgs || []).forEach(id => s.add(id))); return s; }
+  function referencedImages() { const s = playbookImageIds(); trades.forEach(t => (t.imgs || []).forEach(id => s.add(id))); return s; }
 
   return {
     onChange(fn) { listeners.push(fn); },

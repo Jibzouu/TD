@@ -1246,6 +1246,42 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .settings-adv{margin:0 0 20px;border-top:none;padding-top:0}.settings-adv > summary{font-size:13px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px}.settings-adv .fold-sub{font-weight:400;color:var(--txt3);font-size:11.5px}
 .export-actions{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;align-self:stretch;width:100%}.export-actions > button{margin:0;flex:1 1 190px;white-space:nowrap;text-align:center;justify-content:center}
 
+/* ── Playbooks ── */
+.pb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+.pb-card{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px;color:var(--txt);cursor:pointer;font:inherit;transition:border-color .2s,background-color .2s}
+.pb-card:hover{border-color:var(--border2)}
+.pb-card.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--bg2))}
+.pb-card-name{font-weight:600;font-size:14px}
+.pb-card-meta{font-size:11.5px;color:var(--txt3);font-family:var(--mono)}
+.pb-card-net{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:13px}
+.pb-card-exp{font-size:11px;color:var(--txt3)}
+.pb-spark{width:100%;height:36px;display:block}
+.pb-spark-empty{height:36px;display:flex;align-items:center;font-size:11px;color:var(--txt3)}
+.pb-spark-zero{stroke:var(--border2);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.pb-spark-line{fill:none;stroke-width:1.8;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.pb-spark-line.up{stroke:var(--green)}.pb-spark-line.down{stroke:var(--red)}
+.pb-detail .ui-grid{margin-bottom:18px}
+.ui-grid.c5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pb-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.pb-label{font-size:12px;font-weight:600;color:var(--txt2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.pb-cols>div>.pb-label:first-child{margin-top:0}
+.pb-label .th-sub{text-transform:none;letter-spacing:0;font-weight:400}
+.pb-desc{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font:inherit;font-size:13px;padding:10px;resize:vertical}
+.pb-rule-n{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:16px}
+.pb-imgs{display:flex;flex-wrap:wrap;gap:8px}
+.pb-img{position:relative;width:120px;height:80px}
+.pb-img img{width:100%;height:100%;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);cursor:zoom-in}
+.pb-img-del{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:13px;line-height:1}
+.pb-img-add{width:120px;height:80px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--border2);border-radius:var(--r);color:var(--txt3);font-size:22px;cursor:pointer}
+.pb-img-add:hover{border-color:var(--accent);color:var(--accent)}
+.pb-remind{margin:-8px 0 18px;padding:10px 14px;border-left:3px solid var(--accent);background:var(--accent-d);border-radius:var(--r);font-size:12.5px}
+.pb-remind-title{font-weight:600;margin-bottom:4px}
+.pb-remind ol{margin:0;padding-left:18px;color:var(--txt2)}
+.pb-remind li{margin:2px 0}
+@media (max-width:760px){.pb-cols{grid-template-columns:1fr}.pb-detail .ui-grid.c5{grid-template-columns:repeat(2,1fr)}}
+#pb-rules .watch-input{font-family:var(--sans);font-size:12.5px}
+.pb-link{color:var(--accent);text-decoration:none;font-family:var(--mono)}.pb-link:hover{text-decoration:underline}
+
 /* ═══ styles/50-body.css ═══ */
 /* ═══ Styles de la structure (partials/body.html), auparavant écrits en ligne ═══ */
 .sidebar-search-btn{display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:10px 10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;color:var(--txt3);font-family:var(--sans);font-size:12px;cursor:pointer;text-align:left}
@@ -1724,6 +1760,10 @@ tr.more-row .btn-ghost{margin-right:8px}
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h8M4 10h6"/><rect x="1" y="2" width="14" height="12" rx="2"/></svg>
         Plan de trading
       </button>
+      <button class="nav-item" onclick="showPage('playbooks',this)" data-page="playbooks" data-navid="playbooks">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 2.5h7.5a2 2 0 0 1 2 2V14H5a2 2 0 0 1-2-2z"/><path d="M3 12a2 2 0 0 1 2-2h7.5M6 5.5h4"/></svg>
+        Playbooks
+      </button>
       <button class="nav-item" onclick="showPage('watchlist',this)" data-page="watchlist" data-navid="watchlist">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
         Watchlist
@@ -1814,10 +1854,11 @@ tr.more-row .btn-ghost{margin-right:8px}
           </div>
           <div class="form-row f4 mb-20">
             <div class="field"><label for="f-pnleur">P&amp;L en € (ex : +150)</label><input type="number" id="f-pnleur" placeholder="+150 ou -60" step="0.01"></div>
-            <div class="field"><label for="f-setup">Setup / stratégie</label><input type="text" id="f-setup" list="setup-list" placeholder="ex : OB + FVG" maxlength="60" autocomplete="off"><datalist id="setup-list"></datalist></div>
+            <div class="field"><label for="f-setup">Setup / stratégie</label><input type="text" id="f-setup" list="setup-list" placeholder="ex : OB + FVG" maxlength="60" autocomplete="off" oninput="renderSetupReminder()"><datalist id="setup-list"></datalist></div>
             <div class="field"><label for="f-rr">RR (optionnel)</label><input type="number" id="f-rr" placeholder="auto si vide" step="0.1" min="0"></div>
             <div class="field"><label for="f-pnl">P&amp;L en R (optionnel)</label><input type="number" id="f-pnl" placeholder="auto si vide" step="0.1"></div>
           </div>
+          <div id="f-setup-rules" class="pb-remind" hidden></div>
 
           <!-- Sections dépliables : tout ce qui n'est pas indispensable pour enregistrer vite -->
           <div class="form-section" id="section-prices">
@@ -2454,6 +2495,13 @@ tr.more-row .btn-ghost{margin-right:8px}
         </div>
         <div id="sc-compliance"></div>
       </div>
+    </div>
+
+    <div id="page-playbooks" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Playbooks</h2><p>Une fiche par setup : description, règles, exemples types et résultats réels</p></div>
+      </div>
+      <div id="playbooks-body"></div>
     </div>
 
     <div id="page-plan" class="page">
@@ -3683,7 +3731,7 @@ const TradeStore = (() => {
     return true;
   }
   function removeImages(ids) { ids.forEach(id => ImageStore.remove(id)); }
-  function referencedImages() { const s = new Set(); trades.forEach(t => (t.imgs || []).forEach(id => s.add(id))); return s; }
+  function referencedImages() { const s = playbookImageIds(); trades.forEach(t => (t.imgs || []).forEach(id => s.add(id))); return s; }
 
   return {
     onChange(fn) { listeners.push(fn); },
@@ -4677,6 +4725,7 @@ const PAGE_RENDERERS = {
   export: () => [renderTrashUI, renderBackupSettings],
   plan: () => [renderPositionCalc, renderRiskRules],
   watchlist: () => [renderWatchlist],
+  playbooks: () => [renderPlaybooks],
   parametres: () => [renderAccountsCard],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
@@ -5612,6 +5661,7 @@ function resetTradeForm() {
   document.querySelectorAll('.f-mistake-item').forEach(el => el.checked = false);
   closeAllFormSections();
   clearImg();
+  renderSetupReminder();
 }
 
 function startEditTrade(id) {
@@ -5635,6 +5685,7 @@ function startEditTrade(id) {
   document.getElementById('f-fees').value = (t.fees !== null && t.fees !== undefined) ? t.fees : '';
   document.getElementById('f-desc').value = t.desc || '';
   document.getElementById('f-setup').value = t.setup || '';
+  renderSetupReminder();
   document.getElementById('f-tags').value = Array.isArray(t.tags) ? t.tags.join(', ') : '';
   document.getElementById('f-review').value = t.review || '';
   document.getElementById('f-entry-price').value = (t.entryPrice !== null && t.entryPrice !== undefined) ? t.entryPrice : '';
@@ -7573,7 +7624,7 @@ function addSetup() { planData.setups.push('Nouveau setup'); savePlanData(); ren
 function removeSetup(i) { planData.setups.splice(i, 1); savePlanData(); renderSetupsEditor(); refreshSetupList(); }
 function renameSetup(i, oldV, newV) {
   newV = String(newV || '').trim().slice(0, 60); if (!newV) { renderSetupsEditor(); return; }
-  planData.setups[i] = newV; savePlanData();
+  planData.setups[i] = newV; renamePlaybook(oldV, newV); savePlanData();
   const touched = oldV !== newV ? TradeStore.mutate(list => list.filter(t => t.setup === oldV).map(t => { t.setup = newV; return t; })) : [];
   if (touched && touched.length) showToast('Setup renommé dans ' + touched.length + ' trade(s) ✓', 'success');
   if (FILTER.setup === oldV) { FILTER.setup = newV; DB.setItem(JP + 'global_filter', JSON.stringify(FILTER)); }
@@ -7889,7 +7940,7 @@ function isValidTradesArray(arr) {
 
 function exportData() {
   // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
-  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
+  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: Object.assign(imagesOf(trades), playbookImages()), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -8067,7 +8118,7 @@ function importData(input) {
         const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
         if (!TradeStore.replaceAll(data.trades, imgs)) return;   // rien n'est modifié si le stockage refuse
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); restorePlaybookImages(imgs); }
         if (hasSettings) restoreAllSettings(data.settings);
         applyRestoredSettings();
         showToast('Import réussi — '+trades.length+' trades'+(hasSettings?' + réglages':''), 'success');
@@ -8147,6 +8198,7 @@ function mergeBackup(input) {
       if (ns) {
         watchData = loadJSON(JP + 'watch', watchData);
         planData = loadJSON(JP + 'plan', planData);
+        restorePlaybookImages(imgs);
         applyRestoredSettings();
       } else renderAll();
       const parts = [];
@@ -10805,6 +10857,193 @@ function renderEmptyStates() {
 }
 TradeStore.onChange(() => { renderEmptyStates(); });
 onReady(renderEmptyStates);
+
+/* ═══ js/27-playbooks.js ═══ */
+// ── PLAYBOOKS ────────────────────────────────────────────────────────
+// Une fiche par setup : description, règles d'entrée, captures d'exemple et statistiques réelles du setup.
+// Rangées dans le plan (planData.playbooks, clé = nom du setup) : elles suivent donc backups et synchronisation.
+// Les captures d'exemple vont dans le magasin d'images, comme celles des trades.
+let PB_SELECTED = null;
+
+function playbooks() {
+  if (!planData || typeof planData !== 'object') return {};
+  if (!planData.playbooks || typeof planData.playbooks !== 'object' || Array.isArray(planData.playbooks)) planData.playbooks = {};
+  return planData.playbooks;
+}
+function playbookOf(name) {
+  const p = name ? playbooks()[name] : null;
+  return p && typeof p === 'object' ? p : null;
+}
+function ensurePlaybook(name) {
+  const all = playbooks();
+  const p = all[name] = playbookOf(name) || {};
+  if (typeof p.desc !== 'string') p.desc = '';
+  if (!Array.isArray(p.rules)) p.rules = [];
+  p.rules = p.rules.filter(r => typeof r === 'string').slice(0, 30);
+  if (!Array.isArray(p.imgs)) p.imgs = [];
+  p.imgs = p.imgs.filter(id => typeof id === 'string' && /^i[0-9a-z]{6,40}$/i.test(id)).slice(0, 8);
+  return p;
+}
+// Images référencées par les playbooks : protégées du ménage des captures, exportées avec le backup.
+function playbookImageIds() {
+  const s = new Set();
+  Object.values(playbooks()).forEach(p => (p && Array.isArray(p.imgs) ? p.imgs : []).forEach(id => s.add(id)));
+  return s;
+}
+function playbookImages() {
+  const out = {};
+  playbookImageIds().forEach(id => { const src = ImageStore.get(id); if (src) out[id] = src; });
+  return out;
+}
+// Après un import / une fusion : range les captures d'exemple fournies par le fichier.
+function restorePlaybookImages(imagesById) {
+  if (!imagesById || typeof imagesById !== 'object') return;
+  playbookImageIds().forEach(id => {
+    const src = safeImgSrc(imagesById[id] || '');
+    if (src && !ImageStore.get(id)) { try { DB.setItem(ImageStore.key(id), src); } catch (e) { reportStorageError(e); } }
+  });
+}
+function renamePlaybook(oldName, newName) {
+  const all = playbooks();
+  if (oldName === newName || !all[oldName] || all[newName]) return;
+  all[newName] = all[oldName]; delete all[oldName];
+  if (PB_SELECTED === oldName) PB_SELECTED = newName;
+}
+
+// Statistiques d'un setup (trades clos, filtre global appliqué).
+function playbookStats(name) {
+  const list = analysisTrades().filter(t => t.setup === name && (t.res === 'TP' || t.res === 'SL' || t.res === 'BE'))
+    .slice().sort((a, b) => (a.date + (a.entry || '')).localeCompare(b.date + (b.entry || '')));
+  const wins = list.filter(t => t.res === 'TP').length;
+  const withR = list.filter(t => t.pnl != null);
+  const net = list.reduce((s, t) => s + (+t.pnlEur || 0), 0);
+  const rSum = withR.reduce((s, t) => s + t.pnl, 0);
+  let cum = 0;
+  const curve = list.map(t => (cum += (t.pnl != null ? t.pnl : 0)));
+  return {
+    list, n: list.length, wins, wr: list.length ? wins / list.length * 100 : null, net,
+    expR: withR.length ? rSum / withR.length : null, rSum: withR.length ? rSum : null, curve,
+    best: list.reduce((m, t) => (t.pnlEur != null && (m == null || t.pnlEur > m) ? t.pnlEur : m), null),
+    worst: list.reduce((m, t) => (t.pnlEur != null && (m == null || t.pnlEur < m) ? t.pnlEur : m), null)
+  };
+}
+function pbSparkline(curve) {
+  if (curve.length < 2) return html`<div class="pb-spark pb-spark-empty">pas assez de trades</div>`;
+  const W = 160, H = 36, min = Math.min(0, ...curve), max = Math.max(0, ...curve), span = (max - min) || 1;
+  const pts = curve.map((v, i) => (i / (curve.length - 1) * W).toFixed(1) + ',' + (H - (v - min) / span * H).toFixed(1)).join(' ');
+  const zero = (H - (0 - min) / span * H).toFixed(1), last = curve[curve.length - 1];
+  return html`<svg class="pb-spark" viewBox="0 0 ${raw(W)} ${raw(H)}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${raw(W)}" y1="${raw(zero)}" y2="${raw(zero)}" class="pb-spark-zero"/><polyline points="${raw(pts)}" class="pb-spark-line ${raw(last >= 0 ? 'up' : 'down')}"/></svg>`;
+}
+
+function renderPlaybooks() {
+  const cont = document.getElementById('playbooks-body');
+  if (!cont) return;
+  const names = knownSetups();
+  if (!names.length) {
+    mount(cont, UI.empty('📘', 'Aucun setup pour l’instant', 'Crée tes setups dans le Plan de trading (ou renseigne un setup sur tes trades) : chacun aura ici sa fiche, ses règles et ses statistiques.',
+      { label: 'Aller au Plan de trading', onclick: "showPage('plan', document.querySelector('.nav-item[data-page=plan]'))" }));
+    return;
+  }
+  if (!names.includes(PB_SELECTED)) PB_SELECTED = names[0];
+  const cards = names.map((name, i) => {
+    const st = playbookStats(name), pb = playbookOf(name);
+    const nRules = pb && Array.isArray(pb.rules) ? pb.rules.filter(Boolean).length : 0;
+    return html`<button class="pb-card${raw(name === PB_SELECTED ? ' active' : '')}" onclick="selectPlaybook(${raw(i)})" aria-pressed="${raw(name === PB_SELECTED)}">
+      <span class="pb-card-name">${name}</span>
+      <span class="pb-card-meta">${st.n} trade${st.n > 1 ? 's' : ''} · ${st.wr != null ? fmtRate(st.wr, 0) : '—'} · ${nRules} règle${nRules > 1 ? 's' : ''}</span>
+      ${pbSparkline(st.curve)}
+      <span class="pb-card-net">${UI.pnl(st.n ? st.net : null)}<span class="pb-card-exp">${st.expR != null ? fmtR(st.expR, 2) + ' / trade' : ''}</span></span>
+    </button>`;
+  });
+  mount(cont, html`<div class="pb-grid">${cards}</div><div id="pb-detail"></div>`);
+  renderPlaybookDetail();
+}
+function selectPlaybook(i) { const n = knownSetups()[i]; if (n) { PB_SELECTED = n; renderPlaybooks(); } }
+
+function renderPlaybookDetail() {
+  const cont = document.getElementById('pb-detail');
+  if (!cont || !PB_SELECTED) return;
+  const name = PB_SELECTED, pb = playbookOf(name) || { desc: '', rules: [], imgs: [] };
+  const st = playbookStats(name);
+  const imgs = (pb.imgs || []).map(id => ImageStore.get(id)).filter(Boolean);
+  const recent = st.list.slice(-6).reverse();
+  mount(cont, html`<section class="panel pb-detail">
+    <div class="panel-hdr"><span>${name}<small class="panel-sub">fiche du setup · statistiques sur les trades clos (filtre global appliqué)</small></span></div>
+    ${UI.grid([
+      UI.tile('Trades', String(st.n)),
+      UI.tile('Win rate', st.wr != null ? fmtRate(st.wr, 0) : '—'),
+      UI.tile('Résultat net', st.n ? fmtEUR(st.net, true, 0) : '—', { tone: st.net > 0 ? 'green' : st.net < 0 ? 'red' : 'muted' }),
+      UI.tile('Espérance', st.expR != null ? fmtR(st.expR, 2) : '—', { sub: 'R moyen par trade', tone: st.expR > 0 ? 'green' : st.expR < 0 ? 'red' : 'muted' }),
+      UI.tile('Meilleur trade', st.n ? UI.pnl(st.best) : '—', { sub: st.n ? html`pire : ${UI.pnl(st.worst)}` : '' })
+    ], 5)}
+    <div class="pb-cols">
+      <div>
+        <div class="pb-label">Description <span class="th-sub">contexte, marché, timeframe, quand le prendre</span></div>
+        <textarea id="pb-desc" class="pb-desc" rows="4" maxlength="2000" placeholder="Ex : retour sur un order block H1 après un sweep de liquidité, en session de Londres…" onchange="savePlaybookDesc(this.value)">${pb.desc || ''}</textarea>
+        <div class="pb-label">Règles d'entrée <span class="th-sub">rappelées dans le formulaire quand tu choisis ce setup</span></div>
+        <div id="pb-rules">${(pb.rules || []).map((r, i) => html`<div class="risk-row tight">
+          <span class="pb-rule-n">${i + 1}</span>
+          <input class="watch-input grow" value="${r}" maxlength="160" placeholder="Règle" aria-label="Règle ${raw(i + 1)}" onchange="savePlaybookRule(${raw(i)}, this.value)">
+          <button class="del-btn" onclick="removePlaybookRule(${raw(i)})" title="Retirer" aria-label="Retirer cette règle">×</button></div>`)}
+          <button class="btn-ghost btn-add" onclick="addPlaybookRule()">+ Ajouter une règle</button></div>
+      </div>
+      <div>
+        <div class="pb-label">Exemples types <span class="th-sub">captures de trades modèles (8 max)</span></div>
+        <div class="pb-imgs">${imgs.map((src, i) => html`<div class="pb-img"><img src="${src}" alt="Exemple ${raw(i + 1)}" onclick="openPlaybookGallery(${raw(i)})"><button class="pb-img-del" onclick="removePlaybookImage(${raw(i)})" aria-label="Retirer cet exemple">×</button></div>`)}
+          ${imgs.length < 8 ? html`<label class="pb-img-add" title="Ajouter des captures">＋<input type="file" accept="image/*" multiple hidden onchange="addPlaybookImages(this)"></label>` : ''}</div>
+        <div class="pb-label">Derniers trades</div>
+        ${recent.length ? UI.table(['Date', 'Actif', 'Résultat', 'P&L'], recent.map(t => [
+          html`<a href="#" class="pb-link" onclick="event.preventDefault();openTradeDetail(${raw(t.id)})">${fmtDateNum(t.date)}</a>`, t.asset || '—', UI.badgeRes(t.res), UI.pnl(t.pnlEur)]), { align: ['l', 'l', 'l', 'r'] })
+          : UI.hint('Aucun trade clos avec ce setup pour l’instant.')}
+      </div>
+    </div>
+  </section>`);
+}
+
+function savePlaybooks() { savePlanData(); }
+function savePlaybookDesc(v) { ensurePlaybook(PB_SELECTED).desc = String(v || '').slice(0, 2000); savePlaybooks(); }
+function savePlaybookRule(i, v) { const p = ensurePlaybook(PB_SELECTED); p.rules[i] = String(v || '').trim().slice(0, 160); savePlaybooks(); renderSetupReminder(); }
+function addPlaybookRule() {
+  const p = ensurePlaybook(PB_SELECTED);
+  if (p.rules.length >= 30) return;
+  p.rules.push(''); savePlaybooks(); renderPlaybookDetail();
+  const inputs = document.querySelectorAll('#pb-rules input'); if (inputs.length) inputs[inputs.length - 1].focus();
+}
+function removePlaybookRule(i) { const p = ensurePlaybook(PB_SELECTED); p.rules.splice(i, 1); savePlaybooks(); renderPlaybooks(); }
+async function addPlaybookImages(input) {
+  const files = [...(input.files || [])].filter(f => /^image\//.test(f.type));
+  input.value = '';
+  const p = ensurePlaybook(PB_SELECTED);
+  for (const f of files) {
+    if (p.imgs.length >= 8) break;
+    const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(''); r.readAsDataURL(f); });
+    const src = await compressDataUrlAsync(dataUrl);
+    try { const id = ImageStore.put(src); if (id) p.imgs.push(id); } catch (e) { reportStorageError(e); break; }
+  }
+  savePlaybooks(); renderPlaybookDetail();
+}
+function removePlaybookImage(i) {
+  const p = ensurePlaybook(PB_SELECTED), id = p.imgs[i];
+  if (!id) return;
+  p.imgs.splice(i, 1); savePlaybooks();
+  if (!trades.some(t => (t.imgs || []).includes(id)) && !trashImageIds().has(id)) ImageStore.remove(id);
+  renderPlaybookDetail();
+}
+function openPlaybookGallery(i) {
+  const p = playbookOf(PB_SELECTED); if (!p) return;
+  openGallery(p.imgs.map(id => ImageStore.get(id)).filter(Boolean), i);
+}
+
+// Formulaire de trade : rappel des règles du setup choisi.
+function renderSetupReminder() {
+  const el = document.getElementById('f-setup-rules'), inp = document.getElementById('f-setup');
+  if (!el || !inp) return;
+  const name = inp.value.trim(), pb = playbookOf(name);
+  const rules = pb && Array.isArray(pb.rules) ? pb.rules.filter(Boolean) : [];
+  el.hidden = !rules.length;
+  if (!rules.length) { mount(el, ''); return; }
+  mount(el, html`<div class="pb-remind-title">📘 Règles du playbook « ${name} »</div><ol>${rules.map(r => html`<li>${r}</li>`)}</ol>`);
+}
 
 </script>
 </body>

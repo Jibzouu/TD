@@ -11,6 +11,7 @@ function resetTradeForm() {
   document.querySelectorAll('.f-mistake-item').forEach(el => el.checked = false);
   closeAllFormSections();
   clearImg();
+  renderSetupReminder();
 }
 
 function startEditTrade(id) {
@@ -34,6 +35,7 @@ function startEditTrade(id) {
   document.getElementById('f-fees').value = (t.fees !== null && t.fees !== undefined) ? t.fees : '';
   document.getElementById('f-desc').value = t.desc || '';
   document.getElementById('f-setup').value = t.setup || '';
+  renderSetupReminder();
   document.getElementById('f-tags').value = Array.isArray(t.tags) ? t.tags.join(', ') : '';
   document.getElementById('f-review').value = t.review || '';
   document.getElementById('f-entry-price').value = (t.entryPrice !== null && t.entryPrice !== undefined) ? t.entryPrice : '';

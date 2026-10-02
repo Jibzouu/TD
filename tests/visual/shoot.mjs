@@ -32,11 +32,13 @@ const STATES = [
   ['raccourcis', `openShortcutsHelp()`, false],
   ['edition', `showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); startEditTrade(89)`, false],
   ['corbeille', `saveTrash([{ trade: trades[0], deletedAt: Date.parse('2026-06-16') }, { trade: trades[1], deletedAt: Date.parse('2026-06-16') }]); showPage('export', document.querySelector('.nav-item[data-page="export"]'))`],
+  ['playbook', `(() => { closeTradePanel(); const c = document.createElement('canvas'); c.width = 320; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#123'; x.fillRect(0, 0, 320, 200); x.fillStyle = '#26a69a'; x.fillRect(60, 60, 120, 70); const pb = ensurePlaybook('OB + FVG'); pb.desc = 'Retour sur un order block H1 après un sweep de liquidité, en session de Londres. Entrée sur le FVG M5.'; pb.rules = ['Biais H4 aligné', 'Sweep de liquidité avant l\u2019entrée', 'FVG M5 dans l\u2019OB', 'RR minimum 2']; pb.imgs = [ImageStore.put(c.toDataURL('image/png'))]; PB_SELECTED = 'OB + FVG'; showPage('playbooks', document.querySelector('.nav-item[data-page="playbooks"]')); renderPlaybooks(); })()`],
+  ['regles-formulaire', `showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); openTradePanel(); document.getElementById('f-setup').value = 'OB + FVG'; renderSetupReminder()`, false],
   ['modale', `openModal('Supprimer ce trade ?', 'Il sera placé dans la corbeille.', () => {})`, false],
   ['visionneuse', `(() => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const x = c.getContext('2d'); x.fillStyle = '#123'; x.fillRect(0, 0, 640, 360); x.fillStyle = '#4c8dff'; x.fillRect(100, 100, 200, 120); const d = c.toDataURL('image/png'); trades[0].caps = [d, d]; trades[0].cap = d; openLightboxById(trades[0].id, 0); startAnnotation(); })()`, false],
   ['alertes', `window.__su = storageUsage; storageUsage = () => Object.assign(__su(), { pct: 95 }); showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); renderStorageWarning(); setRMode('strict'); reportStorageError(new Error('test')); storageUsage = __su;`, false],
 ];
-const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'watchlist', 'export', 'parametres'];
+const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'playbooks', 'watchlist', 'export', 'parametres'];
 const b = await chromium.launch();
 async function run(journal, pages, vp, tag, data = tr) {
   const ctx = await b.newContext({ viewport: vp, timezoneId: 'Europe/Paris', reducedMotion: 'reduce' });

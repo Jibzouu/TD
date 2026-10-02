@@ -42,7 +42,7 @@ function isValidTradesArray(arr) {
 
 function exportData() {
   // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
-  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
+  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: Object.assign(imagesOf(trades), playbookImages()), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -220,7 +220,7 @@ function importData(input) {
         const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
         if (!TradeStore.replaceAll(data.trades, imgs)) return;   // rien n'est modifié si le stockage refuse
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
-        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
+        if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); restorePlaybookImages(imgs); }
         if (hasSettings) restoreAllSettings(data.settings);
         applyRestoredSettings();
         showToast('Import réussi — '+trades.length+' trades'+(hasSettings?' + réglages':''), 'success');
@@ -300,6 +300,7 @@ function mergeBackup(input) {
       if (ns) {
         watchData = loadJSON(JP + 'watch', watchData);
         planData = loadJSON(JP + 'plan', planData);
+        restorePlaybookImages(imgs);
         applyRestoredSettings();
       } else renderAll();
       const parts = [];
