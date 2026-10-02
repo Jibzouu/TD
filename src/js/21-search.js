@@ -1,18 +1,19 @@
 // ── RECHERCHE GLOBALE (Ctrl/Cmd+K) ───────────────────────────────────
 const SEARCH_PAGES = [
-  { page:'dashboard', icon:'🏠', label:'Dashboard' },
-  { page:'calendrier', icon:'📅', label:'Calendrier' },
-  { page:'stats', icon:'📊', label:'Statistiques' },
-  { page:'bilan', icon:'🕐', label:'Bilan journalier' },
-  { page:'revue', icon:'🗒️', label:'Revue hebdomadaire' },
-  { page:'trades', icon:'📋', label:'Journal des trades' },
-  { page:'plan', icon:'📝', label:'Plan de trading' },
-  { page:'watchlist', icon:'👁️', label:'Watchlist' },
-  { page:'propfirm', icon:'🛡️', label:'Prop Firm' },
-  { page:'scaling', icon:'📈', label:'Scaling Account' },
-  { page:'export', icon:'💾', label:'Export / Import' },
-  { page:'parametres', icon:'⚙️', label:'Paramètres' },
-];
+  { page:'dashboard', icon:'🏠' },
+  { page:'calendrier', icon:'📅' },
+  { page:'stats', icon:'📊' },
+  { page:'bilan', icon:'🕐' },
+  { page:'revue', icon:'🗒️', key:'nav.revue_long' },
+  { page:'trades', icon:'📋' },
+  { page:'plan', icon:'📝' },
+  { page:'playbooks', icon:'📘' },
+  { page:'watchlist', icon:'👁️' },
+  { page:'propfirm', icon:'🛡️' },
+  { page:'scaling', icon:'📈' },
+  { page:'export', icon:'💾' },
+  { page:'parametres', icon:'⚙️' },
+].map(p => Object.assign(p, { label: t(p.key || 'nav.' + p.page) }));
 const SEARCH_ACTIONS = [
   { icon:'⚡', label:'Saisie rapide d\'un trade (N)', run: () => { closeGlobalSearch(); openQuickAdd(); } },
   { icon:'⌨️', label:'Raccourcis clavier (?)', run: () => { closeGlobalSearch(); openShortcutsHelp(); } },

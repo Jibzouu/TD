@@ -1,6 +1,6 @@
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────
 const BACKUP_SETTINGS_KEYS = [
-  (GP + 'theme'), (GP + 'custom_themes'), (JP + 'nav_order'), (JP + 'account'), (JP + 'calc'),
+  (GP + 'theme'), (GP + 'custom_themes'), (GP + 'lang'), (JP + 'nav_order'), (JP + 'account'), (JP + 'calc'),
   (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
   (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),

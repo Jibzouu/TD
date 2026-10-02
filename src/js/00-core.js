@@ -37,7 +37,7 @@ document.title = JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
 
 // ── APPARENCE COMMUNE aux trois journaux (thème, thèmes enregistrés, grain, auto clair/sombre, intensités) ──
 const GP = 'g_';
-const SHARED_SETTINGS = ['theme', 'custom_themes', 'theme_texture', 'theme_autosystem', 'chart_intensity', 'cal_heat_intensity'];
+const SHARED_SETTINGS = ['theme', 'custom_themes', 'theme_texture', 'theme_autosystem', 'chart_intensity', 'cal_heat_intensity', 'lang'];
 // Migration (une seule fois) : avant, chaque journal avait son propre thème. On reprend celui du journal Live
 // (à défaut Backtest, puis PropFirm) et on fusionne les thèmes personnalisés enregistrés dans les journaux.
 (function migrateSharedAppearance() {

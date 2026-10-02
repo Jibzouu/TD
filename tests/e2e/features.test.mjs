@@ -840,3 +840,22 @@ test('rapport mentor : fichier HTML autonome, période, R uniquement, contenu é
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('traduction : français par défaut, anglais pour la navigation et les titres, repli en français', async () => {
+  let { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  assert.equal(await page.evaluate(() => document.documentElement.lang), 'fr');
+  assert.equal(await page.locator('.nav-item[data-page="stats"]').innerText(), 'Statistiques');
+  assert.equal(await page.evaluate(() => t('cle.inconnue')), 'cle.inconnue');
+  await ctx.close();
+  ({ page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], g_lang: 'en' } }));
+  assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
+  assert.equal(await page.locator('.nav-item[data-page="stats"]').innerText(), 'Statistics');
+  await goto(page, 'stats');
+  assert.equal(await page.locator('#page-stats h2').innerText(), 'Statistics');
+  assert.equal(await page.evaluate(() => t('nav.revue_long')), 'Weekly review');
+  await goto(page, 'parametres');
+  assert.equal(await page.inputValue('#lang-select'), 'en');
+  assert.equal(await page.locator('#lang-note').isVisible(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
