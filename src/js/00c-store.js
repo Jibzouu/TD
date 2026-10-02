@@ -176,6 +176,58 @@ const TradeStore = (() => {
       })) return false;
       return true;
     },
+    // Fusionne un backup venant d'un autre appareil : le trade modifié le plus récemment gagne, les suppressions
+    // (traces) sont appliquées des deux côtés. Un même trade importé sur deux appareils (même clé broker ou mêmes
+    // date / actif / sens / P&L) n'est pas doublé. Renvoie { added, updated, deleted, skipped } ou null.
+    merge(list, imagesById, remoteTombs) {
+      const prev = trades.slice(), now = Date.now(), stats = { added: 0, updated: 0, deleted: 0, skipped: 0 };
+      const tomb = new Map();
+      tombstones().concat(Array.isArray(remoteTombs) ? remoteTombs : []).forEach(x => {
+        if (x && typeof x.uid === 'string') tomb.set(x.uid, Math.max(tomb.get(x.uid) || 0, +x.deletedAt || 0));
+      });
+      const sig = t => [t.date, t.asset, t.dir, Math.round((+t.pnlEur || 0) * 100), +t.entryPrice || 0].join('|');
+      const byUid = new Map(), byTv = new Map(), bySig = new Map();
+      trades.forEach(t => { byUid.set(t.uid, t); if (t.tvKey) byTv.set(t.tvKey, t); bySig.set(sig(t), t); });
+      const dropped = [], touched = [];
+      try {
+        (Array.isArray(list) ? list : []).forEach(raw => {
+          const clean = sanitizeTrade(raw);
+          if (!clean) return;
+          const ruid = clean.uid, rUpd = +raw.updatedAt || +raw.createdAt || 0;
+          if (ruid && tomb.has(ruid) && tomb.get(ruid) >= rUpd) { stats.skipped++; return; }
+          const local = (ruid && byUid.get(ruid)) || (clean.tvKey && byTv.get(clean.tvKey)) || bySig.get(sig(clean));
+          if (!local) {
+            const t = prepareIncomingTrade(Object.assign({}, raw, { id: newLocalTradeId() }), imagesById, now);
+            if (!t) return;
+            trades.push(t); byUid.set(t.uid, t); if (t.tvKey) byTv.set(t.tvKey, t); bySig.set(sig(t), t);
+            touched.push(t); stats.added++;
+            return;
+          }
+          // Identifiant commun aux deux appareils : le plus petit des deux, pour que les fusions suivantes convergent.
+          const uid = ruid && ruid < local.uid ? ruid : local.uid;
+          if (rUpd > (local.updatedAt || 0)) {
+            const t = prepareIncomingTrade(Object.assign({}, raw, { id: local.id, uid, createdAt: Math.min(local.createdAt || rUpd, +raw.createdAt || rUpd), updatedAt: rUpd }), imagesById, now);
+            if (!t) return;
+            trades[trades.indexOf(local)] = t;
+            byUid.set(t.uid, t);
+            local.imgs.forEach(i => { if (!t.imgs.includes(i)) dropped.push(i); });
+            touched.push(t); stats.updated++;
+          } else if (uid !== local.uid) { local.uid = uid; byUid.set(uid, local); }
+          else stats.skipped++;
+        });
+      } catch (e) { reportStorageError(e); trades = prev; invalidateViews(); return null; }
+      // Supprimés sur l'autre appareil après leur dernière modification ici.
+      const gone = trades.filter(t => tomb.has(t.uid) && tomb.get(t.uid) > (t.updatedAt || 0));
+      if (gone.length) { const g = new Set(gone); trades = trades.filter(t => !g.has(t)); gone.forEach(t => dropped.push(...t.imgs)); stats.deleted = gone.length; }
+      if (!commit(prev, 'merge', touched.concat(gone), () => {
+        const alive = new Set(trades.map(t => t.uid));
+        const all = [...tomb].filter(([u]) => !alive.has(u)).map(([uid, deletedAt]) => ({ uid, deletedAt }));
+        try { DB.setItem(TOMB_KEY(), JSON.stringify(all.slice(-20000))); } catch (e) { console.error(e); }
+        const ref = referencedImages(), trash = trashImageIds();
+        dropped.forEach(id => { if (!ref.has(id) && !trash.has(id)) ImageStore.remove(id); });
+      })) return null;
+      return stats;
+    },
     // Modification en lot (renommer un setup, recalculer les sessions…) : fn modifie les trades et renvoie ceux touchés.
     mutate(fn) {
       const snapshot = JSON.stringify(trades), prev = trades.slice();
@@ -210,13 +262,15 @@ function settingNameOf(key) {
 (function trackSettingsChanges() {
   if (DB.__tracked) return;
   const set = DB.setItem.bind(DB), del = DB.removeItem.bind(DB);
-  let mtimes = null;
-  const stamp = k => {
+  const stamp = (k, t) => {
     if (k === SETTINGS_MTIME_KEY || !settingNameOf(k)) return;
-    try { mtimes = mtimes || JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) { mtimes = {}; }
-    mtimes[k] = Date.now();
+    let mtimes;
+    try { mtimes = JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) { mtimes = {}; }
+    mtimes[k] = t || Date.now();
     set(SETTINGS_MTIME_KEY, JSON.stringify(mtimes));
   };
+  // Écriture d'un réglage reçu d'un autre appareil : il garde sa date d'origine.
+  DB.setItemAt = (k, v, t) => { set(k, v); stamp(String(k), t); };
   DB.setItem = (k, v) => { const prev = DB.getItem(k); set(k, v); if (prev !== String(v)) stamp(String(k)); };
   DB.removeItem = k => { del(k); stamp(String(k)); };
   DB.__tracked = true;

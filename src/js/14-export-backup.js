@@ -42,7 +42,7 @@ function isValidTradesArray(arr) {
 
 function exportData() {
   // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
-  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings() };
+  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -222,28 +222,96 @@ function importData(input) {
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
-        applySavedTheme();
-        if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
-        else document.body.classList.remove('texture-on');
-        applyNavOrder();
-        accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;
-        reloadImportSettings();
-        CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
-        CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
-        const savedLayout = loadDashLayout();
-        if (savedLayout) applyDashLayout(savedLayout);
-        scalingState = null;
-        fillScalingForm();
-        renderAll();
-        initPlan();
-        renderWatchlist();
-        renderSettingsPage();
+        applyRestoredSettings();
         showToast('Import réussi — '+trades.length+' trades'+(hasSettings?' + réglages':''), 'success');
       });
     } catch { showToast('Fichier invalide ou corrompu', 'error'); }
   };
   reader.readAsText(file);
   input.value = '';
+}
+// Recharge en mémoire et à l'écran tout ce qu'un backup (restauré ou fusionné) a pu changer.
+function applyRestoredSettings() {
+  applySavedTheme();
+  if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+  else document.body.classList.remove('texture-on');
+  applyNavOrder();
+  accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;
+  reloadImportSettings();
+  CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
+  CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
+  const savedLayout = loadDashLayout();
+  if (savedLayout) applyDashLayout(savedLayout);
+  scalingState = null;
+  fillScalingForm();
+  renderAll();
+  initPlan();
+  renderWatchlist();
+  renderSettingsPage();
+}
+
+// ── SYNCHRONISATION PAR FICHIER ──────────────────────────────────────
+// Fusionne le backup d'un autre appareil (PC ↔ téléphone) au lieu de tout remplacer : pour chaque trade et chaque
+// réglage, la version modifiée le plus récemment gagne ; ce qui a été supprimé d'un côté l'est aussi de l'autre.
+// Il suffit ensuite d'exporter ici et de fusionner ce fichier sur l'autre appareil pour que les deux soient identiques.
+function mergeSettingsMeta(meta) {
+  if (!meta || typeof meta !== 'object') return 0;
+  let mt = {};
+  try { mt = JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) {}
+  let n = 0;
+  Object.entries(meta).forEach(([k, e]) => {
+    const m = /^([a-z0-9]{1,12})_(.+)$/.exec(k);
+    if (!m || !e || typeof e.v !== 'string' || !(+e.t > 0)) return;
+    const name = m[2], global = SYNCED_SETTINGS.global.includes(name);
+    if (!global && !SYNCED_SETTINGS.journal.includes(name)) return;
+    const key = (global ? GP : JP) + name;
+    if (name === 'journals') {   // comptes : on réunit les deux listes plutôt que d'en perdre un
+      let mine = [], theirs = [];
+      try { mine = JSON.parse(DB.getItem(key) || '[]'); theirs = JSON.parse(e.v); } catch (x) { return; }
+      if (!Array.isArray(mine) || !Array.isArray(theirs)) return;
+      const ids = new Set(mine.map(a => a && a.id));
+      const extra = theirs.filter(a => a && typeof a.id === 'string' && !ids.has(a.id));
+      if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra)), Math.max(+e.t, mt[key] || 0)); n++; }
+      return;
+    }
+    if (+e.t <= (mt[key] || 0) || DB.getItem(key) === e.v) return;
+    DB.setItemAt(key, e.v, +e.t);
+    n++;
+  });
+  return n;
+}
+function mergeBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = e => {
+    let data;
+    try { data = JSON.parse(e.target.result); if (!isValidTradesArray(data.trades)) throw new Error('Format invalide'); }
+    catch (x) { showToast('Fichier invalide ou corrompu', 'error'); return; }
+    const other = data.journal && data.journal !== JOURNAL_ID && JOURNALS[data.journal];
+    const warn = other ? `⚠️ Ce backup vient du compte « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
+    openModal('Fusionner ce backup ?', `${warn}Les ${data.trades.length} trades du fichier sont fusionnés avec les tiens : rien n'est écrasé à l'aveugle, la version la plus récente de chaque trade et de chaque réglage est gardée.`, () => {
+      createSafetySnapshot('avant fusion de backup');
+      const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
+      const st = TradeStore.merge(data.trades, imgs, data.tombstones);
+      if (!st) return;
+      const ns = mergeSettingsMeta(data.settingsMeta);
+      if (ns) {
+        watchData = loadJSON(JP + 'watch', watchData);
+        planData = loadJSON(JP + 'plan', planData);
+        applyRestoredSettings();
+      } else renderAll();
+      const parts = [];
+      if (st.added) parts.push(st.added + ' ajouté' + (st.added > 1 ? 's' : ''));
+      if (st.updated) parts.push(st.updated + ' mis à jour');
+      if (st.deleted) parts.push(st.deleted + ' supprimé' + (st.deleted > 1 ? 's' : ''));
+      if (ns) parts.push(ns + ' réglage' + (ns > 1 ? 's' : ''));
+      DB.setItem(JP + 'last_merge', Date.now());
+      showToast(parts.length ? 'Fusion terminée — ' + parts.join(' · ') : 'Déjà à jour : rien de nouveau dans ce fichier', 'success');
+    }, { confirmLabel: 'Fusionner' });
+  };
+  reader.readAsText(file);
 }
 
 function confirmReset() {

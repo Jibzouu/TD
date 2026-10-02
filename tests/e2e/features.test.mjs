@@ -2,7 +2,8 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openJournal, closeBrowser, getBrowser, goto, T } from './helpers.mjs';
@@ -701,6 +702,50 @@ test('import MetaTrader 4 (HTML), MetaTrader 5 (HTML UTF-16) et cTrader (CSV) : 
   await page.setInputFiles('#csv-import-file', files);
   await page.waitForTimeout(600);
   assert.equal(await page.evaluate(() => trades.length), 6, 'réimport : aucun doublon');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('synchronisation par fichier : fusion d’un backup (plus récent gagne, suppressions, pas de doublon, réglages)', async () => {
+  const U = (o) => T(Object.assign({ createdAt: 1000, updatedAt: 1000 }, o));
+  const { page, ctx, errors } = await openJournal({ seed: {
+    tj_trades: [U({ id: 1, uid: 'uid-001', pnlEur: 100 }), U({ id: 2, uid: 'uid-002', date: '2026-09-02' }), U({ id: 3, uid: 'uid-003', tvKey: 'mt5:1', updatedAt: 5000, date: '2026-09-03' })],
+    tj_tombstones: JSON.stringify([{ uid: 'uid-005', deletedAt: 9000 }]),
+    tj_account: '10000', tj_r_mode: 'usable', g_settings_mtime: JSON.stringify({ tj_r_mode: 5000 })
+  } });
+  const backup = {
+    version: 3, journal: 'tj', trades: [
+      U({ id: 7, uid: 'uid-001', pnlEur: 150, updatedAt: 2000 }),                           // modifié sur l'autre appareil → mis à jour
+      U({ id: 8, uid: 'uid-000', tvKey: 'mt5:1', date: '2026-09-03' }),                      // même trade broker importé des deux côtés
+      U({ id: 9, uid: 'uid-004', date: '2026-09-04', asset: 'GOLD', imgs: ['iabc123'] }),        // nouveau, avec capture
+      U({ id: 10, uid: 'uid-005', date: '2026-09-05', updatedAt: 100 })                       // supprimé ici depuis → ignoré
+    ],
+    images: { iabc123: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mNk+M9QzwAEjDAGNzYAAB1uAxEu4BwIAAAAAElFTkSuQmCC' },
+    tombstones: [{ uid: 'uid-002', deletedAt: 3000 }],
+    settingsMeta: { tj_account: { v: '25000', t: Date.now() + 1000 }, tj_r_mode: { v: 'strict', t: 10 } }
+  };
+  const file = join(mkdtempSync(join(tmpdir(), 'merge-')), 'backup-telephone.json');
+  writeFileSync(file, JSON.stringify(backup));
+  await goto(page, 'export');
+  await page.setInputFiles('#merge-file', file);
+  await page.click('#modal-confirm');
+  await page.waitForTimeout(300);
+  const t = await page.evaluate(() => trades.map(t => ({ uid: t.uid, e: t.pnlEur, n: t.imgs.length })).sort((a, b) => a.uid.localeCompare(b.uid)));
+  assert.deepEqual(t.map(x => x.uid), ['uid-000', 'uid-001', 'uid-004'], 'u2 supprimé, u3/u0 non doublé (uid commun), u5 non recréé');
+  assert.equal(t.find(x => x.uid === 'uid-001').e, 150);
+  assert.equal(t.find(x => x.uid === 'uid-004').n, 1);
+  assert.equal(await page.evaluate(() => accountSize), 25000, 'réglage plus récent appliqué');
+  assert.equal(await page.evaluate(() => DB.getItem('tj_r_mode')), 'usable', 'réglage plus ancien ignoré');
+  assert.match(await page.locator('.toast').last().innerText(), /1 ajouté · 1 mis à jour · 1 supprimé · 1 réglage/);
+  assert.equal(await page.evaluate(() => TradeStore.tombstones().map(x => x.uid).sort().join()), 'uid-002,uid-005');
+  // Refusionner le même fichier : rien ne change.
+  await page.setInputFiles('#merge-file', file);
+  await page.click('#modal-confirm');
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => trades.length), 3);
+  assert.match(await page.locator('.toast').last().innerText(), /Déjà à jour/);
+  // Le backup exporté contient les dates des réglages.
+  assert.equal(await page.evaluate(() => typeof settingsSnapshot().tj_account.t), 'number');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

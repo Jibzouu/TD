@@ -980,10 +980,14 @@
         </div>
         <div class="export-card">
           <div class="export-icon">📂</div>
-          <div class="export-title">Importer un backup</div>
-          <div class="export-desc">Restaure tes trades depuis un fichier JSON précédemment exporté.</div>
+          <div class="export-title">Importer ou fusionner un backup</div>
+          <div class="export-desc"><b>Fusionner</b> : synchronise avec un autre appareil (PC ↔ téléphone) — exporte le backup sur l'un, fusionne-le sur l'autre ; la version la plus récente de chaque trade est gardée. <b>Restaurer</b> : remplace tout par le contenu du fichier.</div>
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
-          <button class="btn-ghost" onclick="document.getElementById('import-file').click()">Choisir un fichier…</button>
+          <input type="file" id="merge-file" accept=".json" style="display:none" onchange="mergeBackup(this)">
+          <div class="export-actions">
+            <button class="btn-primary" onclick="document.getElementById('merge-file').click()">Fusionner un backup…</button>
+            <button class="btn-ghost" onclick="document.getElementById('import-file').click()">Restaurer (remplacer tout)…</button>
+          </div>
         </div>
         <div class="export-card span-2">
           <div class="export-icon">📊</div>

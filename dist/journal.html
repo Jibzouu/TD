@@ -2640,10 +2640,14 @@ tr.more-row .btn-ghost{margin-right:8px}
         </div>
         <div class="export-card">
           <div class="export-icon">📂</div>
-          <div class="export-title">Importer un backup</div>
-          <div class="export-desc">Restaure tes trades depuis un fichier JSON précédemment exporté.</div>
+          <div class="export-title">Importer ou fusionner un backup</div>
+          <div class="export-desc"><b>Fusionner</b> : synchronise avec un autre appareil (PC ↔ téléphone) — exporte le backup sur l'un, fusionne-le sur l'autre ; la version la plus récente de chaque trade est gardée. <b>Restaurer</b> : remplace tout par le contenu du fichier.</div>
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
-          <button class="btn-ghost" onclick="document.getElementById('import-file').click()">Choisir un fichier…</button>
+          <input type="file" id="merge-file" accept=".json" style="display:none" onchange="mergeBackup(this)">
+          <div class="export-actions">
+            <button class="btn-primary" onclick="document.getElementById('merge-file').click()">Fusionner un backup…</button>
+            <button class="btn-ghost" onclick="document.getElementById('import-file').click()">Restaurer (remplacer tout)…</button>
+          </div>
         </div>
         <div class="export-card span-2">
           <div class="export-icon">📊</div>
@@ -3790,6 +3794,58 @@ const TradeStore = (() => {
       })) return false;
       return true;
     },
+    // Fusionne un backup venant d'un autre appareil : le trade modifié le plus récemment gagne, les suppressions
+    // (traces) sont appliquées des deux côtés. Un même trade importé sur deux appareils (même clé broker ou mêmes
+    // date / actif / sens / P&L) n'est pas doublé. Renvoie { added, updated, deleted, skipped } ou null.
+    merge(list, imagesById, remoteTombs) {
+      const prev = trades.slice(), now = Date.now(), stats = { added: 0, updated: 0, deleted: 0, skipped: 0 };
+      const tomb = new Map();
+      tombstones().concat(Array.isArray(remoteTombs) ? remoteTombs : []).forEach(x => {
+        if (x && typeof x.uid === 'string') tomb.set(x.uid, Math.max(tomb.get(x.uid) || 0, +x.deletedAt || 0));
+      });
+      const sig = t => [t.date, t.asset, t.dir, Math.round((+t.pnlEur || 0) * 100), +t.entryPrice || 0].join('|');
+      const byUid = new Map(), byTv = new Map(), bySig = new Map();
+      trades.forEach(t => { byUid.set(t.uid, t); if (t.tvKey) byTv.set(t.tvKey, t); bySig.set(sig(t), t); });
+      const dropped = [], touched = [];
+      try {
+        (Array.isArray(list) ? list : []).forEach(raw => {
+          const clean = sanitizeTrade(raw);
+          if (!clean) return;
+          const ruid = clean.uid, rUpd = +raw.updatedAt || +raw.createdAt || 0;
+          if (ruid && tomb.has(ruid) && tomb.get(ruid) >= rUpd) { stats.skipped++; return; }
+          const local = (ruid && byUid.get(ruid)) || (clean.tvKey && byTv.get(clean.tvKey)) || bySig.get(sig(clean));
+          if (!local) {
+            const t = prepareIncomingTrade(Object.assign({}, raw, { id: newLocalTradeId() }), imagesById, now);
+            if (!t) return;
+            trades.push(t); byUid.set(t.uid, t); if (t.tvKey) byTv.set(t.tvKey, t); bySig.set(sig(t), t);
+            touched.push(t); stats.added++;
+            return;
+          }
+          // Identifiant commun aux deux appareils : le plus petit des deux, pour que les fusions suivantes convergent.
+          const uid = ruid && ruid < local.uid ? ruid : local.uid;
+          if (rUpd > (local.updatedAt || 0)) {
+            const t = prepareIncomingTrade(Object.assign({}, raw, { id: local.id, uid, createdAt: Math.min(local.createdAt || rUpd, +raw.createdAt || rUpd), updatedAt: rUpd }), imagesById, now);
+            if (!t) return;
+            trades[trades.indexOf(local)] = t;
+            byUid.set(t.uid, t);
+            local.imgs.forEach(i => { if (!t.imgs.includes(i)) dropped.push(i); });
+            touched.push(t); stats.updated++;
+          } else if (uid !== local.uid) { local.uid = uid; byUid.set(uid, local); }
+          else stats.skipped++;
+        });
+      } catch (e) { reportStorageError(e); trades = prev; invalidateViews(); return null; }
+      // Supprimés sur l'autre appareil après leur dernière modification ici.
+      const gone = trades.filter(t => tomb.has(t.uid) && tomb.get(t.uid) > (t.updatedAt || 0));
+      if (gone.length) { const g = new Set(gone); trades = trades.filter(t => !g.has(t)); gone.forEach(t => dropped.push(...t.imgs)); stats.deleted = gone.length; }
+      if (!commit(prev, 'merge', touched.concat(gone), () => {
+        const alive = new Set(trades.map(t => t.uid));
+        const all = [...tomb].filter(([u]) => !alive.has(u)).map(([uid, deletedAt]) => ({ uid, deletedAt }));
+        try { DB.setItem(TOMB_KEY(), JSON.stringify(all.slice(-20000))); } catch (e) { console.error(e); }
+        const ref = referencedImages(), trash = trashImageIds();
+        dropped.forEach(id => { if (!ref.has(id) && !trash.has(id)) ImageStore.remove(id); });
+      })) return null;
+      return stats;
+    },
     // Modification en lot (renommer un setup, recalculer les sessions…) : fn modifie les trades et renvoie ceux touchés.
     mutate(fn) {
       const snapshot = JSON.stringify(trades), prev = trades.slice();
@@ -3824,13 +3880,15 @@ function settingNameOf(key) {
 (function trackSettingsChanges() {
   if (DB.__tracked) return;
   const set = DB.setItem.bind(DB), del = DB.removeItem.bind(DB);
-  let mtimes = null;
-  const stamp = k => {
+  const stamp = (k, t) => {
     if (k === SETTINGS_MTIME_KEY || !settingNameOf(k)) return;
-    try { mtimes = mtimes || JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) { mtimes = {}; }
-    mtimes[k] = Date.now();
+    let mtimes;
+    try { mtimes = JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) { mtimes = {}; }
+    mtimes[k] = t || Date.now();
     set(SETTINGS_MTIME_KEY, JSON.stringify(mtimes));
   };
+  // Écriture d'un réglage reçu d'un autre appareil : il garde sa date d'origine.
+  DB.setItemAt = (k, v, t) => { set(k, v); stamp(String(k), t); };
   DB.setItem = (k, v) => { const prev = DB.getItem(k); set(k, v); if (prev !== String(v)) stamp(String(k)); };
   DB.removeItem = k => { del(k); stamp(String(k)); };
   DB.__tracked = true;
@@ -7895,7 +7953,7 @@ function isValidTradesArray(arr) {
 
 function exportData() {
   // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
-  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings() };
+  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: imagesOf(trades), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -8075,28 +8133,96 @@ function importData(input) {
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.watchData)) { watchData = data.watchData; DB.setItem((JP + 'watch'), JSON.stringify(watchData)); }
         if ((x => x && typeof x === 'object' && !Array.isArray(x))(data.planData)) { planData = data.planData; DB.setItem((JP + 'plan'), JSON.stringify(planData)); }
         if (hasSettings) restoreAllSettings(data.settings);
-        applySavedTheme();
-        if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
-        else document.body.classList.remove('texture-on');
-        applyNavOrder();
-        accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;
-        reloadImportSettings();
-        CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
-        CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
-        const savedLayout = loadDashLayout();
-        if (savedLayout) applyDashLayout(savedLayout);
-        scalingState = null;
-        fillScalingForm();
-        renderAll();
-        initPlan();
-        renderWatchlist();
-        renderSettingsPage();
+        applyRestoredSettings();
         showToast('Import réussi — '+trades.length+' trades'+(hasSettings?' + réglages':''), 'success');
       });
     } catch { showToast('Fichier invalide ou corrompu', 'error'); }
   };
   reader.readAsText(file);
   input.value = '';
+}
+// Recharge en mémoire et à l'écran tout ce qu'un backup (restauré ou fusionné) a pu changer.
+function applyRestoredSettings() {
+  applySavedTheme();
+  if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+  else document.body.classList.remove('texture-on');
+  applyNavOrder();
+  accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;
+  reloadImportSettings();
+  CAL_HEAT_INTENSITY = parseFloat(DB.getItem((GP + 'cal_heat_intensity')) || '1');
+  CHART_INTENSITY = parseFloat(DB.getItem((GP + 'chart_intensity')) || '2');
+  const savedLayout = loadDashLayout();
+  if (savedLayout) applyDashLayout(savedLayout);
+  scalingState = null;
+  fillScalingForm();
+  renderAll();
+  initPlan();
+  renderWatchlist();
+  renderSettingsPage();
+}
+
+// ── SYNCHRONISATION PAR FICHIER ──────────────────────────────────────
+// Fusionne le backup d'un autre appareil (PC ↔ téléphone) au lieu de tout remplacer : pour chaque trade et chaque
+// réglage, la version modifiée le plus récemment gagne ; ce qui a été supprimé d'un côté l'est aussi de l'autre.
+// Il suffit ensuite d'exporter ici et de fusionner ce fichier sur l'autre appareil pour que les deux soient identiques.
+function mergeSettingsMeta(meta) {
+  if (!meta || typeof meta !== 'object') return 0;
+  let mt = {};
+  try { mt = JSON.parse(DB.getItem(SETTINGS_MTIME_KEY) || '{}') || {}; } catch (e) {}
+  let n = 0;
+  Object.entries(meta).forEach(([k, e]) => {
+    const m = /^([a-z0-9]{1,12})_(.+)$/.exec(k);
+    if (!m || !e || typeof e.v !== 'string' || !(+e.t > 0)) return;
+    const name = m[2], global = SYNCED_SETTINGS.global.includes(name);
+    if (!global && !SYNCED_SETTINGS.journal.includes(name)) return;
+    const key = (global ? GP : JP) + name;
+    if (name === 'journals') {   // comptes : on réunit les deux listes plutôt que d'en perdre un
+      let mine = [], theirs = [];
+      try { mine = JSON.parse(DB.getItem(key) || '[]'); theirs = JSON.parse(e.v); } catch (x) { return; }
+      if (!Array.isArray(mine) || !Array.isArray(theirs)) return;
+      const ids = new Set(mine.map(a => a && a.id));
+      const extra = theirs.filter(a => a && typeof a.id === 'string' && !ids.has(a.id));
+      if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra)), Math.max(+e.t, mt[key] || 0)); n++; }
+      return;
+    }
+    if (+e.t <= (mt[key] || 0) || DB.getItem(key) === e.v) return;
+    DB.setItemAt(key, e.v, +e.t);
+    n++;
+  });
+  return n;
+}
+function mergeBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = e => {
+    let data;
+    try { data = JSON.parse(e.target.result); if (!isValidTradesArray(data.trades)) throw new Error('Format invalide'); }
+    catch (x) { showToast('Fichier invalide ou corrompu', 'error'); return; }
+    const other = data.journal && data.journal !== JOURNAL_ID && JOURNALS[data.journal];
+    const warn = other ? `⚠️ Ce backup vient du compte « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
+    openModal('Fusionner ce backup ?', `${warn}Les ${data.trades.length} trades du fichier sont fusionnés avec les tiens : rien n'est écrasé à l'aveugle, la version la plus récente de chaque trade et de chaque réglage est gardée.`, () => {
+      createSafetySnapshot('avant fusion de backup');
+      const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
+      const st = TradeStore.merge(data.trades, imgs, data.tombstones);
+      if (!st) return;
+      const ns = mergeSettingsMeta(data.settingsMeta);
+      if (ns) {
+        watchData = loadJSON(JP + 'watch', watchData);
+        planData = loadJSON(JP + 'plan', planData);
+        applyRestoredSettings();
+      } else renderAll();
+      const parts = [];
+      if (st.added) parts.push(st.added + ' ajouté' + (st.added > 1 ? 's' : ''));
+      if (st.updated) parts.push(st.updated + ' mis à jour');
+      if (st.deleted) parts.push(st.deleted + ' supprimé' + (st.deleted > 1 ? 's' : ''));
+      if (ns) parts.push(ns + ' réglage' + (ns > 1 ? 's' : ''));
+      DB.setItem(JP + 'last_merge', Date.now());
+      showToast(parts.length ? 'Fusion terminée — ' + parts.join(' · ') : 'Déjà à jour : rien de nouveau dans ce fichier', 'success');
+    }, { confirmLabel: 'Fusionner' });
+  };
+  reader.readAsText(file);
 }
 
 function confirmReset() {
