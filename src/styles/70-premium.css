@@ -158,3 +158,63 @@ select.fb-select.on{background-color:var(--accent-d);border-color:var(--accent);
 .sidebar,body.sidebar-open .sidebar{box-shadow:none}
 @media (max-width:860px){body.sidebar-open .sidebar{box-shadow:var(--shadow-2)}}
 #lang-card .center-row{justify-content:flex-start}
+
+/* ── Menu rangé par groupes ── */
+.nav-group{height:auto;background:none!important;margin:18px 0 6px;padding:0 10px;cursor:grab}
+.nav-group:first-child{margin-top:4px}
+.nav-group span{display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);opacity:.8;user-select:none}
+.nav-group:hover span{opacity:1}
+.nav-group::after{top:-4px;bottom:-4px}
+.nav-group.dragging span{color:var(--accent)}
+
+/* ── Routine du jour ── */
+.routine{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);padding:18px 22px;margin-bottom:16px;box-shadow:var(--hairline)}
+.routine[hidden]{display:none}
+.rt-head{display:flex;align-items:center;gap:18px;margin-bottom:12px}
+.rt-head > div:first-child{flex:1;min-width:0}
+.rt-title{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.rt-sub{font-size:12.5px;color:var(--txt3);margin-top:2px}
+.rt-progress{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--txt2);font-weight:600}
+.rt-bar{width:120px;height:6px;border-radius:99px;background:var(--bg4);overflow:hidden;display:block}
+.rt-bar span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.rt-hide{background:none;border:none;color:var(--txt3);font-size:18px;line-height:1;width:28px;height:28px;border-radius:var(--r);cursor:pointer}
+.rt-hide:hover{background:var(--bg3);color:var(--txt)}
+.rt-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.rt-step{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r2);background:var(--bg)}
+.rt-check{width:30px;height:30px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg3);font-size:14px}
+.rt-step.done .rt-check{background:var(--green-d);color:var(--green);font-weight:700}
+.rt-text{flex:1;min-width:0;display:flex;flex-direction:column}
+.rt-label{font-size:13.5px;font-weight:550}
+.rt-step.done .rt-label{color:var(--txt3);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--txt3) 50%,transparent)}
+.rt-hint{font-size:12px;color:var(--txt3)}
+.rt-go{height:30px;padding:0 10px!important;font-size:12.5px!important;white-space:nowrap}
+@media (max-width:860px){.rt-bar{width:70px}.rt-steps{grid-template-columns:1fr}}
+
+/* ── Sections repliables du Dashboard ── */
+.dash-sec-title{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+.dash-sec-title:hover{color:var(--txt)}
+.sec-toggle{width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;color:var(--txt3);transition:transform .2s,background-color .15s}
+.sec-toggle::before{content:'';width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translate(-1px,-1px)}
+.dash-sec-title:hover .sec-toggle{background:var(--bg3);color:var(--txt)}
+.sec-closed .sec-toggle{transform:rotate(-90deg)}
+.dash-widget.sec-hidden{display:none!important}
+
+/* ── Action principale dans l'en-tête de page ── */
+.page-hdr{gap:16px;flex-wrap:wrap}
+.page-hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ── Rythme et lisibilité ── */
+.dash-grid,.charts-row,.export-grid,.plan-grid,.stats-grid{gap:16px}
+.mb-20{margin-bottom:16px}
+.ui-hint,.ui-muted,.export-desc,.panel-sub,.page-hdr-left p{max-width:78ch}
+
+/* ── Bouton flottant « Ajouter un trade » (mobile) ── */
+.fab-add{display:none}
+@media (max-width:860px){
+  .fab-add{display:flex;align-items:center;justify-content:center;position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:90;width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:26px;line-height:1;cursor:pointer;box-shadow:0 10px 28px -6px color-mix(in srgb,var(--accent) 60%,transparent),0 2px 6px rgba(0,0,0,.35)}
+  .fab-add:active{transform:scale(.95)}
+  body.sidebar-open .fab-add,body:has(.nt-panel:not([hidden])) .fab-add,body:has(.modal-overlay.open) .fab-add{display:none}
+  .page{padding-bottom:96px}
+}
+.tbl-controls #btn-group-day,.tbl-controls .btn-s5{font-size:13px!important;height:34px!important;padding:0 12px!important}
+@media (max-width:860px){.rt-head{flex-wrap:wrap;gap:10px}.rt-head > div:first-child{flex-basis:calc(100% - 40px)}.rt-progress{order:3;flex-basis:100%}.rt-bar{flex:1;width:auto}}

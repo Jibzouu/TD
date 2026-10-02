@@ -3,6 +3,7 @@
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
 </button>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+<button class="fab-add" onclick="openTradePanel()" aria-label="Ajouter un trade" title="Ajouter un trade">＋</button>
 
 <div class="app">
   <!-- SIDEBAR -->
@@ -26,7 +27,8 @@
     <button class="sidebar-search-btn" onclick="openGlobalSearch()">
       <span class="op-60">🔍</span><span class="flex-1">Rechercher…</span><kbd class="kbd">⌘K</kbd>
     </button>
-    <nav class="nav">
+    <nav class="nav" aria-label="Navigation">
+      <div class="nav-sep nav-group" data-navid="grp-trading"><span>Trading</span></div>
       <button class="nav-item active" onclick="showPage('dashboard',this)" data-page="dashboard" data-navid="dashboard">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
         <span data-i18n="nav.dashboard">Dashboard</span>
@@ -34,10 +36,6 @@
       <button class="nav-item" onclick="showPage('trades',this)" data-page="trades" data-navid="trades">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h8"/></svg>
         <span data-i18n="nav.trades">Journal des trades</span>
-      </button>
-      <button class="nav-item" onclick="showPage('stats',this)" data-page="stats" data-navid="stats">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 14V8m4 6V4m4 10V6m4 8V2"/></svg>
-        <span data-i18n="nav.stats">Statistiques</span>
       </button>
       <button class="nav-item" onclick="showPage('calendrier',this)" data-page="calendrier" data-navid="calendrier">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="3" width="14" height="12" rx="1.5"/><path d="M5 1v4M11 1v4M1 7h14"/></svg>
@@ -47,19 +45,24 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
         <span data-i18n="nav.bilan">Bilan journalier</span>
       </button>
+      <div class="nav-sep nav-group" data-navid="grp-analyse"><span>Analyse</span></div>
+      <button class="nav-item" onclick="showPage('stats',this)" data-page="stats" data-navid="stats">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 14V8m4 6V4m4 10V6m4 8V2"/></svg>
+        <span data-i18n="nav.stats">Statistiques</span>
+      </button>
       <button class="nav-item" onclick="showPage('revue',this)" data-page="revue" data-navid="revue">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6h6M5 8.5h6M5 11h3.5"/></svg>
         <span data-i18n="nav.revue">Revue hebdo</span>
-      </button>
-      <button class="nav-item" onclick="showPage('propfirm',this)" data-page="propfirm" data-navid="propfirm">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.5 2 4v4.2c0 3.6 2.5 6 6 6.8 3.5-.8 6-3.2 6-6.8V4L8 1.5Z"/><path d="M5.5 8l1.8 1.8L10.5 6"/></svg>
-        <span data-i18n="nav.propfirm">Prop Firm</span>
       </button>
       <button class="nav-item" onclick="showPage('scaling',this)" data-page="scaling" data-navid="scaling">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 13.5H5V10h3.5V6.5H12V3h2.5"/></svg>
         <span data-i18n="nav.scaling">Scaling Account</span>
       </button>
-      <div class="nav-sep" data-navid="sep1"></div>
+      <button class="nav-item" onclick="showPage('propfirm',this)" data-page="propfirm" data-navid="propfirm">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.5 2 4v4.2c0 3.6 2.5 6 6 6.8 3.5-.8 6-3.2 6-6.8V4L8 1.5Z"/><path d="M5.5 8l1.8 1.8L10.5 6"/></svg>
+        <span data-i18n="nav.propfirm">Prop Firm</span>
+      </button>
+      <div class="nav-sep nav-group" data-navid="grp-prep"><span>Préparation</span></div>
       <button class="nav-item" onclick="showPage('plan',this)" data-page="plan" data-navid="plan">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h8M4 10h6"/><rect x="1" y="2" width="14" height="12" rx="2"/></svg>
         <span data-i18n="nav.plan">Plan de trading</span>
@@ -72,7 +75,7 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
         <span data-i18n="nav.watchlist">Watchlist</span>
       </button>
-      <div class="nav-sep" data-navid="sep2"></div>
+      <div class="nav-sep nav-group" data-navid="grp-data"><span>Données & réglages</span></div>
       <button class="nav-item" onclick="showPage('export',this)" data-page="export" data-navid="export">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/></svg>
         <span data-i18n="nav.export">Export / Import</span>
@@ -313,6 +316,8 @@
         </div>
       </div>
 
+      <section class="routine" id="routine" hidden aria-label="Routine du jour"></section>
+
       <!-- ═══ AUJOURD'HUI : P&L du jour, perte max autorisée, constats ═══ -->
       <section class="day-strip" id="today-strip" aria-label="Aujourd'hui">
         <div class="today-main">
@@ -538,6 +543,7 @@
           <h2>Journal des trades</h2>
           <p id="trades-subtitle">Historique complet</p>
         </div>
+        <div class="page-hdr-actions"><button class="btn-ghost" onclick="goImportCSV()">Importer un historique</button></div>
       </div>
 
       <div class="tbl-card">
@@ -595,6 +601,7 @@
     <div id="page-stats" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2 data-i18n="page.stats.title">Statistiques</h2><p data-i18n="page.stats.sub">Analyse détaillée de tes performances</p></div>
+        <div class="page-hdr-actions"><button class="btn-ghost" onclick="goMentorReport()">🎓 Rapport pour ton mentor</button></div>
       </div>
 
       <div class="subtab-bar">
@@ -804,6 +811,7 @@
     <div id="page-playbooks" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2 data-i18n="page.playbooks.title">Playbooks</h2><p data-i18n="page.playbooks.sub">Une fiche par setup : description, règles, exemples types et résultats réels</p></div>
+        <div class="page-hdr-actions"><button class="btn-ghost" onclick="goToSetups()">Gérer mes setups</button></div>
       </div>
       <div id="playbooks-body"></div>
     </div>
@@ -811,6 +819,7 @@
     <div id="page-plan" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2 data-i18n="page.plan.title">Plan de trading</h2><p data-i18n="page.plan.sub">Règles, checklist et gestion du risque</p></div>
+        <div class="page-hdr-actions"><button class="btn-ghost" onclick="showPage('playbooks', document.querySelector('.nav-item[data-page=playbooks]'))">Voir mes playbooks →</button></div>
       </div>
       <div class="plan-grid">
         <div class="plan-card">
@@ -954,6 +963,7 @@
     <div id="page-export" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2 data-i18n="page.export.title">Export / Import</h2><p data-i18n="page.export.sub">Sauvegarde et restauration de tes données</p></div>
+        <div class="page-hdr-actions"><button class="btn-primary" onclick="exportData()">Télécharger le backup</button></div>
       </div>
       <div class="export-grid eg-2">
         <div class="export-card">

@@ -17,7 +17,7 @@ const DASH_WIDGET_DEFAULTS = {
 function loadDashLayout() {
   try { return JSON.parse(DB.getItem((JP + 'dash_layout_v2')) || 'null'); } catch (e) { return null; }
 }
-function saveDashLayout(layout) { DB.setItem((JP + 'dash_layout_v2'), JSON.stringify(layout)); }
+function saveDashLayout(layout) { DB.setItem((JP + 'dash_layout_v2'), JSON.stringify(layout)); if (typeof applyDashSections === 'function') applyDashSections(); }
 
 function getCurrentDashLayout() {
   const grid = document.getElementById('dash-grid');

@@ -78,6 +78,7 @@ function showPage(id, btn) {
   if (window.matchMedia('(max-width: 860px)').matches) closeMobileSidebar();
   // Pages dont le contenu vit hors du journal (réglages, sauvegardes) : toujours rafraîchies à l'ouverture.
   renderPage(id, ['scaling', 'export', 'propfirm', 'plan', 'watchlist', 'parametres'].includes(id));
+  if (id === 'dashboard') safeRun(renderRoutine, 'renderRoutine');   // la routine dépend aussi du journal de séance et de la revue
   safeRun(renderFilterBar, 'renderFilterBar');
   window.scrollTo({ top: 0 });
 }

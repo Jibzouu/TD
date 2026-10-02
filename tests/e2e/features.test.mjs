@@ -895,3 +895,39 @@ test('charte premium : le thème personnel « 02 » devient « Néon », en têt
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('prise en main : menu par groupes, routine du jour cochée toute seule, sections repliables, actions d\'en-tête', async () => {
+  const today = T({ id: 9001, date: '2026-06-17', entry: '10:05', desc: '' });
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [today].concat(sampleTrades()) }, time: NOW });
+  // Menu rangé par groupes.
+  const groups = await page.locator('.nav .nav-group').allInnerTexts();
+  assert.deepEqual(groups.map(g => g.trim().toLowerCase()), ['trading', 'analyse', 'préparation', 'données & réglages']);
+  // Routine : 0/3 puis la préparation se coche seule.
+  assert.match(await page.locator('#routine').innerText(), /Ta routine du jour[\s\S]*0\/3[\s\S]*Préparer ta séance[\s\S]*Noter ton trade du jour[\s\S]*Faire le bilan/);
+  await page.locator('#routine .rt-step', { hasText: 'Préparer' }).locator('.rt-go').click();
+  assert.equal(await page.evaluate(() => currentPage()), 'bilan');
+  await page.fill('#dj-plan', 'Range DAX');
+  await goto(page, 'dashboard');
+  assert.match(await page.locator('#routine .rt-count').innerText(), /1\/3/);
+  assert.equal(await page.locator('#routine .rt-step.done').count(), 1);
+  await page.locator('#routine .rt-step', { hasText: 'Noter' }).locator('.rt-go').click();
+  assert.ok(await page.locator('#trade-drawer-overlay.show').count(), 'la fiche du trade à compléter s\'ouvre');
+  await page.evaluate(() => closeTradeDetail());
+  await page.click('#routine .rt-hide');
+  assert.equal(await page.locator('#routine').isHidden(), true);
+  // Sections repliables, état mémorisé.
+  const perf = page.locator('.dash-section[data-widget="sec-perf"] .dash-sec-title');
+  const after = page.locator('.dash-section[data-widget="sec-perf"] + .dash-widget');
+  assert.equal(await after.isVisible(), true);
+  await perf.click();
+  assert.equal(await after.isVisible(), false);
+  assert.deepEqual(await page.evaluate(() => dashCollapsed()), ['sec-perf']);
+  await perf.click();
+  assert.equal(await after.isVisible(), true);
+  // Action principale dans l'en-tête du journal : importer un historique.
+  await goto(page, 'trades');
+  await page.click('#page-trades .page-hdr-actions .btn-ghost');
+  assert.equal(await page.evaluate(() => currentPage()), 'export');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

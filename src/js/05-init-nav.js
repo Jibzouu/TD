@@ -26,9 +26,8 @@ function applyNavOrder() {
   try {
     const order = JSON.parse(DB.getItem((JP + 'nav_order')) || 'null');
     if (!order) return;
-    // Orders saved before separators were trackable don't include sep1/sep2 —
-    // replaying those would push the separators to the top again. Discard them once.
-    if (!order.includes('sep1') || !order.includes('sep2')) {
+    // Ordre enregistré avant les groupes titrés (Trading, Analyse…) : abandonné une fois, le menu repart rangé par groupes.
+    if (!['grp-trading', 'grp-analyse', 'grp-prep', 'grp-data'].every(id => order.includes(id))) {
       DB.removeItem((JP + 'nav_order'));
       return;
     }
