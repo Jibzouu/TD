@@ -175,7 +175,7 @@ test('parcours complet : ajout d’un trade avec setup, tags et 2 captures, tout
   assert.equal(await page.evaluate(() => tradeImages(trades[0]).length), 2);
   assert.equal(t.checklistTotal, 6);
   for (const p of ['trades', 'stats', 'calendrier', 'bilan', 'scaling', 'plan', 'watchlist', 'export', 'parametres', 'revue', 'dashboard']) await goto(page, p);
-  for (const st of ['timing', 'behavior', 'advanced', 'overview']) await page.evaluate(s => showStatsSubtab(s), st);
+  for (const st of ['timing', 'analyses', 'behavior', 'advanced', 'overview']) await page.evaluate(s => showStatsSubtab(s), st);
   await page.evaluate(() => toggleCalView());
   assert.deepEqual(errors, []);
   await ctx.close();

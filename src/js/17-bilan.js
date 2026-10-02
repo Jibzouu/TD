@@ -70,11 +70,6 @@ function renderBilan() {
     </div>`);
   }
 
-  // Heatmap et barres agrégées : toujours à jour, indépendamment du jour sélectionné
-  // dans le bilan (sinon elles restent figées si ce jour n'a plus de trade).
-  renderHeatmap();
-  renderSessionBars();
-  renderWeekdayBars();
 }
 
 // ── HEATMAP ──────────────────────────────────────────────────────────

@@ -83,13 +83,21 @@ function showPage(id, btn) {
 }
 
 function showStatsSubtab(id) {
+  id = STATS_SUBTAB_ALIASES[id] || id;
   document.querySelectorAll('.subtab-panel').forEach(p => p.classList.toggle('active', p.dataset.subtab === id));
   document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === id));
   DB.setItem((JP + 'stats_subtab'), id);
   if (id === 'analyses') { applyChartDefaults(); renderProAnalyses(); }
 }
+// Anciens onglets regroupés : Comportement → Timing & comportement, Avancé → Analyses avancées.
+const STATS_SUBTAB_ALIASES = { behavior: 'timing', advanced: 'analyses' };
+function goStatsTab(id) {
+  showPage('stats', document.querySelector('.nav-item[data-page="stats"]'));
+  showStatsSubtab(id);
+}
 function restoreStatsSubtab() {
-  const saved = DB.getItem((JP + 'stats_subtab'));
+  let saved = DB.getItem((JP + 'stats_subtab'));
+  if (STATS_SUBTAB_ALIASES[saved]) saved = STATS_SUBTAB_ALIASES[saved];
   if (saved && document.querySelector(`.subtab-panel[data-subtab="${saved}"]`)) showStatsSubtab(saved);
 }
 

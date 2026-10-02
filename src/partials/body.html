@@ -594,10 +594,8 @@
 
       <div class="subtab-bar">
         <button class="subtab-btn active" data-subtab="overview" onclick="showStatsSubtab('overview')">Vue d'ensemble</button>
-        <button class="subtab-btn" data-subtab="timing" onclick="showStatsSubtab('timing')">Timing</button>
-        <button class="subtab-btn" data-subtab="behavior" onclick="showStatsSubtab('behavior')">Comportement</button>
-        <button class="subtab-btn" data-subtab="advanced" onclick="showStatsSubtab('advanced')">Avancé</button>
-        <button class="subtab-btn" data-subtab="analyses" onclick="showStatsSubtab('analyses')">Analyses pro</button>
+        <button class="subtab-btn" data-subtab="timing" onclick="showStatsSubtab('timing')">Timing &amp; comportement</button>
+        <button class="subtab-btn" data-subtab="analyses" onclick="showStatsSubtab('analyses')">Analyses avancées</button>
       </div>
 
       <div class="subtab-panel active" data-subtab="overview">
@@ -640,29 +638,20 @@
       </div>
 
       <div class="subtab-panel" data-subtab="timing">
-        <div class="charts-row cols-2">
-          <div class="panel">
-            <div class="panel-hdr">Meilleurs jours de la semaine</div>
-            <div class="scroll-x">
-              <table>
-                <thead><tr><th>Jour</th><th>Trades</th><th>Win Rate</th><th>R total</th></tr></thead>
-                <tbody id="stats-weekday-tbody"></tbody>
-              </table>
-            </div>
+        <div class="panel mb-20">
+          <div class="panel-hdr"><span>Résultat par heure d'entrée<small class="panel-sub" id="heatmap-sub">tous tes trades, toutes journées confondues</small></span></div>
+          <div id="heatmap-wrap"></div>
+        </div>
+        <div class="charts-row cols-2 mb-20">
+          <div class="bars-panel">
+            <div class="section-lbl">Performance par session<small class="panel-sub">win rate · trades · résultat net</small></div>
+            <div id="session-bars" class="asset-list"></div>
           </div>
-          <div class="panel">
-            <div class="panel-hdr">Meilleures heures pour trader (entrée)</div>
-            <div class="scroll-x">
-              <table>
-                <thead><tr><th>Heure</th><th>Trades</th><th>Win Rate</th><th>R total</th></tr></thead>
-                <tbody id="stats-hour-tbody"></tbody>
-              </table>
-            </div>
+          <div class="bars-panel">
+            <div class="section-lbl">Jours de la semaine<small class="panel-sub">win rate · trades · résultat net</small></div>
+            <div id="weekday-bars" class="asset-list"></div>
           </div>
         </div>
-      </div>
-
-      <div class="subtab-panel" data-subtab="behavior">
         <div class="panel mb-20">
           <div class="panel-hdr"><span>Respect du plan vs résultats<small class="panel-sub">Checklist cochée à l'ajout du trade</small></span></div>
           <div id="checklist-analysis-body"></div>
@@ -707,14 +696,12 @@
           <div class="panel-hdr"><span>Équité par setup<small class="panel-sub" id="sm-sub">mêmes échelles pour comparer d'un coup d'œil</small></span></div>
           <div id="small-multiples" class="sm-grid"></div>
         </div>
-      </div>
-
-      <div class="subtab-panel" data-subtab="advanced">
-        <div class="panel">
-          <div class="panel-hdr"><span>Analyse MAE / MFE<small class="panel-sub">Excursion adverse / favorable — trades importés de TradingView</small></span></div>
+        <div class="panel mt-12">
+          <div class="panel-hdr"><span>Analyse MAE / MFE<small class="panel-sub">excursion adverse / favorable — stop et objectif optimaux</small></span></div>
           <div id="mae-mfe-body"></div>
         </div>
       </div>
+
     </div>
 
     <!-- ═══ PROP FIRM ═══ -->
@@ -928,24 +915,11 @@
     <!-- ═══ BILAN ═══ -->
     <div id="page-bilan" class="page">
       <div class="page-hdr">
-        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Analyse détaillée par journée de trading</p></div>
+        <div class="page-hdr-left"><h2>Bilan journalier</h2><p>Ta journée de trading : chiffres, trades et captures</p></div>
         <div class="bl-nav"><button class="btn-ghost" id="bilan-prev" onclick="stepBilanDate(1)" title="Journée tradée précédente" aria-label="Journée précédente">←</button><select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select><button class="btn-ghost" id="bilan-next" onclick="stepBilanDate(-1)" title="Journée tradée suivante" aria-label="Journée suivante">→</button></div>
       </div>
       <div id="bilan-content"></div>
-      <div class="panel mt-20">
-        <div class="panel-hdr"><span>Résultat par heure d'entrée<small class="panel-sub" id="heatmap-sub">tous tes trades, toutes journées confondues</small></span></div>
-        <div id="heatmap-wrap"></div>
-      </div>
-      <div class="charts-row cols-2 mt-12">
-        <div class="bars-panel">
-          <div class="section-lbl">Performance par session<small class="panel-sub">win rate · trades · résultat net</small></div>
-          <div id="session-bars" class="asset-list"></div>
-        </div>
-        <div class="bars-panel">
-          <div class="section-lbl">Jours de la semaine<small class="panel-sub">win rate · trades · résultat net</small></div>
-          <div id="weekday-bars" class="asset-list"></div>
-        </div>
-      </div>
+      <p class="ui-muted mt-12">Les résultats par heure, session et jour de la semaine sont dans <a href="#" onclick="event.preventDefault();goStatsTab('timing')">Statistiques → Timing &amp; comportement</a>.</p>
     </div>
 
     <!-- ═══ REVUE HEBDOMADAIRE ═══ -->

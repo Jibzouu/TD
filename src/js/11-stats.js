@@ -1,54 +1,8 @@
-// ── STATS : meilleurs jours / meilleures heures ─────────────────────
+// ── STATS : timing (heure d'entrée, session, jour de la semaine) ─────
 function renderStatsSessionTables() {
-  const trades = analysisTrades();
-  const WD_NAMES = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'};
-  const wdMap = {};
-  const hMap = {};
-
-  trades.forEach(t => {
-    const rr = (t.pnl != null) ? t.pnl : 0;
-    if (t.date) {
-      const d = new Date(t.date + 'T00:00:00');
-      if (!isNaN(d)) {
-        const dow = d.getDay();
-        if (!wdMap[dow]) wdMap[dow] = { rr:0, n:0, tp:0, sl:0, be:0 };
-        wdMap[dow].n++; wdMap[dow].rr += rr;
-        if (t.res==='TP') wdMap[dow].tp++; else if (t.res==='SL') wdMap[dow].sl++; else if (t.res==='BE') wdMap[dow].be++;
-      }
-    }
-    if (t.entry) {
-      const h = parseInt(t.entry.split(':')[0], 10);
-      if (!isNaN(h)) {
-        if (!hMap[h]) hMap[h] = { rr:0, n:0, tp:0, sl:0, be:0 };
-        hMap[h].n++; hMap[h].rr += rr;
-        if (t.res==='TP') hMap[h].tp++; else if (t.res==='SL') hMap[h].sl++; else if (t.res==='BE') hMap[h].be++;
-      }
-    }
-  });
-
-  const wdRows = Object.entries(wdMap).map(([dow,v]) => ({
-    label: WD_NAMES[dow], n:v.n, rr:v.rr, wr: (v.tp+v.sl+v.be)>0 ? v.tp/(v.tp+v.sl+v.be)*100 : 0
-  })).sort((a,b) => b.rr - a.rr);
-
-  const hRows = Object.entries(hMap).map(([h,v]) => ({
-    label: String(h).padStart(2,'0') + 'h – ' + String((parseInt(h,10)+1)%24).padStart(2,'0') + 'h',
-    n:v.n, rr:v.rr, wr: (v.tp+v.sl+v.be)>0 ? v.tp/(v.tp+v.sl+v.be)*100 : 0
-  })).sort((a,b) => b.rr - a.rr);
-
-  function fill(rows, tbodyId, emptyMsg) {
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
-    if (rows.length === 0) { mount(tbody, html`<tr><td colspan="4" class="td-empty">${emptyMsg}</td></tr>`); return; }
-    const maxAbs = Math.max(...rows.map(r => Math.abs(r.rr)), 1e-9);
-    mount(tbody, html`${rows.map((r,i) => html`<tr>
-        <td><span class="rank${raw(i < 3 ? ' top' : '')}">${i + 1}</span>${r.label}</td>
-        <td>${r.n}${r.n < 10 ? html` <span class="tone-muted" title="Échantillon faible (n < 10)">⚠</span>` : ''}</td>
-        <td>${fmtRate(r.wr, 0)}</td>
-        <td>${divBarCell(r.rr, maxAbs, fmtR(r.rr, 2))}</td>
-      </tr>`)}`);
-  }
-  fill(wdRows, 'stats-weekday-tbody', 'Pas assez de trades datés.');
-  fill(hRows, 'stats-hour-tbody', "Renseigne l'heure d'entrée de tes trades pour voir ce classement.");
+  renderHeatmap();
+  renderSessionBars();
+  renderWeekdayBars();
 }
 
 // ── STATS : analyse MAE / MFE ───────────────────────────────────────
