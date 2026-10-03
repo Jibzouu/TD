@@ -63,6 +63,10 @@
         <span data-i18n="nav.propfirm">Prop Firm</span>
       </button>
       <div class="nav-sep nav-group" data-navid="grp-prep"><span>Préparation</span></div>
+      <button class="nav-item" onclick="showPage('replay',this)" data-page="replay" data-navid="replay">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 2v12M3 9h2.5V5H3M8.5 4v10M8.5 6H11v5H8.5M13 2v4"/></svg>
+        <span data-i18n="nav.replay">Backtest replay</span>
+      </button>
       <button class="nav-item" onclick="showPage('plan',this)" data-page="plan" data-navid="plan">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h8M4 10h6"/><rect x="1" y="2" width="14" height="12" rx="2"/></svg>
         <span data-i18n="nav.plan">Plan de trading</span>
@@ -815,6 +819,71 @@
         <div class="page-hdr-actions"><button class="btn-ghost" onclick="goToSetups()">Gérer mes setups</button></div>
       </div>
       <div id="playbooks-body"></div>
+    </div>
+
+    <div id="page-replay" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2>Backtest replay</h2><p>Rejoue le marché bougie par bougie, sans voir le futur, et teste tes setups comme en réel</p></div>
+      </div>
+
+      <section id="rp-setup">
+        <div class="rp-resume panel mb-20" id="rp-resume" hidden></div>
+        <div class="panel">
+          <div class="panel-hdr"><span>Nouvelle séance<small class="panel-sub">crypto en direct depuis Binance (gratuit, sans compte) — ou ton propre fichier de bougies</small></span></div>
+          <div class="rp-setup-grid">
+            <label class="field"><span class="rp-lbl">Paire</span><select id="rp-symbol" class="filter-select" onchange="rpOnSymbolChange(this)"></select><input id="rp-symbol-custom" class="rp-custom" placeholder="ex. PEPEUSDT" hidden></label>
+            <label class="field"><span class="rp-lbl">Unité de temps</span><select id="rp-interval" class="filter-select"></select></label>
+            <label class="field"><span class="rp-lbl">Date et heure de départ</span><input type="datetime-local" id="rp-start"></label>
+            <label class="field"><span class="rp-lbl">Solde de départ ($)</span><input type="number" id="rp-balance" min="1" step="100"></label>
+            <label class="field"><span class="rp-lbl">Frais par ordre (%)</span><input type="number" id="rp-fee" min="0" step="0.01" value="0.04"></label>
+          </div>
+          <div class="rp-setup-opts">
+            <label class="check-label"><input type="checkbox" id="rp-autosave" checked> Enregistrer chaque trade dans le journal</label>
+            <label class="check-label"><input type="checkbox" id="rp-capture" checked> Avec une capture du graphique</label>
+          </div>
+          <p class="rp-warn" id="rp-account-warn" hidden></p>
+          <div class="rp-setup-act">
+            <button class="btn-primary" onclick="rpLaunch()">▶ Lancer le replay</button>
+            <input type="file" id="rp-file" accept=".csv,.txt,text/csv" hidden onchange="rpImportFile(this)">
+            <button class="btn-ghost" onclick="document.getElementById('rp-file').click()">Utiliser mon fichier de bougies…</button>
+            <span id="rp-setup-msg"></span>
+          </div>
+          <p class="rp-note">Le graphique s'arrête à ta date de départ : les bougies suivantes n'apparaissent qu'au fur et à mesure (Espace = lecture / pause, → = bougie suivante, Maj + → = 10 bougies). Si le stop et l'objectif sont touchés dans la même bougie, le stop est retenu (hypothèse prudente).</p>
+        </div>
+      </section>
+
+      <section id="rp-app" hidden>
+        <div class="rp-bar">
+          <div class="rp-info" id="rp-info"></div>
+          <div class="rp-ctrls">
+            <button class="btn-primary rp-play" id="rp-play" onclick="rpTogglePlay()">▶ Lecture</button>
+            <button class="btn-ghost" onclick="rpStep(1)" title="Bougie suivante (→)">⏭ Suivante</button>
+            <button class="btn-ghost" onclick="rpStep(10)" title="10 bougies (Maj + →)">+10</button>
+            <select id="rp-speed" class="filter-select" onchange="rpSetSpeed(this.value)" aria-label="Vitesse"></select>
+            <select id="rp-tf" class="filter-select" onchange="rpChangeInterval(this.value)" aria-label="Unité de temps"></select>
+            <button class="btn-ghost" id="rp-draw" onclick="rpToggleDraw()" title="Clique sur le graphique pour poser une ligne ; clique sur une ligne pour la retirer">― Ligne</button>
+            <button class="btn-ghost" onclick="rpClearLines()" title="Effacer les lignes">Effacer</button>
+            <button class="btn-ghost" onclick="rpEndSession()">Terminer</button>
+          </div>
+        </div>
+        <div class="rp-main">
+          <div class="rp-chart-card"><div id="rp-chart" class="rp-chart"></div></div>
+          <aside class="rp-side-col">
+            <div class="rp-ticket" id="rp-ticket"></div>
+            <div class="rp-account" id="rp-account"></div>
+          </aside>
+        </div>
+        <div class="rp-bottom panel">
+          <div class="rp-tabs">
+            <button class="rp-tab active" data-tab="positions" onclick="rpShowTab('positions')">Positions <span class="rp-n"></span></button>
+            <button class="rp-tab" data-tab="orders" onclick="rpShowTab('orders')">Ordres <span class="rp-n"></span></button>
+            <button class="rp-tab" data-tab="history" onclick="rpShowTab('history')">Historique <span class="rp-n"></span></button>
+          </div>
+          <div class="rp-pane active" data-tab="positions" id="rp-positions"></div>
+          <div class="rp-pane" data-tab="orders" id="rp-orders"></div>
+          <div class="rp-pane" data-tab="history" id="rp-history"></div>
+        </div>
+      </section>
     </div>
 
     <div id="page-plan" class="page">

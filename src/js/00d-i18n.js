@@ -15,6 +15,7 @@ const I18N = {
     "nav.scaling": "Scaling Account",
     "nav.plan": "Plan de trading",
     "nav.playbooks": "Playbooks",
+    "nav.replay": "Backtest replay",
     "nav.watchlist": "Watchlist",
     "nav.export": "Export / Import",
     "nav.parametres": "Paramètres",
@@ -54,6 +55,7 @@ const I18N = {
     "nav.scaling": "Account scaling",
     "nav.plan": "Trading plan",
     "nav.playbooks": "Playbooks",
+    "nav.replay": "Backtest replay",
     "nav.watchlist": "Watchlist",
     "nav.export": "Export / Import",
     "nav.parametres": "Settings",
@@ -110,8 +112,8 @@ function i18nPatterns(dict) {
   I18N_PATTERNS = Object.keys(dict).filter(k => /\{[stu]\}/.test(k)).map(k => {
     const groups = [];   // dans l'ordre : nom de texte libre ({s}) ou numéro de repère ({0}…)
     const src = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{([stu]|\d+)\\\}/g, (m, g) => { groups.push(g); return /\d/.test(g) ? '(\\{\\d+\\})' : '(.+?)'; });
-    return { groups, re: new RegExp('^' + src + '$'), val: dict[k] };
-  });
+    return { groups, re: new RegExp('^' + src + '$'), val: dict[k], fixed: k.replace(/\{(?:[stu]|\d+)\}/g, '').length };
+  }).sort((a, b) => b.fixed - a.fixed);   // les modèles les plus précis d'abord
   return I18N_PATTERNS;
 }
 function trCore(t, dict) {

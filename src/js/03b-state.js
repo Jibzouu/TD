@@ -109,6 +109,7 @@ const PAGE_RENDERERS = {
   plan: () => [renderPositionCalc, renderRiskRules],
   watchlist: () => [renderWatchlist],
   playbooks: () => [renderPlaybooks],
+  replay: () => [renderReplay],
   parametres: () => [renderAccountsCard],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };

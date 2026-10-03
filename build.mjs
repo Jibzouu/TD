@@ -45,7 +45,7 @@ export function build({ quiet } = {}) {
   writeI18nDict();
   let html = readFileSync(join(SRC, 'index.html'), 'utf8');
   const chartJs = readFileSync(join(NM, 'chart.js/dist/chart.umd.js'), 'utf8');
-  const vendor = `<style>\n/* Polices intégrées (fonctionnent hors ligne) */\n${fontFaces()}\n</style>\n<script>\n/* Chart.js ${JSON.parse(readFileSync(join(NM, 'chart.js/package.json'), 'utf8')).version} — MIT © Chart.js Contributors */\n${safeScript(chartJs)}\n</script>`;
+  const vendor = `<style>\n/* Polices intégrées (fonctionnent hors ligne) */\n${fontFaces()}\n</style>\n<script>\n/* Chart.js ${JSON.parse(readFileSync(join(NM, 'chart.js/package.json'), 'utf8')).version} — MIT © Chart.js Contributors */\n${safeScript(chartJs)}\n</script>\n<script>\n/* Lightweight Charts ${JSON.parse(readFileSync(join(NM, 'lightweight-charts/package.json'), 'utf8')).version} — Apache-2.0 © TradingView, Inc. (graphique du Replay) */\n${safeScript(readFileSync(join(NM, 'lightweight-charts/dist/lightweight-charts.standalone.production.js'), 'utf8'))}\n</script>`;
   const parts = {
     vendor,
     styles: readDir('styles', '.css').join('\n'),

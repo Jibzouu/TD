@@ -988,3 +988,85 @@ test('personnalisation : menu « Personnaliser mon thème » à onglets, chaque 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+// Marché simulé (à la place de Binance) : tendance haussière régulière + oscillation, identique d'un appel à l'autre.
+async function mockBinance(page) {
+  const price = t => 60000 + (t - 1780000000) / 300 * 20 + 150 * Math.sin(t / 3000);
+  await page.route(/binance\.(vision|com)\/api\/v3\/klines/, route => {
+    const u = new URL(route.request().url()), sec = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600 }[u.searchParams.get('interval')] || 300;
+    const limit = +u.searchParams.get('limit') || 500, out = [];
+    let t0;
+    if (u.searchParams.get('startTime')) t0 = Math.ceil(+u.searchParams.get('startTime') / 1000 / sec) * sec;
+    else t0 = Math.floor(+u.searchParams.get('endTime') / 1000 / sec) * sec - (limit - 1) * sec;
+    for (let i = 0; i < limit; i++) {
+      const t = t0 + i * sec, o = price(t), c = price(t + sec);
+      out.push([t * 1000, String(o), String(Math.max(o, c) + 25), String(Math.min(o, c) - 25), String(c), '12.5']);
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(out) });
+  });
+}
+
+test('backtest replay : bougies sans futur, calculateur de position, ordre au marché et limite, trade enregistré dans le journal, reprise de séance', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], tj_account: '10000' }, time: NOW });
+  await mockBinance(page);
+  await goto(page, 'replay');
+  assert.equal(await page.locator('#rp-account-warn').isVisible(), true, 'compte Live : invitation à utiliser un compte Backtest');
+  await page.fill('#rp-start', '2026-06-01T09:00');
+  await page.fill('#rp-balance', '10000');
+  await page.click('text=Lancer le replay');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  assert.match(await page.locator('#rp-info').innerText(), /BTC\/USDT\s+M5/);
+  // Aucune bougie après la date de départ n'est chargée dans le graphique.
+  const lastShown = await page.evaluate(() => RPC[RP.cursor].time);
+  assert.ok(lastShown < Date.parse('2026-06-01T09:00') / 1000, 'la dernière bougie affichée précède le départ');
+  // Calculateur : achat au marché, stop proposé à 1 %, objectif 2R, risque 1 % de 10 000.
+  await page.click('#rp-ticket .rp-side.buy');
+  await page.click('#rp-ticket >> text=proposer');
+  const sum = await page.locator('#rp-ticket-sum').innerText();
+  assert.match(sum, /Risque\s+−\s?(99|100)[,.]\d\d\s\$ · (0,99|1,00) %/);
+  assert.match(sum, /RR 2,00/);
+  const expQty = await page.evaluate(() => Math.floor(100 / (rpCur().close * 0.01) * 10000) / 10000);
+  assert.equal(await page.locator("#rp-go").innerText(), "Acheter " + expQty.toLocaleString("fr-FR", { maximumFractionDigits: 6 }) + " BTC");
+  // Le stop se déplace à la souris sur le graphique : le calculateur suit.
+  const before = await page.evaluate(() => +RP_TICKET.sl);
+  const box = await page.locator('#rp-chart').boundingBox();
+  const y = await page.evaluate(() => RP_SERIES.priceToCoordinate(rpTicketCalc().sl));
+  const x = box.x + box.width * 0.5;
+  await page.mouse.move(x, box.y + y); await page.mouse.down();
+  await page.mouse.move(x, box.y + y + 40, { steps: 6 }); await page.mouse.up();
+  const after = await page.evaluate(() => +RP_TICKET.sl);
+  assert.ok(after < before, 'stop descendu : ' + before + ' → ' + after);
+  await page.click('#rp-ticket >> text=proposer');
+  await page.click('#rp-go');
+  assert.equal(await page.locator('#rp-positions tbody tr').count(), 1);
+  // Lecture jusqu'à l'objectif.
+  await page.evaluate(() => rpStep(150));
+  assert.equal(await page.evaluate(() => RP.positions.length), 0);
+  assert.equal(await page.evaluate(() => RP.history.length), 1);
+  const t = await page.evaluate(() => trades.find(x => x.importSource === 'Replay'));
+  assert.ok(t, 'trade enregistré dans le journal');
+  assert.equal(t.asset, 'BTC/USDT'); assert.equal(t.dir, 'Long'); assert.equal(t.res, 'TP'); assert.equal(t.tf, 'M5'); assert.equal(t.rSrc, 'prix');
+  assert.ok(t.pnl > 1.8 && t.pnl <= 2, 'environ 2R moins les frais : ' + t.pnl);
+  assert.ok(t.fees > 0); assert.ok(t.imgs.length === 1, 'capture du graphique jointe');
+  // Ordre limite d'achat sous le prix : exécuté plus tard.
+  await page.click('#rp-ticket >> text=Limite');
+  const px = await page.evaluate(() => Math.round(rpCur().close - 100));
+  await page.fill('#rp-ticket .rp-f input[type=number] >> nth=0', String(px));
+  await page.click('#rp-ticket >> text=proposer');
+  await page.click('#rp-go');
+  assert.equal(await page.evaluate(() => RP.orders.length), 1);
+  await page.evaluate(() => rpStep(40));
+  assert.equal(await page.evaluate(() => RP.orders.length + RP.positions.length + RP.history.length >= 2), true);
+  // Reprise de séance après rechargement.
+  const cursorTime = await page.evaluate(() => rpCur().time);
+  await page.evaluate(() => DB.flush());
+  await page.reload(); await mockBinance(page);
+  await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'replay');
+  assert.match(await page.locator('#rp-resume').innerText(), /Séance en cours · BTC\/USDT M5/);
+  await page.click('#rp-resume >> text=Reprendre');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  assert.equal(await page.evaluate(() => rpCur().time), cursorTime);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
