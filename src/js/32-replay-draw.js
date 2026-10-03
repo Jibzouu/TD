@@ -382,7 +382,8 @@ function rpdFinish() {
 // Outil position : entrée au point cliqué, stop à 1,5 × ATR, objectif à 2R, sur 20 bougies.
 function rpdAddPosition(type, pt) {
   const br = rpDefaultBracket(type, pt.p);
-  const d = rpdNew(type, [{ t: pt.t, p: rpRound(pt.p) }, { t: pt.t + 20 * rpdBarSec(), p: rpRound(pt.p) }]);
+  const sp = (rpdLX(1) - rpdLX(0)) || 6, bars = Math.max(15, Math.round(rpdPane().width * 0.22 / sp));
+  const d = rpdNew(type, [{ t: pt.t, p: rpRound(pt.p) }, { t: pt.t + bars * rpdBarSec(), p: rpRound(pt.p) }]);
   d.sl = br.sl; d.tp = br.tp;
   RP.drawings.push(d); RPD.sel = d.id;
   if (!RPD.keep) RPD.tool = 'cursor';
@@ -422,22 +423,26 @@ function rpdStroke(ctx, d, hl) {
   ctx.strokeStyle = d.color; ctx.lineWidth = d.width || 2; ctx.setLineDash(RPD_DASH[d.dash || 0]);
 }
 function rpdLine(ctx, a, b) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
-function rpdFont(px, w) { return (w || 600) + ' ' + (px || 11.5) + 'px ' + (RPD.fontFam || 'Inter') + ', sans-serif'; }
+function rpdFont(px, w) { return (w || 600) + ' ' + (px || 11.5) + 'px Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'; }
 // Étiquette arrondie (fond plein) centrée sur x, posée au-dessus (v = -1), au milieu (0) ou en dessous (1) de y.
-function rpdPill(ctx, x, y, text, bg, fg, v, align) {
+// Plusieurs lignes possibles (« \n ») ; renvoie la boîte dessinée { x, y, w, h }.
+function rpdPill(ctx, x, y, text, bg, fg, v, align, border) {
   ctx.save();
-  ctx.font = rpdFont(11.5); ctx.setLineDash([]);
-  const w = ctx.measureText(text).width + 14, h = 20;
+  ctx.font = rpdFont(12, 500); ctx.setLineDash([]);
+  const lines = String(text).split('\n'), lh = 16, padX = 8, padY = 4;
+  const w = Math.ceil(Math.max(...lines.map(l => ctx.measureText(l).width))) + padX * 2, h = lines.length * lh + padY * 2;
   let x0 = align === 'left' ? x : align === 'right' ? x - w : x - w / 2;
   if (RPD.paneW) x0 = Math.max(2, Math.min(x0, RPD.paneW - w - 2));
-  const y0 = v < 0 ? y - h - 4 : v > 0 ? y + 4 : y - h / 2;
+  const y0 = Math.round(v < 0 ? y - h - 3 : v > 0 ? y + 3 : y - h / 2);
+  x0 = Math.round(x0);
   ctx.fillStyle = bg; ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x0, y0, w, h, 4); else ctx.rect(x0, y0, w, h);
+  if (ctx.roundRect) ctx.roundRect(x0, y0, w, h, 3); else ctx.rect(x0, y0, w, h);
   ctx.fill();
-  ctx.fillStyle = fg || '#fff'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillText(text, x0 + 7, y0 + h / 2 + 0.5);
+  if (border) { ctx.strokeStyle = border; ctx.lineWidth = 1; ctx.stroke(); }
+  ctx.fillStyle = fg || '#fff'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  lines.forEach((l, i) => ctx.fillText(l, x0 + w / 2, y0 + padY + lh * i + lh / 2 + 0.5));
   ctx.restore();
-  return w;
+  return { x: x0, y: y0, w, h };
 }
 function rpdPct(a, b) { return fmtNum((b - a) / a * 100, 2) + ' %'; }
 function rpdDistTxt(dist, ref) { return rpIsFx() ? fmtNum(dist / rpPip(), 1) + ' pips' : rpPrice(dist, ref); }
@@ -556,17 +561,25 @@ function rpdDrawPosTool(ctx, d, k) {
   ctx.strokeStyle = k.txt; rpdLine(ctx, { x: b.x1, y: b.yE }, { x: b.x2, y: b.yE });
   ctx.strokeStyle = G; rpdLine(ctx, { x: b.x1, y: b.yT }, { x: b.x2, y: b.yT });
   ctx.strokeStyle = R; rpdLine(ctx, { x: b.x1, y: b.yS }, { x: b.x2, y: b.yS });
+  // Étiquettes façon TradingView : objectif et stop à l'extérieur de la boîte, résumé sur la ligne d'entrée
+  // (centré dans la boîte s'il y tient, sinon à sa droite : la jonction gain / perte reste visible).
   const qty = dist > 0 ? rpFloorStep(rpdRiskAmt() / dist, rpQtyStep(e)) : 0, mx = (b.x1 + b.x2) / 2;
-  const sel = RPD.sel === d.id;
-  if (sel || w > 150) {
-    rpdPill(ctx, mx, long ? b.yT : b.yT, tr('Objectif') + ' : ' + rpPrice(d.tp) + ' (' + rpdPct(e, d.tp) + ') ' + rpdDistTxt(Math.abs(d.tp - e), e) + ' · +' + rpMoney(qty * Math.abs(d.tp - e), 0), G, '#fff', long ? -1 : 1);
-    rpdPill(ctx, mx, b.yS, tr('Stop') + ' : ' + rpPrice(d.sl) + ' (' + rpdPct(e, d.sl) + ') ' + rpdDistTxt(dist, e) + ' · −' + rpMoney(qty * dist, 0), R, '#fff', long ? 1 : -1);
-  }
-  let mid = 'RR ' + fmtNum(rr, 2) + ' · ' + tr('Qté') + ' ' + rpQtyFmt(qty);
-  if (sim.state === 'tp') mid = tr('Objectif atteint') + ' · +' + fmtNum(rr, 2) + 'R';
-  else if (sim.state === 'sl') mid = tr('Stop touché') + ' · −1R';
-  else if (sim.state === 'run') { const r = (long ? sim.price - e : e - sim.price) / (dist || 1); mid = tr('En cours') + ' · ' + (r >= 0 ? '+' : '−') + fmtNum(Math.abs(r), 2) + 'R · RR ' + fmtNum(rr, 2); }
-  rpdPill(ctx, mx, b.yE, mid, sim.state === 'tp' ? G : sim.state === 'sl' ? R : '#50535e', '#fff', 0);
+  const base = rpBase(RP.symbol), fx = RP_FIAT.includes(base);
+  const qtyTxt = rpQtyFmt(qty) + (fx ? ' (' + fmtNum(qty / 100000, 2) + ' lot)' : '');
+  const lvl = (name, price, dist2, amt) => tr(name) + ' : ' + rpPrice(price) + '  ·  ' + rpPrice(dist2, e) + ' (' + fmtNum(dist2 / e * 100, 3) + ' %)' + (rpIsFx() ? ' ' + fmtNum(dist2 / rpPip(), 1) + ' pips' : '') + '  ·  ' + tr('Montant') + ' : ' + amt;
+  rpdPill(ctx, mx, b.yT, lvl('Cible', d.tp, Math.abs(d.tp - e), '+' + rpMoney(qty * Math.abs(d.tp - e))), G, '#fff', long ? -1 : 1);
+  rpdPill(ctx, mx, b.yS, lvl('Stop', d.sl, dist, '−' + rpMoney(qty * dist)), R, '#fff', long ? 1 : -1);
+  let l1 = tr('Entrée') + ' : ' + rpPrice(e) + '  ·  ' + tr('Qté') + ' : ' + qtyTxt, bg = '#5d606b';
+  const l2 = tr('Ratio risque / récompense') + ' : ' + fmtNum(rr, 2);
+  if (sim.state === 'tp') { l1 = tr('Objectif atteint') + ' : +' + rpMoney(qty * Math.abs(d.tp - e)) + ' (+' + fmtNum(rr, 2) + 'R)  ·  ' + tr('Qté') + ' : ' + qtyTxt; bg = G; }
+  else if (sim.state === 'sl') { l1 = tr('Stop touché') + ' : −' + rpMoney(qty * dist) + ' (−1R)  ·  ' + tr('Qté') + ' : ' + qtyTxt; bg = R; }
+  else if (sim.state === 'run') { const pl = (long ? sim.price - e : e - sim.price), r = pl / (dist || 1); l1 = tr('P&L ouvert') + ' : ' + (pl >= 0 ? '+' : '') + rpMoney(qty * pl) + ' (' + (r >= 0 ? '+' : '−') + fmtNum(Math.abs(r), 2) + 'R)  ·  ' + tr('Qté') + ' : ' + qtyTxt; }
+  ctx.save(); ctx.font = rpdFont(12, 500);
+  const need = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width) + 16;
+  ctx.restore();
+  if (need + 24 <= w) rpdPill(ctx, mx, b.yE, l1 + '\n' + l2, bg, '#fff', 0, 'center', 'rgba(255,255,255,.35)');
+  else if (b.x2 + 10 + need <= (RPD.paneW || 1e9) || b.x1 - 10 - need < 0) rpdPill(ctx, b.x2 + 10, b.yE, l1 + '\n' + l2, bg, '#fff', 0, 'left', 'rgba(255,255,255,.35)');
+  else rpdPill(ctx, b.x1 - 10, b.yE, l1 + '\n' + l2, bg, '#fff', 0, 'right', 'rgba(255,255,255,.35)');
 }
 
 // Zones des trades (sous les bougies) : aperçu du ticket, positions ouvertes, ordres en attente, trades passés.

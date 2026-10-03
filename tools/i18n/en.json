@@ -1733,5 +1733,9 @@
  "Supprimer ce dessin": "Delete this drawing",
  "Le graphique s'arrête à ta date de départ : les bougies suivantes n'apparaissent qu'au fur et à mesure (Espace = lecture / pause, → = bougie suivante, Maj + → = 10 bougies). Si le stop et l'objectif sont touchés dans la même bougie, le stop est retenu (hypothèse prudente). Sur le graphique : outils de dessin à gauche, boutons Vente / Achat en haut, « + » ou clic droit pour un ordre à un prix précis.": "The chart stops at your start date: later candles only appear as you go (Space = play / pause, → = next candle, Shift + → = 10 candles). If the stop and the target are both hit in the same candle, the stop is used (conservative assumption). On the chart: drawing tools on the left, Sell / Buy buttons at the top, “+” or right-click for an order at a specific price.",
  "Taille {0}": "Size {0}",
- "Épaisseur {0}": "Width {0}"
+ "Épaisseur {0}": "Width {0}",
+ "Cible": "Target",
+ "Montant": "Amount",
+ "Ratio risque / récompense": "Risk / reward ratio",
+ "P&L ouvert": "Open P&L"
 }
