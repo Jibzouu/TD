@@ -833,7 +833,11 @@
           <div class="rp-setup-grid">
             <label class="field"><span class="rp-lbl">Paire</span><select id="rp-symbol" class="filter-select" onchange="rpOnSymbolChange(this)"></select><input id="rp-symbol-custom" class="rp-custom" placeholder="ex. PEPEUSDT" hidden></label>
             <label class="field"><span class="rp-lbl">Unité de temps</span><select id="rp-interval" class="filter-select"></select></label>
-            <label class="field"><span class="rp-lbl">Date et heure de départ</span><input type="datetime-local" id="rp-start"></label>
+            <div class="field rp-dp-field"><span class="rp-lbl" id="rp-start-lbl">Date et heure de départ</span>
+              <input type="hidden" id="rp-start">
+              <button type="button" class="rp-dp-btn" id="rp-start-btn" aria-haspopup="dialog" aria-labelledby="rp-start-lbl" onclick="rpDpToggle()"><span id="rp-start-txt"></span><span class="rp-dp-ico" aria-hidden="true">📅</span></button>
+              <div class="rp-dp" id="rp-dp" role="dialog" aria-label="Choisir la date de départ" hidden></div>
+            </div>
             <label class="field"><span class="rp-lbl">Solde de départ ($)</span><input type="number" id="rp-balance" min="1" step="100"></label>
             <label class="field"><span class="rp-lbl">Frais par ordre (%)</span><input type="number" id="rp-fee" min="0" step="0.01" value="0.04"></label>
           </div>

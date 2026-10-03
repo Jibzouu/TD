@@ -1018,7 +1018,7 @@ test('backtest replay : bougies sans futur, calculateur de position, ordre au ma
   await mockBinance(page);
   assert.equal(await page.locator('.nav-item[data-page="replay"]').count(), 1);
   await goto(page, 'replay');
-  await page.fill('#rp-start', '2026-06-01T09:00');
+  await page.evaluate(v => rpSetStart(v), '2026-06-01T09:00');
   await page.fill('#rp-balance', '10000');
   await page.click('text=Lancer le replay');
   await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
@@ -1089,7 +1089,7 @@ test('backtest replay : export TradingView d\'EUR/USD importé (paire reconnue, 
   writeFileSync(file, rows.join('\n'));
   const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: {} });
   await goto(page, 'replay');
-  await page.fill('#rp-start', '2026-06-01T12:00');
+  await page.evaluate(v => rpSetStart(v), '2026-06-01T12:00');
   await page.setInputFiles('#rp-file', file);
   await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
   assert.match(await page.locator('#rp-info').innerText(), /EUR\/USD\s+M5\s+lun\. 01 juin 2026 11:55\s+1,\d{5}/);
@@ -1120,6 +1120,31 @@ test('backtest replay : fichiers gratuits (HistData, Dukascopy, MetaTrader) reco
   assert.equal(r.b, 60); assert.equal(r.b1, 60); assert.equal(r.bC, 1.1);
   assert.equal(r.c, 60); assert.equal(r.c0, Date.UTC(2024, 0, 2, 22, 0) / 1000); assert.equal(r.tf, '1m');
   assert.deepEqual(r.names, ['EURUSD', 'EURUSD', 'EURUSD', 'XAUUSD', 'EURUSD']);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('backtest replay : calendrier de la date de départ (mois, année, jour, heure, raccourcis)', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: {} });
+  await goto(page, 'replay');
+  await page.click('#rp-start-btn');
+  assert.equal(await page.locator('#rp-dp').isVisible(), true);
+  await page.selectOption('#rp-dp select[aria-label="Année"]', '2024');
+  await page.selectOption('#rp-dp select[aria-label="Mois"]', '2');
+  await page.click('#rp-dp .rp-dp-day:text-is("15")');
+  await page.selectOption('#rp-dp select[aria-label="Heure"]', '14');
+  await page.selectOption('#rp-dp select[aria-label="Minutes"]', '30');
+  assert.equal(await page.inputValue('#rp-start'), '2024-03-15T14:30');
+  assert.match(await page.locator('#rp-start-txt').innerText(), /^15\/03\/2024\s+14:30$/);
+  await page.click('#rp-dp .rp-dp-ok');
+  assert.equal(await page.locator('#rp-dp').isVisible(), false);
+  // Raccourci « 1 mois » et jours futurs non sélectionnables
+  await page.click('#rp-start-btn');
+  await page.click('#rp-dp .rp-dp-quick button:text-is("1 mois")');
+  const want = await page.evaluate(() => localDateStr(new Date(Date.now() - 30 * 86400000)));
+  assert.equal((await page.inputValue('#rp-start')).slice(0, 10), want);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#rp-dp').isVisible(), false);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

@@ -411,7 +411,8 @@ function renderReplaySetup() {
   const tf = document.getElementById('rp-interval');
   if (tf && !tf.options.length) { mount(tf, html`${RP_TF.map(t => html`<option value="${t[0]}">${t[2]}</option>`)}`); tf.value = '5m'; }
   const st = document.getElementById('rp-start');
-  if (st && !st.value) { const d = new Date(Date.now() - 30 * 86400000); d.setHours(9, 0, 0, 0); st.value = localDateStr(d) + 'T09:00'; }
+  if (st && !st.value) { const d = new Date(Date.now() - 30 * 86400000); st.value = localDateStr(d) + 'T09:00'; }
+  rpDpLabel();
   const bal = document.getElementById('rp-balance');
   if (bal && !bal.value) bal.value = accountSize > 0 ? accountSize : 10000;
 }

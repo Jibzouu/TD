@@ -1666,5 +1666,18 @@
  ": Affichage → Symboles (Ctrl+U) → onglet": ": View → Symbols (Ctrl+U) → tab",
  "Barres": "Bars",
  "Demander": "Request",
- "Ajouter un trade": "Add a trade"
+ "Ajouter un trade": "Add a trade",
+ "Choisir la date de départ": "Choose the start date",
+ "Il y a": "Go back",
+ "1 semaine": "1 week",
+ "1 mois": "1 month",
+ "3 mois": "3 months",
+ "1 an": "1 year",
+ "Mois précédent": "Previous month",
+ "Mois suivant": "Next month",
+ "Année": "Year",
+ "Heure": "Time",
+ "Minutes": "Minutes",
+ "Valider": "Done",
+ "Choisir une date": "Choose a date"
 }
