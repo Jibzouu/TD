@@ -1652,5 +1652,19 @@
  "🗓️ Vue mensuelle": "🗓️ Month view",
  "🚨 Limite dépassée": "🚨 Limit exceeded",
  "🧪 Explorer avec une démo": "🧪 Explore with a demo",
- "🧪 Tu explores": "🧪 You're exploring"
+ "🧪 Tu explores": "🧪 You're exploring",
+ "(Historical Data Feed, compte gratuit) : forex, indices, matières premières → export CSV.": "(Historical Data Feed, free account): forex, indices, commodities → CSV export.",
+ "(offre payante) : menu du graphique →": "(paid plan): chart menu →",
+ "). Décompresse le .zip puis importe le .csv — le replay regroupe en M5, M15, H1…": "). Unzip it, then import the .csv — the replay groups it into M5, M15, H1…",
+ ": forex et or en 1 minute, par mois ou par année (format": ": forex and gold in 1-minute bars, by month or year (format",
+ "Exporter les barres": "Export bars",
+ "Exporter les données du graphique…": "Export chart data…",
+ "L'actif et l'unité de temps sont reconnus d'après le fichier.": "The asset and timeframe are detected from the file.",
+ "MetaTrader 5 (compte démo gratuit)": "MetaTrader 5 (free demo account)",
+ "Où trouver des bougies forex / or / indices gratuitement ?": "Where to get forex / gold / index candles for free?",
+ "→ choisis l'actif, l'unité de temps et les dates →": "→ pick the asset, timeframe and dates →",
+ ": Affichage → Symboles (Ctrl+U) → onglet": ": View → Symbols (Ctrl+U) → tab",
+ "Barres": "Bars",
+ "Demander": "Request",
+ "Ajouter un trade": "Add a trade"
 }

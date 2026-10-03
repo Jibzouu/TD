@@ -348,3 +348,9 @@ body.glow-on .panel,body.glow-on .kpi{box-shadow:var(--hairline),0 0 24px -12px 
 @media (max-width:1100px){.rp-main{grid-template-columns:1fr}.rp-side-col{display:grid;grid-template-columns:1fr 1fr}}
 @media (max-width:700px){.rp-side-col{grid-template-columns:1fr}.rp-chart{height:56vh;min-height:300px}}
 .rp-setup-grid select.filter-select{line-height:normal;padding:0 30px 0 10px;font-size:14px}
+
+/* Replay : aide « où trouver des bougies » */
+.rp-help{margin-top:10px;font-size:13px;color:var(--txt2)}
+.rp-help summary{cursor:pointer;color:var(--accent);font-weight:600}
+.rp-help ul{margin:8px 0 4px;padding-left:18px;display:grid;gap:6px;line-height:1.5}
+.rp-help p{margin:4px 0 0;color:var(--txt3)}

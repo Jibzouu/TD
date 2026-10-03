@@ -1100,3 +1100,26 @@ test('backtest replay : export TradingView d\'EUR/USD importé (paire reconnue, 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('backtest replay : fichiers gratuits (HistData, Dukascopy, MetaTrader) reconnus', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: {} });
+  await goto(page, 'replay');
+  const r = await page.evaluate(() => {
+    const ascii = [], mt = [], duka = ['Gmt time,Open,High,Low,Close,Volume'];
+    for (let i = 0; i < 60; i++) {
+      const m = String(i).padStart(2, '0'), o = (1.1 + i / 1e4).toFixed(5), h = (1.1002 + i / 1e4).toFixed(5), l = (1.0998 + i / 1e4).toFixed(5);
+      ascii.push(`20240102 17${m}00;${o};${h};${l};${o};0`);
+      mt.push(`2024.01.02,17:${m},${o},${h},${l},${o},0`);
+      duka.push(`02.01.2024 22:${m}:00.000,${o},${h},${l},${o},12.5`);
+    }
+    const a = rpParseCandleFile(ascii.join('\n')), b = rpParseCandleFile(mt.join('\n')), c = rpParseCandleFile(duka.join('\n'));
+    return { a: a.length, a0: a[0].time, aO: a[1].open, b: b.length, b1: b[1].time - b[0].time, bC: b[0].close, c: c.length, c0: c[0].time, tf: rpGuessTf(c),
+      names: ['DAT_ASCII_EURUSD_M1_2024.csv', 'EURUSD_Candlestick_1_M_BID_01.01.2024-31.01.2024.csv', 'FX_EURUSD, 5.csv', 'DAT_MT_XAUUSD_M1_202401.csv', 'EURUSD_M5_202401020000.csv'].map(rpSymbolFromName) };
+  });
+  assert.equal(r.a, 60); assert.equal(r.a0, Date.UTC(2024, 0, 2, 22, 0) / 1000); assert.equal(r.aO, 1.1001);   // 17:00 New York (UTC−5) = 22:00 UTC
+  assert.equal(r.b, 60); assert.equal(r.b1, 60); assert.equal(r.bC, 1.1);
+  assert.equal(r.c, 60); assert.equal(r.c0, Date.UTC(2024, 0, 2, 22, 0) / 1000); assert.equal(r.tf, '1m');
+  assert.deepEqual(r.names, ['EURUSD', 'EURUSD', 'EURUSD', 'XAUUSD', 'EURUSD']);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

@@ -56,15 +56,32 @@ function rpParseCandleFile(text) {
   const head = rows[0].map(h => String(h).toLowerCase().replace(/[<>"]/g, '').trim());
   const hasHead = head.some(h => /open|high|close/.test(h));
   const idx = name => head.findIndex(h => h === name || h.startsWith(name));
-  let iT = hasHead ? Math.max(idx('time'), idx('date'), idx('timestamp'), idx('datetime')) : 0;
-  const iTime2 = hasHead ? idx('time') : -1, iDate = hasHead ? idx('date') : -1;
-  const iO = hasHead ? idx('open') : 1, iH = hasHead ? idx('high') : 2, iL = hasHead ? idx('low') : 3, iC = hasHead ? idx('close') : 4;
-  const iV = hasHead ? Math.max(idx('volume'), idx('tickvol'), idx('vol')) : 5;
+  // Colonne de temps : time / date / timestamp, ou « Gmt time » / « Local time » (Dukascopy).
+  let iT = hasHead ? Math.max(idx('time'), idx('date'), idx('timestamp'), idx('datetime'), head.findIndex(h => /\btime$/.test(h))) : 0;
+  let iTime2 = hasHead ? idx('time') : -1, iDate = hasHead ? idx('date') : -1;
+  // Sans en-tête : date et heure dans deux colonnes (HistData « MetaTrader », historique MT4 : 2024.01.02,17:00,o,h,l,c,v).
+  const split = !hasHead && /^\d{1,2}:\d{2}(:\d{2})?$/.test(String(rows[0][1] || '').trim());
+  if (split) { iDate = 0; iTime2 = 1; }
+  const sh = split ? 1 : 0;
+  const iO = hasHead ? idx('open') : 1 + sh, iH = hasHead ? idx('high') : 2 + sh, iL = hasHead ? idx('low') : 3 + sh, iC = hasHead ? idx('close') : 4 + sh;
+  const iV = hasHead ? Math.max(idx('volume'), idx('tickvol'), idx('vol')) : 5 + sh;
+  const gmt = hasHead && iT > -1 && /gmt|utc/.test(head[iT]);
   const toTime = (a, b) => {
     let s = String(a).trim();
     if (b != null && b !== '' && !/[ T]\d/.test(s)) s += ' ' + String(b).trim();
     if (/^\d{9,13}$/.test(s)) { const n = +s; return n > 1e11 ? Math.floor(n / 1000) : n; }
-    s = s.replace(/^(\d{4})\.(\d{2})\.(\d{2})/, '$1-$2-$3');
+    // HistData « Generic ASCII » : 20240102 170000, heure de New York sans heure d'été (UTC−5).
+    let m = s.match(/^(\d{4})(\d{2})(\d{2})[ T]?(\d{2})(\d{2})(\d{2})?$/);
+    if (m) return Math.floor(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) / 1000) + 5 * 3600;
+    s = s.replace(/^(\d{4})[.\/](\d{2})[.\/](\d{2})/, '$1-$2-$3');
+    // Dukascopy : 02.01.2024 00:00:00.000 [GMT+0100]
+    m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(?:\s*GMT([+-])(\d{2}):?(\d{2}))?$/);
+    if (m) {
+      const off = m[7] ? (m[7] === '-' ? -1 : 1) * (+m[8] * 3600 + +m[9] * 60) : 0;
+      const utc = Date.UTC(+m[3], m[2] - 1, +m[1], +m[4], +m[5], +(m[6] || 0)) / 1000;
+      return Math.floor(m[7] || gmt ? utc - off : new Date(m[3] + '-' + m[2] + '-' + m[1] + 'T' + m[4] + ':' + m[5] + ':' + (m[6] || '00')).getTime() / 1000);
+    }
+    if (gmt && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(s)) s += 'Z';
     const d = new Date(s.replace(' ', 'T'));
     return isNaN(d) ? null : Math.floor(d.getTime() / 1000);
   };
@@ -76,6 +93,13 @@ function rpParseCandleFile(text) {
   });
   out.sort((a, b) => a.time - b.time);
   return out.filter((c, i) => i === 0 || c.time !== out[i - 1].time);
+}
+// Actif deviné d'après le nom du fichier : FX_EURUSD, 5.csv · DAT_ASCII_EURUSD_M1_2024.csv · EURUSD_Candlestick_1_M_BID_….csv
+function rpSymbolFromName(name) {
+  const toks = String(name).replace(/\.[a-z0-9]+$/i, '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
+  const skip = /^(DAT|ASCII|MT|MT4|MT5|FX|OANDA|FXCM|FOREXCOM|PEPPERSTONE|ICMARKETS|BINANCE|BYBIT|CAPITALCOM|SAXO|TVC|BID|ASK|CANDLESTICK|HISTDATA|EXPORT|DATA|[MHDW]\d+|\d+[MHDW]?)$/;
+  return toks.find(t => /^[A-Z]{6}$/.test(t) && RP_FIAT.includes(t.slice(0, 3)) && RP_FIAT.includes(t.slice(3)))
+    || toks.find(t => t.length >= 3 && !skip.test(t) && /^[A-Z]/.test(t)) || 'FICHIER';
 }
 function rpGuessTf(candles) {
   const gaps = candles.slice(1, 200).map((c, i) => c.time - candles[i].time).filter(g => g > 0).sort((a, b) => a - b);
@@ -436,7 +460,7 @@ async function rpImportFile(input) {
   if (candles.length < 50) { showToast('Fichier non reconnu : il faut au moins 50 bougies (temps, open, high, low, close)', 'error'); return; }
   const interval = rpGuessTf(candles);
   RP_FILE = { name: f.name, candles, tfSec: rpTfSec(interval) };
-  const sym = (f.name.match(/[A-Z]{3,}[A-Z0-9]*/i) || ['FICHIER'])[0].toUpperCase();
+  const sym = rpSymbolFromName(f.name);
   const balance = parseFloat(document.getElementById('rp-balance').value) || 10000;
   // Départ : la date choisie si le fichier la couvre (avec un peu d'historique avant), sinon au premier tiers du fichier.
   const want = Math.floor(new Date(document.getElementById('rp-start').value).getTime() / 1000);
