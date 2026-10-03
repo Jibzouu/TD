@@ -1032,7 +1032,7 @@ test('backtest replay : bougies sans futur, calculateur de position, ordre au ma
   const sum = await page.locator('#rp-ticket-sum').innerText();
   assert.match(sum, /Risque\s+−\s?(99|100)[,.]\d\d\s\$ · (0,99|1,00) %/);
   assert.match(sum, /RR 2,00/);
-  const expQty = await page.evaluate(() => Math.floor(100 / (rpCur().close * 0.01) * 10000) / 10000);
+  const expQty = await page.evaluate(() => { const r = rpTicketCalc(); return Math.floor(100 / r.distance * 10000 + 1e-6) / 10000; });   // stop à 1,5 × ATR, risque 100 $
   assert.equal(await page.locator("#rp-go").innerText(), "Acheter " + expQty.toLocaleString("fr-FR", { maximumFractionDigits: 6 }) + " BTC");
   // Le stop se déplace à la souris sur le graphique : le calculateur suit.
   const before = await page.evaluate(() => +RP_TICKET.sl);
@@ -1053,7 +1053,10 @@ test('backtest replay : bougies sans futur, calculateur de position, ordre au ma
   const t = await page.evaluate(() => trades.find(x => x.importSource === 'Replay'));
   assert.ok(t, 'trade enregistré dans le journal');
   assert.equal(t.asset, 'BTC/USDT'); assert.equal(t.dir, 'Long'); assert.equal(t.res, 'TP'); assert.equal(t.tf, 'M5'); assert.equal(t.rSrc, 'prix');
-  assert.ok(t.pnl > 1.8 && t.pnl <= 2, 'environ 2R moins les frais : ' + t.pnl);
+  // Objectif atteint : 2R bruts ; le R net retire les frais (0,04 % à l'entrée et à la sortie).
+  const h = await page.evaluate(() => { const p = RP.history[0]; return { gross: p.realized / p.risk0, net: (p.realized - p.fees) / p.risk0 }; });
+  assert.ok(Math.abs(h.gross - 2) < 0.02, 'R brut ≈ 2 : ' + h.gross);
+  assert.ok(Math.abs(t.pnl - Math.round(h.net * 100) / 100) < 0.011 && t.pnl < 2, 'R net enregistré : ' + t.pnl);
   assert.ok(t.fees > 0); assert.ok(t.imgs.length === 1, 'capture du graphique jointe');
   // Ordre limite d'achat sous le prix : exécuté plus tard.
   await page.click('#rp-ticket >> text=Limite');
@@ -1074,6 +1077,26 @@ test('backtest replay : bougies sans futur, calculateur de position, ordre au ma
   await page.click('#rp-resume >> text=Reprendre');
   await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
   assert.equal(await page.evaluate(() => rpCur().time), cursorTime);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('backtest replay : export TradingView d\'EUR/USD importé (paire reconnue, 5 décimales, stop selon la volatilité, lots et pips)', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tv-')), file = join(dir, 'FX_EURUSD, 5.csv');
+  const rows = ['time,open,high,low,close,Volume,MA'];
+  let p = 1.085;
+  for (let i = 0; i < 600; i++) { const t = 1780300800 + i * 300, o = p, c = p + 0.0004 * Math.sin(i / 7) + 0.00005; rows.push([t, o.toFixed(5), (Math.max(o, c) + 0.00012).toFixed(5), (Math.min(o, c) - 0.00011).toFixed(5), c.toFixed(5), 1200 + i, c.toFixed(5)].join(',')); p = c; }
+  writeFileSync(file, rows.join('\n'));
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: {} });
+  await goto(page, 'replay');
+  await page.fill('#rp-start', '2026-06-01T12:00');
+  await page.setInputFiles('#rp-file', file);
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  assert.match(await page.locator('#rp-info').innerText(), /EUR\/USD\s+M5\s+lun\. 01 juin 2026 11:55\s+1,\d{5}/);
+  await page.evaluate(() => rpSuggestStop());
+  const sum = await page.locator('#rp-ticket-sum').innerText();
+  assert.match(sum, /Quantité\s+[\d\s ,]+ EUR · [\d,]+ lot/);
+  assert.match(sum, /Distance au stop\s+0,000\d\d · \d+,\d pips/);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

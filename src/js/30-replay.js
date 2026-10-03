@@ -10,6 +10,7 @@ const RP_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGE
 const RP_TF = [['1m', 60, 'M1'], ['3m', 180, 'M3'], ['5m', 300, 'M5'], ['15m', 900, 'M15'], ['30m', 1800, 'M30'], ['1h', 3600, 'H1'], ['4h', 14400, 'H4'], ['1d', 86400, 'D1']];
 const RP_SPEEDS = [1, 2, 4, 8, 16];
 const RP_HISTORY = 300, RP_BATCH = 1000;
+const RP_FIAT = ['EUR', 'GBP', 'AUD', 'NZD', 'USD', 'CHF', 'CAD', 'JPY'];   // forex : quantité aussi affichée en lots (100 000)
 
 let RP = null;          // séance en cours (état sauvegardé)
 let RPC = [];           // bougies chargées (temps UTC en secondes)
@@ -20,11 +21,15 @@ let RP_TICKET = { side: 'long', type: 'market', price: '', sl: '', tp: '', slMod
 function rpTf(id) { return RP_TF.find(t => t[0] === id) || RP_TF[2]; }
 function rpTfSec(id) { return rpTf(id)[1]; }
 function rpAsset(sym) { const m = /^(.+?)(USDT|USDC|BUSD|FDUSD|BTC|ETH|EUR|USD)$/.exec(sym || ''); return m ? m[1] + '/' + m[2] : (sym || '—'); }
+function rpIsFx() { const [b, q] = rpAsset(RP && RP.symbol).split('/'); return RP_FIAT.includes(b) && RP_FIAT.includes(q); }
+function rpPip() { return /JPY$/.test(RP.symbol) ? 0.01 : 0.0001; }
 function rpBase(sym) { return rpAsset(sym).split('/')[0]; }
 function rpCur() { return RPC[RP ? RP.cursor : 0]; }
 function rpFx() { return typeof IMPORT_FX_RATE === 'number' && IMPORT_FX_RATE > 0 ? IMPORT_FX_RATE : 1; }
 function rpMoney(v, d) { if (v == null || isNaN(v)) return '—'; const s = Math.abs(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 2, maximumFractionDigits: d ?? 2 }); return (v < 0 ? '−' : '') + s + ' $'; }
-function rpPrice(v, ref) { if (v == null || isNaN(v)) return '—'; const b = ref || v, d = b >= 1000 ? 2 : b >= 1 ? 4 : 6; return (+v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d, maximumFractionDigits: d }); }
+// Décimales selon le prix : crypto chère 2, JPY / indices 3, forex 5, petits prix 6.
+function rpDecimals(b) { return b >= 1000 ? 2 : b >= 20 ? 3 : b >= 0.5 ? 5 : 6; }
+function rpPrice(v, ref) { if (v == null || isNaN(v)) return '—'; const d = rpDecimals(ref || v); return (+v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d, maximumFractionDigits: d }); }
 function rpQtyFmt(q) { return (+q).toLocaleString(UI_LOCALE, { maximumFractionDigits: 6 }); }
 function rpLocalShift(t) { return t - new Date(t * 1000).getTimezoneOffset() * 60; }   // le graphique affiche l'heure locale
 function rpDateLabel(t) { const d = new Date(t * 1000); return d.toLocaleDateString(UI_LOCALE, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '') + ' ' + d.toLocaleTimeString(UI_LOCALE, { hour: '2-digit', minute: '2-digit' }); }
@@ -325,7 +330,7 @@ function rpBindChartDrag(el) {
     RP_CHART && RP_CHART.applyOptions({ handleScroll: true, handleScale: true });
   });
 }
-function rpRound(p) { const d = p >= 1000 ? 2 : p >= 1 ? 4 : 6; return +p.toFixed(d); }
+function rpRound(p) { return +p.toFixed(rpDecimals(p)); }
 function rpDragApply(d, price, done) {
   price = rpRound(price);
   if (d.kind === 'ticket') {
@@ -433,7 +438,10 @@ async function rpImportFile(input) {
   RP_FILE = { name: f.name, candles, tfSec: rpTfSec(interval) };
   const sym = (f.name.match(/[A-Z]{3,}[A-Z0-9]*/i) || ['FICHIER'])[0].toUpperCase();
   const balance = parseFloat(document.getElementById('rp-balance').value) || 10000;
-  const startIdx = Math.min(RP_HISTORY, Math.floor(candles.length / 3));
+  // Départ : la date choisie si le fichier la couvre (avec un peu d'historique avant), sinon au premier tiers du fichier.
+  const want = Math.floor(new Date(document.getElementById('rp-start').value).getTime() / 1000);
+  const wi = isFinite(want) ? candles.findIndex(c => c.time >= want) : -1;
+  const startIdx = wi >= 20 ? wi : Math.min(RP_HISTORY, Math.floor(candles.length / 3));
   RP = rpNewSession({ symbol: sym, interval, source: 'file', startTime: candles[startIdx].time, balance, feeRate: (parseFloat(document.getElementById('rp-fee').value) || 0) / 100,
     autosave: document.getElementById('rp-autosave').checked, capture: document.getElementById('rp-capture').checked });
   RP_MARKERS = [];
@@ -528,11 +536,19 @@ function rpTicketSet(k, v) {
   RP_TICKET[k] = v;
   if (k === 'side' || k === 'type' || k === 'slMode' || k === 'tpMode' || k === 'riskMode' || k === 'manualQty') renderReplayTicket(); else renderReplayTicketSummary();
 }
-// Stop proposé : 1 % sous / au-dessus du prix, pour démarrer vite (déplaçable sur le graphique).
+// Volatilité récente : moyenne des vrais écarts (ATR) sur les 14 dernières bougies affichées.
+function rpATR(n) {
+  const end = RP.cursor, start = Math.max(1, end - (n || 14) + 1);
+  let s = 0, k = 0;
+  for (let i = start; i <= end; i++) { const c = RPC[i], p = RPC[i - 1]; s += Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)); k++; }
+  return k ? s / k : 0;
+}
+// Stop proposé à 1,5 × l'ATR (adapté à la volatilité de l'actif), objectif à 2R ; déplaçables sur le graphique.
 function rpSuggestStop() {
   const c = rpCur(); if (!c) return;
   const sgn = RP_TICKET.side === 'short' ? -1 : 1, e = RP_TICKET.type === 'market' ? c.close : (+RP_TICKET.price || c.close);
-  RP_TICKET.slMode = 'price'; RP_TICKET.sl = rpRound(e * (1 - sgn * 0.01));
+  const dist = rpATR(14) * 1.5 || e * 0.01;
+  RP_TICKET.slMode = 'price'; RP_TICKET.sl = rpRound(e - sgn * dist);
   if (RP_TICKET.tp === '') { RP_TICKET.tpMode = 'rr'; RP_TICKET.tp = 2; }
   renderReplayTicket();
 }
@@ -571,10 +587,10 @@ function renderReplayTicketSummary() {
     if (go) { go.textContent = (RP_TICKET.side === 'short' ? 'Vendre' : 'Acheter'); go.disabled = true; }
   } else {
     mount(el, html`
-      <div class="rp-kv"><span>Quantité</span><b>${rpQtyFmt(r.qty)} ${base}</b></div>
+      <div class="rp-kv"><span>Quantité</span><b>${rpQtyFmt(r.qty)} ${base}${RP_FIAT.includes(base) ? html` <small>· ${fmtNum(r.qty / 100000, 2)} lot</small>` : ''}</b></div>
       <div class="rp-kv"><span>Valeur</span><b>${rpMoney(r.notional, 0)}</b></div>
       <div class="rp-kv"><span>Levier</span><b class="${raw(r.leverage > 10 ? 'tone-red' : r.leverage > 3 ? 'tone-amber' : '')}">×${fmtNum(r.leverage || 0, 1)}</b></div>
-      <div class="rp-kv"><span>Distance au stop</span><b>${rpPrice(r.distance, r.entry)} · ${fmtNum(r.distancePct, 2)} %</b></div>
+      <div class="rp-kv"><span>Distance au stop</span><b>${rpPrice(r.distance, r.entry)} · ${rpIsFx() ? fmtNum(r.distance / rpPip(), 1) + ' pips' : fmtNum(r.distancePct, 2) + ' %'}</b></div>
       <div class="rp-kv"><span>Risque</span><b class="tone-red">−${rpMoney(r.risk)} · ${fmtNum(r.riskPct || 0, 2)} %${fx !== 1 ? html` <small>≈ ${fmtEUR(r.risk * fx, false, 2)}</small>` : ''}</b></div>
       <div class="rp-kv"><span>Gain visé</span><b class="tone-green">${r.reward != null ? '+' + rpMoney(r.reward) : '—'}${r.rr != null ? html` · RR ${fmtNum(r.rr, 2)}` : ''}</b></div>`);
     if (go) { go.disabled = false; go.textContent = (RP_TICKET.side === 'short' ? 'Vendre ' : 'Acheter ') + rpQtyFmt(r.qty) + ' ' + base + (RP_TICKET.type === 'market' ? '' : RP_TICKET.type === 'limit' ? ' (limite)' : ' (stop)'); }
