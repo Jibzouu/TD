@@ -133,10 +133,47 @@ function rpdAttach(el) {
 function rpdRefresh() { if (RPD.req) RPD.req(); renderRpQuick(); }
 function rpdSave() { rpSave(); rpdRefresh(); }
 function rpdNew(type, pts) {
-  return { id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type, pts,
+  const d = { id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type, pts,
     color: type === 'text' ? '#d1d4dc' : type === 'fib' ? '#787b86' : type === 'hline' || type === 'hray' ? '#ff9800' : RPD.lastColor || '#2962ff',
     width: type === 'brush' ? 2 : RPD.lastWidth || 2, dash: 0 };
+  const def = rpdTpl().def[type];   // style par défaut choisi pour cet outil
+  if (def) Object.assign(d, { color: def.color, width: def.width, dash: def.dash || 0 });
+  return d;
 }
+// Modèles de style des dessins (pour toutes les séances) : { def: { outil: style }, list: { outil: [{ name, color, width, dash }] } }.
+function rpdTpl() { const t = loadJSON('g_rp_dtpl', null); return t && typeof t === 'object' ? { def: t.def || {}, list: t.list || {} } : { def: {}, list: {} }; }
+function rpdTplSave(t) { try { DB.setItem('g_rp_dtpl', JSON.stringify(t)); } catch (e) {} }
+function rpdTplMenu(btn) {
+  const m = document.getElementById('rp-tpl-dd'), d = rpdById(RPD.sel);
+  if (!m || !d) return;
+  if (!m.hidden) { m.hidden = true; return; }
+  const t = rpdTpl(), list = t.list[d.type] || [];
+  const it = (act, label, cls) => '<button type="button" class="rp-dd-it ' + (cls || '') + '" onclick="' + act + '">' + escHtmlAttr(tr(label)) + '</button>';
+  m.innerHTML = it('rpdTplAdd()', 'Enregistrer le style comme modèle…') + it('rpdTplDefault()', 'Utiliser ce style pour les prochains dessins')
+    + (t.def[d.type] ? it('rpdTplReset()', 'Revenir au style d’origine') : '')
+    + (list.length ? '<div class="rp-dd-title">' + escHtmlAttr(tr('Mes modèles')) + '</div>' + list.map((x, i) => '<div class="rp-tpl-row"><button type="button" class="rp-dd-it" onclick="rpdTplApply(' + i + ')"><span class="rp-dd-sw" style="background:' + escHtmlAttr(x.color) + ';height:' + (x.width || 2) + 'px"></span>' + escHtmlAttr(x.name) + '</button><button type="button" class="rp-lg-b" aria-label="' + escHtmlAttr(tr('Supprimer')) + '" onclick="rpdTplDel(' + i + ')">×</button></div>').join('') : '');
+  m.hidden = false;
+  const r = btn.getBoundingClientRect(), pr = m.offsetParent.getBoundingClientRect();
+  m.style.left = Math.max(4, Math.min(r.left - pr.left, pr.width - m.offsetWidth - 4)) + 'px'; m.style.top = (r.bottom - pr.top + 6) + 'px';
+}
+function rpdTplStyle(d) { return { color: d.color, width: d.width || 2, dash: d.dash || 0 }; }
+function rpdTplClose() { const m = document.getElementById('rp-tpl-dd'); if (m) m.hidden = true; }
+function rpdTplAdd() {
+  const d = rpdById(RPD.sel); if (!d) return;
+  const name = (prompt(tr('Nom du modèle'), '') || '').trim(); if (!name) return;
+  const t = rpdTpl(); (t.list[d.type] = t.list[d.type] || []).push(Object.assign({ name }, rpdTplStyle(d)));
+  rpdTplSave(t); rpdTplClose(); showToast(tr('Modèle enregistré'), 'success');
+}
+function rpdTplDefault() { const d = rpdById(RPD.sel); if (!d) return; const t = rpdTpl(); t.def[d.type] = rpdTplStyle(d); rpdTplSave(t); rpdTplClose(); showToast(tr('Style par défaut enregistré'), 'success'); }
+function rpdTplReset() { const d = rpdById(RPD.sel); if (!d) return; const t = rpdTpl(); delete t.def[d.type]; rpdTplSave(t); rpdTplClose(); }
+function rpdTplApply(i) {
+  const d = rpdById(RPD.sel); if (!d) return;
+  const x = (rpdTpl().list[d.type] || [])[i]; if (!x) return;
+  rpdPush(); Object.assign(d, { color: x.color, width: x.width, dash: x.dash || 0 });
+  rpdTplClose(); renderRpStylebar(); rpdSave();
+}
+function rpdTplDel(i) { const d = rpdById(RPD.sel); if (!d) return; const t = rpdTpl(); (t.list[d.type] || []).splice(i, 1); rpdTplSave(t); rpdTplClose(); }
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#rp-tpl-dd') && !e.target.closest('.rp-sb-tpl')) rpdTplClose(); });
 function rpdPush() { RPD.undo.push(JSON.stringify(RP.drawings)); if (RPD.undo.length > 60) RPD.undo.shift(); }
 function rpdUndo() {
   if (!RPD.undo.length) { showToast('Rien à annuler'); return; }
@@ -794,7 +831,7 @@ function renderRpStylebar() {
   if (!el) return;
   const d = rpdById(RPD.sel);
   el.hidden = !d;
-  if (!d) return;
+  if (!d) { rpdTplClose(); return; }
   const pos = d.type === 'long' || d.type === 'short', name = (rpdTool(d.type) || {}).label || '';
   mount(el, html`<span class="rp-sb-name">${name}</span>
     ${!pos && d.type !== 'fib' && d.type !== 'range' ? html`<span class="rp-sb-colors">${RPD_COLORS.map(c => html`<button type="button" class="rp-sw${raw(c === d.color ? ' on' : '')}" style="${raw('background:' + c)}" aria-label="${c}" onclick="${raw("rpdStyle('color','" + c + "')")}"></button>`)}</span>
@@ -802,6 +839,7 @@ function renderRpStylebar() {
       ${d.type !== 'text' ? html`<span class="rp-sb-grp">${[['0', 'Continu'], ['1', 'Tirets'], ['2', 'Pointillés']].map(([v, l]) => html`<button type="button" class="rp-sb-btn${raw(+v === (d.dash || 0) ? ' on' : '')}" title="${l}" onclick="${raw("rpdStyle('dash'," + v + ')')}"><span class="rp-sb-d${raw(' d' + v)}"></span></button>`)}</span>` : ''}` : ''}
     ${pos ? html`<button type="button" class="btn-primary rp-sb-order" onclick="rpdOrderFromTool()">▶ Passer cet ordre</button><button type="button" class="btn-ghost" onclick="rpdFlip()" title="Inverser long / short">⇅ Inverser</button>` : ''}
     ${d.type === 'text' ? html`<button type="button" class="btn-ghost" onclick="${raw("rpdEditText(rpdById('" + d.id + "'))")}">✎ Texte</button>` : ''}
+    ${!pos ? html`<button type="button" class="btn-ghost rp-sb-tpl" onclick="rpdTplMenu(this)" title="Modèles de style">Modèle ▾</button>` : ''}
     <button type="button" class="rp-sb-btn" title="Dupliquer" onclick="rpdDuplicate()">⧉</button>
     <button type="button" class="rp-sb-btn rp-sb-del" title="Supprimer (Suppr)" aria-label="Supprimer" onclick="rpdDelete()">${raw(rpdIcon('trash'))}</button>`);
 }

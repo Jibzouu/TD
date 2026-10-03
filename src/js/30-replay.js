@@ -501,6 +501,7 @@ function rpRefreshUi() {
   renderReplayTicketSummary();
   rpdRefresh();
   rpcLegend();
+  rpc2Lines();
 }
 function rpShowTab(id) {
   document.querySelectorAll('#rp-app .rp-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));

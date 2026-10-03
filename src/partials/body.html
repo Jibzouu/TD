@@ -873,7 +873,10 @@
             <div class="rp-tfs" id="rp-tfs" role="group" aria-label="Unité de temps"></div>
             <span class="rp-tb-sep"></span>
             <button type="button" class="rp-tb-btn" id="rp-type-btn" data-dd onclick="rpcOpen('rp-dd-type', this)" aria-label="Type de graphique"></button>
-            <button type="button" class="rp-tb-btn rp-tb-txt" data-dd onclick="rpcOpen('rp-dd-ind', this)"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 21c3 0 3-14 7-14M5 12h8M16 15l6 6M22 15l-6 6"/></svg><span>Indicateurs</span></button>
+            <button type="button" class="rp-tb-btn rp-tb-txt" id="rp-ind-btn" onclick="rpiOpenPicker()"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 21c3 0 3-14 7-14M5 12h8M16 15l6 6M22 15l-6 6"/></svg><span>Indicateurs</span></button>
+            <span class="rp-tb-sep"></span>
+            <button type="button" class="rp-tb-btn" data-dd onclick="rpcOpen('rp-dd-layout', this)" title="Disposition des graphiques" aria-label="Disposition des graphiques"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="6" width="9" height="16" rx="1.5"/><rect x="15" y="6" width="9" height="16" rx="1.5"/></svg></button>
+            <button type="button" class="rp-tb-btn" onclick="rpcSettings()" title="Paramètres du graphique" aria-label="Paramètres du graphique"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="3.5"/><path d="M14 4v3M14 21v3M4 14h3M21 14h3M6.9 6.9l2.1 2.1M19 19l2.1 2.1M6.9 21.1L9 19M19 9l2.1-2.1"/></svg></button>
           </div>
           <div class="rp-ctrls">
             <button class="rp-tb-btn rp-play" id="rp-play" onclick="rpTogglePlay()">▶ Lecture</button>
@@ -881,29 +884,41 @@
             <button class="rp-tb-btn rp-tb-txt" onclick="rpStep(10)" title="10 bougies (Maj + →)">+10</button>
             <select id="rp-speed" class="rp-tb-sel" onchange="rpSetSpeed(this.value)" aria-label="Vitesse"></select>
             <span class="rp-tb-sep"></span>
+            <button type="button" class="rp-tb-btn" id="rp-panel-btn" onclick="rpcTogglePanel()" aria-label="Panneau d'ordre"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="6" width="20" height="16" rx="1.5"/><path d="M17 6v16"/></svg></button>
+            <button type="button" class="rp-tb-btn" id="rp-fs-btn" onclick="rpcFullscreen()" aria-label="Plein écran"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 11V5h6M17 5h6v6M23 17v6h-6M11 23H5v-6"/></svg></button>
             <button class="rp-tb-btn rp-tb-txt rp-tb-end" onclick="rpEndSession()">Terminer</button>
           </div>
           <div class="rp-dd" id="rp-dd-type" hidden></div>
-          <div class="rp-dd rp-dd-wide" id="rp-dd-ind" hidden></div>
+          <div class="rp-dd rp-dd-wide" id="rp-dd-layout" hidden></div>
         </div>
         <div class="rp-main">
           <div class="rp-chart-card">
             <div class="rp-tools" id="rp-tools" role="toolbar" aria-label="Outils de dessin"></div>
             <div class="rp-chart-wrap">
-              <div id="rp-chart" class="rp-chart"></div>
-              <div class="rp-tl">
-                <div class="rp-legend" id="rp-legend"></div>
-                <div class="rp-quick" id="rp-quick"></div>
+              <div class="rp-col">
+                <div class="rp-pane-main">
+                <div id="rp-chart" class="rp-chart"></div>
+                <div class="rp-tl">
+                  <div class="rp-legend" id="rp-legend"></div>
+                  <div class="rp-quick" id="rp-quick"></div>
+                </div>
+                <div class="rp-scale">
+                  <button type="button" class="rp-sc-btn rp-to-rt" id="rp-to-rt" onclick="rpcRealtime()" title="Revenir à la dernière bougie" aria-label="Revenir à la dernière bougie" hidden>»</button>
+                  <button type="button" class="rp-sc-btn" id="rp-sc-log" onclick="rpcScale('log')" title="Échelle logarithmique">log</button>
+                  <button type="button" class="rp-sc-btn" id="rp-sc-auto" onclick="rpcScale('auto')" title="Échelle automatique">auto</button>
+                </div>
+                <div class="rp-stylebar" id="rp-stylebar" hidden></div>
+                <div class="rp-dd rp-tpl-dd" id="rp-tpl-dd" hidden></div>
+                <button type="button" class="rp-plus" id="rp-plus" hidden onclick="rpdPlusClick(event)" aria-label="Passer un ordre à ce prix">+</button>
+                <div class="rp-menu" id="rp-menu" role="menu" hidden></div>
+                <input type="text" class="rp-text-in" id="rp-text-in" placeholder="Ton texte… (Entrée)" hidden>
+                </div>
+                <div class="rp-panes" id="rp-panes"></div>
               </div>
-              <div class="rp-scale">
-                <button type="button" class="rp-sc-btn rp-to-rt" id="rp-to-rt" onclick="rpcRealtime()" title="Revenir à la dernière bougie" aria-label="Revenir à la dernière bougie" hidden>»</button>
-                <button type="button" class="rp-sc-btn" id="rp-sc-log" onclick="rpcScale('log')" title="Échelle logarithmique">log</button>
-                <button type="button" class="rp-sc-btn" id="rp-sc-auto" onclick="rpcScale('auto')" title="Échelle automatique">auto</button>
+              <div class="rp-second" id="rp-second" hidden>
+                <div id="rp-chart2" class="rp-chart"></div>
+                <div class="rp-legend rp-lg2" id="rp-lg2"></div>
               </div>
-              <div class="rp-stylebar" id="rp-stylebar" hidden></div>
-              <button type="button" class="rp-plus" id="rp-plus" hidden onclick="rpdPlusClick(event)" aria-label="Passer un ordre à ce prix">+</button>
-              <div class="rp-menu" id="rp-menu" role="menu" hidden></div>
-              <input type="text" class="rp-text-in" id="rp-text-in" placeholder="Ton texte… (Entrée)" hidden>
             </div>
           </div>
           <aside class="rp-side-col">

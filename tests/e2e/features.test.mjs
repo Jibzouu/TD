@@ -1230,10 +1230,11 @@ test('backtest replay : graphique façon TradingView (légende, types, indicateu
   assert.match(await page.locator('#rp-legend').innerText(), /BTC\/USDT\s*·\s*M5\s*·\s*Binance\s+O\s*[\d\s ,]+H/);
   assert.match(await page.locator('#rp-legend').innerText(), /Vol/);
   // Indicateur MME 21 depuis le menu, valeur dans la légende ; pas de futur dans le calcul.
-  await page.click('.rp-tb-btn >> text=Indicateurs');
-  await page.click('#rp-dd-ind >> text=Moyenne mobile exponentielle 21');
+  await page.click('#rp-ind-btn');
+  await page.fill('#rp-modal .rp-pick-q', 'exponentielle');
+  await page.click('#rp-modal .rp-pick-it:visible');
   assert.match(await page.locator('#rp-legend').innerText(), /MME 21\s+[\d\s ,]+/);
-  const ema = await page.evaluate(() => { const v = RPC_S.cache.ema21; return { n: v.length, cur: RP.cursor }; });
+  const ema = await page.evaluate(() => { const x = RP.inds.find(i => i.id === 'ema'); return { n: RPC_S.cache[x.uid].ma.length, cur: RP.cursor }; });
   assert.equal(ema.n, ema.cur + 1);
   // Types de graphique
   for (const t of ['Heikin Ashi', 'Ligne', 'Bougies']) {
@@ -1266,6 +1267,80 @@ test('backtest replay : graphique façon TradingView (légende, types, indicateu
   await page.mouse.click(box.x + h.x, box.y + h.y);
   assert.equal(await page.evaluate(() => RP.positions.length), 0);
   assert.equal(await page.evaluate(() => RP.history.length), 1);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('backtest replay : panneaux d\'indicateurs (RSI, MACD) modifiables, 2 graphiques, plein écran, couleurs et modèles de dessin', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_account: '10000' }, time: NOW, viewport: { width: 1500, height: 950 } });
+  await mockBinance(page);
+  await goto(page, 'replay');
+  await page.evaluate(v => rpSetStart(v), '2026-06-01T09:00');
+  await page.click('text=Lancer le replay');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  // Le graphique occupe la hauteur de l'écran.
+  const h = await page.evaluate(() => document.querySelector('.rp-chart-card').getBoundingClientRect().height);
+  assert.ok(h >= 780, 'graphique haut : ' + h);
+  // RSI dans un panneau sous le graphique, avec sa légende.
+  await page.click('#rp-ind-btn');
+  await page.fill('#rp-modal .rp-pick-q', 'rsi');
+  await page.click('#rp-modal .rp-pick-it:visible');
+  await page.waitForSelector('#rp-panes .rp-pane-ind canvas');
+  assert.match(await page.locator('#rp-panes .rp-pane-lg').innerText(), /RSI 14\s+\d+,\d\d/);
+  // Réglages : longueur 7, couleur, niveau 70 → 75.
+  await page.hover('#rp-panes .rp-lg-ind');
+  await page.click('#rp-panes .rp-lg-b[title="Paramètres"]');
+  await page.fill('#rp-modal [data-in=len]', '7');
+  await page.click('#rp-modal >> text=Style');
+  await page.fill('#rp-modal [data-lv="0"]', '75');
+  await page.click('#rp-modal >> text=OK');
+  const rsi = await page.evaluate(() => { const x = RP.inds.find(i => i.id === 'rsi'); return { len: x.p.len, lv: x.lv[0].v, v: RPC_S.cache[x.uid].rsi.at(-1) }; });
+  assert.equal(rsi.len, 7); assert.equal(rsi.lv, 75); assert.ok(rsi.v > 0 && rsi.v <= 100);
+  assert.match(await page.locator('#rp-panes .rp-pane-lg').innerText(), /RSI 7/);
+  // MACD : second panneau ; l'échelle de temps n'est affichée que sous le dernier.
+  await page.click('#rp-ind-btn'); await page.fill('#rp-modal .rp-pick-q', 'macd'); await page.click('#rp-modal .rp-pick-it:visible');
+  assert.equal(await page.locator('#rp-panes .rp-pane-ind').count(), 2);
+  // Lecture : les panneaux suivent, sans futur.
+  await page.evaluate(() => rpStep(5));
+  const sync = await page.evaluate(() => { const x = RP.inds.find(i => i.id === 'macd'); return RPC_S.cache[x.uid].macd.length === RP.cursor + 1; });
+  assert.ok(sync);
+  // Masquer puis retirer le RSI.
+  await page.evaluate(() => rpiToggle(RP.inds.find(i => i.id === 'rsi').uid));
+  assert.equal(await page.locator('#rp-panes .rp-pane-ind').count(), 1);
+  await page.evaluate(() => rpiRemove(RP.inds.find(i => i.id === 'rsi').uid));
+  assert.equal(await page.evaluate(() => RP.inds.some(i => i.id === 'rsi')), false);
+  // Deux graphiques : unité supérieure construite avec les bougies déjà jouées seulement.
+  await page.click('button[title="Disposition des graphiques"]');
+  await page.click('#rp-dd-layout >> text=Deux graphiques');
+  await page.waitForSelector('#rp-second:not([hidden]) canvas');
+  const two = await page.evaluate(() => { const d = RPC_2.s.data(), last = d[d.length - 1]; return { tf: RPC_2.tf[0], close: last.close, cur: rpCur().close }; });
+  assert.equal(two.tf, '30m'); assert.equal(two.close, two.cur);
+  await page.evaluate(() => rpStep(3));
+  assert.equal(await page.evaluate(() => { const d = RPC_2.s.data(); return d[d.length - 1].close === rpCur().close; }), true);
+  // Panneau d'ordre masqué, plein écran (Échap pour sortir).
+  await page.click('#rp-panel-btn');
+  assert.equal(await page.locator('#rp-ticket').isVisible(), false);
+  await page.click('#rp-panel-btn');
+  await page.click('#rp-fs-btn');
+  assert.equal(await page.evaluate(() => document.getElementById('rp-app').classList.contains('rp-fs')), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(() => document.getElementById('rp-app').classList.contains('rp-fs')), false);
+  // Couleurs du graphique (gardées pour toutes les séances).
+  await page.click('button[title="Paramètres du graphique"]');
+  await page.locator('#rp-modal [data-st=up]').evaluate(el => { el.value = '#00ff00'; });
+  await page.click('#rp-modal >> text=OK');
+  assert.equal(await page.evaluate(() => JSON.parse(DB.getItem('g_rp_style')).up), '#00ff00');
+  assert.equal(await page.evaluate(() => RP_SERIES.options().upColor), '#00ff00');
+  // Modèle de dessin : style par défaut pour les prochaines lignes horizontales.
+  await page.evaluate(() => { RPD.tool = 'hline'; });
+  const box = await page.locator('#rp-chart').boundingBox();
+  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.5);
+  await page.click('#rp-stylebar .rp-sw >> nth=4');
+  await page.click('#rp-stylebar .rp-sb-tpl');
+  await page.click('#rp-tpl-dd >> text=Utiliser ce style');
+  await page.evaluate(() => { RPD.tool = 'hline'; });
+  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.7);
+  assert.equal(await page.evaluate(() => RP.drawings.at(-1).color), '#9c27b0');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
