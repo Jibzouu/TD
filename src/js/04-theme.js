@@ -313,13 +313,20 @@ function renderThemePresetGrid() {
       <div class="swatch-name">✦ Néon</div>
     </div>`;
   })() : '';
+  const others = getCustomThemes().filter(t => !t.neon).map(t => {
+    const c = t.theme || {}, active = !theme['--preset-key'] && ['--bg', '--accent', '--green', '--txt'].every(k => theme[k] === c[k]);
+    return html`<div class="theme-swatch custom-in-grid${raw(active ? ' active' : '')}" onclick="applyCustomTheme(${raw(Number(t.id) || 0)})">
+      ${swatchStrip([c['--bg'], c['--bg3'], c['--green'], c['--red'], c['--accent'] || c['--purple'] || c['--blue']])}
+      <div class="swatch-name">💾 ${t.name}</div>
+    </div>`;
+  });
   mount(cont, html`${neonCard}${Object.entries(THEME_PRESETS).map(([key, p]) => {
     const c = p.colors;
     return html`<div class="theme-swatch${raw(key === activeKey && !(neonCard && !theme['--preset-key']) ? ' active' : '')}" onclick="applyPreset('${key}')">
       ${swatchStrip([c['--bg'], c['--bg3'], c['--green'], c['--red'], c['--accent'] || c['--blue']])}
       <div class="swatch-name">${p.emoji} ${p.name}</div>
     </div>`;
-  })}`);
+  })}${others}`);
 }
 
 // Aperçu d'un thème : ses 5 couleurs passées en variables CSS (seules valeurs en ligne, vérifiées par safeColor).
@@ -366,6 +373,7 @@ function deleteCustomTheme(id, event) {
   renderCustomThemesGrid();
 }
 function renderCustomThemesGrid() {
+  renderThemePresetGrid();   // les thèmes enregistrés apparaissent aussi dans la grille des thèmes
   const cont = document.getElementById('custom-theme-grid');
   if (!cont) return;
   const list = getCustomThemes();
@@ -390,8 +398,8 @@ function renderSettingsPage() {
   const cont = document.getElementById('settings-groups');
   if (!cont) return;
   mount(cont, html`${THEME_VARS.map(g => html`
-    <div class="panel mb-20">
-      <div class="panel-hdr">${g.group}</div>
+    <div class="cz-group">
+      <div class="cz-group-title">${g.group}</div>
       <div class="color-grid">
         ${g.items.map(it => {
           const val = currentVar(it.key, '#000000');
@@ -452,3 +460,11 @@ function renderSettingsPage() {
   if (autoThemeToggle) autoThemeToggle.checked = DB.getItem((GP + 'theme_autosystem')) === '1';
 }
 
+
+// Onglets de « Personnaliser mon thème ».
+function showCzTab(id) {
+  document.querySelectorAll('#settings-adv .cz-tab').forEach(b => { const on = b.dataset.cz === id; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+  document.querySelectorAll('#settings-adv .cz-pane').forEach(p => p.classList.toggle('active', p.dataset.cz === id));
+  try { DB.setItem(GP + 'cz_tab', id); } catch (e) {}
+}
+onReady(() => { const t = DB.getItem(GP + 'cz_tab'); if (t) showCzTab(t); });

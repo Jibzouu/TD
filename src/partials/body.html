@@ -1139,26 +1139,28 @@
         </div>
       </div>
 
-      <div class="panel mb-20">
+      <div class="panel mb-20" id="themes-card">
         <div class="panel-hdr hdr-between">
-          <span>Thèmes rapides</span>
-          <button class="btn-danger btn-danger-sm" onclick="resetTheme()">Réinitialiser tout</button>
+          <span>Thèmes<small class="panel-sub">choisis un thème, puis personnalise-le comme tu veux</small></span>
+          <button class="btn-ghost btn-sm-danger" onclick="resetTheme()">Réinitialiser tout</button>
         </div>
         <div id="theme-preset-grid"></div>
-      </div>
 
-      <details class="fold settings-adv" id="settings-adv">
-        <summary>Personnalisation avancée <span class="fold-sub">mes thèmes, couleurs une par une, ambiance, formes et polices</span></summary>
-      <div class="panel mb-20">
-        <div class="panel-hdr hdr-between">
-          <span>Mes thèmes</span>
-          <button class="btn-ghost btn-s7-14" onclick="saveCurrentThemeAs()">💾 Enregistrer le thème actuel</button>
-        </div>
-        <div id="custom-theme-grid"></div>
-      </div>
-
-      <div class="panel mb-20">
-        <div class="panel-hdr">Ambiance visuelle</div>
+        <details class="cz" id="settings-adv">
+          <summary class="cz-summary"><span class="cz-ic" aria-hidden="true">🎨</span><span class="cz-tt">Personnaliser mon thème<small>couleurs, ambiance, formes, polices, graphiques — chaque changement s'applique tout de suite</small></span><span class="cz-chev" aria-hidden="true"></span></summary>
+          <div class="cz-body">
+            <div class="cz-tabs" role="tablist" aria-label="Personnalisation">
+              <button class="cz-tab active" role="tab" data-cz="colors" onclick="showCzTab('colors')">Couleurs</button>
+              <button class="cz-tab" role="tab" data-cz="mood" onclick="showCzTab('mood')">Ambiance</button>
+              <button class="cz-tab" role="tab" data-cz="shape" onclick="showCzTab('shape')">Formes &amp; polices</button>
+              <button class="cz-tab" role="tab" data-cz="charts" onclick="showCzTab('charts')">Graphiques</button>
+              <button class="cz-tab" role="tab" data-cz="mine" onclick="showCzTab('mine')">Mes thèmes</button>
+            </div>
+            <div class="cz-pane active" data-cz="colors" role="tabpanel">
+              <p class="cz-hint">Clique une pastille pour changer la couleur. Les couleurs de gains, pertes et accent créent automatiquement leurs nuances.</p>
+              <div id="settings-groups"></div>
+            </div>
+            <div class="cz-pane" data-cz="mood" role="tabpanel">
         <div class="grid-2-24">
           <div>
             <label class="lbl-mono">Style d'arrière-plan</label>
@@ -1189,13 +1191,9 @@
             <label class="check-label-plain" for="autotheme-toggle">Suivre automatiquement le thème clair/sombre du système</label>
           </div>
         </div>
-      </div>
-
-      <div id="settings-groups"></div>
-
-      <div class="panel mb-20">
-        <div class="panel-hdr">Forme & typographie</div>
-        <div class="pad-18">
+            </div>
+            <div class="cz-pane" data-cz="shape" role="tabpanel">
+              <div class="pad-18">
           <label class="lbl-mono">Forme des cases</label>
           <div class="row-wrap8 mb-20">
             <button class="btn-ghost shape-preset-btn" data-r="0" onclick="onRadiusChange(0)">◻ Carré</button>
@@ -1238,6 +1236,11 @@
                 <option value="dotted">···· Pointillé</option>
               </select>
             </div>
+            </div>
+              </div>
+            </div>
+            <div class="cz-pane" data-cz="charts" role="tabpanel">
+              <div class="grid-2-center">
             <div>
               <label class="lbl-mono">Lignes des graphiques</label>
               <select id="chart-line-style-select" onchange="onChartLineStyleChange(this.value)">
@@ -1256,10 +1259,18 @@
               <input type="range" id="chart-intensity-slider" min="50" max="300" step="10" oninput="onChartIntensityChange(this.value)">
               <p class="hint-11">Plus haut = remplissage, lignes et grille plus marqués sur les courbes P&L et le radar de performance.</p>
             </div>
+              </div>
+            </div>
+            <div class="cz-pane" data-cz="mine" role="tabpanel">
+              <div class="cz-mine-hdr">
+                <p class="cz-hint">Enregistre ta personnalisation pour la retrouver en un clic (elle apparaît aussi dans les thèmes ci-dessus).</p>
+                <button class="btn-primary" onclick="saveCurrentThemeAs()">💾 Enregistrer le thème actuel</button>
+              </div>
+              <div id="custom-theme-grid"></div>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
-      </details>
     </div>
 
   </main>

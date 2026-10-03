@@ -241,3 +241,37 @@ select.fb-select.on{background-color:var(--accent-d);border-color:var(--accent);
 .rt-step .rt-go{grid-column:2;justify-self:start;margin-left:0!important;max-width:100%}
 .rt-steps{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .rt-step{grid-template-rows:1fr auto}.rt-step .rt-go{align-self:end}
+
+/* ── Thèmes : « Personnaliser mon thème » (menu déroulant à onglets) ── */
+#theme-preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.cz{margin-top:18px;border:1px solid var(--border2);border-radius:var(--r2);background:var(--bg);overflow:hidden}
+.cz-summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none}
+.cz-summary::-webkit-details-marker{display:none}
+.cz-summary:hover{background:var(--bg3)}
+.cz-ic{width:34px;height:34px;border-radius:var(--r);background:var(--accent-d);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.cz-tt{flex:1;min-width:0;font-size:14.5px;font-weight:600;display:flex;flex-direction:column;gap:2px}
+.cz-tt small{font-size:13px;font-weight:400;color:var(--txt3)}
+.cz-chev{width:9px;height:9px;border-right:2px solid var(--txt3);border-bottom:2px solid var(--txt3);transform:rotate(45deg);margin:0 6px 4px;transition:transform .2s}
+.cz[open] .cz-chev{transform:rotate(-135deg);margin-bottom:-4px}
+.cz-body{border-top:1px solid var(--border);padding:16px 18px 20px;background:var(--bg2)}
+.cz-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);width:fit-content;max-width:100%}
+.cz-tab{background:none;border:none;color:var(--txt2);font:500 13.5px var(--sans);padding:8px 14px;border-radius:var(--r);cursor:pointer;white-space:nowrap}
+.cz-tab:hover{color:var(--txt);background:var(--bg3)}
+.cz-tab.active{background:var(--bg3);color:var(--txt);font-weight:600;box-shadow:inset 0 0 0 1px var(--border2)}
+.cz-pane{display:none}
+.cz-pane.active{display:block;animation:fadeIn .2s ease}
+.cz-hint{font-size:13px;color:var(--txt3);margin:0 0 14px}
+.cz-group{margin-bottom:18px}
+.cz-group:last-child{margin-bottom:0}
+.cz-group-title{font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:10px}
+.cz-mine-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.cz-mine-hdr .cz-hint{margin:0;flex:1;min-width:240px}
+.cz .pad-18{padding:0}
+.btn-sm-danger{color:var(--red)!important;font-size:12.5px!important;padding:6px 12px!important}
+.btn-sm-danger:hover{border-color:var(--red)!important}
+
+/* ── Lueur (option d'Ambiance) : à nouveau active ── */
+body.glow-on .nav-item.active{box-shadow:0 0 18px -2px color-mix(in srgb,var(--accent) 55%,transparent)}
+body.glow-on .kpi-val.pos,body.glow-on .hero-metric-value.pos{text-shadow:0 0 16px color-mix(in srgb,var(--green) 55%,transparent)}
+body.glow-on .kpi-val.neg,body.glow-on .hero-metric-value.neg{text-shadow:0 0 16px color-mix(in srgb,var(--red) 55%,transparent)}
+body.glow-on .panel,body.glow-on .kpi{box-shadow:var(--hairline),0 0 24px -12px color-mix(in srgb,var(--accent) 60%,transparent)}

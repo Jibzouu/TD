@@ -955,3 +955,36 @@ test('scaling : coussin réglé en nombre de pertes, saisi à la main et gardé 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('personnalisation : menu « Personnaliser mon thème » à onglets, chaque réglage s\'applique, thème enregistré visible en tête', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  await goto(page, 'parametres');
+  const css = v => page.evaluate(k => getComputedStyle(document.documentElement).getPropertyValue(k).trim(), v);
+  await page.click('#settings-adv summary');
+  assert.equal(await page.locator('#settings-adv .cz-pane[data-cz="colors"]').isVisible(), true);
+  // Couleur d'accent changée à la main.
+  await page.evaluate(() => onColorPick('--accent', '#ff00aa', true));
+  assert.equal(await css('--accent'), '#ff00aa');
+  // Ambiance : cartes en verre + lueur.
+  await page.click('.cz-tab[data-cz="mood"]');
+  await page.click('.card-style-btn[data-val="glass"]');
+  assert.ok(await page.evaluate(() => document.body.classList.contains('cardstyle-glass')));
+  assert.match(await page.evaluate(() => getComputedStyle(document.querySelector('#themes-card')).backdropFilter || ''), /blur/);
+  await page.check('#glow-toggle');
+  assert.ok(await page.evaluate(() => document.body.classList.contains('glow-on')));
+  // Formes & polices.
+  await page.click('.cz-tab[data-cz="shape"]');
+  await page.click('.shape-preset-btn[data-r="20"]');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#themes-card')).borderTopLeftRadius), (await css('--r3')).replace(/\s/g, ''));
+  await page.selectOption('#font-select', "Georgia,'Times New Roman',serif");
+  assert.match(await page.evaluate(() => getComputedStyle(document.body).fontFamily), /Georgia/);
+  // Mes thèmes : enregistrement → visible dans la grille du haut.
+  await page.click('.cz-tab[data-cz="mine"]');
+  page.once('dialog', d => d.accept('Mon rose'));
+  await page.click('.cz-pane[data-cz="mine"] .btn-primary');
+  assert.match(await page.locator('#theme-preset-grid').innerText(), /Mon rose/);
+  // L'onglet ouvert est mémorisé.
+  assert.equal(await page.evaluate(() => DB.getItem('g_cz_tab')), 'mine');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
