@@ -113,7 +113,7 @@ function rpSave() { if (!RP) return; try { DB.setItem(RP_KEY(), JSON.stringify(O
 function rpNewSession(o) {
   return { symbol: o.symbol, interval: o.interval, source: o.source || 'binance', startTime: o.startTime, cursorTime: o.startTime, cursor: 0,
     startBalance: o.balance, feeRate: o.feeRate, autosave: o.autosave !== false, capture: o.capture !== false, speed: 2,
-    positions: [], orders: [], history: [], lines: [], seq: 0 };
+    positions: [], orders: [], history: [], drawings: [], seq: 0, showHist: true, magnet: true };
 }
 function rpBalance() { return RP.startBalance + RP.history.reduce((s, p) => s + p.realized - p.fees, 0) + RP.positions.reduce((s, p) => s + p.realized - p.fees, 0); }
 function rpEquity() { const c = rpCur(); return rpBalance() + (c ? RP.positions.reduce((s, p) => s + rpOpenPnl(p, c.close), 0) : 0); }
@@ -212,25 +212,55 @@ function rpTicketCalc() {
   const r = rpSizePosition({ side: T.side, entry, sl, tp, balance: rpBalance(), riskMode: T.riskMode, riskValue: +T.riskValue || 0, qty: T.manualQty ? T.qty : null });
   return Object.assign(r, { entry, sl, tp });
 }
-function rpPlaceOrder() {
-  if (!RP) return;
-  const c = rpCur(), r = rpTicketCalc();
-  if (r.error) { showToast(r.error === 'stop' ? 'Place un stop loss : il sert à calculer ta taille et ton R' : r.error === 'side' ? 'Le stop doit être sous l’entrée pour un achat, au-dessus pour une vente' : 'Ordre incomplet', 'error'); return; }
-  const id = 'r' + Date.now().toString(36) + (++RP.seq);
-  const setup = RP_TICKET.setup || '';
-  if (RP_TICKET.type === 'market') {
-    const pos = rpOpenPosition({ id, side: r.side, qty: r.qty, price: c.close, sl: r.sl, tp: r.tp, time: c.time, setup, feeRate: RP.feeRate });
+// Envoi d'un ordre (ticket, graphique, outil position) : taille calculée selon le risque du ticket.
+// o = { side, type: market | limit | stop, entry, sl, tp } — renvoie true si l'ordre est passé.
+function rpSubmit(o) {
+  const c = rpCur(); if (!RP || !c) return false;
+  const entry = o.type === 'market' ? c.close : +o.entry;
+  const r = rpSizePosition({ side: o.side, entry, sl: o.sl, tp: o.tp, balance: rpBalance(), riskMode: RP_TICKET.riskMode, riskValue: +RP_TICKET.riskValue || 0, qty: o.qty });
+  if (r.error) { showToast(r.error === 'stop' ? 'Place un stop loss : il sert à calculer ta taille et ton R' : r.error === 'side' ? 'Le stop doit être sous l’entrée pour un achat, au-dessus pour une vente' : 'Ordre incomplet', 'error'); return false; }
+  if (o.tp != null && !(o.side === 'short' ? o.tp < entry : o.tp > entry)) o.tp = null;
+  const id = 'r' + Date.now().toString(36) + (++RP.seq), setup = RP_TICKET.setup || '';
+  if (o.type === 'market') {
+    const pos = rpOpenPosition({ id, side: r.side, qty: r.qty, price: c.close, sl: o.sl, tp: o.tp, time: c.time, setup, feeRate: RP.feeRate });
     RP.positions.push(pos);
     rpMarker(pos, 'open');
     showToast((r.side === 'long' ? 'Achat ' : 'Vente ') + rpQtyFmt(r.qty) + ' ' + rpBase(RP.symbol) + ' à ' + rpPrice(c.close), 'success');
   } else {
-    const ok = RP_TICKET.type === 'limit' ? (r.side === 'long' ? r.entry < c.close : r.entry > c.close) : (r.side === 'long' ? r.entry > c.close : r.entry < c.close);
-    if (!ok) { showToast(RP_TICKET.type === 'limit' ? 'Un ordre limite d’achat se place sous le prix (de vente : au-dessus)' : 'Un ordre stop d’achat se place au-dessus du prix (de vente : en dessous)', 'error'); return; }
-    RP.orders.push({ id, side: r.side, type: RP_TICKET.type, price: r.entry, qty: r.qty, sl: r.sl, tp: r.tp, setup, created: c.time });
-    showToast('Ordre ' + (RP_TICKET.type === 'limit' ? 'limite' : 'stop') + ' placé à ' + rpPrice(r.entry), 'success');
+    const ok = o.type === 'limit' ? (r.side === 'long' ? entry < c.close : entry > c.close) : (r.side === 'long' ? entry > c.close : entry < c.close);
+    if (!ok) { showToast(o.type === 'limit' ? 'Un ordre limite d’achat se place sous le prix (de vente : au-dessus)' : 'Un ordre stop d’achat se place au-dessus du prix (de vente : en dessous)', 'error'); return false; }
+    RP.orders.push({ id, side: r.side, type: o.type, price: entry, qty: r.qty, sl: o.sl, tp: o.tp, setup, created: c.time });
+    showToast('Ordre ' + (o.type === 'limit' ? 'limite' : 'stop') + ' placé à ' + rpPrice(entry), 'success');
   }
+  rpSave(); rpRefreshUi();
+  return true;
+}
+// Type d'ordre selon le prix voulu : au prix → marché ; achat sous le prix → limite, au-dessus → stop (l'inverse pour une vente).
+function rpTypeFor(side, price) {
+  const c = rpCur(); if (!c) return 'market';
+  if (Math.abs(price - c.close) <= Math.max(rpATR(14) * 0.05, c.close * 1e-5)) return 'market';
+  return (side === 'long') === (price < c.close) ? 'limit' : 'stop';
+}
+// Stop par défaut (1,5 × ATR) et objectif à 2R autour d'un prix d'entrée.
+function rpDefaultBracket(side, entry) {
+  const sgn = side === 'short' ? -1 : 1, dist = rpATR(14) * 1.5 || entry * 0.01;
+  return { sl: rpRound(entry - sgn * dist), tp: rpRound(entry + sgn * dist * 2) };
+}
+// Ordre en un clic (boutons du graphique, menu) : stop / objectif du ticket s'ils vont dans le bon sens, sinon par défaut.
+function rpQuickOrder(side, type, price) {
+  const c = rpCur(); if (!c) return false;
+  const entry = type === 'market' ? c.close : rpRound(price);
+  const r = RP_TICKET.side === side ? rpTicketCalc() : { error: 'x' };
+  const br = !r.error && (side === 'long' ? r.sl < entry : r.sl > entry) ? { sl: r.sl, tp: r.tp } : rpDefaultBracket(side, entry);
+  return rpSubmit({ side, type, entry, sl: br.sl, tp: br.tp });
+}
+function rpPlaceOrder() {
+  if (!RP) return;
+  const r = rpTicketCalc();
+  if (r.error) { showToast(r.error === 'stop' ? 'Place un stop loss : il sert à calculer ta taille et ton R' : r.error === 'side' ? 'Le stop doit être sous l’entrée pour un achat, au-dessus pour une vente' : 'Ordre incomplet', 'error'); return; }
+  if (!rpSubmit({ side: r.side, type: RP_TICKET.type, entry: r.entry, sl: r.sl, tp: r.tp, qty: RP_TICKET.manualQty ? RP_TICKET.qty : null })) return;
   RP_TICKET.sl = ''; RP_TICKET.tp = ''; RP_TICKET.price = '';
-  rpSave(); renderReplayTicket(); rpRefreshUi();
+  renderReplayTicket();
 }
 function rpCancelOrder(id) { RP.orders = RP.orders.filter(o => o.id !== id); rpSave(); rpRefreshUi(); }
 function rpClosePos(id, frac) {
@@ -285,8 +315,7 @@ function rpBuildChart() {
   RP_SERIES.setData(RPC.slice(0, RP.cursor + 1).map(rpChartCandle));
   RP_LINES = { preview: {}, pos: {}, draw: [] };
   rpRedrawMarkers();
-  rpBindChartDrag(el);
-  RP_CHART.subscribeClick(rpOnChartClick);
+  rpdAttach(el);
 }
 let RP_MARKERS = [];
 function rpMarker(p, kind) {
@@ -319,7 +348,6 @@ function rpSyncLines() {
     if (o.sl != null) want.push({ key: o.id + '-sl', price: o.sl, color: k.red, title: 'SL', drag: { kind: 'pos', id: o.id, which: 'sl' } });
     if (o.tp != null) want.push({ key: o.id + '-tp', price: o.tp, color: k.green, title: 'TP', drag: { kind: 'pos', id: o.id, which: 'tp' } });
   });
-  (RP.lines || []).forEach((p, i) => want.push({ key: 'draw-' + i, price: p, color: k.amber, title: '', style: 2, drag: { kind: 'draw', i } }));
   const keep = new Set(want.map(w => w.key));
   Object.keys(RP_LINES.pos).forEach(key => { if (!keep.has(key)) { RP_SERIES.removePriceLine(RP_LINES.pos[key].line); delete RP_LINES.pos[key]; } });
   want.forEach(w => {
@@ -327,31 +355,6 @@ function rpSyncLines() {
     if (RP_LINES.pos[w.key]) RP_LINES.pos[w.key].line.applyOptions(opts);
     else RP_LINES.pos[w.key] = { line: RP_SERIES.createPriceLine(opts) };
     RP_LINES.pos[w.key].w = w;
-  });
-}
-function rpBindChartDrag(el) {
-  let drag = null;
-  const yOf = e => { const r = el.getBoundingClientRect(); return (e.touches ? e.touches[0].clientY : e.clientY) - r.top; };
-  const find = y => Object.values(RP_LINES.pos).filter(x => x.w.drag).find(x => { const py = RP_SERIES.priceToCoordinate(x.w.price); return py != null && Math.abs(py - y) <= 6; });
-  el.addEventListener('mousemove', e => {
-    if (drag) {
-      const price = RP_SERIES.coordinateToPrice(yOf(e));
-      if (price > 0) { drag.w.price = price; drag.line.applyOptions({ price }); rpDragApply(drag.w.drag, price, false); }
-      return;
-    }
-    el.style.cursor = find(yOf(e)) ? 'ns-resize' : (RP_DRAW_MODE ? 'crosshair' : '');
-  });
-  el.addEventListener('mousedown', e => {
-    const hit = find(yOf(e));
-    if (!hit) return;
-    drag = hit; e.preventDefault(); e.stopPropagation();
-    RP_CHART.applyOptions({ handleScroll: false, handleScale: false });
-  }, true);
-  window.addEventListener('mouseup', () => {
-    if (!drag) return;
-    rpDragApply(drag.w.drag, drag.w.price, true);
-    drag = null;
-    RP_CHART && RP_CHART.applyOptions({ handleScroll: true, handleScale: true });
   });
 }
 function rpRound(p) { return +p.toFixed(rpDecimals(p)); }
@@ -363,22 +366,7 @@ function rpDragApply(d, price, done) {
     if (d.which === 'tp') { RP_TICKET.tpMode = 'price'; RP_TICKET.tp = price; }
     if (done) renderReplayTicket(); else renderReplayTicketSummary();
   } else if (d.kind === 'pos' && done) rpSetLevel(d.id, d.which, price);
-  else if (d.kind === 'draw' && done) { RP.lines[d.i] = price; rpSave(); }
 }
-// Outil « ligne horizontale » : un clic sur le graphique pose une ligne ; un clic sur une ligne existante la retire.
-let RP_DRAW_MODE = false;
-function rpToggleDraw() { RP_DRAW_MODE = !RP_DRAW_MODE; rpRefreshControls(); }
-function rpOnChartClick(param) {
-  if (!RP_DRAW_MODE || !param || !param.point) return;
-  const price = RP_SERIES.coordinateToPrice(param.point.y);
-  if (!(price > 0)) return;
-  const near = (RP.lines || []).findIndex(p => Math.abs(RP_SERIES.priceToCoordinate(p) - param.point.y) <= 6);
-  RP.lines = RP.lines || [];
-  if (near > -1) RP.lines.splice(near, 1); else RP.lines.push(rpRound(price));
-  rpSave(); rpSyncLines();
-}
-function rpClearLines() { RP.lines = []; rpSave(); rpSyncLines(); }
-
 // ── Rendu ──
 function rpShowApp(on) {
   const app = document.getElementById('rp-app'), setup = document.getElementById('rp-setup');
@@ -504,8 +492,6 @@ function rpSessionStats() {
 function rpRefreshControls() {
   const play = document.getElementById('rp-play');
   if (play) { play.textContent = RP && RP.playing ? '⏸ Pause' : '▶ Lecture'; play.classList.toggle('on', !!(RP && RP.playing)); }
-  const draw = document.getElementById('rp-draw');
-  if (draw) draw.classList.toggle('on', RP_DRAW_MODE);
 }
 function rpRefreshUi() {
   if (!RP) return;
@@ -550,6 +536,7 @@ function rpRefreshUi() {
   rpRedrawMarkers();
   rpSyncLines();
   renderReplayTicketSummary();
+  rpdRefresh();
 }
 function rpShowTab(id) {
   document.querySelectorAll('#rp-app .rp-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));

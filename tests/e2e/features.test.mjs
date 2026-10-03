@@ -1148,3 +1148,73 @@ test('backtest replay : calendrier de la date de départ (mois, année, jour, he
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('backtest replay : outils de dessin façon TradingView, positions longue / courte et ordres depuis le graphique', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_account: '10000' }, time: NOW });
+  await mockBinance(page);
+  await goto(page, 'replay');
+  await page.evaluate(v => rpSetStart(v), '2026-06-01T09:00');
+  await page.click('text=Lancer le replay');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  const box = await page.locator('#rp-chart').boundingBox();
+  const at = (fx, fy) => [box.x + box.width * fx, box.y + box.height * fy];
+  // Ligne de tendance (glisser-déposer)
+  await page.click('.rp-tool[data-tool=trend]');
+  let [x1, y1] = at(0.2, 0.7), [x2, y2] = at(0.5, 0.3);
+  await page.mouse.move(x1, y1); await page.mouse.down(); await page.mouse.move(x2, y2, { steps: 6 }); await page.mouse.up();
+  // Rectangle (clic, puis clic)
+  await page.click('.rp-tool[data-tool=rect]');
+  [x1, y1] = at(0.3, 0.2); [x2, y2] = at(0.4, 0.3);
+  await page.mouse.click(x1, y1); await page.mouse.move(x2, y2, { steps: 3 }); await page.mouse.click(x2, y2);
+  // Ligne horizontale au raccourci Alt+H
+  await page.keyboard.press('Alt+KeyH');
+  assert.equal(await page.evaluate(() => RPD.tool), 'hline');
+  [x1, y1] = at(0.3, 0.85); await page.mouse.click(x1, y1);
+  let d = await page.evaluate(() => RP.drawings.map(x => x.type));
+  assert.deepEqual(d, ['trend', 'rect', 'hline']);
+  assert.equal(await page.evaluate(() => RPD.tool), 'cursor', 'retour au curseur après un dessin');
+  // Le dessin sélectionné : barre de style (couleur), puis suppression au clavier et annulation.
+  assert.equal(await page.locator('#rp-stylebar').isVisible(), true);
+  await page.click('#rp-stylebar .rp-sw >> nth=1');
+  assert.equal(await page.evaluate(() => RP.drawings[2].color), '#f23645');
+  await page.keyboard.press('Delete');
+  assert.equal(await page.evaluate(() => RP.drawings.length), 2);
+  await page.keyboard.press('Control+KeyZ');
+  assert.equal(await page.evaluate(() => RP.drawings.length), 3);
+  // Déplacer la ligne de tendance (glisser son corps)
+  const before = await page.evaluate(() => RP.drawings[0].pts[0].p);
+  const mid = await page.evaluate(() => { const d = RP.drawings[0], a = rpdXY(d.pts[0]), b = rpdXY(d.pts[1]); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; });
+  await page.mouse.move(box.x + mid.x, box.y + mid.y); await page.mouse.down(); await page.mouse.move(box.x + mid.x, box.y + mid.y + 50, { steps: 5 }); await page.mouse.up();
+  assert.ok(await page.evaluate(() => RP.drawings[0].pts[0].p) < before, 'ligne déplacée vers le bas');
+  // Position longue : stop à 1,5 × ATR, objectif 2R, puis ordre réel depuis l'outil.
+  await page.click('.rp-tool[data-tool=long]');
+  const cur = await page.evaluate(() => { const c = rpCur(); return { x: rpdLX(RP.cursor), y: rpdY(c.close) }; });
+  await page.mouse.click(box.x + cur.x, box.y + cur.y);
+  const pos = await page.evaluate(() => { const d = RP.drawings.at(-1); return { type: d.type, rr: Math.abs(d.tp - d.pts[0].p) / Math.abs(d.pts[0].p - d.sl) }; });
+  assert.equal(pos.type, 'long'); assert.ok(Math.abs(pos.rr - 2) < 0.01, 'RR 2 : ' + pos.rr);
+  await page.click('#rp-stylebar >> text=Inverser');
+  assert.equal(await page.evaluate(() => RP.drawings.at(-1).type), 'short');
+  await page.click('#rp-stylebar >> text=Passer cet ordre');
+  assert.equal(await page.evaluate(() => RP.positions.length + RP.orders.length), 1);
+  // Boutons Vente / Achat du graphique : position au marché avec stop et objectif par défaut.
+  await page.click('#rp-quick .rp-q.buy');
+  const p = await page.evaluate(() => { const p = RP.positions.find(x => x.side === 'long'); return p && { sl: p.sl < p.entry, tp: p.tp > p.entry, risk: p.risk0 }; });
+  assert.ok(p && p.sl && p.tp, 'achat avec stop et objectif');
+  assert.ok(Math.abs(p.risk - 100) < 5, 'risque ≈ 1 % : ' + p.risk);
+  // Clic droit sous le prix : achat limite.
+  const low = await page.evaluate(() => rpdY(rpCur().close - 300));
+  await page.mouse.click(box.x + box.width * 0.4, box.y + low, { button: 'right' });
+  assert.equal(await page.locator('#rp-menu').isVisible(), true);
+  await page.click('#rp-menu >> text=/Acheter limite à/');
+  assert.equal(await page.evaluate(() => RP.orders.some(o => o.type === 'limit' && o.side === 'long')), true);
+  // Les dessins sont gardés avec la séance (rechargement).
+  await page.evaluate(() => DB.flush());
+  await page.reload(); await mockBinance(page);
+  await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'replay');
+  await page.click('#rp-resume >> text=Reprendre');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  assert.deepEqual(await page.evaluate(() => RP.drawings.map(x => x.type)), ['trend', 'rect', 'hline', 'short']);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

@@ -380,3 +380,55 @@ body.glow-on .panel,body.glow-on .kpi{box-shadow:var(--hairline),0 0 24px -12px 
 .rp-dp-tlbl{font-size:13px;color:var(--txt2);margin-right:2px}
 .rp-dp-ok{margin-left:auto;height:32px;padding:0 14px}
 .rp-dp[hidden]{display:none}
+
+/* Replay : outils de dessin et trading sur le graphique (façon TradingView) */
+.rp-chart-card{display:flex;align-items:stretch}
+.rp-tools{flex:none;width:44px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-right:1px solid var(--border);background:var(--bg2);overflow-y:auto;scrollbar-width:none}
+.rp-tools::-webkit-scrollbar{display:none}
+.rp-tool{width:34px;height:28px;flex:none;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--txt2);cursor:pointer}
+.rp-tool:hover{background:var(--bg3);color:var(--txt)}
+.rp-tool.on{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.rp-tools-sep{width:24px;height:1px;background:var(--border);margin:5px 0;flex:none}
+.rp-chart-wrap{position:relative;flex:1;min-width:0}
+#rp-chart[data-cur=cross] canvas{cursor:crosshair!important}
+#rp-chart[data-cur=move] canvas{cursor:move!important}
+#rp-chart[data-cur=grab] canvas{cursor:grab!important}
+#rp-chart[data-cur=ns] canvas{cursor:ns-resize!important}
+#rp-chart[data-cur=ew] canvas{cursor:ew-resize!important}
+.rp-quick{position:absolute;top:8px;left:8px;z-index:5;display:flex;gap:2px;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.rp-q{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:92px;padding:4px 10px;border:0;cursor:pointer;color:#fff;font:600 10.5px var(--sans);letter-spacing:.04em;text-align:left}
+.rp-q b{font:700 13.5px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:0}
+.rp-q.sell{background:#f23645}.rp-q.buy{background:#2962ff;align-items:flex-end;text-align:right}
+.rp-q:hover{filter:brightness(1.1)}
+.rp-stylebar{position:absolute;top:8px;left:212px;z-index:6;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:calc(100% - 300px);padding:5px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.rp-stylebar[hidden],.rp-plus[hidden],.rp-menu[hidden],.rp-text-in[hidden]{display:none}
+.rp-sb-name{font-size:12px;color:var(--txt3);padding:0 4px;white-space:nowrap}
+.rp-sb-colors,.rp-sb-grp{display:flex;gap:3px;align-items:center;padding:0 4px;border-left:1px solid var(--border)}
+.rp-sw{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.rp-sw.on{border-color:var(--txt);box-shadow:0 0 0 1px var(--bg2) inset}
+.rp-sb-btn{min-width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--txt2);cursor:pointer;font-size:15px}
+.rp-sb-btn:hover{background:var(--bg3);color:var(--txt)}
+.rp-sb-btn.on{background:var(--bg3);color:var(--accent)}
+.rp-sb-w{display:block;width:16px;background:currentColor;border-radius:2px}
+.rp-sb-d{display:block;width:18px;border-top:2px solid currentColor}
+.rp-sb-d.d1{border-top-style:dashed}.rp-sb-d.d2{border-top-style:dotted}
+.rp-sb-del:hover{color:var(--red)}
+.rp-sb-order{height:28px;padding:0 10px;font-size:12.5px}
+.rp-stylebar .btn-ghost,.rp-sb-order{white-space:nowrap;flex:none}
+.rp-stylebar .btn-ghost{height:28px;padding:0 9px;font-size:12.5px}
+.rp-plus{position:absolute;z-index:6;width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);background:var(--bg2);color:var(--txt);font:600 15px/1 var(--sans);display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.rp-plus:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rp-menu{position:absolute;z-index:8;min-width:220px;padding:5px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 14px 34px rgba(0,0,0,.4);display:grid}
+.rp-menu-it{display:block;text-align:left;border:0;background:transparent;color:var(--txt);font:13px var(--sans);padding:7px 10px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.rp-menu-it:hover{background:var(--bg3)}
+.rp-menu-it.buy{color:#5b8cff;font-weight:600}.rp-menu-it.sell{color:#f2555a;font-weight:600}.rp-menu-it.del{color:var(--red)}
+.rp-menu-sep{height:1px;background:var(--border);margin:4px 2px}
+.rp-text-in{position:absolute;z-index:7;width:220px;height:30px;background:var(--bg);border:1px solid var(--accent);border-radius:6px;color:var(--txt);font:13.5px var(--sans);padding:0 8px}
+@media (max-width:700px){
+  .rp-chart-card{flex-direction:column}
+  .rp-tools{width:auto;flex-direction:row;overflow-x:auto;padding:4px 6px;border-right:0;border-bottom:1px solid var(--border)}
+  .rp-tools-sep{width:1px;height:22px;margin:0 4px}
+  .rp-stylebar{max-width:calc(100% - 16px);left:8px;top:auto;bottom:34px}
+  .rp-q{min-width:76px;padding:3px 8px}
+  .rp-sb-name{display:none}
+}

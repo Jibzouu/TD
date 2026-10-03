@@ -3,7 +3,9 @@
  "#a78bfa",
  "#eceef2",
  "= 25.0 pertes à 200.00 € au 1er palier",
- "Choisir la date de départ",
  "JetBrains Mono",
+ "Le graphique s'arrête à ta date de départ : les bougies suivantes n'apparaissent qu'au fur et à mesure (Espace = lecture / pause, → = bougie suivante, Maj + → = 10 bougies). Si le stop et l'objectif sont touchés dans la même bougie, le stop est retenu (hypothèse prudente). Sur le graphique : outils de dessin à gauche, boutons Vente / Achat en haut, « + » ou clic droit pour un ordre à un prix précis.",
+ "Passer un ordre à ce prix",
+ "Ton texte… (Entrée)",
  "◐ Graphite"
 ]

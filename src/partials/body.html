@@ -851,7 +851,7 @@
             <button class="btn-ghost" onclick="document.getElementById('rp-file').click()">Utiliser mon fichier de bougies…</button>
             <span id="rp-setup-msg"></span>
           </div>
-          <p class="rp-note">Le graphique s'arrête à ta date de départ : les bougies suivantes n'apparaissent qu'au fur et à mesure (Espace = lecture / pause, → = bougie suivante, Maj + → = 10 bougies). Si le stop et l'objectif sont touchés dans la même bougie, le stop est retenu (hypothèse prudente).</p>
+          <p class="rp-note">Le graphique s'arrête à ta date de départ : les bougies suivantes n'apparaissent qu'au fur et à mesure (Espace = lecture / pause, → = bougie suivante, Maj + → = 10 bougies). Si le stop et l'objectif sont touchés dans la même bougie, le stop est retenu (hypothèse prudente). Sur le graphique : outils de dessin à gauche, boutons Vente / Achat en haut, « + » ou clic droit pour un ordre à un prix précis.</p>
           <details class="rp-help">
             <summary>Où trouver des bougies forex / or / indices gratuitement ?</summary>
             <ul>
@@ -874,13 +874,21 @@
             <button class="btn-ghost" onclick="rpStep(10)" title="10 bougies (Maj + →)">+10</button>
             <select id="rp-speed" class="filter-select" onchange="rpSetSpeed(this.value)" aria-label="Vitesse"></select>
             <select id="rp-tf" class="filter-select" onchange="rpChangeInterval(this.value)" aria-label="Unité de temps"></select>
-            <button class="btn-ghost" id="rp-draw" onclick="rpToggleDraw()" title="Clique sur le graphique pour poser une ligne ; clique sur une ligne pour la retirer">― Ligne</button>
-            <button class="btn-ghost" onclick="rpClearLines()" title="Effacer les lignes">Effacer</button>
             <button class="btn-ghost" onclick="rpEndSession()">Terminer</button>
           </div>
         </div>
         <div class="rp-main">
-          <div class="rp-chart-card"><div id="rp-chart" class="rp-chart"></div></div>
+          <div class="rp-chart-card">
+            <div class="rp-tools" id="rp-tools" role="toolbar" aria-label="Outils de dessin"></div>
+            <div class="rp-chart-wrap">
+              <div id="rp-chart" class="rp-chart"></div>
+              <div class="rp-quick" id="rp-quick"></div>
+              <div class="rp-stylebar" id="rp-stylebar" hidden></div>
+              <button type="button" class="rp-plus" id="rp-plus" hidden onclick="rpdPlusClick(event)" aria-label="Passer un ordre à ce prix">+</button>
+              <div class="rp-menu" id="rp-menu" role="menu" hidden></div>
+              <input type="text" class="rp-text-in" id="rp-text-in" placeholder="Ton texte… (Entrée)" hidden>
+            </div>
+          </div>
           <aside class="rp-side-col">
             <div class="rp-ticket" id="rp-ticket"></div>
             <div class="rp-account" id="rp-account"></div>
