@@ -1884,5 +1884,17 @@
  "Mes modèles": "My templates",
  "Nom du modèle": "Template name",
  "Modèle enregistré": "Template saved",
- "Style par défaut enregistré": "Default style saved"
+ "Style par défaut enregistré": "Default style saved",
+ "Crypto · Binance (sans compte)": "Crypto · Binance (no account)",
+ "Forex et métaux · Twelve Data (clé gratuite)": "Forex & metals · Twelve Data (free key)",
+ "Ajoute ta clé Twelve Data (gratuite) pour charger le forex.": "Add your (free) Twelve Data key to load forex.",
+ "Clé Twelve Data refusée : vérifie-la (ou ton offre).": "Twelve Data key rejected: check it (or your plan).",
+ "Limite gratuite de Twelve Data atteinte (8 requêtes par minute, 800 par jour) : réessaie dans une minute.": "Twelve Data free limit reached (8 requests per minute, 800 per day): try again in a minute.",
+ "Impossible de joindre Twelve Data (connexion internet ?). Tu peux aussi importer un fichier de bougies.": "Can't reach Twelve Data (internet connection?). You can also import a candle file.",
+ "Colle ta clé Twelve Data (gratuite) pour charger le forex": "Paste your (free) Twelve Data key to load forex",
+ "Forex et métaux en direct": "Live forex and metals",
+ "— via Twelve Data. Crée ta clé gratuite (1 minute, sans carte bancaire) et colle-la ici une seule fois : elle reste dans ton navigateur. L'offre gratuite donne 800 requêtes par jour (≈ 1 requête pour 1 000 bougies) et l'historique en 1 minute depuis 2019.": "— via Twelve Data. Create your free key (1 minute, no credit card) and paste it here once: it stays in your browser. The free plan gives 800 requests per day (≈ 1 request per 1,000 candles) and 1-minute history since 2019.",
+ "Ta clé API Twelve Data": "Your Twelve Data API key",
+ "Créer ma clé gratuite ↗": "Get my free key ↗",
+ "crypto en direct depuis Binance (sans compte), forex et or via Twelve Data (clé gratuite) — ou ton propre fichier de bougies": "live crypto from Binance (no account), forex and gold via Twelve Data (free key) — or your own candle file"
 }

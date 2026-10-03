@@ -1344,3 +1344,59 @@ test('backtest replay : panneaux d\'indicateurs (RSI, MACD) modifiables, 2 graph
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+// Twelve Data simulé : EUR/USD, marché fermé le week-end, réponses au format de /time_series.
+async function mockTwelve(page, calls) {
+  await page.route(/api\.twelvedata\.com\/time_series/, route => {
+    const u = new URL(route.request().url());
+    calls && calls.push(Object.fromEntries(u.searchParams));
+    if (u.searchParams.get('apikey') !== 'cle-test') return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ code: 401, message: 'invalid key', status: 'error' }) });
+    const sec = { '1min': 60, '5min': 300, '15min': 900, '30min': 1800, '1h': 3600, '4h': 14400, '1day': 86400 }[u.searchParams.get('interval')];
+    const t0 = Date.parse(u.searchParams.get('start_date').replace(' ', 'T') + 'Z') / 1000, t1 = Date.parse(u.searchParams.get('end_date').replace(' ', 'T') + 'Z') / 1000;
+    const values = [];
+    for (let t = Math.ceil(t0 / sec) * sec; t <= t1 && values.length < 5000; t += sec) {
+      const d = new Date(t * 1000).getUTCDay(); if (d === 0 || d === 6) continue;
+      const o = 1.08 + 0.002 * Math.sin(t / 7000), c = 1.08 + 0.002 * Math.sin((t + sec) / 7000);
+      values.push({ datetime: new Date(t * 1000).toISOString().slice(0, 19).replace('T', ' '), open: o.toFixed(5), high: (Math.max(o, c) + 0.0002).toFixed(5), low: (Math.min(o, c) - 0.0002).toFixed(5), close: c.toFixed(5) });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(values.length ? { meta: { symbol: u.searchParams.get('symbol') }, values, status: 'ok' } : { code: 400, message: 'No data is available on the specified dates.', status: 'error' }) });
+  });
+}
+
+test('backtest replay : forex en direct via Twelve Data (clé gratuite), EUR/USD sans fichier', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_account: '10000' }, time: NOW });
+  const calls = [];
+  await mockTwelve(page, calls);
+  await goto(page, 'replay');
+  // EUR/USD dans la liste ; l'encart de clé apparaît, frais adaptés au forex.
+  await page.selectOption('#rp-symbol', 'EURUSD');
+  assert.equal(await page.locator('#rp-td').isVisible(), true);
+  assert.equal(await page.inputValue('#rp-fee'), '0.002');
+  await page.evaluate(v => rpSetStart(v), '2026-06-03T10:00');
+  // Sans clé : message clair, pas d'appel.
+  await page.click('text=Lancer le replay');
+  assert.equal(calls.length, 0);
+  // Mauvaise clé : erreur lisible.
+  await page.fill('#rp-td-key', 'mauvaise');
+  await page.click('text=Lancer le replay');
+  await page.waitForSelector('#rp-setup-msg .tone-red');
+  assert.match(await page.locator('#rp-setup-msg').innerText(), /Clé Twelve Data refusée/);
+  // Bonne clé : le marché se charge comme pour la crypto.
+  await page.fill('#rp-td-key', 'cle-test');
+  await page.click('text=Lancer le replay');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  assert.match(await page.locator('#rp-info').innerText(), /EUR\/USD\s+M5[\s\S]*1,0\d{4}/);
+  assert.ok(await page.evaluate(() => RPC[RP.cursor].time < Date.parse('2026-06-03T10:00') / 1000), 'pas de futur');
+  const last = calls.at(-1);
+  assert.equal(last.symbol, 'EUR/USD'); assert.equal(last.interval, '5min'); assert.equal(last.timezone, 'UTC');
+  assert.equal(await page.evaluate(() => DB.getItem('g_td_key')), 'cle-test');
+  // Lecture longue : la suite se charge toute seule (week-end enjambé).
+  const n0 = await page.evaluate(() => RPC.length);
+  await page.evaluate(async () => { for (let i = 0; i < 12; i++) { rpStep(100); await new Promise(r => setTimeout(r, 30)); } });
+  await page.waitForFunction(n => RPC.length > n, n0);
+  // Position en lots et pips.
+  await page.click('#rp-ticket >> text=proposer');
+  assert.match(await page.locator('#rp-ticket-sum').innerText(), /lot[\s\S]*pips/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

@@ -602,3 +602,11 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rp-bar{flex-wrap:wrap;row-gap:2px}
 .rp-tb{overflow:visible;flex-wrap:nowrap}
 .rp-ctrls{margin-left:auto}
+/* Replay : clé Twelve Data (forex) */
+.rp-td{margin:0 0 14px;padding:12px 14px;border:1px solid color-mix(in srgb,#2962ff 35%,var(--border));background:color-mix(in srgb,#2962ff 7%,transparent);border-radius:var(--r)}
+.rp-td[hidden]{display:none}
+.rp-td-txt{font-size:13px;color:var(--txt2);line-height:1.5;margin-bottom:10px}
+.rp-td-txt b{color:var(--txt)}
+.rp-td-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rp-td-row input{flex:1;min-width:220px;margin:0}
+.rp-td-row .btn-ghost{height:36px;display:inline-flex;align-items:center;padding:0 12px;text-decoration:none}

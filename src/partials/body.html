@@ -829,7 +829,7 @@
       <section id="rp-setup">
         <div class="rp-resume panel mb-20" id="rp-resume" hidden></div>
         <div class="panel">
-          <div class="panel-hdr"><span>Nouvelle séance<small class="panel-sub">crypto en direct depuis Binance (gratuit, sans compte) — ou ton propre fichier de bougies</small></span></div>
+          <div class="panel-hdr"><span>Nouvelle séance<small class="panel-sub">crypto en direct depuis Binance (sans compte), forex et or via Twelve Data (clé gratuite) — ou ton propre fichier de bougies</small></span></div>
           <div class="rp-setup-grid">
             <label class="field"><span class="rp-lbl">Paire</span><select id="rp-symbol" class="filter-select" onchange="rpOnSymbolChange(this)"></select><input id="rp-symbol-custom" class="rp-custom" placeholder="ex. PEPEUSDT" hidden></label>
             <label class="field"><span class="rp-lbl">Unité de temps</span><select id="rp-interval" class="filter-select"></select></label>
@@ -840,6 +840,13 @@
             </div>
             <label class="field"><span class="rp-lbl">Solde de départ ($)</span><input type="number" id="rp-balance" min="1" step="100"></label>
             <label class="field"><span class="rp-lbl">Frais par ordre (%)</span><input type="number" id="rp-fee" min="0" step="0.01" value="0.04"></label>
+          </div>
+          <div class="rp-td" id="rp-td" hidden>
+            <div class="rp-td-txt"><b>Forex et métaux en direct</b> — via Twelve Data. Crée ta clé gratuite (1 minute, sans carte bancaire) et colle-la ici une seule fois : elle reste dans ton navigateur. L'offre gratuite donne 800 requêtes par jour (≈ 1 requête pour 1 000 bougies) et l'historique en 1 minute depuis 2019.</div>
+            <div class="rp-td-row">
+              <input type="password" id="rp-td-key" class="rp-custom" placeholder="Ta clé API Twelve Data" autocomplete="off" spellcheck="false" onchange="rpSaveTDKey(this.value)">
+              <a class="btn-ghost" href="https://twelvedata.com/register" target="_blank" rel="noopener">Créer ma clé gratuite ↗</a>
+            </div>
           </div>
           <div class="rp-setup-opts">
             <label class="check-label"><input type="checkbox" id="rp-autosave" checked> Enregistrer chaque trade dans le journal</label>

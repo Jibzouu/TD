@@ -3,14 +3,17 @@
 // lecture pas à pas ou automatique, ticket d'ordre avec calculateur de position (risque % ou montant → quantité),
 // stop / objectif déplaçables sur le graphique, positions, ordres en attente, historique et statistiques de séance.
 // Chaque trade clôturé part dans le journal (compte ouvert) avec son R exact, ses frais, son MAE / MFE et une capture.
-// Données : crypto via l'API publique de Binance (gratuite, sans clé) ; ou un fichier de bougies importé (CSV).
+// Données : crypto via l'API publique de Binance (gratuite, sans clé) ; forex et métaux via Twelve Data (clé gratuite
+// propre à chaque utilisateur, gardée dans son navigateur) ; ou un fichier de bougies importé (CSV).
 const RP_KEY = () => JP + 'replay';
 const RP_HOSTS = ['https://data-api.binance.vision', 'https://api.binance.com'];
 const RP_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'LINKUSDT'];
 const RP_TF = [['1m', 60, 'M1'], ['3m', 180, 'M3'], ['5m', 300, 'M5'], ['15m', 900, 'M15'], ['30m', 1800, 'M30'], ['1h', 3600, 'H1'], ['4h', 14400, 'H4'], ['1d', 86400, 'D1']];
 const RP_SPEEDS = [1, 2, 4, 8, 16];
 const RP_HISTORY = 300, RP_BATCH = 1000;
-const RP_FIAT = ['EUR', 'GBP', 'AUD', 'NZD', 'USD', 'CHF', 'CAD', 'JPY'];   // forex : quantité aussi affichée en lots (100 000)
+const RP_FIAT = ['EUR', 'GBP', 'AUD', 'NZD', 'USD', 'CHF', 'CAD', 'JPY'];
+const RP_FX = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURGBP', 'EURJPY', 'GBPJPY', 'EURCHF', 'AUDJPY', 'XAUUSD', 'XAGUSD'];
+const RP_TD_TF = { '1m': '1min', '5m': '5min', '15m': '15min', '30m': '30min', '1h': '1h', '4h': '4h', '1d': '1day' };   // forex : quantité aussi affichée en lots (100 000)
 
 let RP = null;          // séance en cours (état sauvegardé)
 let RPC = [];           // bougies chargées (temps UTC en secondes)
@@ -21,7 +24,9 @@ function rpTf(id) { return RP_TF.find(t => t[0] === id) || RP_TF[2]; }
 // Libellé court façon TradingView : 1m 5m 15m 1h 4h 1D.
 function rpTfShort(t) { return t[0] === '1d' ? '1D' : t[0]; }
 function rpTfSec(id) { return rpTf(id)[1]; }
-function rpAsset(sym) { const m = /^(.+?)(USDT|USDC|BUSD|FDUSD|BTC|ETH|EUR|USD)$/.exec(sym || ''); return m ? m[1] + '/' + m[2] : (sym || '—'); }
+// Paire forex / métal (Twelve Data) : 6 lettres, deux devises (ou or / argent contre une devise).
+function rpIsTD(sym) { const s = String(sym || ''); return /^[A-Z]{6}$/.test(s) && (RP_FIAT.includes(s.slice(0, 3)) || /^X(AU|AG)$/.test(s.slice(0, 3))) && RP_FIAT.includes(s.slice(3)); }
+function rpAsset(sym) { if (rpIsTD(sym)) return sym.slice(0, 3) + '/' + sym.slice(3); const m = /^(.+?)(USDT|USDC|BUSD|FDUSD|BTC|ETH|EUR|USD)$/.exec(sym || ''); return m ? m[1] + '/' + m[2] : (sym || '—'); }
 function rpIsFx() { const [b, q] = rpAsset(RP && RP.symbol).split('/'); return RP_FIAT.includes(b) && RP_FIAT.includes(q); }
 function rpPip() { return /JPY$/.test(RP.symbol) ? 0.01 : 0.0001; }
 function rpBase(sym) { return rpAsset(sym).split('/')[0]; }
@@ -37,6 +42,7 @@ function rpDateLabel(t) { const d = new Date(t * 1000); return d.toLocaleDateStr
 
 // ── Données ──
 async function rpFetchKlines(symbol, interval, params) {
+  if (rpIsTD(symbol)) return rpFetchTD(symbol, interval, params);
   const qs = Object.entries(Object.assign({ symbol, interval, limit: RP_BATCH }, params)).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
   let lastErr = null;
   for (const host of RP_HOSTS) {
@@ -50,6 +56,40 @@ async function rpFetchKlines(symbol, interval, params) {
   }
   throw lastErr || new Error('indisponible');
 }
+// Forex / métaux : Twelve Data (/time_series). Mêmes paramètres que Binance : { endTime, limit } = les bougies avant
+// une date, { startTime, limit } = les suivantes. Fenêtres de dates assez larges pour enjamber les week-ends.
+// Unité absente chez Twelve Data (3m) : bougies 1 minute regroupées. Résultat marqué .end quand il n'y a plus de suite.
+function rpTDKey() { return String(DB.getItem('g_td_key') || '').trim(); }
+async function rpFetchTD(symbol, interval, params) {
+  const key = rpTDKey();
+  if (!key) throw new Error(tr('Ajoute ta clé Twelve Data (gratuite) pour charger le forex.'));
+  const native = RP_TD_TF[interval], tf = rpTfSec(interval), qsec = native ? tf : 60, limit = params.limit || RP_BATCH;
+  const fmt = ms => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+  let startMs, endMs;
+  if (params.endTime != null) { endMs = params.endTime; startMs = endMs - limit * tf * 2200 - 3 * 86400000; }
+  else { startMs = params.startTime; endMs = Math.min(Date.now(), startMs + limit * tf * 1600 + 2 * 86400000); }
+  const span = 4900 * qsec * 1000;   // 5 000 bougies au plus par requête
+  if (endMs - startMs > span) { if (params.endTime != null) startMs = endMs - span; else endMs = startMs + span; }
+  const url = 'https://api.twelvedata.com/time_series?symbol=' + encodeURIComponent(rpAsset(symbol)) + '&interval=' + (native || '1min')
+    + '&start_date=' + encodeURIComponent(fmt(startMs)) + '&end_date=' + encodeURIComponent(fmt(endMs)) + '&timezone=UTC&order=ASC&outputsize=5000&apikey=' + encodeURIComponent(key);
+  const r = await fetch(url);
+  const j = await r.json();
+  let bars = [];
+  if (j.status === 'error') {
+    if (j.code === 401 || j.code === 403) throw new Error(tr('Clé Twelve Data refusée : vérifie-la (ou ton offre).'));
+    if (j.code === 429) throw new Error(tr('Limite gratuite de Twelve Data atteinte (8 requêtes par minute, 800 par jour) : réessaie dans une minute.'));
+    if (!/no data/i.test(j.message || '')) throw new Error('Twelve Data : ' + (j.message || 'erreur'));
+  } else bars = (j.values || []).map(v => ({ time: Math.floor(Date.parse(v.datetime.length > 10 ? v.datetime.replace(' ', 'T') + 'Z' : v.datetime + 'T00:00:00Z') / 1000), open: +v.open, high: +v.high, low: +v.low, close: +v.close, volume: +(v.volume || 0) }))
+    .filter(c => isFinite(c.time) && c.open > 0).sort((a, b) => a.time - b.time);
+  if (!native) bars = rpResample(bars, tf);
+  let out;
+  if (params.endTime != null) out = bars.filter(c => c.time * 1000 <= params.endTime).slice(-limit);
+  else out = bars.filter(c => c.time * 1000 >= params.startTime).slice(0, limit);
+  out.end = params.endTime == null && out.length < limit && endMs >= Date.now() - tf * 1000;
+  return out;
+}
+function rpNoMore(arr) { return arr.end != null ? arr.end : arr.length < RP_BATCH; }
+
 // Fichier de bougies (TradingView, MetaTrader, export générique) : temps + open / high / low / close.
 function rpParseCandleFile(text) {
   const rows = parseCSVGeneric(text);
@@ -138,7 +178,7 @@ async function rpStart(fromSaved) {
       RPC = hist.concat(fut.filter(c => !hist.length || c.time > hist[hist.length - 1].time));
       RP.cursor = Math.max(0, hist.length - 1 + (fromSaved ? 1 : 0));
       if (RP.cursor >= RPC.length) RP.cursor = RPC.length - 1;
-      RP_END = fut.length < RP_BATCH;
+      RP_END = rpNoMore(fut);
     }
     RP_LOADING = false;
     rpSave();
@@ -147,13 +187,13 @@ async function rpStart(fromSaved) {
     renderReplay();
   } catch (e) {
     RP_LOADING = false;
-    if (msg) mount(msg, html`<span class="tone-red">⚠️ ${e && e.message ? (/fetch|network|Failed/i.test(e.message) ? 'Impossible de joindre Binance (connexion internet ?). Tu peux aussi importer un fichier de bougies.' : e.message) : 'Chargement impossible'}</span>`);
+    if (msg) mount(msg, html`<span class="tone-red">⚠️ ${e && e.message ? (/fetch|network|Failed/i.test(e.message) ? (RP && RP.source === 'twelve' ? 'Impossible de joindre Twelve Data (connexion internet ?). Tu peux aussi importer un fichier de bougies.' : 'Impossible de joindre Binance (connexion internet ?). Tu peux aussi importer un fichier de bougies.') : e.message) : 'Chargement impossible'}</span>`);
     rpShowApp(false);
   }
 }
 // Charge la suite quand on approche du bout des bougies.
 async function rpEnsureAhead() {
-  if (RP_LOADING || RP_END || !RP || RP.source !== 'binance') return;
+  if (RP_LOADING || RP_END || !RP || RP.source === 'file') return;
   if (RP.cursor < RPC.length - 150) return;
   RP_LOADING = true;
   try {
@@ -161,7 +201,7 @@ async function rpEnsureAhead() {
     const more = await rpFetchKlines(RP.symbol, RP.interval, { startTime: (last.time + 1) * 1000, limit: RP_BATCH });
     const add = more.filter(c => c.time > last.time);
     RPC = RPC.concat(add);
-    if (more.length < RP_BATCH) RP_END = true;
+    if (rpNoMore(more)) RP_END = true;
   } catch (e) { /* nouvel essai au pas suivant */ }
   RP_LOADING = false;
 }
@@ -359,7 +399,10 @@ function renderReplaySetup() {
       <div class="rp-resume-act"><button class="btn-primary" onclick="rpResume()">Reprendre</button><button class="btn-ghost" onclick="rpDiscard()">Abandonner</button></div>`);
   }
   const sym = document.getElementById('rp-symbol');
-  if (sym && !sym.options.length) mount(sym, html`${RP_SYMBOLS.map(s => html`<option value="${s}">${rpAsset(s)}</option>`)}<option value="__custom">Autre paire…</option>`);
+  if (sym && !sym.options.length) mount(sym, html`<optgroup label="${tr('Crypto · Binance (sans compte)')}">${RP_SYMBOLS.map(s => html`<option value="${s}">${rpAsset(s)}</option>`)}</optgroup>
+    <optgroup label="${tr('Forex et métaux · Twelve Data (clé gratuite)')}">${RP_FX.map(s => html`<option value="${s}">${rpAsset(s)}</option>`)}</optgroup><option value="__custom">Autre paire…</option>`);
+  const key = document.getElementById('rp-td-key'); if (key && !key.value) key.value = rpTDKey();
+  if (sym) rpOnSymbolChange(sym, true);
   const tf = document.getElementById('rp-interval');
   if (tf && !tf.options.length) { mount(tf, html`${RP_TF.map(t => html`<option value="${t[0]}">${t[2]}</option>`)}`); tf.value = '5m'; }
   const st = document.getElementById('rp-start');
@@ -368,10 +411,16 @@ function renderReplaySetup() {
   const bal = document.getElementById('rp-balance');
   if (bal && !bal.value) bal.value = accountSize > 0 ? accountSize : 10000;
 }
-function rpOnSymbolChange(sel) {
+function rpOnSymbolChange(sel, quiet) {
   const c = document.getElementById('rp-symbol-custom');
-  if (c) { c.hidden = sel.value !== '__custom'; if (!c.hidden) c.focus(); }
+  if (c) { c.hidden = sel.value !== '__custom'; if (!c.hidden && !quiet) c.focus(); }
+  const fx = rpIsTD(sel.value), box = document.getElementById('rp-td');
+  if (box) box.hidden = !fx;
+  // Frais par défaut adaptés : 0,04 % (crypto) / 0,002 % (forex, l'essentiel du coût est dans l'écart).
+  const fee = document.getElementById('rp-fee');
+  if (fee && !quiet) { if (fx && fee.value === '0.04') fee.value = '0.002'; else if (!fx && fee.value === '0.002') fee.value = '0.04'; }
 }
+function rpSaveTDKey(v) { try { DB.setItem('g_td_key', String(v || '').trim()); } catch (e) {} }
 function rpLaunch() {
   const symSel = document.getElementById('rp-symbol').value;
   const symbol = symSel === '__custom' ? String(document.getElementById('rp-symbol-custom').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '') : symSel;
@@ -382,7 +431,12 @@ function rpLaunch() {
   if (!symbol) { showToast('Choisis une paire', 'error'); return; }
   if (isNaN(start) || start.getTime() > Date.now() - rpTfSec(interval) * 1000) { showToast('Choisis une date de départ dans le passé', 'error'); return; }
   if (!(balance > 0)) { showToast('Indique un solde de départ', 'error'); return; }
-  RP = rpNewSession({ symbol, interval, startTime: Math.floor(start.getTime() / 1000), balance, feeRate: fee / 100,
+  const td = rpIsTD(symbol);
+  if (td) {
+    const k = document.getElementById('rp-td-key'); if (k) rpSaveTDKey(k.value);
+    if (!rpTDKey()) { showToast('Colle ta clé Twelve Data (gratuite) pour charger le forex', 'error'); if (k) k.focus(); return; }
+  }
+  RP = rpNewSession({ symbol, interval, source: td ? 'twelve' : 'binance', startTime: Math.floor(start.getTime() / 1000), balance, feeRate: fee / 100,
     autosave: document.getElementById('rp-autosave').checked, capture: document.getElementById('rp-capture').checked });
   RP_MARKERS = [];
   rpStart(false);
@@ -438,7 +492,7 @@ async function rpChangeInterval(v) {
     try {
       const hist = (await rpFetchKlines(RP.symbol, v, { endTime: nowEnd * 1000 - 1, limit: RP_HISTORY })).filter(c => c.time + newSec <= nowEnd);
       const fut = await rpFetchKlines(RP.symbol, v, { startTime: (hist.length ? hist[hist.length - 1].time + newSec : nowEnd) * 1000, limit: RP_BATCH });
-      RPC = hist.concat(fut); RP.cursor = Math.max(0, hist.length - 1); RP_END = fut.length < RP_BATCH;
+      RPC = hist.concat(fut); RP.cursor = Math.max(0, hist.length - 1); RP_END = rpNoMore(fut);
     } catch (e) { showToast('Changement d’unité de temps impossible (connexion)', 'error'); return; }
   }
   rpSave(); rpBuildChart(); rpRefreshUi();
