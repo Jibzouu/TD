@@ -15,10 +15,11 @@ const RP_FIAT = ['EUR', 'GBP', 'AUD', 'NZD', 'USD', 'CHF', 'CAD', 'JPY'];   // f
 let RP = null;          // séance en cours (état sauvegardé)
 let RPC = [];           // bougies chargées (temps UTC en secondes)
 let RP_CHART = null, RP_SERIES = null, RP_TIMER = null, RP_LOADING = false, RP_END = false, RP_FILE = null;
-let RP_LINES = { preview: {}, pos: {}, draw: [] };
 let RP_TICKET = { side: 'long', type: 'market', price: '', sl: '', tp: '', slMode: 'price', tpMode: 'price', riskMode: 'pct', riskValue: 1, manualQty: false, qty: '', setup: '' };
 
 function rpTf(id) { return RP_TF.find(t => t[0] === id) || RP_TF[2]; }
+// Libellé court façon TradingView : 1m 5m 15m 1h 4h 1D.
+function rpTfShort(t) { return t[0] === '1d' ? '1D' : t[0]; }
 function rpTfSec(id) { return rpTf(id)[1]; }
 function rpAsset(sym) { const m = /^(.+?)(USDT|USDC|BUSD|FDUSD|BTC|ETH|EUR|USD)$/.exec(sym || ''); return m ? m[1] + '/' + m[2] : (sym || '—'); }
 function rpIsFx() { const [b, q] = rpAsset(RP && RP.symbol).split('/'); return RP_FIAT.includes(b) && RP_FIAT.includes(q); }
@@ -173,7 +174,7 @@ function rpStep(n) {
     RP.cursor++;
     const c = RPC[RP.cursor];
     const events = rpStepCandle(RP, c, { feeRate: RP.feeRate });
-    if (RP_SERIES) RP_SERIES.update(rpChartCandle(c));
+    rpcPush(c);
     events.forEach(ev => {
       if (ev.type === 'fill') rpMarker(ev.pos, 'open');
       if (ev.type === 'close') rpOnClosed(ev.pos);
@@ -302,20 +303,11 @@ function rpBuildChart() {
   if (!el || typeof LightweightCharts === 'undefined') return;
   if (RP_CHART) { RP_CHART.remove(); RP_CHART = null; }
   const k = rpThemeColors();
-  RP_CHART = LightweightCharts.createChart(el, {
-    autoSize: true,
-    layout: { background: { type: 'solid', color: k.bg }, textColor: k.txt, fontFamily: k.font, attributionLogo: true },
-    grid: { vertLines: { color: k.grid }, horzLines: { color: k.grid } },
-    rightPriceScale: { borderColor: k.grid }, timeScale: { borderColor: k.grid, timeVisible: true, secondsVisible: false, rightOffset: 8 },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    // Langue du journal (et non celle du navigateur, parfois invalide) ; prix au format du journal.
-    localization: { locale: UI_LOCALE, priceFormatter: p => rpPrice(p) }
-  });
-  RP_SERIES = RP_CHART.addCandlestickSeries({ upColor: k.green, downColor: k.red, borderUpColor: k.green, borderDownColor: k.red, wickUpColor: k.green, wickDownColor: k.red });
-  RP_SERIES.setData(RPC.slice(0, RP.cursor + 1).map(rpChartCandle));
-  RP_LINES = { preview: {}, pos: {}, draw: [] };
+  RP_CHART = LightweightCharts.createChart(el, rpcChartOptions(k));
+  rpcBuild(k);
   rpRedrawMarkers();
   rpdAttach(el);
+  rpcAttach();
 }
 let RP_MARKERS = [];
 function rpMarker(p, kind) {
@@ -327,36 +319,8 @@ function rpMarker(p, kind) {
   rpRedrawMarkers();
 }
 function rpRedrawMarkers() { if (!RP_SERIES) return; const cur = rpCur(); const lim = cur ? rpLocalShift(cur.time) : Infinity; RP_SERIES.setMarkers(RP_MARKERS.filter(m => m.time <= lim).sort((a, b) => a.time - b.time)); }
-// Lignes de prix : aperçu du ticket (entrée / stop / objectif) et niveaux des positions et ordres, déplaçables à la souris.
-function rpSyncLines() {
-  if (!RP_SERIES) return;
-  const k = rpThemeColors();
-  const want = [];
-  const r = rpTicketCalc();
-  if (!r.error || r.error === 'stop') {
-    if (RP_TICKET.type !== 'market' && r.entry) want.push({ key: 'pv-entry', price: r.entry, color: k.accent, title: 'Entrée', drag: { kind: 'ticket', which: 'price' } });
-    if (r.sl) want.push({ key: 'pv-sl', price: r.sl, color: k.red, title: 'SL ' + (r.risk ? '−' + rpMoney(r.risk, 0) : ''), drag: { kind: 'ticket', which: 'sl' } });
-    if (r.tp) want.push({ key: 'pv-tp', price: r.tp, color: k.green, title: 'TP ' + (r.reward ? '+' + rpMoney(r.reward, 0) : ''), drag: { kind: 'ticket', which: 'tp' } });
-  }
-  RP.positions.forEach(p => {
-    want.push({ key: p.id + '-e', price: p.entry, color: k.txt, title: (p.side === 'short' ? 'Vente ' : 'Achat ') + rpQtyFmt(p.qty), style: 0 });
-    if (p.sl != null) want.push({ key: p.id + '-sl', price: p.sl, color: k.red, title: 'SL', drag: { kind: 'pos', id: p.id, which: 'sl' } });
-    if (p.tp != null) want.push({ key: p.id + '-tp', price: p.tp, color: k.green, title: 'TP', drag: { kind: 'pos', id: p.id, which: 'tp' } });
-  });
-  RP.orders.forEach(o => {
-    want.push({ key: o.id + '-o', price: o.price, color: k.accent, title: (o.type === 'limit' ? 'Limite ' : 'Stop ') + (o.side === 'short' ? 'vente' : 'achat'), drag: { kind: 'pos', id: o.id, which: 'entry' } });
-    if (o.sl != null) want.push({ key: o.id + '-sl', price: o.sl, color: k.red, title: 'SL', drag: { kind: 'pos', id: o.id, which: 'sl' } });
-    if (o.tp != null) want.push({ key: o.id + '-tp', price: o.tp, color: k.green, title: 'TP', drag: { kind: 'pos', id: o.id, which: 'tp' } });
-  });
-  const keep = new Set(want.map(w => w.key));
-  Object.keys(RP_LINES.pos).forEach(key => { if (!keep.has(key)) { RP_SERIES.removePriceLine(RP_LINES.pos[key].line); delete RP_LINES.pos[key]; } });
-  want.forEach(w => {
-    const opts = { price: w.price, color: w.color, lineWidth: 1, lineStyle: w.style ?? (w.drag ? 2 : 0), axisLabelVisible: true, title: tr(w.title) };
-    if (RP_LINES.pos[w.key]) RP_LINES.pos[w.key].line.applyOptions(opts);
-    else RP_LINES.pos[w.key] = { line: RP_SERIES.createPriceLine(opts) };
-    RP_LINES.pos[w.key].w = w;
-  });
-}
+// Lignes d'ordres (aperçu du ticket, positions, ordres en attente) : dessinées par la couche du graphique (32-replay-draw.js).
+function rpSyncLines() { if (RP_CHART && typeof rpdRefresh === 'function') rpdRefresh(); }
 function rpRound(p) { return +p.toFixed(rpDecimals(p)); }
 function rpDragApply(d, price, done) {
   price = rpRound(price);
@@ -498,8 +462,8 @@ function rpRefreshUi() {
   const c = rpCur();
   const info = document.getElementById('rp-info');
   if (info && c) mount(info, html`<b>${rpAsset(RP.symbol)}</b> <span class="rp-chip">${rpTf(RP.interval)[2]}</span> <span class="rp-date">${rpDateLabel(c.time)}</span> <span class="rp-last tone-${raw(c.close >= c.open ? 'green' : 'red')}">${rpPrice(c.close)}</span>`);
-  const tfSel = document.getElementById('rp-tf'); if (tfSel && !tfSel.options.length) mount(tfSel, html`${RP_TF.map(t => html`<option value="${t[0]}">${t[2]}</option>`)}`);
-  if (tfSel) tfSel.value = RP.interval;
+  const tfs = document.getElementById('rp-tfs');
+  if (tfs) mount(tfs, html`${RP_TF.map(t => html`<button type="button" class="rp-tf${raw(t[0] === RP.interval ? ' on' : '')}" aria-pressed="${t[0] === RP.interval ? 'true' : 'false'}" onclick="${raw("rpChangeInterval('" + t[0] + "')")}">${rpTfShort(t)}</button>`)}`);
   const sp = document.getElementById('rp-speed'); if (sp && !sp.options.length) mount(sp, html`${RP_SPEEDS.map(s => html`<option value="${s}">${s} bougie${s > 1 ? 's' : ''}/s</option>`)}`);
   if (sp) sp.value = RP.speed || 2;
   rpRefreshControls();
@@ -534,9 +498,9 @@ function rpRefreshUi() {
   document.querySelectorAll('#rp-ticket .rp-side b').forEach(b => { b.textContent = c ? rpPrice(c.close) : '—'; });
   const cnt = document.getElementById('trade-total-count'); if (cnt) cnt.textContent = trades.length;
   rpRedrawMarkers();
-  rpSyncLines();
   renderReplayTicketSummary();
   rpdRefresh();
+  rpcLegend();
 }
 function rpShowTab(id) {
   document.querySelectorAll('#rp-app .rp-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
@@ -572,8 +536,8 @@ function renderReplayTicket() {
   const setups = typeof knownSetups === 'function' ? knownSetups() : [];
   mount(el, html`
     <div class="rp-sides">
-      <button class="rp-side buy${raw(T.side === 'long' ? ' on' : '')}" onclick="rpTicketSet('side','long')"><span>Achat</span><b>${c ? rpPrice(c.close) : '—'}</b></button>
       <button class="rp-side sell${raw(T.side === 'short' ? ' on' : '')}" onclick="rpTicketSet('side','short')"><span>Vente</span><b>${c ? rpPrice(c.close) : '—'}</b></button>
+      <button class="rp-side buy${raw(T.side === 'long' ? ' on' : '')}" onclick="rpTicketSet('side','long')"><span>Achat</span><b>${c ? rpPrice(c.close) : '—'}</b></button>
     </div>
     ${seg('type', [['market', 'Marché'], ['limit', 'Limite'], ['stop', 'Stop']])}
     ${T.type !== 'market' ? html`<label class="rp-f"><span>Prix de l'ordre</span><input type="number" step="any" value="${T.price}" placeholder="${c ? rpRound(c.close) : ''}" oninput="rpTicketSet('price', this.value)"></label>` : ''}

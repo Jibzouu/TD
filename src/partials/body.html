@@ -867,22 +867,39 @@
 
       <section id="rp-app" hidden>
         <div class="rp-bar">
-          <div class="rp-info" id="rp-info"></div>
-          <div class="rp-ctrls">
-            <button class="btn-primary rp-play" id="rp-play" onclick="rpTogglePlay()">▶ Lecture</button>
-            <button class="btn-ghost" onclick="rpStep(1)" title="Bougie suivante (→)">⏭ Suivante</button>
-            <button class="btn-ghost" onclick="rpStep(10)" title="10 bougies (Maj + →)">+10</button>
-            <select id="rp-speed" class="filter-select" onchange="rpSetSpeed(this.value)" aria-label="Vitesse"></select>
-            <select id="rp-tf" class="filter-select" onchange="rpChangeInterval(this.value)" aria-label="Unité de temps"></select>
-            <button class="btn-ghost" onclick="rpEndSession()">Terminer</button>
+          <div class="rp-tb">
+            <div class="rp-info" id="rp-info"></div>
+            <span class="rp-tb-sep"></span>
+            <div class="rp-tfs" id="rp-tfs" role="group" aria-label="Unité de temps"></div>
+            <span class="rp-tb-sep"></span>
+            <button type="button" class="rp-tb-btn" id="rp-type-btn" data-dd onclick="rpcOpen('rp-dd-type', this)" aria-label="Type de graphique"></button>
+            <button type="button" class="rp-tb-btn rp-tb-txt" data-dd onclick="rpcOpen('rp-dd-ind', this)"><svg viewBox="0 0 28 28" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 21c3 0 3-14 7-14M5 12h8M16 15l6 6M22 15l-6 6"/></svg><span>Indicateurs</span></button>
           </div>
+          <div class="rp-ctrls">
+            <button class="rp-tb-btn rp-play" id="rp-play" onclick="rpTogglePlay()">▶ Lecture</button>
+            <button class="rp-tb-btn" onclick="rpStep(1)" title="Bougie suivante (→)" aria-label="Bougie suivante"><svg viewBox="0 0 28 28" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 7l9 7-9 7z"/><rect x="18" y="7" width="2.2" height="14" rx="1"/></svg></button>
+            <button class="rp-tb-btn rp-tb-txt" onclick="rpStep(10)" title="10 bougies (Maj + →)">+10</button>
+            <select id="rp-speed" class="rp-tb-sel" onchange="rpSetSpeed(this.value)" aria-label="Vitesse"></select>
+            <span class="rp-tb-sep"></span>
+            <button class="rp-tb-btn rp-tb-txt rp-tb-end" onclick="rpEndSession()">Terminer</button>
+          </div>
+          <div class="rp-dd" id="rp-dd-type" hidden></div>
+          <div class="rp-dd rp-dd-wide" id="rp-dd-ind" hidden></div>
         </div>
         <div class="rp-main">
           <div class="rp-chart-card">
             <div class="rp-tools" id="rp-tools" role="toolbar" aria-label="Outils de dessin"></div>
             <div class="rp-chart-wrap">
               <div id="rp-chart" class="rp-chart"></div>
-              <div class="rp-quick" id="rp-quick"></div>
+              <div class="rp-tl">
+                <div class="rp-legend" id="rp-legend"></div>
+                <div class="rp-quick" id="rp-quick"></div>
+              </div>
+              <div class="rp-scale">
+                <button type="button" class="rp-sc-btn rp-to-rt" id="rp-to-rt" onclick="rpcRealtime()" title="Revenir à la dernière bougie" aria-label="Revenir à la dernière bougie" hidden>»</button>
+                <button type="button" class="rp-sc-btn" id="rp-sc-log" onclick="rpcScale('log')" title="Échelle logarithmique">log</button>
+                <button type="button" class="rp-sc-btn" id="rp-sc-auto" onclick="rpcScale('auto')" title="Échelle automatique">auto</button>
+              </div>
               <div class="rp-stylebar" id="rp-stylebar" hidden></div>
               <button type="button" class="rp-plus" id="rp-plus" hidden onclick="rpdPlusClick(event)" aria-label="Passer un ordre à ce prix">+</button>
               <div class="rp-menu" id="rp-menu" role="menu" hidden></div>

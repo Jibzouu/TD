@@ -232,7 +232,105 @@ function rpdHit(x, y) {
 }
 // Lignes de prix déplaçables (stop / objectif du ticket, des positions et des ordres).
 function rpdLineHit(y) {
-  return Object.values(RP_LINES.pos).filter(x => x.w.drag).find(x => { const py = RP_SERIES.priceToCoordinate(x.w.price); return py != null && Math.abs(py - y) <= 6; });
+  return rpdOrderLines().filter(L => L.drag).find(L => Math.abs(rpdY(L.price) - y) <= 5) || null;
+}
+// Étiquette d'une ligne d'ordre sous la souris : bouton × (fermer / annuler), « +TP », ou le corps (à glisser).
+function rpdOlHit(x, y) {
+  return (RPD.olHits || []).find(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) || null;
+}
+
+// ── Lignes d'ordres façon TradingView ──
+// Chaque ligne : prix, couleur, étiquette [type / quantité][montant][×], déplaçable si elle a un « drag ».
+// Pendant un glissement, le prix en cours remplace celui de la ligne (montants recalculés en direct).
+function rpdOrderLines() {
+  if (!RP || !RPC.length) return [];
+  const c = rpCur(), out = [], BUY = '#2962ff', SELL = '#f23645', TPC = '#089981', SLC = '#f23645';
+  const ov = RPD.drag && RPD.drag.ol ? { [RPD.drag.ol]: RPD.drag.price } : {};
+  const P = (key, def) => ov[key] != null ? ov[key] : def;
+  const money = v => (v >= 0 ? '+' : '−') + rpMoney(Math.abs(v)).replace(/^−/, '');
+  const side = s => s === 'short' ? tr('VENTE') : tr('ACHAT');
+  // Aperçu du ticket
+  const T = RP_TICKET, r = rpTicketCalc();
+  if (!r.error || r.error === 'stop') {
+    const sgn = T.side === 'short' ? -1 : 1, qty = r.qty || 0;
+    if (T.type !== 'market' && r.entry) out.push({ key: 'tk-e', price: P('tk-e', r.entry), color: T.side === 'short' ? SELL : BUY, dash: 1, tag: (T.type === 'limit' ? tr('LIMITE') : tr('STOP')) + ' ' + side(T.side), val: qty ? rpQtyFmt(qty) : '', drag: { kind: 'ticket', which: 'price' } });
+    if (r.sl) out.push({ key: 'tk-sl', price: P('tk-sl', r.sl), color: SLC, dash: 1, tag: 'SL', val: qty ? money(-r.risk) : '', valColor: SLC, drag: { kind: 'ticket', which: 'sl' }, close: "rpdTicketClear('sl')" });
+    if (r.tp) out.push({ key: 'tk-tp', price: P('tk-tp', r.tp), color: TPC, dash: 1, tag: 'TP', val: qty && r.reward != null ? money(r.reward) : '', valColor: TPC, drag: { kind: 'ticket', which: 'tp' }, close: "rpdTicketClear('tp')" });
+  }
+  // Positions ouvertes
+  RP.positions.forEach(p => {
+    const sgn = p.side === 'short' ? -1 : 1, u = c ? rpOpenPnl(p, c.close) : 0;
+    out.push({ key: p.id + '-e', price: p.entry, color: p.side === 'short' ? SELL : BUY, tag: side(p.side) + ' ' + rpQtyFmt(p.qty), val: money(u), valColor: u >= 0 ? TPC : SLC, close: "rpClosePos('" + p.id + "', 1)", closeTip: 'Fermer la position', add: p.tp == null ? "rpdAddLevel('" + p.id + "','tp')" : p.sl == null ? "rpdAddLevel('" + p.id + "','sl')" : null, addLabel: p.tp == null ? '+TP' : '+SL' });
+    if (p.sl != null) { const pr = P(p.id + '-sl', p.sl); out.push({ key: p.id + '-sl', price: pr, color: SLC, dash: 1, tag: 'SL', val: money((pr - p.entry) * sgn * p.qty), valColor: SLC, drag: { kind: 'pos', id: p.id, which: 'sl' }, close: "rpdRemoveLevel('" + p.id + "','sl')", closeTip: 'Retirer le stop' }); }
+    if (p.tp != null) { const pr = P(p.id + '-tp', p.tp); out.push({ key: p.id + '-tp', price: pr, color: TPC, dash: 1, tag: 'TP', val: money((pr - p.entry) * sgn * p.qty), valColor: TPC, drag: { kind: 'pos', id: p.id, which: 'tp' }, close: "rpdRemoveLevel('" + p.id + "','tp')", closeTip: 'Retirer l’objectif' }); }
+  });
+  // Ordres en attente
+  RP.orders.forEach(o => {
+    const sgn = o.side === 'short' ? -1 : 1, e = P(o.id + '-o', o.price);
+    out.push({ key: o.id + '-o', price: e, color: o.side === 'short' ? SELL : BUY, dash: 2, tag: (o.type === 'limit' ? tr('LIMITE') : tr('STOP')) + ' ' + side(o.side) + ' ' + rpQtyFmt(o.qty), val: rpPrice(e), drag: { kind: 'pos', id: o.id, which: 'entry' }, close: "rpCancelOrder('" + o.id + "')", closeTip: 'Annuler l’ordre' });
+    if (o.sl != null) { const pr = P(o.id + '-sl', o.sl); out.push({ key: o.id + '-sl', price: pr, color: SLC, dash: 2, tag: 'SL', val: money((pr - e) * sgn * o.qty), valColor: SLC, drag: { kind: 'pos', id: o.id, which: 'sl' }, close: "rpdRemoveLevel('" + o.id + "','sl')" }); }
+    if (o.tp != null) { const pr = P(o.id + '-tp', o.tp); out.push({ key: o.id + '-tp', price: pr, color: TPC, dash: 2, tag: 'TP', val: money((pr - e) * sgn * o.qty), valColor: TPC, drag: { kind: 'pos', id: o.id, which: 'tp' }, close: "rpdRemoveLevel('" + o.id + "','tp')" }); }
+  });
+  return out;
+}
+function rpdTicketClear(which) { RP_TICKET[which] = ''; renderReplayTicket(); }
+function rpdRemoveLevel(id, which) {
+  const p = RP.positions.find(x => x.id === id) || RP.orders.find(x => x.id === id);
+  if (!p) return;
+  p[which] = null; rpSave(); rpRefreshUi();
+}
+// « +TP » / « +SL » : niveau ajouté à 2R / 1R de l'entrée (à ajuster ensuite en glissant la ligne).
+function rpdAddLevel(id, which) {
+  const p = RP.positions.find(x => x.id === id); if (!p) return;
+  const sgn = p.side === 'short' ? -1 : 1, dist = (p.risk0 && p.qty0 ? p.risk0 / p.qty0 : 0) || rpATR(14) * 1.5;
+  p[which] = rpRound(which === 'tp' ? p.entry + sgn * dist * 2 : p.entry - sgn * dist);
+  rpSave(); rpRefreshUi();
+}
+function rpdRenderOrderLines(ctx, size, k) {
+  const lines = rpdOrderLines(), hits = [], H = 20, W = size.width;
+  ctx.save();
+  ctx.font = rpdFont(11.5, 600); ctx.textBaseline = 'middle';
+  lines.forEach(L => {
+    const y = Math.round(rpdY(L.price)) + 0.5;
+    if (isNaN(y) || y < -H || y > size.height + H) return;
+    ctx.strokeStyle = L.color; ctx.lineWidth = 1; ctx.setLineDash(L.dash === 2 ? [2, 3] : L.dash ? [5, 4] : []);
+    rpdLine(ctx, { x: 0, y }, { x: W, y });
+    ctx.setLineDash([]);
+    // Étiquette à droite : [type][montant][×], plus « +TP » à gauche si besoin.
+    const segs = [{ t: L.tag, part: 'body', fill: L.color, fg: '#fff' }];
+    if (L.val) segs.push({ t: L.val, part: 'body', fill: k.bg, fg: L.valColor || k.txtStrong || '#d1d4dc' });
+    if (L.close) segs.push({ t: '×', part: 'close', fill: k.bg, fg: k.txt, act: L.close });
+    const ws = segs.map(sg => Math.ceil(ctx.measureText(sg.t).width) + (sg.part === 'close' ? 12 : 14));
+    const total = ws.reduce((a, b) => a + b, 0);
+    let x = Math.round(W - 64 - total) + 0.5;
+    const y0 = Math.round(y - H / 2);
+    if (L.add) {
+      ctx.font = rpdFont(11, 700);
+      const aw = Math.ceil(ctx.measureText(L.addLabel).width) + 12, ax = x - aw - 6;
+      ctx.fillStyle = k.bg; ctx.strokeStyle = L.addLabel === '+TP' ? '#089981' : '#f23645';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(ax, y0, aw, H, 3); else ctx.rect(ax, y0, aw, H); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle; ctx.textAlign = 'center'; ctx.fillText(L.addLabel, ax + aw / 2, y0 + H / 2 + 0.5);
+      hits.push({ key: L.key, part: 'add', act: L.add, x: ax, y: y0, w: aw, h: H });
+      ctx.font = rpdFont(11.5, 600);
+    }
+    // Contour commun, segments séparés par un filet.
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y0, total, H, 3); else ctx.rect(x, y0, total, H);
+    ctx.save(); ctx.clip();
+    segs.forEach((sg, i) => {
+      ctx.fillStyle = sg.fill; ctx.fillRect(x, y0, ws[i], H);
+      ctx.fillStyle = sg.fg; ctx.textAlign = 'center';
+      ctx.font = sg.part === 'close' ? rpdFont(14, 400) : rpdFont(11.5, sg === segs[0] ? 600 : 500);
+      ctx.fillText(sg.t, x + ws[i] / 2, y0 + H / 2 + (sg.part === 'close' ? 0 : 0.5));
+      if (i) { ctx.fillStyle = L.color; ctx.fillRect(x, y0, 1, H); }
+      hits.push({ key: L.key, part: sg.part, act: sg.act, x, y: y0, w: ws[i], h: H, L });
+      x += ws[i];
+    });
+    ctx.restore();
+    ctx.strokeStyle = L.color; ctx.lineWidth = 1; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x - total, y0, total, H, 3); else ctx.rect(x - total, y0, total, H); ctx.stroke();
+    ctx.font = rpdFont(11.5, 600);
+  });
+  ctx.restore();
+  RPD.olHits = hits.map(h => Object.assign(h, { L: h.L || lines.find(l => l.key === h.key) }));
 }
 
 // ── Souris / doigt ──
@@ -271,6 +369,13 @@ function rpdDown(e) {
   rpdCloseMenu();
   if (RPD.draft) { rpdAdvance(rpdPoint(loc.x, loc.y)); rpdGrab(e); return; }
   if (RPD.tool !== 'cursor') { rpdStart(rpdPoint(loc.x, loc.y, RPD.tool === 'brush')); rpdGrab(e); return; }
+  const ol = rpdOlHit(loc.x, loc.y);
+  if (ol) {
+    rpdGrab(e);
+    if (ol.part === 'close' || ol.part === 'add') { rpdRelease(); new Function(ol.act)(); return; }
+    if (ol.L && ol.L.drag) { RPD.drag = { ol: ol.L.key, line: ol.L, price: ol.L.price }; return; }
+    rpdRelease(); return;
+  }
   const h = rpdHit(loc.x, loc.y);
   if (h && (h.part !== 'body' || !rpdLineHit(loc.y))) {
     rpdPush();
@@ -280,7 +385,7 @@ function rpdDown(e) {
     return;
   }
   const line = rpdLineHit(loc.y);
-  if (line) { RPD.drag = { line }; rpdGrab(e); return; }
+  if (line) { RPD.drag = { ol: line.key, line, price: line.price }; rpdGrab(e); return; }
   if (h) { rpdPush(); RPD.sel = h.d.id; RPD.drag = { id: h.d.id, part: 'body', start: rpdPoint(loc.x, loc.y, true), orig: JSON.parse(JSON.stringify(h.d)) }; rpdGrab(e); renderRpStylebar(); rpdRefresh(); return; }
   if (RPD.sel) { RPD.sel = null; renderRpStylebar(); rpdRefresh(); }
 }
@@ -289,8 +394,8 @@ function rpdMove(e) {
   const loc = rpdLocal(e);
   if (RPD.drag) {
     if (RPD.drag.line) {
-      const price = rpdP(loc.y), x = RPD.drag.line;
-      if (price > 0) { x.w.price = price; x.line.applyOptions({ price }); rpDragApply(x.w.drag, price, false); rpdRefresh(); }
+      const price = rpdP(loc.y);
+      if (price > 0) { RPD.drag.price = price; if (RPD.drag.line.drag.kind === 'ticket') rpDragApply(RPD.drag.line.drag, price, false); rpdRefresh(); }
       return;
     }
     rpdDragTo(rpdPoint(loc.x, loc.y, RPD.drag.part === 'body')); RPD.drag.moved = true;
@@ -301,7 +406,9 @@ function rpdMove(e) {
     let cur = RPD.tool !== 'cursor' ? 'cross' : '';
     if (!cur && rpdInPane(loc)) {
       const h = rpdHit(loc.x, loc.y);
-      if (h) cur = h.part === 'body' ? 'move' : h.part === 'tp' || h.part === 'sl' ? 'ns' : h.part === 'end' ? 'ew' : 'grab';
+      const ol = rpdOlHit(loc.x, loc.y);
+      if (ol) cur = ol.part === 'body' ? (ol.L && ol.L.drag ? 'ns' : '') : 'pointer';
+      else if (h) cur = h.part === 'body' ? 'move' : h.part === 'tp' || h.part === 'sl' ? 'ns' : h.part === 'end' ? 'ew' : 'grab';
       else if (rpdLineHit(loc.y)) cur = 'ns';
     }
     if (RPD.el.dataset.cur !== cur) RPD.el.dataset.cur = cur;
@@ -310,7 +417,7 @@ function rpdMove(e) {
 function rpdUp() {
   if (RPD.drag) {
     const dr = RPD.drag; RPD.drag = null;
-    if (dr.line) rpDragApply(dr.line.w.drag, dr.line.w.price, true);
+    if (dr.line) rpDragApply(dr.line.drag, dr.price, true);
     else rpSave();
     rpdRelease(); rpdRefresh();
     return;
@@ -483,6 +590,7 @@ function rpdRender(ctx, size) {
       ctx.fill(); ctx.stroke(); ctx.restore();
     });
   }
+  rpdRenderOrderLines(ctx, size, k);
 }
 function rpdDrawOne(ctx, d, size, k) {
   const P = d.pts.map(rpdXY), W = size.width;
@@ -643,7 +751,6 @@ function rpdRenderTrades(ctx, size, labels) {
       rpdZone(ctx, x1, x2, yE, p.tp != null ? rpdY(p.tp) : NaN, p.sl != null ? rpdY(p.sl) : NaN, 0.17, false, k);
       if (c) { ctx.strokeStyle = u >= 0 ? k.green : k.red; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); rpdLine(ctx, { x: x1, y: yE }, { x: now, y: rpdY(c.close) }); ctx.setLineDash([]); }
     } else if (c) {
-      rpdPill(ctx, x2 + 4, yE, (p.side === 'short' ? tr('Vente') : tr('Achat')) + ' ' + rpQtyFmt(p.qty) + ' · ' + (u >= 0 ? '+' : '') + rpMoney(u) + (R != null ? ' · ' + (R >= 0 ? '+' : '−') + fmtNum(Math.abs(R), 2) + 'R' : ''), u >= 0 ? k.green : k.red, '#fff', 0, 'left');
     }
   });
   // Aperçu du ticket : la position telle qu'elle sera passée.
@@ -656,9 +763,10 @@ function rpdRenderTrades(ctx, size, labels) {
 }
 // Étiquettes sur l'échelle de prix : lignes horizontales, niveaux du dessin sélectionné.
 function rpdAxisViews() {
-  if (!RP || RP.hideDraw || !RP_SERIES) return [];
+  if (!RP || !RP_SERIES) return [];
   const out = [], mk = (p, col) => out.push({ coordinate: () => rpdY(p), text: () => rpPrice(p), textColor: () => '#fff', backColor: () => col, visible: () => !isNaN(rpdY(p)) });
-  RP.drawings.forEach(d => { if (d.type === 'hline' || d.type === 'hray') mk(d.pts[0].p, d.color); });
+  if (!RP.hideDraw) RP.drawings.forEach(d => { if (d.type === 'hline' || d.type === 'hray') mk(d.pts[0].p, d.color); });
+  rpdOrderLines().forEach(L => mk(L.price, L.color));
   const s = rpdById(RPD.sel);
   if (s) {
     if (s.type === 'long' || s.type === 'short') { mk(s.pts[0].p, '#50535e'); mk(s.tp, '#089981'); mk(s.sl, '#f23645'); }

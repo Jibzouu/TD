@@ -1218,3 +1218,54 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('backtest replay : graphique façon TradingView (légende, types, indicateurs) et lignes d\'ordres cliquables', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_account: '10000' }, time: NOW });
+  await mockBinance(page);
+  await goto(page, 'replay');
+  await page.evaluate(v => rpSetStart(v), '2026-06-01T09:00');
+  await page.click('text=Lancer le replay');
+  await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
+  // Légende OHLC + volume
+  assert.match(await page.locator('#rp-legend').innerText(), /BTC\/USDT\s*·\s*M5\s*·\s*Binance\s+O\s*[\d\s ,]+H/);
+  assert.match(await page.locator('#rp-legend').innerText(), /Vol/);
+  // Indicateur MME 21 depuis le menu, valeur dans la légende ; pas de futur dans le calcul.
+  await page.click('.rp-tb-btn >> text=Indicateurs');
+  await page.click('#rp-dd-ind >> text=Moyenne mobile exponentielle 21');
+  assert.match(await page.locator('#rp-legend').innerText(), /MME 21\s+[\d\s ,]+/);
+  const ema = await page.evaluate(() => { const v = RPC_S.cache.ema21; return { n: v.length, cur: RP.cursor }; });
+  assert.equal(ema.n, ema.cur + 1);
+  // Types de graphique
+  for (const t of ['Heikin Ashi', 'Ligne', 'Bougies']) {
+    await page.click('#rp-type-btn'); await page.click('#rp-dd-type >> text=' + t);
+  }
+  assert.equal(await page.evaluate(() => RP.chartType), 'candles');
+  // Unité de temps en boutons
+  await page.click('#rp-tfs >> text=15m');
+  assert.equal(await page.evaluate(() => RP.interval), '15m');
+  // Position via le bouton ACHAT, puis lignes d'ordres : étiquette, « +TP » absent (TP déjà là), retrait du TP par ×, ajout par +TP.
+  await page.click('#rp-quick .rp-q.buy');
+  const id = await page.evaluate(() => RP.positions[0].id);
+  const hit = async (key, part) => page.evaluate(([k, p]) => { rpdRefresh(); return null; }, [key, part]).then(() => page.waitForTimeout(50)).then(() => page.evaluate(([k, p]) => { const h = RPD.olHits.find(x => x.key === k && x.part === p); return h && { x: h.x + h.w / 2, y: h.y + h.h / 2 }; }, [key, part]));
+  const box = await page.locator('#rp-chart').boundingBox();
+  let h = await hit(id + '-tp', 'close');
+  assert.ok(h, 'étiquette TP avec ×');
+  await page.mouse.click(box.x + h.x, box.y + h.y);
+  assert.equal(await page.evaluate(() => RP.positions[0].tp), null);
+  h = await hit(id + '-e', 'add');
+  await page.mouse.click(box.x + h.x, box.y + h.y);
+  const pos = await page.evaluate(() => { const p = RP.positions[0]; return { rr: (p.tp - p.entry) / (p.entry - p.sl) }; });
+  assert.ok(Math.abs(pos.rr - 2) < 0.05, '+TP à 2R : ' + pos.rr);
+  // Glisser l'étiquette du stop vers le haut : stop remonté.
+  const sl0 = await page.evaluate(() => RP.positions[0].sl);
+  h = await hit(id + '-sl', 'body');
+  await page.mouse.move(box.x + h.x, box.y + h.y); await page.mouse.down(); await page.mouse.move(box.x + h.x, box.y + h.y - 30, { steps: 5 }); await page.mouse.up();
+  assert.ok(await page.evaluate(() => RP.positions[0].sl) > sl0, 'stop remonté');
+  // × sur la position : fermée et enregistrée.
+  h = await hit(id + '-e', 'close');
+  await page.mouse.click(box.x + h.x, box.y + h.y);
+  assert.equal(await page.evaluate(() => RP.positions.length), 0);
+  assert.equal(await page.evaluate(() => RP.history.length), 1);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
