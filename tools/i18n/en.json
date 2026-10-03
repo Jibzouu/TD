@@ -1737,5 +1737,8 @@
  "Cible": "Target",
  "Montant": "Amount",
  "Ratio risque / récompense": "Risk / reward ratio",
- "P&L ouvert": "Open P&L"
+ "P&L ouvert": "Open P&L",
+ "Ouverture P&L": "Open P&L",
+ "Clôturé P&L": "Closed P&L",
+ "Ratio Risque/Récompense": "Risk/Reward Ratio"
 }

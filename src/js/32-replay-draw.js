@@ -426,23 +426,41 @@ function rpdLine(ctx, a, b) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(
 function rpdFont(px, w) { return (w || 600) + ' ' + (px || 11.5) + 'px Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'; }
 // Étiquette arrondie (fond plein) centrée sur x, posée au-dessus (v = -1), au milieu (0) ou en dessous (1) de y.
 // Plusieurs lignes possibles (« \n ») ; renvoie la boîte dessinée { x, y, w, h }.
-function rpdPill(ctx, x, y, text, bg, fg, v, align, border) {
+function rpdPill(ctx, x, y, text, bg, fg, v, align, border, fs) {
   ctx.save();
-  ctx.font = rpdFont(12, 500); ctx.setLineDash([]);
-  const lines = String(text).split('\n'), lh = 16, padX = 8, padY = 4;
+  fs = fs || 12;
+  ctx.font = rpdFont(fs, 400); ctx.setLineDash([]);
+  const lines = String(text).split('\n'), lh = Math.round(fs * 1.25), padX = Math.round(fs / 2), padY = Math.max(2, Math.round(fs / 4));
   const w = Math.ceil(Math.max(...lines.map(l => ctx.measureText(l).width))) + padX * 2, h = lines.length * lh + padY * 2;
   let x0 = align === 'left' ? x : align === 'right' ? x - w : x - w / 2;
   if (RPD.paneW) x0 = Math.max(2, Math.min(x0, RPD.paneW - w - 2));
   const y0 = Math.round(v < 0 ? y - h - 3 : v > 0 ? y + 3 : y - h / 2);
   x0 = Math.round(x0);
   ctx.fillStyle = bg; ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x0, y0, w, h, 3); else ctx.rect(x0, y0, w, h);
+  if (ctx.roundRect) ctx.roundRect(x0, y0, w, h, 4); else ctx.rect(x0, y0, w, h);
   ctx.fill();
   if (border) { ctx.strokeStyle = border; ctx.lineWidth = 1; ctx.stroke(); }
   ctx.fillStyle = fg || '#fff'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   lines.forEach((l, i) => ctx.fillText(l, x0 + w / 2, y0 + padY + lh * i + lh / 2 + 0.5));
   ctx.restore();
   return { x: x0, y: y0, w, h };
+}
+// Étiquette ajustée à la largeur de la boîte : on essaie chaque version du texte (de la plus complète à la plus courte),
+// en réduisant la police de 12 à 9 px ; la première qui tient est dessinée.
+function rpdPillFit(ctx, x, y, variants, maxW, bg, fg, v, border) {
+  ctx.save();
+  let pick = null;
+  for (const t of variants) {
+    for (let fs = 12; fs >= 9; fs -= 0.5) {
+      ctx.font = rpdFont(fs, 400);
+      const w = Math.max(...String(t).split('\n').map(l => ctx.measureText(l).width)) + fs;
+      if (w <= maxW) { pick = { t, fs }; break; }
+    }
+    if (pick) break;
+  }
+  ctx.restore();
+  if (!pick) pick = { t: variants[variants.length - 1], fs: 9 };
+  return rpdPill(ctx, x, y, pick.t, bg, fg, v, 'center', border, pick.fs);
 }
 function rpdPct(a, b) { return fmtNum((b - a) / a * 100, 2) + ' %'; }
 function rpdDistTxt(dist, ref) { return rpIsFx() ? fmtNum(dist / rpPip(), 1) + ' pips' : rpPrice(dist, ref); }
@@ -456,9 +474,13 @@ function rpdRender(ctx, size) {
   if (!RP.hideDraw) RP.drawings.forEach(d => { try { rpdDrawOne(ctx, d, size, k); } catch (e) {} });
   const sel = rpdById(RPD.sel);
   if (sel && !RP.hideDraw) {
+    const pos = sel.type === 'long' || sel.type === 'short';
     rpdHandles(sel).forEach(h => {
-      ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5; ctx.fillStyle = k.bg; ctx.strokeStyle = sel.type === 'long' || sel.type === 'short' ? k.txt : sel.color;
-      ctx.beginPath(); ctx.arc(h.x, h.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 1.5; ctx.fillStyle = k.bg; ctx.strokeStyle = pos ? '#2962ff' : sel.color;
+      ctx.beginPath();
+      if (pos && h.part !== 'entry') { if (ctx.roundRect) ctx.roundRect(h.x - 5.5, h.y - 5.5, 11, 11, 2.5); else ctx.rect(h.x - 5.5, h.y - 5.5, 11, 11); }
+      else ctx.arc(h.x, h.y, 5.5, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke(); ctx.restore();
     });
   }
 }
@@ -561,25 +583,28 @@ function rpdDrawPosTool(ctx, d, k) {
   ctx.strokeStyle = k.txt; rpdLine(ctx, { x: b.x1, y: b.yE }, { x: b.x2, y: b.yE });
   ctx.strokeStyle = G; rpdLine(ctx, { x: b.x1, y: b.yT }, { x: b.x2, y: b.yT });
   ctx.strokeStyle = R; rpdLine(ctx, { x: b.x1, y: b.yS }, { x: b.x2, y: b.yS });
-  // Étiquettes façon TradingView : objectif et stop à l'extérieur de la boîte, résumé sur la ligne d'entrée
-  // (centré dans la boîte s'il y tient, sinon à sa droite : la jonction gain / perte reste visible).
-  const qty = dist > 0 ? rpFloorStep(rpdRiskAmt() / dist, rpQtyStep(e)) : 0, mx = (b.x1 + b.x2) / 2;
-  const base = rpBase(RP.symbol), fx = RP_FIAT.includes(base);
-  const qtyTxt = rpQtyFmt(qty) + (fx ? ' (' + fmtNum(qty / 100000, 2) + ' lot)' : '');
-  const lvl = (name, price, dist2, amt) => tr(name) + ' : ' + rpPrice(price) + '  ·  ' + rpPrice(dist2, e) + ' (' + fmtNum(dist2 / e * 100, 3) + ' %)' + (rpIsFx() ? ' ' + fmtNum(dist2 / rpPip(), 1) + ' pips' : '') + '  ·  ' + tr('Montant') + ' : ' + amt;
-  rpdPill(ctx, mx, b.yT, lvl('Cible', d.tp, Math.abs(d.tp - e), '+' + rpMoney(qty * Math.abs(d.tp - e))), G, '#fff', long ? -1 : 1);
-  rpdPill(ctx, mx, b.yS, lvl('Stop', d.sl, dist, '−' + rpMoney(qty * dist)), R, '#fff', long ? 1 : -1);
-  let l1 = tr('Entrée') + ' : ' + rpPrice(e) + '  ·  ' + tr('Qté') + ' : ' + qtyTxt, bg = '#5d606b';
-  const l2 = tr('Ratio risque / récompense') + ' : ' + fmtNum(rr, 2);
-  if (sim.state === 'tp') { l1 = tr('Objectif atteint') + ' : +' + rpMoney(qty * Math.abs(d.tp - e)) + ' (+' + fmtNum(rr, 2) + 'R)  ·  ' + tr('Qté') + ' : ' + qtyTxt; bg = G; }
-  else if (sim.state === 'sl') { l1 = tr('Stop touché') + ' : −' + rpMoney(qty * dist) + ' (−1R)  ·  ' + tr('Qté') + ' : ' + qtyTxt; bg = R; }
-  else if (sim.state === 'run') { const pl = (long ? sim.price - e : e - sim.price), r = pl / (dist || 1); l1 = tr('P&L ouvert') + ' : ' + (pl >= 0 ? '+' : '') + rpMoney(qty * pl) + ' (' + (r >= 0 ? '+' : '−') + fmtNum(Math.abs(r), 2) + 'R)  ·  ' + tr('Qté') + ' : ' + qtyTxt; }
-  ctx.save(); ctx.font = rpdFont(12, 500);
-  const need = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width) + 16;
-  ctx.restore();
-  if (need + 24 <= w) rpdPill(ctx, mx, b.yE, l1 + '\n' + l2, bg, '#fff', 0, 'center', 'rgba(255,255,255,.35)');
-  else if (b.x2 + 10 + need <= (RPD.paneW || 1e9) || b.x1 - 10 - need < 0) rpdPill(ctx, b.x2 + 10, b.yE, l1 + '\n' + l2, bg, '#fff', 0, 'left', 'rgba(255,255,255,.35)');
-  else rpdPill(ctx, b.x1 - 10, b.yE, l1 + '\n' + l2, bg, '#fff', 0, 'right', 'rgba(255,255,255,.35)');
+  // Étiquettes comme TradingView : « Cible » collée au-dessus de la boîte (en dessous pour une vente), « Stop » de l'autre côté,
+  // bloc central sur deux lignes posé sur la ligne d'entrée. Distance en prix, en %, en pips (forex) ou en ticks, montant en $.
+  // Partie visible de la boîte (elle peut dépasser le bord droit du graphique) : les textes s'y centrent et s'y ajustent.
+  const vx1 = Math.max(b.x1, 0), vx2 = Math.min(b.x2, RPD.paneW || b.x2), vw = Math.max(0, vx2 - vx1);
+  const qty = dist > 0 ? rpFloorStep(rpdRiskAmt() / dist, rpQtyStep(e)) : 0, mx = (vx1 + vx2) / 2;
+  const num = (v, d) => (+v).toLocaleString(UI_LOCALE, { maximumFractionDigits: d ?? 2 });
+  const ticks = dd => rpIsFx() ? num(dd / rpPip(), 1) : num(dd * Math.pow(10, rpDecimals(e)), 0);
+  const lvl = (name, dd) => [
+    tr(name) + ': ' + rpPrice(dd, e) + ' (' + num(dd / e * 100, 3) + '%) ' + ticks(dd) + ', ' + tr('Montant') + ': ' + num(qty * dd, 2),
+    tr(name) + ': ' + rpPrice(dd, e) + ' (' + num(dd / e * 100, 2) + '%), ' + tr('Montant') + ': ' + num(qty * dd, 2),
+    tr(name) + ': ' + num(dd / e * 100, 2) + '%, ' + num(qty * dd, 0),
+    num(qty * dd, 0)];
+  const top = long ? b.yT : b.yS, bot = long ? b.yS : b.yT, maxW = Math.max(30, vw - 2);
+  rpdPillFit(ctx, mx, top, lvl(long ? 'Cible' : 'Stop', long ? Math.abs(d.tp - e) : dist), maxW, long ? G : R, '#fff', -1);
+  rpdPillFit(ctx, mx, bot, lvl(long ? 'Stop' : 'Cible', long ? dist : Math.abs(d.tp - e)), maxW, long ? R : G, '#fff', 1);
+  const last = sim.state === 'tp' || sim.state === 'sl' ? sim.price : rpCur().close;
+  const pl = long ? last - e : e - last, plName = tr(sim.state === 'tp' || sim.state === 'sl' ? 'Clôturé P&L' : 'Ouverture P&L');
+  rpdPillFit(ctx, mx, b.yE, [
+    plName + ': ' + rpPrice(pl, e) + ', ' + tr('Qté') + ': ' + rpQtyFmt(qty) + '\n' + tr('Ratio Risque/Récompense') + ': ' + num(rr, 2),
+    'P&L: ' + rpPrice(pl, e) + ', ' + tr('Qté') + ': ' + rpQtyFmt(qty) + '\n' + 'R/R: ' + num(rr, 2),
+    'P&L: ' + rpPrice(pl, e) + '\nR/R: ' + num(rr, 2),
+    'R/R ' + num(rr, 2)], maxW, '#868993', '#131722', 0, '#ffffff');
 }
 
 // Zones des trades (sous les bougies) : aperçu du ticket, positions ouvertes, ordres en attente, trades passés.
