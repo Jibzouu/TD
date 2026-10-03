@@ -2920,7 +2920,6 @@ body.glow-on .panel,body.glow-on .kpi{box-shadow:var(--hairline),0 0 24px -12px 
             <label class="check-label"><input type="checkbox" id="rp-autosave" checked> Enregistrer chaque trade dans le journal</label>
             <label class="check-label"><input type="checkbox" id="rp-capture" checked> Avec une capture du graphique</label>
           </div>
-          <p class="rp-warn" id="rp-account-warn" hidden></p>
           <div class="rp-setup-act">
             <button class="btn-primary" onclick="rpLaunch()">▶ Lancer le replay</button>
             <input type="file" id="rp-file" accept=".csv,.txt,text/csv" hidden onchange="rpImportFile(this)">
@@ -6587,7 +6586,7 @@ function closeMobileSidebar() {
   document.body.classList.remove('sidebar-open');
 }
 function showPage(id, btn) {
-  if (id === 'propfirm' && !IS_PROPFIRM) { id = 'dashboard'; btn = document.querySelector('.nav-item[data-page="dashboard"]'); }
+  if ((id === 'propfirm' && !IS_PROPFIRM) || (id === 'replay' && JOURNAL_TYPE !== 'backtest')) { id = 'dashboard'; btn = document.querySelector('.nav-item[data-page="dashboard"]'); }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
@@ -11152,6 +11151,7 @@ const SEARCH_PAGES = [
   { page:'trades', icon:'📋' },
   { page:'plan', icon:'📝' },
   { page:'playbooks', icon:'📘' },
+  { page:'replay', icon:'🕹️' },
   { page:'watchlist', icon:'👁️' },
   { page:'propfirm', icon:'🛡️' },
   { page:'scaling', icon:'📈' },
@@ -11169,6 +11169,7 @@ const SEARCH_ACTIONS = [
 Object.keys(JOURNALS).filter(k => k !== JOURNAL_ID).forEach(k => SEARCH_ACTIONS.push({ icon: '🔀', label: 'Passer au compte ' + JOURNALS[k].tab, run: () => { closeGlobalSearch(); switchJournal(k); } }));
 
 if (!IS_PROPFIRM) { const pi = SEARCH_PAGES.findIndex(p => p.page === 'propfirm'); if (pi > -1) SEARCH_PAGES.splice(pi, 1); }
+if (JOURNAL_TYPE !== 'backtest') { const ri = SEARCH_PAGES.findIndex(p => p.page === 'replay'); if (ri > -1) SEARCH_PAGES.splice(ri, 1); }
 
 let searchSelectedIndex = 0;
 let searchCurrentItems = [];
@@ -11291,6 +11292,11 @@ function applyJournalIdentity() {
   if (!IS_PROPFIRM) {
     const pn = document.querySelector('.nav-item[data-page="propfirm"]');
     if (pn) pn.remove();
+  }
+  // Le replay sert à backtester sa stratégie : il n'existe que dans un compte de type « Backtest ».
+  if (JOURNAL_TYPE !== 'backtest') {
+    const rn = document.querySelector('.nav-item[data-page="replay"]');
+    if (rn) rn.remove();
   }
   const w3 = document.getElementById('welcome-step3');
   if (w3) w3.textContent = IS_PROPFIRM ? 'Solde, limite de perte journalière et règles de ton challenge (onglet Prop Firm).' : 'Solde et limite de perte journalière.';
@@ -12782,12 +12788,6 @@ function renderReplaySetup() {
   if (st && !st.value) { const d = new Date(Date.now() - 30 * 86400000); d.setHours(9, 0, 0, 0); st.value = localDateStr(d) + 'T09:00'; }
   const bal = document.getElementById('rp-balance');
   if (bal && !bal.value) bal.value = accountSize > 0 ? accountSize : 10000;
-  const warn = document.getElementById('rp-account-warn');
-  if (warn) {
-    const bt = ACCOUNTS.find(a => a.type === 'backtest' && a.id !== JOURNAL_ID);
-    warn.hidden = JOURNAL_TYPE === 'backtest';
-    if (JOURNAL_TYPE !== 'backtest') mount(warn, html`💡 Les trades du replay seront enregistrés dans le compte <b>${JOURNALS[JOURNAL_ID].title}</b>. ${bt ? html`<button class="link-btn" onclick="switchJournal('${raw(bt.id)}')">Passer sur ton compte ${bt.name}</button>` : html`<button class="link-btn" onclick="openNewAccount()">Créer un compte Backtest</button>`} pour garder tes backtests à part.`);
-  }
 }
 function rpOnSymbolChange(sel) {
   const c = document.getElementById('rp-symbol-custom');

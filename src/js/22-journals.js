@@ -17,6 +17,11 @@ function applyJournalIdentity() {
     const pn = document.querySelector('.nav-item[data-page="propfirm"]');
     if (pn) pn.remove();
   }
+  // Le replay sert à backtester sa stratégie : il n'existe que dans un compte de type « Backtest ».
+  if (JOURNAL_TYPE !== 'backtest') {
+    const rn = document.querySelector('.nav-item[data-page="replay"]');
+    if (rn) rn.remove();
+  }
   const w3 = document.getElementById('welcome-step3');
   if (w3) w3.textContent = IS_PROPFIRM ? 'Solde, limite de perte journalière et règles de ton challenge (onglet Prop Firm).' : 'Solde et limite de perte journalière.';
 }

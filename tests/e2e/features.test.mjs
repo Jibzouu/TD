@@ -1007,10 +1007,17 @@ async function mockBinance(page) {
 }
 
 test('backtest replay : bougies sans futur, calculateur de position, ordre au marché et limite, trade enregistré dans le journal, reprise de séance', async () => {
-  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], tj_account: '10000' }, time: NOW });
+  // Compte Live : pas de replay (menu, page, recherche).
+  let live = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  assert.equal(await live.page.locator('.nav-item[data-page="replay"]').count(), 0);
+  await goto(live.page, 'replay');
+  assert.equal(await live.page.evaluate(() => currentPage()), 'dashboard');
+  await live.ctx.close();
+  // Compte Backtest : le replay est là.
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_trades: [T({ id: 1 })], bt_account: '10000' }, time: NOW });
   await mockBinance(page);
+  assert.equal(await page.locator('.nav-item[data-page="replay"]').count(), 1);
   await goto(page, 'replay');
-  assert.equal(await page.locator('#rp-account-warn').isVisible(), true, 'compte Live : invitation à utiliser un compte Backtest');
   await page.fill('#rp-start', '2026-06-01T09:00');
   await page.fill('#rp-balance', '10000');
   await page.click('text=Lancer le replay');

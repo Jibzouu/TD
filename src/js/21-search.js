@@ -8,6 +8,7 @@ const SEARCH_PAGES = [
   { page:'trades', icon:'📋' },
   { page:'plan', icon:'📝' },
   { page:'playbooks', icon:'📘' },
+  { page:'replay', icon:'🕹️' },
   { page:'watchlist', icon:'👁️' },
   { page:'propfirm', icon:'🛡️' },
   { page:'scaling', icon:'📈' },
@@ -25,6 +26,7 @@ const SEARCH_ACTIONS = [
 Object.keys(JOURNALS).filter(k => k !== JOURNAL_ID).forEach(k => SEARCH_ACTIONS.push({ icon: '🔀', label: 'Passer au compte ' + JOURNALS[k].tab, run: () => { closeGlobalSearch(); switchJournal(k); } }));
 
 if (!IS_PROPFIRM) { const pi = SEARCH_PAGES.findIndex(p => p.page === 'propfirm'); if (pi > -1) SEARCH_PAGES.splice(pi, 1); }
+if (JOURNAL_TYPE !== 'backtest') { const ri = SEARCH_PAGES.findIndex(p => p.page === 'replay'); if (ri > -1) SEARCH_PAGES.splice(ri, 1); }
 
 let searchSelectedIndex = 0;
 let searchCurrentItems = [];

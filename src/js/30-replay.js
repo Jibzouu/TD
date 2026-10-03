@@ -385,12 +385,6 @@ function renderReplaySetup() {
   if (st && !st.value) { const d = new Date(Date.now() - 30 * 86400000); d.setHours(9, 0, 0, 0); st.value = localDateStr(d) + 'T09:00'; }
   const bal = document.getElementById('rp-balance');
   if (bal && !bal.value) bal.value = accountSize > 0 ? accountSize : 10000;
-  const warn = document.getElementById('rp-account-warn');
-  if (warn) {
-    const bt = ACCOUNTS.find(a => a.type === 'backtest' && a.id !== JOURNAL_ID);
-    warn.hidden = JOURNAL_TYPE === 'backtest';
-    if (JOURNAL_TYPE !== 'backtest') mount(warn, html`💡 Les trades du replay seront enregistrés dans le compte <b>${JOURNALS[JOURNAL_ID].title}</b>. ${bt ? html`<button class="link-btn" onclick="switchJournal('${raw(bt.id)}')">Passer sur ton compte ${bt.name}</button>` : html`<button class="link-btn" onclick="openNewAccount()">Créer un compte Backtest</button>`} pour garder tes backtests à part.`);
-  }
 }
 function rpOnSymbolChange(sel) {
   const c = document.getElementById('rp-symbol-custom');
