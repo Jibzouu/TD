@@ -41,7 +41,7 @@ function renderBilan() {
   const pnlR = dayTrades.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
   const eurDay = dayTrades.filter(t=>t.pnlEur!=null);
   const pnlEur = eurDay.reduce((s,t)=>s+t.pnlEur,0);
-  const wr = (tp+sl+be)>0 ? fmtRate(tp/(tp+sl+be)*100, 0) : '—';
+  const wr = (tp+sl)>0 ? fmtRate(tp/(tp+sl)*100, 0) : '—';
   const withEmo = dayTrades.filter(t=>t.emotion);
   const avgEmotion = withEmo.length ? fmtNum(withEmo.reduce((s,t)=>s+t.emotion,0)/withEmo.length, 1) : '—';
   const emoTone = e => e >= 4 ? 'green' : e >= 3 ? 'amber' : 'red';
@@ -49,7 +49,7 @@ function renderBilan() {
     ['Trades', dayTrades.length, ''],
     ['TP', tp, 'green'],
     ['SL', sl, 'red'],
-    ['Win Rate', wr, tp/(tp+sl+be||1) >= .5 ? 'green' : 'red'],
+    ['Win Rate', wr, tp/(tp+sl||1) >= .5 ? 'green' : 'red'],
     ['P&L (€)', eurDay.length ? fmtEUR(pnlEur,true) : '—', !eurDay.length ? 'muted' : pnlEur >= 0 ? 'green' : 'red'],
     ['P&L (R)', fmtR(pnlR, 2), pnlR >= 0 ? 'green' : 'red'],
     ['Humeur moy.', avgEmotion+'/5', avgEmotion !== '—' ? emoTone(avgEmotion) : 'muted'],
@@ -85,7 +85,7 @@ function renderHeatmap() {
   const useEur = list.some(t => t.pnlEur != null);
   const val = t => useEur ? (t.pnlEur != null ? t.pnlEur : 0) : (t.pnl || 0);
   const hMap = {};
-  list.forEach(t => { const h = parseInt(t.entry, 10); if (isNaN(h)) return; const g = hMap[h] = hMap[h] || { n: 0, w: 0, net: 0 }; g.n++; g.net += val(t); if (t.res === 'TP') g.w++; });
+  list.forEach(t => { const h = parseInt(t.entry, 10); if (isNaN(h)) return; const g = hMap[h] = hMap[h] || { n: 0, w: 0, l: 0, net: 0 }; g.n++; g.net += val(t); if (t.res === 'TP') g.w++; else if (t.res === 'SL') g.l++; });
   const hs = Object.keys(hMap).map(Number).sort((a, b) => a - b);
   if (bilanHourChartInst) { bilanHourChartInst.destroy(); bilanHourChartInst = null; }
   if (!hs.length) { mount(wrap, html`<p class="empty-note">Renseigne l'heure d'entrée de tes trades pour voir tes meilleures heures.</p>`); return; }
@@ -102,7 +102,7 @@ function renderHeatmap() {
       plugins: { tooltip: proTooltip({ displayColors: false, callbacks: {
         title: items => items[0] ? items[0].label + ' – ' + String((hours[items[0].dataIndex] + 1) % 24).padStart(2, '0') + 'h' : '',
         label: c => 'Résultat net  ' + fmtV(c.raw),
-        afterLabel: c => { const g = hMap[hours[c.dataIndex]]; return g ? [g.n + ' trade(s) · win rate ' + Math.round(g.w / g.n * 100) + ' %'] : ['aucun trade']; }
+        afterLabel: c => { const g = hMap[hours[c.dataIndex]]; return g ? [g.n + ' trade(s)' + (g.w + g.l ? ' · win rate ' + Math.round(g.w / (g.w + g.l) * 100) + ' %' : '')] : ['aucun trade']; }
       } }) },
       scales: proScales({ xTicks: 24, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } })
     },
@@ -115,7 +115,7 @@ function renderHeatmap() {
 
 // Ligne « nom · jauge win rate · WR · n · net » commune aux sessions et aux jours.
 function perfRowHtml(name, v, useEur, tag) {
-  const total = v.tp + v.sl + v.be, rate = total ? v.tp / total : 0, low = v.n < 10, be = breakevenWinRate();
+  const total = v.tp + v.sl, rate = total ? v.tp / total : 0, low = v.n < 10, be = breakevenWinRate();
   return html`<div class="asset-row${raw(low ? ' low' : '')}" title="${low ? 'Échantillon trop faible pour conclure (n < 10)' : ''}">
     <span class="asset-name sans">${name}${tag || ''}</span>
     ${UI.meter(rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}

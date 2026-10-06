@@ -18,8 +18,8 @@ function renderKPIs() {
   const wrSub = document.getElementById('k-wr-sub');
   const beW = W.n ? breakevenWinRate() : null;
   // Une seule ligne : gagnants / perdants et seuil ; le détail (BE, intervalle de confiance) est dans l'info-bulle.
-  wrSub.textContent = W.n ? W.wins + ' G · ' + W.losses + ' P' + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') : 'aucun trade fermé';
-  wrSub.title = W.n ? fmtWinLine(W) + ' · win rate = gagnants ÷ trades clos (break-even inclus)' + (W.be ? ' · hors break-even : ' + fmtRate(W.wins / Math.max(1, W.wins + W.losses) * 100, 1) : '') + ' · ' + fmtCI(W) : '';
+  wrSub.textContent = W.closed ? W.wins + ' G · ' + W.losses + ' P' + (W.be ? ' · ' + W.be + ' BE' : '') + (beW !== null ? ' · seuil ' + Math.round(beW * 100) + ' %' : '') : 'aucun trade fermé';
+  wrSub.title = W.n ? fmtWinLine(W) + ' · win rate = gagnants ÷ (gagnants + perdants), les break-even ne comptent pas · ' + fmtCI(W) : '';
 
   // P&L
   const pnlArr = trades.filter(t => t.pnl != null);
@@ -231,7 +231,7 @@ function renderWinRateMeters() {
   const W = winStats(trades);
   const days = Object.values(dayNet(trades));
   const dW = days.filter(v => v > 1e-6).length, dL = days.filter(v => v < -1e-6).length, dN = days.length;
-  const dCI = dN ? wilsonCI(dW, dN) : [0, 0];
+  const dD = dW + dL, dCI = dD ? wilsonCI(dW, dD) : [0, 0];   // journées neutres exclues, comme les break-even
   const be = breakevenWinRate();
   if (!W.n) { mount(el, html`<p class="empty-note">Apparaîtra dès ton premier trade clôturé.</p>`); return; }
   const row = (name, k, n, lo, hi, thr, thrLbl, foot) => {
@@ -250,7 +250,7 @@ function renderWinRateMeters() {
       <div class="wr-foot"><span>${foot}</span><span>IC 95 % : ${Math.round(lo * 100)}–${Math.round(hi * 100)} %</span></div>
     </div>`;
   };
-  mount(el, html`${row('Par trade', W.wins, W.n, W.lo, W.hi, be, be !== null ? 'seuil ' + Math.round(be * 100) + ' %' : '', fmtWinLine(W) + (be !== null ? ' · seuil = perte moy. ÷ (gain moy. + perte moy.)' : ''))}${dN ? row('Par journée', dW, dN, dCI[0], dCI[1], .5, '50 %', dW + ' jour(s) + · ' + dL + ' jour(s) −' + (dN - dW - dL ? ' · ' + (dN - dW - dL) + ' neutre(s)' : '')) : ''}`);
+  mount(el, html`${row('Par trade', W.wins, W.n, W.lo, W.hi, be, be !== null ? 'seuil ' + Math.round(be * 100) + ' %' : '', fmtWinLine(W) + (be !== null ? ' · seuil = perte moy. ÷ (gain moy. + perte moy.)' : ''))}${dD ? row('Par journée', dW, dD, dCI[0], dCI[1], .5, '50 %', dW + ' jour(s) + · ' + dL + ' jour(s) −' + (dN - dW - dL ? ' · ' + (dN - dW - dL) + ' neutre(s)' : '')) : ''}`);
 }
 
 // ── DISTRIBUTION DES R ────────────────────────────────────────────────
@@ -355,8 +355,8 @@ function renderHeatmapDH() {
   list.forEach(t => {
     const h = parseInt(t.entry, 10); if (isNaN(h)) return;
     const dow = (new Date(t.date + 'T00:00:00').getDay() + 6) % 7;   // 0 = lundi
-    const k = dow + '-' + h; const g = grid[k] = grid[k] || { n: 0, w: 0, net: 0 };
-    g.n++; g.net += val(t); if (t.res === 'TP') g.w++;
+    const k = dow + '-' + h; const g = grid[k] = grid[k] || { n: 0, w: 0, l: 0, net: 0 };
+    g.n++; g.net += val(t); if (t.res === 'TP') g.w++; else if (t.res === 'SL') g.l++;
     minH = Math.min(minH, h); maxH = Math.max(maxH, h); dows.add(dow);
   });
   if (maxH < 0) { mount(cont, html`<p class="empty-note">Renseigne l'heure d'entrée de tes trades pour voir tes meilleurs créneaux.</p>`); if (sub) sub.textContent = ''; return; }
@@ -386,7 +386,7 @@ function renderHeatmapDH() {
   const show = (e, el) => {
     const c = heatDHCells[+el.dataset.i]; if (!c) return;
     const ev = e && e.clientX !== undefined ? e : (() => { const r = el.getBoundingClientRect(); return { clientX: r.right, clientY: r.bottom }; })();
-    showHtmlTip(ev, c.title.charAt(0).toUpperCase() + c.title.slice(1), [['Résultat net', fmtV(c.g.net), c.g.net >= 0 ? 'green' : 'red'], ['Trades', String(c.g.n)], ['Win rate', Math.round(c.g.w / c.g.n * 100) + ' %']]);
+    showHtmlTip(ev, c.title.charAt(0).toUpperCase() + c.title.slice(1), [['Résultat net', fmtV(c.g.net), c.g.net >= 0 ? 'green' : 'red'], ['Trades', String(c.g.n)], ['Win rate', c.g.w + c.g.l ? Math.round(c.g.w / (c.g.w + c.g.l) * 100) + ' %' : '—']]);
   };
   cont.querySelectorAll('.hm-cell.has').forEach(el => {
     el.addEventListener('mouseenter', e => show(e, el));
@@ -492,12 +492,12 @@ function renderWinDonuts() {
 
   drawDonut('trades', [['Gagnants', W.wins, 'green'], ['Perdants', W.losses, 'red'], ['Break-even', W.be, 'muted']],
     W.n ? fmtRate(W.rate * 100, 0) : '—', 'gagnants',
-    W.n ? html`${W.be && W.wins + W.losses ? html`hors BE <b>${fmtRate(W.wins / (W.wins + W.losses) * 100, 0)}</b> · ` : ''}${be !== null ? html`seuil <b class="tone-${raw(W.rate >= be ? 'green' : 'red')}">${Math.round(be * 100)} %</b>` : W.n + ' trades clos'}` : 'aucun trade clos',
-    W.n ? fmtWinLine(W) + ' · ' + fmtCI(W) + (be !== null ? ' · seuil de rentabilité ' + Math.round(be * 100) + ' %' : '') + (W.be ? ' · les break-even comptent comme non gagnants ; sans eux : ' + fmtRate(W.wins / Math.max(1, W.wins + W.losses) * 100, 1) : '') : '');
+    W.n ? html`${W.be ? html`${W.be} BE exclus · ` : ''}${be !== null ? html`seuil <b class="tone-${raw(W.rate >= be ? 'green' : 'red')}">${Math.round(be * 100)} %</b>` : W.n + ' trades gagnants ou perdants'}` : 'aucun trade clos',
+    W.n ? fmtWinLine(W) + ' · ' + fmtCI(W) + (be !== null ? ' · seuil de rentabilité ' + Math.round(be * 100) + ' %' : '') + (W.be ? ' · les break-even ne comptent ni comme gains ni comme pertes' : '') : '');
   drawDonut('days', [['Gagnantes', dC.w, 'green'], ['Perdantes', dC.l, 'red'], ['Neutres', dC.n - dC.w - dC.l, 'muted']],
-    fmtP(pct(dC.w, dC.n)), 'gagnantes', dC.n ? dC.n + ' jour' + (dC.n > 1 ? 's' : '') + ' tradé' + (dC.n > 1 ? 's' : '') : 'aucune journée', 'Journée gagnante = résultat net du jour positif');
+    fmtP(pct(dC.w, dC.w + dC.l)), 'gagnantes', dC.n ? dC.n + ' jour' + (dC.n > 1 ? 's' : '') + ' tradé' + (dC.n > 1 ? 's' : '') : 'aucune journée', 'Journée gagnante = résultat net du jour positif (journées neutres exclues)');
   drawDonut('weeks', [['Gagnantes', wC.w, 'green'], ['Perdantes', wC.l, 'red'], ['Neutres', wC.n - wC.w - wC.l, 'muted']],
-    fmtP(pct(wC.w, wC.n)), 'gagnantes', wC.n ? wC.n + ' semaine' + (wC.n > 1 ? 's' : '') : 'aucune semaine', 'Semaine gagnante = résultat net de la semaine (lundi → dimanche) positif');
+    fmtP(pct(wC.w, wC.w + wC.l)), 'gagnantes', wC.n ? wC.n + ' semaine' + (wC.n > 1 ? 's' : '') : 'aucune semaine', 'Semaine gagnante = résultat net de la semaine (lundi → dimanche) positif (semaines neutres exclues)');
 }
 function drawDonut(key, parts, center, centerLbl, sub, title) {
   const total = parts.reduce((s, p) => s + p[1], 0);

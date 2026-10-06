@@ -24,12 +24,14 @@ test('getISOWeek : bords d’année', () => {
   assert.deepEqual({ ...C.getISOWeek(new Date(2024, 11, 30)) }, { year: 2025, week: 1 });  // lundi 30 déc. 2024
 });
 
-test('winStats : les BE comptent au dénominateur, trades ouverts ignorés', () => {
-  const s = C.winStats([{ res: 'TP' }, { res: 'TP' }, { res: 'SL' }, { res: 'BE' }, { res: 'OPEN' }]);
-  assert.equal(s.n, 4); assert.equal(s.wins, 2); assert.equal(s.losses, 1); assert.equal(s.be, 1);
-  assert.equal(s.rate, 0.5);
-  assert.ok(s.lo < 0.5 && s.hi > 0.5 && s.lo >= 0 && s.hi <= 1);
+test('winStats : gagnants ÷ (gagnants + perdants), les BE ne comptent pas, trades ouverts ignorés', () => {
+  const s = C.winStats([{ res: 'TP' }, { res: 'TP' }, { res: 'SL' }, { res: 'BE' }, { res: 'BE' }, { res: 'OPEN' }]);
+  assert.equal(s.n, 3); assert.equal(s.closed, 5); assert.equal(s.wins, 2); assert.equal(s.losses, 1); assert.equal(s.be, 2);
+  assert.ok(Math.abs(s.rate - 2 / 3) < 1e-12);
+  assert.ok(s.lo < 2 / 3 && s.hi > 2 / 3 && s.lo >= 0 && s.hi <= 1);
   assert.equal(C.winStats([]).rate, null);
+  const onlyBE = C.winStats([{ res: 'BE' }, { res: 'BE' }]);
+  assert.equal(onlyBE.rate, null); assert.equal(onlyBE.closed, 2);
 });
 
 test('wilsonCI : valeurs de référence', () => {

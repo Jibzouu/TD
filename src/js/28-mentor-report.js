@@ -50,7 +50,7 @@ function mentorStats(list) {
   const rulesOk = (maxTP || maxSL) ? dayList.filter(([, g]) => (!maxTP || g.tp <= maxTP) && (!maxSL || g.sl <= maxSL)).length : null;
   const group = key => {
     const m = {};
-    list.forEach(t => { const k = t[key] || '—'; const g = m[k] = m[k] || { n: 0, w: 0, c: 0, pnl: 0, r: 0 }; g.n++; if (['TP', 'SL', 'BE'].includes(t.res)) g.c++; if (t.res === 'TP') g.w++; g.pnl += t.pnlEur || 0; g.r += rOf(t) || 0; });
+    list.forEach(t => { const k = t[key] || '—'; const g = m[k] = m[k] || { n: 0, w: 0, c: 0, pnl: 0, r: 0 }; g.n++; if (t.res === 'TP' || t.res === 'SL') g.c++; if (t.res === 'TP') g.w++; g.pnl += t.pnlEur || 0; g.r += rOf(t) || 0; });
     return Object.entries(m).sort((a, b) => b[1].pnl - a[1].pnl || b[1].r - a[1].r);
   };
   const mist = {};

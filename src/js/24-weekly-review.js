@@ -76,7 +76,7 @@ function renderWeeklyReview() {
   const mistRows = Object.entries(mist).sort((a, b) => b[1].n - a[1].n || a[1].cost - b[1].cost);
   const prevMist = {}; prevList.forEach(x => (x.mistakes || []).forEach(m => { prevMist[m] = (prevMist[m] || 0) + 1; }));
   const setups = {};
-  list.forEach(x => { const k = x.setup || 'Sans setup'; const g = setups[k] = setups[k] || { n: 0, w: 0, pnl: 0 }; g.n++; if (x.res === 'TP') g.w++; if (x.pnlEur != null) g.pnl += x.pnlEur; });
+  list.forEach(x => { const k = x.setup || 'Sans setup'; const g = setups[k] = setups[k] || { n: 0, w: 0, l: 0, pnl: 0 }; g.n++; if (x.res === 'TP') g.w++; else if (x.res === 'SL') g.l++; if (x.pnlEur != null) g.pnl += x.pnlEur; });
   const fmtE = v => fmtEUR(v, false, 0);
   const tradeCard = x => html`<button class="rv-trade" onclick="openTradeDetail(${raw(x.id)})">
       ${tradeImages(x)[0] ? html`<img src="${raw(safeImgSrc(tradeImages(x)[0]))}" alt="">` : html`<span class="rv-noimg">${x.asset ? x.asset.slice(0, 3) : '—'}</span>`}
@@ -121,7 +121,7 @@ function renderWeeklyReview() {
 }
 function mountSetups(setups) {
   const rows = Object.entries(setups).sort((a, b) => b[1].pnl - a[1].pnl);
-  return UI.table(['Setup', 'Trades', 'Win rate', 'Résultat'], rows.map(([k, g]) => [k, String(g.n), Math.round(g.w / g.n * 100) + ' %', UI.pnl(g.pnl, '€')]), { align: ['l', 'r', 'r', 'r'] });
+  return UI.table(['Setup', 'Trades', 'Win rate', 'Résultat'], rows.map(([k, g]) => [k, String(g.n), g.w + g.l ? Math.round(g.w / (g.w + g.l) * 100) + ' %' : '—', UI.pnl(g.pnl, '€')]), { align: ['l', 'r', 'r', 'r'] });
 }
 function reviewQuestionsHtml(answers) {
   return UI.card('Questions de revue', 'tes réponses sont enregistrées pour cette semaine', html`<div class="rv-questions">

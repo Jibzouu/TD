@@ -253,13 +253,13 @@ test('donuts du Dashboard : trades, journées et semaines gagnants, filtre globa
     mk(5, '2026-06-09', 'TP', 80),                                            // semaine 24 : +80
   ] } });
   const txt = id => page.locator(id).textContent();
-  assert.equal(await txt('#dn-trades-pct'), '40 %', '2 gagnants sur 5 trades clos');
+  assert.equal(await txt('#dn-trades-pct'), '50 %', '2 gagnants sur 4 trades gagnants ou perdants (le BE ne compte pas)');
   assert.equal(await txt('#dn-days-pct'), '67 %', '2 journées gagnantes sur 3');
   assert.equal(await txt('#dn-weeks-pct'), '50 %', 'semaine 24 gagnante, semaine 25 perdante');
   assert.match(await page.locator('#dn-trades-legend').innerText(), /Break-even\s+1/);
   assert.ok(await page.evaluate(() => Object.keys(donutInsts).length === 3), '3 graphiques dessinés');
   await page.selectOption('#gf-asset', 'EUR/USD');
-  assert.equal(await txt('#dn-trades-pct'), '40 %');
+  assert.equal(await txt('#dn-trades-pct'), '50 %');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -383,8 +383,9 @@ test('chiffres fiables : Détecteur d’edge, coût réel des erreurs, calculate
     T({ id: 2001, date: '2026-06-16', res: 'BE', pnl: 0, pnlEur: 0 })];
   const sc = { version: 4, start: 1000, riskPct: 3, step: 1000, cushion1: 500, goal: 10000, auto: true, riskSteps: [] };
   const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: [...extra, ...sampleTrades()], tj_account: '1000', tj_scaling: sc } });
-  // Win rate : BE comptés comme non gagnants, valeur hors BE affichée à côté.
-  assert.match(await page.locator('#dn-trades-sub').innerText(), /hors BE 68 %/);   // 21 G / (21 G + 10 P)
+  // Win rate : les BE ne comptent ni comme gains ni comme pertes.
+  assert.equal(await page.locator('#dn-trades-pct').textContent(), '68 %');   // 21 G / (21 G + 10 P)
+  assert.match(await page.locator('#dn-trades-sub').innerText(), /1 BE exclus/);
   await goto(page, 'stats');
   // Tous les segments gagnent : pas de faux « point faible ».
   const edge = await page.locator('#edge-finder-body').innerText();

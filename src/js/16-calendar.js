@@ -36,7 +36,7 @@ function computeDayData(dateStr, dayMap) {
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;
   const closed = dayTrades.filter(t=>['TP','SL','BE'].includes(t.res)).length;
-  const winPct = closed>0 ? Math.round(tp/closed*100) : 0;
+  const winPct = tp + sl > 0 ? Math.round(tp / (tp + sl) * 100) : 0;
   // Résultat net du jour utilisé pour la COULEUR : en € dès qu'un montant en € existe ce jour-là, sinon en R.
   // (Avant, le signe venait du R et l'intensité des € : un jour positif en € mais sans R s'affichait comme un break-even.)
   const hasEur = dayTrades.some(t => t.pnlEur !== null && t.pnlEur !== undefined);

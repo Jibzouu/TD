@@ -16,7 +16,9 @@ function getISOWeek(date) {
   return { year: d.getUTCFullYear(), week: Math.ceil((((d - yearStart) / 86400000) + 1) / 7) };
 }
 
-// Win rate = gagnants ÷ trades clos (les break-even comptent au dénominateur). Intervalle de Wilson à 95 %.
+// Win rate = gagnants ÷ (gagnants + perdants) : les break-even ne comptent ni comme gains ni comme pertes.
+// Intervalle de Wilson à 95 %.
+function winRatio(w, l) { return w + l > 0 ? w / (w + l) : null; }
 function wilsonCI(k, n, z) {
   z = z || 1.96; if (!n) return [0, 0];
   const p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
@@ -25,8 +27,8 @@ function wilsonCI(k, n, z) {
 function winStats(list) {
   const closed = list.filter(t => ['TP', 'SL', 'BE'].includes(t.res));
   const wins = closed.filter(t => t.res === 'TP').length, losses = closed.filter(t => t.res === 'SL').length;
-  const n = closed.length, ci = n ? wilsonCI(wins, n) : [0, 0];
-  return { n, wins, losses, be: n - wins - losses, rate: n ? wins / n : null, lo: ci[0], hi: ci[1] };
+  const n = wins + losses, ci = n ? wilsonCI(wins, n) : [0, 0];
+  return { n, closed: closed.length, wins, losses, be: closed.length - n, rate: n ? wins / n : null, lo: ci[0], hi: ci[1] };
 }
 // Seuil de rentabilité du win rate à partir des gains et pertes (valeurs absolues) : 1 / (1 + payoff).
 function breakevenFromLists(winVals, lossVals) {

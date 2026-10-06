@@ -122,9 +122,9 @@ function renderSmallMultiples() {
   const sub = document.getElementById('sm-sub');
   if (sub) sub.textContent = (bySetup ? 'Par setup' : 'Par actif (renseigne un setup sur tes trades pour les comparer)') + ' · ' + (useEur ? '€ cumulés' : 'R cumulés') + ' · mêmes échelles pour comparer d\'un coup d\'œil';
   if (!top.length) { mount(cont, UI.empty('📈', 'Pas encore assez de trades par groupe', 'Il faut au moins 2 trades dans un setup (ou un actif) pour tracer sa courbe.', null)); return; }
-  const series = top.map(([k, g]) => { let c = 0; return { k, n: g.length, w: g.filter(t => t.res === 'TP').length, pts: [0].concat(g.map(t => (c += useEur ? (t.pnlEur || 0) : (t.pnl || 0)))) }; });
+  const series = top.map(([k, g]) => { let c = 0; return { k, n: g.length, w: g.filter(t => t.res === 'TP').length, l: g.filter(t => t.res === 'SL').length, pts: [0].concat(g.map(t => (c += useEur ? (t.pnlEur || 0) : (t.pnl || 0)))) }; });
   const all = series.flatMap(s => s.pts), yMin = Math.min(0, ...all), yMax = Math.max(0, ...all), xMax = Math.max(...series.map(s => s.pts.length - 1));
-  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades · ${Math.round(s.w / s.n * 100)} %</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : (s.pts[s.pts.length - 1] >= 0 ? '+' : '') + s.pts[s.pts.length - 1].toFixed(1) + 'R'}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
+  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades${s.w + s.l ? ' · ' + Math.round(s.w / (s.w + s.l) * 100) + ' %' : ''}</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : (s.pts[s.pts.length - 1] >= 0 ? '+' : '') + s.pts[s.pts.length - 1].toFixed(1) + 'R'}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
   if (typeof Chart === 'undefined') return;
   const tk = chartTokens();
   series.forEach((s, i) => {

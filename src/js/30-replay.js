@@ -505,7 +505,8 @@ function rpSessionStats() {
   const net = h.reduce((s, p) => s + p.realized - p.fees, 0);
   let peak = RP ? RP.startBalance : 0, bal = peak, dd = 0;
   h.forEach(p => { bal += p.realized - p.fees; peak = Math.max(peak, bal); dd = Math.min(dd, bal - peak); });
-  return { n: h.length, wins, wr: h.length ? wins / h.length * 100 : null, r: rs.reduce((a, b) => a + b, 0), net, dd };
+  const losses = rs.filter(r => r <= -0.1).length;   // break-even (|R| < 0,1) exclus du win rate
+  return { n: h.length, wins, wr: wins + losses ? wins / (wins + losses) * 100 : null, r: rs.reduce((a, b) => a + b, 0), net, dd };
 }
 function rpRefreshControls() {
   const play = document.getElementById('rp-play');

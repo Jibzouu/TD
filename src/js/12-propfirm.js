@@ -234,7 +234,7 @@ function renderStats() {
     statRow('SL', losses.length, 'pnl-n'),
     statRow('Break Even', bes.length),
     statRow('En cours', trades.filter(t=>t.res==='OPEN').length),
-    statRow('Win rate', pct(wins.length,n), (() => { const be = breakevenWinRate(); return be === null || !n ? '' : (wins.length / n >= be ? 'pnl-p' : 'pnl-n'); })()),
+    statRow('Win rate', pct(wins.length, wins.length + losses.length), (() => { const be = breakevenWinRate(), d = wins.length + losses.length; return be === null || !d ? '' : (wins.length / d >= be ? 'pnl-p' : 'pnl-n'); })()),
   ]}`);
 
   mount('stats-pnl', html`${[
@@ -273,18 +273,18 @@ function renderStats() {
     const atp = at.filter(t=>t.res==='TP').length;
     const asl = at.filter(t=>t.res==='SL').length;
     const abe = at.filter(t=>t.res==='BE').length;
-    const awr = ac.length>0?pct(atp,ac.length):'—';
+    const awr = atp+asl>0?pct(atp,atp+asl):'—';
     const apnl = at.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
     const arr = at.filter(t=>t.rr);
     const avgRR = arr.length>0?fmtR(arr.reduce((s,t)=>s+t.rr,0)/arr.length, 2, true):'—';
-    const wrNum = ac.length>0?atp/ac.length:0;
+    const wrNum = atp+asl>0?atp/(atp+asl):0;
     return html`<tr>
       <td class="fw-500">${asset}</td>
       <td>${at.length}</td>
       <td class="tone-green">${atp}</td>
       <td class="tone-red">${asl}</td>
       <td class="tone-amber">${abe}</td>
-      <td>${ac.length ? wrBarCell(wrNum, beWR, ac.length) : '—'}</td>
+      <td>${atp + asl ? wrBarCell(wrNum, beWR, atp + asl) : '—'}</td>
       <td class="${raw(apnl>0?'pnl-p':apnl<0?'pnl-n':'pnl-z')}">${at.filter(t=>t.pnl != null).length>0?fmtR(apnl, 2):'—'}</td>
       <td>${avgRR}</td>
     </tr>`;
@@ -298,10 +298,10 @@ function renderStats() {
     const tt = trades.filter(t=>t.tf===tf);
     if (!tt.length) return '';
     const tc = tt.filter(t=>['TP','SL','BE'].includes(t.res));
-    const ttp = tt.filter(t=>t.res==='TP').length;
-    const twr = tc.length>0?pct(ttp,tc.length):'—';
+    const ttp = tt.filter(t=>t.res==='TP').length, tsl = tt.filter(t=>t.res==='SL').length;
+    const twr = ttp+tsl>0?pct(ttp,ttp+tsl):'—';
     const tpnl = tt.filter(t=>t.pnl != null).reduce((s,t)=>s+t.pnl,0);
-    const wrNum = tc.length>0?ttp/tc.length:0;
+    const wrNum = ttp+tsl>0?ttp/(ttp+tsl):0;
     return html`<tr>
       <td class="fw-500">${tf}</td>
       <td>${tt.length}</td>

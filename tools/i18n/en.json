@@ -1896,5 +1896,12 @@
  "— via Twelve Data. Crée ta clé gratuite (1 minute, sans carte bancaire) et colle-la ici une seule fois : elle reste dans ton navigateur. L'offre gratuite donne 800 requêtes par jour (≈ 1 requête pour 1 000 bougies) et l'historique en 1 minute depuis 2019.": "— via Twelve Data. Create your free key (1 minute, no credit card) and paste it here once: it stays in your browser. The free plan gives 800 requests per day (≈ 1 request per 1,000 candles) and 1-minute history since 2019.",
  "Ta clé API Twelve Data": "Your Twelve Data API key",
  "Créer ma clé gratuite ↗": "Get my free key ↗",
- "crypto en direct depuis Binance (sans compte), forex et or via Twelve Data (clé gratuite) — ou ton propre fichier de bougies": "live crypto from Binance (no account), forex and gold via Twelve Data (free key) — or your own candle file"
+ "crypto en direct depuis Binance (sans compte), forex et or via Twelve Data (clé gratuite) — ou ton propre fichier de bougies": "live crypto from Binance (no account), forex and gold via Twelve Data (free key) — or your own candle file",
+ "{0} BE exclus ·": "{0} BE excluded ·",
+ "{0} BE exclus": "{0} BE excluded",
+ "trades gagnants ou perdants": "winning or losing trades",
+ "Journée gagnante = résultat net du jour positif (journées neutres exclues)": "Winning day = positive net result for the day (flat days excluded)",
+ "Semaine gagnante = résultat net de la semaine (lundi → dimanche) positif (semaines neutres exclues)": "Winning week = positive net result for the week (Monday → Sunday) (flat weeks excluded)",
+ "les break-even ne comptent ni comme gains ni comme pertes": "break-evens count as neither wins nor losses",
+ "win rate = gagnants ÷ (gagnants + perdants), les break-even ne comptent pas": "win rate = wins ÷ (wins + losses), break-evens don't count"
 }

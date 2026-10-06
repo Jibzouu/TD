@@ -258,7 +258,7 @@ function renderKpiSparklines() {
   }
   const eurOf = t => (t.pnlEur !== null && t.pnlEur !== undefined) ? t.pnlEur : 0;
   const win = (i, w) => closed.slice(Math.max(0, i - w), i);
-  const wrAt = i => { const b = win(i, KPI_WINDOW * 2); return b.filter(t => t.res === 'TP').length / b.length * 100; };
+  const wrAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP').length, l = b.filter(t => t.res === 'SL').length; return w + l ? w / (w + l) * 100 : 0; };
   const cum = []; closed.reduce((c, t, i) => (cum[i + 1] = c + (t.pnl || 0)), 0); cum[0] = 0;
   const payoffAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : null; };
   const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.filter(t => t.res === 'TP').reduce((s, t) => s + eurOf(t), 0), gl = Math.abs(b.filter(t => t.res === 'SL').reduce((s, t) => s + eurOf(t), 0)); return gl > 0 ? Math.min(gw / gl, 5) : null; };

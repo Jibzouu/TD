@@ -53,7 +53,8 @@ function renderChecklistAnalysis() {
   function stats(arr) {
     const closed = arr.filter(t => ['TP','SL','BE'].includes(t.res));
     const tp = arr.filter(t => t.res === 'TP').length;
-    const wr = closed.length ? tp/closed.length*100 : 0;
+    const sl = arr.filter(t => t.res === 'SL').length;
+    const wr = tp + sl ? tp / (tp + sl) * 100 : 0;
     const rrVals = arr.map(t => t.pnl).filter(v => v !== null && v !== undefined);
     const avgRR = rrVals.length ? rrVals.reduce((a,b)=>a+b,0)/rrVals.length : null;
     return { n: arr.length, wr, avgRR };
@@ -140,14 +141,14 @@ function computeDimensionSegments(keyFn, minN) {
     if (!['TP','SL','BE'].includes(t.res)) return;
     const key = keyFn(t);
     if (key === null || key === undefined || key === '') return;
-    if (!map[key]) map[key] = { n:0, totalR:0, tp:0 };
+    if (!map[key]) map[key] = { n:0, totalR:0, tp:0, sl:0 };
     map[key].n++;
     map[key].totalR += t.pnl;
-    if (t.res === 'TP') map[key].tp++;
+    if (t.res === 'TP') map[key].tp++; else if (t.res === 'SL') map[key].sl++;
   });
   return Object.entries(map)
     .filter(([,v]) => v.n >= minN)
-    .map(([key,v]) => ({ key, n:v.n, totalR:v.totalR, avgR:v.totalR/v.n, winRate:v.tp/v.n*100, reliable: v.n >= 10 }));
+    .map(([key,v]) => ({ key, n:v.n, totalR:v.totalR, avgR:v.totalR/v.n, winRate:v.tp + v.sl ? v.tp/(v.tp + v.sl)*100 : 0, reliable: v.n >= 10 }));
 }
 
 function renderEdgeFinder() {

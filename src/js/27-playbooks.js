@@ -53,14 +53,14 @@ function renamePlaybook(oldName, newName) {
 function playbookStats(name) {
   const list = analysisTrades().filter(t => t.setup === name && (t.res === 'TP' || t.res === 'SL' || t.res === 'BE'))
     .slice().sort((a, b) => (a.date + (a.entry || '')).localeCompare(b.date + (b.entry || '')));
-  const wins = list.filter(t => t.res === 'TP').length;
+  const wins = list.filter(t => t.res === 'TP').length, losses = list.filter(t => t.res === 'SL').length;
   const withR = list.filter(t => t.pnl != null);
   const net = list.reduce((s, t) => s + (+t.pnlEur || 0), 0);
   const rSum = withR.reduce((s, t) => s + t.pnl, 0);
   let cum = 0;
   const curve = list.map(t => (cum += (t.pnl != null ? t.pnl : 0)));
   return {
-    list, n: list.length, wins, wr: list.length ? wins / list.length * 100 : null, net,
+    list, n: list.length, wins, wr: wins + losses ? wins / (wins + losses) * 100 : null, net,
     expR: withR.length ? rSum / withR.length : null, rSum: withR.length ? rSum : null, curve,
     best: list.reduce((m, t) => (t.pnlEur != null && (m == null || t.pnlEur > m) ? t.pnlEur : m), null),
     worst: list.reduce((m, t) => (t.pnlEur != null && (m == null || t.pnlEur < m) ? t.pnlEur : m), null)
