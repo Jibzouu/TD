@@ -710,10 +710,12 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rk-mark.start small,.rk-mark.peak small{transform:translateY(22px)}
 .rk-cap-txt p{margin:4px 0;font-size:14px;color:var(--txt2)}
 .rk-cap-txt small{color:var(--txt3)}
-.rk-steps{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0;margin:0 0 16px;counter-reset:s}
+.rk-steps{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0;margin:0 0 16px;counter-reset:s}
 .rk-steps li{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:10px 6px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg)}
 .rk-steps li.cur{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
 .rk-steps li.done{opacity:.75}
+.rk-steps li.custom{border-style:dashed}.rk-steps li.custom.cur{border-style:solid}
+.rk-custom{margin:4px 0 12px;max-width:520px}
 .rk-dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--bg3);color:var(--txt2)}
 .rk-steps li.cur .rk-dot{background:var(--accent);color:#fff}.rk-steps li.done .rk-dot{background:var(--green);color:#fff}
 .rk-steps small{font-size:12px;color:var(--txt3)}

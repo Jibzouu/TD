@@ -13,8 +13,12 @@ const RK_STAGES = [
   { name: ['Backtest', 'Backtest'], risk: 0.25, desc: ['Prouve ta stratégie sur l’historique avant d’y mettre de l’argent.', 'Prove your strategy on history before putting money on it.'] },
   { name: ['Live prudent', 'Careful live'], risk: 0.25, desc: ['Premiers trades réels avec un risque minuscule : on apprend à exécuter.', 'First real trades with a tiny risk: you learn to execute.'] },
   { name: ['Live intermédiaire', 'Intermediate live'], risk: 0.5, desc: ['La méthode tient en réel : le risque double, toujours petit.', 'The method holds live: risk doubles, still small.'] },
-  { name: ['Rythme de croisière', 'Cruising'], risk: 1, desc: ['Risque normal de 1 %, tant que la discipline reste là.', 'Normal 1 % risk, as long as discipline holds.'] }
+  { name: ['Rythme de croisière', 'Cruising'], risk: 1, desc: ['Risque normal de 1 %, tant que la discipline reste là.', 'Normal 1 % risk, as long as discipline holds.'] },
+  { name: ['Personnalisé', 'Custom'], risk: null, custom: true, desc: ['Tu fixes toi-même ton risque max par trade : pas de critères imposés, le garde-fou et la protection du capital restent actifs.', 'You set your own max risk per trade: no imposed criteria, the guard and capital protection stay on.'] }
 ];
+const RK_PATH_N = 4;   // étapes du parcours guidé (la 5e, « Personnalisé », est hors parcours)
+// Plafond de risque (%) de l'étape : pour « Personnalisé », celui choisi par l'utilisateur (aucun plafond s'il est vide).
+function rkStageCap(stage, prog) { return stage.custom ? (prog.customRisk > 0 ? prog.customRisk : null) : stage.risk; }
 const rkL = (fr, en) => LANG === 'en' ? en : fr;
 function rkCfg() { const c = loadJSON(JP + 'guard', null); return Object.assign({}, RK_DEF, c && typeof c === 'object' && !Array.isArray(c) ? c : {}); }
 function rkSaveCfg(c) { try { DB.setItem(JP + 'guard', JSON.stringify(c)); } catch (e) { reportStorageError(e); } }
@@ -39,7 +43,7 @@ function rkGuard(day) {
   const remaining = Math.max(0, Math.min(left('day'), left('week'), left('month'), Math.max(0, marginFloor)));
   const factor = rkFactor(eqI.dd * 100, cfg.cuts), prog = rkProg(), stage = RK_STAGES[Math.min(prog.stage, RK_STAGES.length - 1)];
   const plan = typeof calcPlanRisk === 'function' ? calcPlanRisk() : null;
-  const base = plan ? plan.risk : eqI.eq * 0.01, cap = eqI.eq * stage.risk / 100;
+  const capPct = rkStageCap(stage, prog), base = plan ? plan.risk : eqI.eq * 0.01, cap = capPct == null ? Infinity : eqI.eq * capPct / 100;
   const rec = Math.max(0, Math.min(base, cap) * factor);
   const rule = typeof todayRuleStatus === 'function' && !day ? todayRuleStatus() : { alerts: [] };
   const stops = [], warns = [];
@@ -62,7 +66,7 @@ function rkGuard(day) {
   const flags = rkBehaviorFlags(all).filter(f => f.t.date >= localDateStr(new Date(Date.now() - 7 * 86400000)));
   if (flags.length) warns.push(flags.length + rkL(' trade(s) récent(s) avec une taille anormale ou pris par revanche.', ' recent trade(s) with an unusual size or taken in revenge.'));
   const level = stops.length ? 'stop' : warns.length ? 'warn' : 'ok';
-  return { level, stops, warns, cfg, lim, pnl, remaining, remainDay: left('day'), floor, marginFloor, eq: eqI.eq, peak: eqI.peak, dd: eqI.dd, factor, rec, base, plan, stage, prog, streak, nToday: todays.length, flags };
+  return { level, stops, warns, cfg, lim, pnl, capPct, remaining, remainDay: left('day'), floor, marginFloor, eq: eqI.eq, peak: eqI.peak, dd: eqI.dd, factor, rec, base, plan, stage, prog, streak, nToday: todays.length, flags };
 }
 function rkHeadline(g) {
   if (g.level === 'stop') return rkL('STOP pour aujourd’hui', 'STOP for today');
@@ -122,7 +126,7 @@ function rkCriteria(stage) {
     return [bar(rkL('Trades en backtest', 'Backtest trades'), bt.length, 50, bt.length + ' / 50', bt.length >= 50),
       bar(rkL('Espérance positive', 'Positive expectancy'), e != null && e > 0 ? 1 : 0, 1, e == null ? '—' : fmtR(e, 2) + rkL(' par trade', ' per trade'), e != null && e > 0)];
   }
-  if (stage >= RK_STAGES.length - 1) return [];
+  if (stage >= RK_PATH_N - 1) return [];
   const list = trades.filter(t => t.date && t.date >= since && ['TP', 'SL', 'BE'].includes(t.res)), rs = rkRs(list), n = list.length;
   const need = stage === 1 ? 30 : 50, disc = rkDiscipline(trades.filter(t => t.date && t.date >= since)).avg;
   const out = [bar(rkL('Trades à cette étape', 'Trades at this step'), n, need, n + ' / ' + need, n >= need),
@@ -137,8 +141,9 @@ function rkCriteria(stage) {
   return out;
 }
 function rkSetStage(s, confirmMsg) {
-  if (confirmMsg && !confirm(confirmMsg)) return;
-  rkSaveProg({ stage: Math.max(0, Math.min(RK_STAGES.length - 1, s)), since: localDateStr() });
+  if (confirmMsg && !confirm(confirmMsg)) { renderRiskPage(); return; }
+  const prev = rkProg();
+  rkSaveProg({ stage: Math.max(0, Math.min(RK_STAGES.length - 1, s)), since: localDateStr(), customRisk: prev.customRisk });
   renderRiskPage(); safeRun(renderGuardCard, 'renderGuardCard');
 }
 
@@ -204,6 +209,11 @@ function rkSetCfg(k, v) {
   rkSaveCfg(c); renderRiskPage(); safeRun(renderGuardCard, 'renderGuardCard');
 }
 // Réglages partagés avec Paramètres (perte max du jour) et le Plan de trading (TP / SL max) : modifiables ici aussi.
+function rkSetCustomRisk(v) {
+  const p = rkProg(), n = parseFloat(String(v).replace(',', '.'));
+  p.customRisk = n > 0 ? Math.min(n, 100) : null;
+  rkSaveProg(p); renderRiskPage(); safeRun(renderGuardCard, 'renderGuardCard');
+}
 function rkSetDayLimit(v) {
   const n = parseFloat(String(v).replace(',', '.'));
   if (!(n > 0)) { showToast(rkL('Indique un pourcentage supérieur à 0', 'Enter a percentage above 0'), 'error'); renderRiskPage(); return; }
@@ -250,21 +260,22 @@ function renderRiskPage() {
         ${[[g.floor, rkL('Plancher', 'Floor'), 'floor'], [accountSize, rkL('Départ', 'Start'), 'start'], [g.peak, rkL('Plus haut', 'Peak'), 'peak'], [g.eq, rkL('Maintenant', 'Now'), 'now']].map(([v, l, k]) => html`<span class="${raw('rk-mark ' + k)}" style="${raw('left:' + pos(v) + '%')}"><i></i><small>${l}<br><b>${fmtEUR(v, false, 0)}</b></small></span>`)}</div>
       <div class="rk-cap-txt">
         <p>${rkL('Marge avant le plancher : ', 'Room above the floor: ')}<b class="tone-${raw(g.marginFloor > 0 ? 'green' : 'red')}">${fmtEUR(g.marginFloor, false, 0)}</b> · ${rkL('baisse depuis le plus haut : ', 'drawdown from peak: ')}<b>${fmtNum(g.dd * 100, 1)} %</b></p>
-        <p>${rkL('Risque conseillé maintenant : ', 'Suggested risk now: ')}<b>${fmtEUR(g.rec, false, 2)}</b> <small>= ${g.plan ? rkL('ton plan de Scaling', 'your Scaling plan') + ' (' + fmtEUR(g.base, false, 2) + ')' : rkL('1 % du capital', '1 % of capital')}, ${rkL('plafonné par ton étape', 'capped by your step')} (${fmtRate(g.stage.risk, 2)})${g.factor < 1 ? rkL(', réduit à ', ', cut to ') + Math.round(g.factor * 100) + ' %' : ''}</small></p>
+        <p>${rkL('Risque conseillé maintenant : ', 'Suggested risk now: ')}<b>${fmtEUR(g.rec, false, 2)}</b> <small>= ${g.plan ? rkL('ton plan de Scaling', 'your Scaling plan') + ' (' + fmtEUR(g.base, false, 2) + ')' : rkL('1 % du capital', '1 % of capital')}, ${g.capPct == null ? rkL('sans plafond d’étape', 'no step cap') : rkL('plafonné par ton étape', 'capped by your step') + ' (' + fmtRate(g.capPct, 2) + ')'}${g.factor < 1 ? rkL(', réduit à ', ', cut to ') + Math.round(g.factor * 100) + ' %' : ''}</small></p>
       </div></div>
     <div class="rk-grid">
       ${num('floorPct', rkL('Plancher du capital', 'Capital floor'), rkL('du capital de départ — en dessous : retour au backtest', 'of starting capital — below it: back to backtesting'), '%')}
       ${(c.cuts || []).map((cut, i) => html`<label class="rk-f"><span>${rkL('Si le compte baisse de', 'If the account drops by')} ${cut[0]} %<small>${rkL('depuis son plus haut, le risque passe à', 'from its peak, risk becomes')}</small></span><span class="rk-in rk-in2"><input type="number" min="0" step="1" value="${cut[0]}" onchange="${raw("rkSetCfg('cut" + i + "_0', this.value)")}"><em>%</em><input type="number" min="5" max="100" step="5" value="${Math.round(cut[1] * 100)}" onchange="${raw("rkSetCfg('cut" + i + "_1', this.value)")}"><em>${rkL('% du risque', '% of risk')}</em></span></label>`)}
     </div>`);
   // 3) Parcours
-  const st = g.prog.stage, crit = rkCriteria(st), ready = crit.length && crit.every(x => x.ok);
-  mount('rk-path', html`<ol class="rk-steps">${RK_STAGES.map((s, i) => html`<li class="${raw(i < st ? 'done' : i === st ? 'cur' : '')}"><span class="rk-dot">${i < st ? '✓' : i + 1}</span><b>${guideText(s.name)}</b><small>${i === 0 ? rkL('aucun risque réel', 'no real risk') : fmtRate(s.risk, 2) + rkL(' par trade', ' per trade')}</small></li>`)}</ol>
+  const st = g.prog.stage, custom = !!RK_STAGES[st].custom, crit = custom ? [] : rkCriteria(st), ready = crit.length && crit.every(x => x.ok);
+  mount('rk-path', html`<ol class="rk-steps">${RK_STAGES.map((s, i) => html`<li class="${raw((s.custom ? 'custom ' : '') + (!custom && i < st ? 'done' : i === st ? 'cur' : ''))}"><span class="rk-dot">${!custom && i < st ? '✓' : s.custom ? '✎' : i + 1}</span><b>${guideText(s.name)}</b><small>${s.custom ? (g.prog.customRisk > 0 ? fmtRate(g.prog.customRisk, 2) + rkL(' par trade', ' per trade') : rkL('ton propre risque', 'your own risk')) : i === 0 ? rkL('aucun risque réel', 'no real risk') : fmtRate(s.risk, 2) + rkL(' par trade', ' per trade')}</small></li>`)}</ol>
     <div class="rk-path-cur"><p><b>${rkL('Ton étape : ', 'Your step: ')}${guideText(RK_STAGES[st].name)}</b> — ${guideText(RK_STAGES[st].desc)}</p>
-      ${crit.length ? html`<div class="rk-crit">${crit.map(x => html`<div class="rk-crit-row"><span>${x.ok ? '✅' : '⬜'} ${x.label}</span><div class="rk-meter"><i class="${raw(x.ok ? 'green' : 'accent')}" style="${raw('width:' + Math.round(x.pct * 100) + '%')}"></i></div><b>${x.txt}</b></div>`)}</div>`
+      ${custom ? html`<label class="rk-f rk-custom"><span>${rkL('Ton risque max par trade', 'Your max risk per trade')}<small>${rkL('plafond du « risque conseillé » ; laisse vide pour suivre seulement ton plan de Scaling', 'cap of the “suggested risk”; leave empty to follow only your Scaling plan')}</small></span><span class="rk-in"><input type="number" id="rk-custom-risk" min="0.05" max="100" step="0.05" value="${g.prog.customRisk > 0 ? g.prog.customRisk : ''}" placeholder="—" onchange="rkSetCustomRisk(this.value)"><em>%</em></span></label>`
+      : crit.length ? html`<div class="rk-crit">${crit.map(x => html`<div class="rk-crit-row"><span>${x.ok ? '✅' : '⬜'} ${x.label}</span><div class="rk-meter"><i class="${raw(x.ok ? 'green' : 'accent')}" style="${raw('width:' + Math.round(x.pct * 100) + '%')}"></i></div><b>${x.txt}</b></div>`)}</div>`
         : html`<p class="tone-muted">${rkL('Dernière étape : garde la discipline, et reviens en arrière si ta discipline ou ton compte baissent.', 'Last step: keep your discipline, and step back if your discipline or account drop.')}</p>`}
       <div class="rk-path-act">
-        ${st < RK_STAGES.length - 1 ? html`<button class="btn-primary" ${raw(ready ? '' : 'disabled')} onclick="${raw('rkSetStage(' + (st + 1) + ')')}">${ready ? rkL('Passer à l’étape suivante →', 'Move to the next step →') : rkL('Étape suivante : critères à remplir', 'Next step: criteria to meet')}</button>` : ''}
-        ${st > 0 ? html`<button class="btn-ghost" onclick="${raw('rkSetStage(' + (st - 1) + ')')}">← ${rkL('Revenir à l’étape précédente', 'Go back a step')}</button>` : ''}
+        ${!custom && st < RK_PATH_N - 1 ? html`<button class="btn-primary" ${raw(ready ? '' : 'disabled')} onclick="${raw('rkSetStage(' + (st + 1) + ')')}">${ready ? rkL('Passer à l’étape suivante →', 'Move to the next step →') : rkL('Étape suivante : critères à remplir', 'Next step: criteria to meet')}</button>` : ''}
+        ${!custom && st > 0 ? html`<button class="btn-ghost" onclick="${raw('rkSetStage(' + (st - 1) + ')')}">← ${rkL('Revenir à l’étape précédente', 'Go back a step')}</button>` : ''}
         <label class="rk-pick">${rkL('Déjà expérimenté ? Choisir mon étape :', 'Already experienced? Pick my step:')} <select onchange="${raw("rkSetStage(+this.value, '" + rkL('Changer d’étape à la main ? Les critères repartent d’aujourd’hui.', 'Change step manually? Criteria restart from today.').replace(/'/g, '’') + "')")}">${RK_STAGES.map((s, i) => html`<option value="${i}" ${raw(i === st ? 'selected' : '')}>${i + 1}. ${guideText(s.name)}</option>`)}</select></label>
       </div></div>`);
   // 4) Discipline

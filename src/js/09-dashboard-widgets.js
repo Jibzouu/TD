@@ -224,7 +224,7 @@ function renderHeroSide(E, endBal, perf, curDD) {
     bEl.textContent = fmtEUR(bal, false, 2);
     const diff = bal - accountSize;
     if (bSub) bSub.innerHTML = '';
-    if (bSub) mount(bSub, html`${'départ ' + fmtEUR(accountSize, false, 0)}${E.pts.length && E.useEur && accountSize > 0 ? html` · <span class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${fmtPct(diff / accountSize * 100)}</span>` : ''}`);
+    if (bSub) mount(bSub, html`${tr('départ') + ' ' + fmtEUR(accountSize, false, 0)}${E.pts.length && E.useEur && accountSize > 0 ? html` · <span class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${fmtPct(diff / accountSize * 100)}</span>` : ''}`);
   }
   if (!E.pts.length) { mount(side, ''); return; }
   const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;

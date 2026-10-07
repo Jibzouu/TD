@@ -1502,6 +1502,17 @@ test('gestion du risque : garde-fou, plancher et réduction du risque, parcours,
   await page.selectOption('#rk-path select', '1');
   assert.equal(await page.evaluate(() => rkProg().stage), 1);
   assert.match(await page.locator('#rk-path').innerText(), /Trades à cette étape/);
+  // Étape « Personnalisé » : risque max choisi par le trader, pas de critères ni de boutons d'étape.
+  page.once('dialog', d => d.accept());
+  await page.selectOption('#rk-path select', '4');
+  await page.fill('#rk-custom-risk', '2');
+  await page.locator('#rk-custom-risk').dispatchEvent('change');
+  assert.equal(await page.evaluate(() => rkGuard().capPct), 2);
+  assert.doesNotMatch(await page.locator('#rk-path').innerText(), /Trades à cette étape|étape suivante|étape précédente/);
+  assert.equal(await page.evaluate(() => rkProg().stage), 4);
+  page.once('dialog', d => d.accept());
+  await page.selectOption('#rk-path select', '1');
+  assert.equal(await page.evaluate(() => rkProg().customRisk), 2);
   // Discipline : tableau des jours et score.
   assert.match(await page.locator('#rk-disc').innerText(), /Discipline \(20 jours\)/);
   // Simulateur : 6 niveaux de risque, ligne conseillée, graphique.
