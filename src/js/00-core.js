@@ -101,7 +101,8 @@ const TRADE_NUM_FIELDS = ['rr', 'pnl', 'pnlEur', 'fees', 'size', 'ddUsed', 'emot
 const TRADE_STR_FIELDS = ['asset', 'tf', 'dir', 'session', 'desc', 'tvKey', 'rSrc', 'ccy', 'setup', 'review', 'importSource'];
 function sanitizeTrade(t) {
   if (!t || typeof t !== 'object') return null;
-  const o = Object.assign({}, t);
+  const o = {};
+  Object.keys(t).forEach(k => { if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') o[k] = t[k]; });   // pas de pollution de prototype
   const idNum = Number(o.id);
   o.id = isFinite(idNum) && idNum > 0 ? idNum : Date.now() + Math.floor(Math.random() * 1e6);
   TRADE_NUM_FIELDS.forEach(k => {

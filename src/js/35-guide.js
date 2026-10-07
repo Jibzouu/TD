@@ -123,7 +123,9 @@ const GUIDE = [
     items: [
       ['Sauvegarde complète (fichier) et restauration ; synchronisation entre appareils par fichier (fusion sans doublons).', 'Full backup (file) and restore; sync between devices by file (merge without duplicates).'],
       ['Export CSV de tes trades ; import TradingView, MetaTrader 4/5, cTrader.', 'CSV export of your trades; TradingView, MetaTrader 4/5, cTrader import.'],
-      ['Rapport mentor : un fichier à partager avec ton mentor sur la période choisie.', 'Mentor report: a file to share with your mentor for the chosen period.']
+      ['Rapport mentor : un fichier à partager avec ton mentor sur la période choisie.', 'Mentor report: a file to share with your mentor for the chosen period.'],
+      ['La sauvegarde inclut aussi tes réglages de Gestion du risque (garde-fou, étape du parcours, mode Personnalisé).', 'The backup also includes your Risk management settings (guard, path step, Custom mode).'],
+      ['Sécurité : tout reste sur ton appareil. Un fichier importé est filtré (aucun code ne peut s’exécuter), le journal ne peut envoyer des données qu’aux sources de cours du Replay, et l’export CSV neutralise les formules Excel piégées. N’importe que tes propres fichiers et garde ta clé Twelve Data pour toi.', 'Security: everything stays on your device. An imported file is filtered (no code can run), the journal can only send data to the Replay price sources, and the CSV export neutralizes booby-trapped Excel formulas. Only import your own files and keep your Twelve Data key to yourself.']
     ] },
   { id: 'parametres', page: 'parametres', icon: '⚙️', title: ['Paramètres', 'Settings'],
     intro: ['Ton compte et l’apparence du journal.', 'Your account and the journal’s look.'],

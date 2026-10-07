@@ -124,8 +124,22 @@ function hexToRgba(hex, alpha) {
   const num = parseInt(h,16);
   return `rgba(${(num>>16)&255},${(num>>8)&255},${num&255},${alpha})`;
 }
+// Thème venant du stockage ou d'un backup : seulement des variables CSS « --nom » avec des valeurs simples
+// (pas d'url(), d'@import ni de caractères de structure) — un thème importé ne peut ni charger une ressource externe ni casser le CSS.
+function safeThemeObj(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  Object.keys(o).forEach(k => {
+    const v = o[k];
+    if (!/^--[\w-]{1,40}$/.test(k) || (typeof v !== 'string' && typeof v !== 'number' && typeof v !== 'boolean')) return;
+    const s = String(v);
+    if (s.length > 200 || /url\s*\(|image\s*\(|@import|expression\s*\(|[\\<>{};]/i.test(s)) return;
+    out[k] = v;
+  });
+  return out;
+}
 function loadThemeObj() {
-  try { const o = JSON.parse(DB.getItem((GP + 'theme')) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch(e) { return {}; }
+  try { return safeThemeObj(JSON.parse(DB.getItem((GP + 'theme')) || '{}')); } catch(e) { return {}; }
 }
 function saveThemeObj(theme) { DB.setItem((GP + 'theme'), JSON.stringify(theme)); }
 
@@ -335,7 +349,7 @@ function swatchStrip(colors) {
   return html`<div class="swatch-strip" style="${raw(colors.map((c, i) => `--s${i + 1}:${safeColor(c, fb[i])}`).join(';'))}"><span></span><span></span><span></span><span></span><span></span></div>`;
 }
 function getCustomThemes() {
-  try { const l = JSON.parse(DB.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object') : []; } catch (e) { return []; }
+  try { const l = JSON.parse(DB.getItem((GP + 'custom_themes')) || '[]'); return Array.isArray(l) ? l.filter(t => t && typeof t === 'object').map(t => Object.assign({}, t, { theme: safeThemeObj(t.theme) })) : []; } catch (e) { return []; }
 }
 // Couleur acceptée seulement si c'est vraiment une couleur (#hex, rgb(a)) : un thème importé ne peut pas injecter de HTML via un attribut style.
 function safeColor(v, fallback) { return (typeof v === 'string' && /^(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%]+\))$/.test(v.trim())) ? v.trim() : fallback; }

@@ -43,7 +43,10 @@ function ruleInsightChips(chip) {
 function csvCell(v) {
   if (v === null || v === undefined || v === '') return '';
   if (typeof v === 'number') return isFinite(v) ? String(v).replace('.', ',') : '';
-  const s = String(v).replace(/\r?\n/g, ' ');
+  let s = String(v).replace(/\r?\n/g, ' ');
+  // Une cellule texte qui commence par = + - @ serait exécutée comme formule par Excel / LibreOffice (injection de formule) :
+  // on la préfixe d'une apostrophe, sauf si c'est juste un nombre négatif.
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?[\d\s.,]+$/.test(s)) s = "'" + s;
   return /[;"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 function tradesToCSV(list) {

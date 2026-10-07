@@ -26,10 +26,20 @@ const RK_CUSTOM_DEF = { maxConsec: 0, maxTrades: 0, pauseMin: 0, weekPct: 0, mon
 function rkIsCustom(p) { const s = RK_STAGES[(p || rkProg()).stage]; return !!(s && s.custom); }
 function rkCfg(custom) {
   const cu = custom ?? rkIsCustom(), c = loadJSON(JP + (cu ? 'guard_custom' : 'guard'), null);
-  return Object.assign({}, cu ? RK_CUSTOM_DEF : RK_DEF, c && typeof c === 'object' && !Array.isArray(c) ? c : {});
+  const def = cu ? RK_CUSTOM_DEF : RK_DEF, out = Object.assign({}, def);
+  // Valeurs lues du stockage ou d'un backup : nombres ≥ 0 seulement, paliers de réduction [seuil %, facteur 0–1].
+  if (c && typeof c === 'object' && !Array.isArray(c)) {
+    Object.keys(def).forEach(k => { if (k !== 'cuts' && typeof c[k] === 'number' && isFinite(c[k]) && c[k] >= 0) out[k] = c[k]; });
+    if (Array.isArray(c.cuts)) out.cuts = c.cuts.filter(x => Array.isArray(x) && isFinite(x[0]) && x[0] >= 0 && isFinite(x[1]) && x[1] >= 0 && x[1] <= 1).slice(0, 4).map(x => [+x[0], +x[1]]);
+  }
+  return out;
 }
 function rkSaveCfg(c, custom) { try { DB.setItem(JP + ((custom ?? rkIsCustom()) ? 'guard_custom' : 'guard'), JSON.stringify(c)); } catch (e) { reportStorageError(e); } }
-function rkProg() { const p = loadJSON(JP + 'prog', null); return p && typeof p === 'object' && p.stage >= 0 ? p : { stage: JOURNAL_TYPE === 'backtest' ? 0 : 0, since: localDateStr() }; }
+function rkProg() {
+  const p = loadJSON(JP + 'prog', null);
+  if (!p || typeof p !== 'object' || !Number.isInteger(p.stage) || p.stage < 0 || p.stage >= RK_STAGES.length) return { stage: 0, since: localDateStr() };
+  return { stage: p.stage, since: /^\d{4}-\d{2}-\d{2}$/.test(p.since) ? p.since : localDateStr(), customRisk: typeof p.customRisk === 'number' && p.customRisk > 0 && p.customRisk <= 100 ? p.customRisk : null };
+}
 function rkSaveProg(p) { try { DB.setItem(JP + 'prog', JSON.stringify(p)); } catch (e) {} }
 const rkSortT = l => l.slice().sort((a, b) => ((a.date || '') + (a.entry || '')).localeCompare((b.date || '') + (b.entry || '')));
 const rkEur = t => typeof t.pnlEur === 'number' && isFinite(t.pnlEur) ? t.pnlEur : 0;

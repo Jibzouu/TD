@@ -151,7 +151,7 @@ function rpdTplMenu(btn) {
   const it = (act, label, cls) => '<button type="button" class="rp-dd-it ' + (cls || '') + '" onclick="' + act + '">' + escHtmlAttr(tr(label)) + '</button>';
   m.innerHTML = it('rpdTplAdd()', 'Enregistrer le style comme modèle…') + it('rpdTplDefault()', 'Utiliser ce style pour les prochains dessins')
     + (t.def[d.type] ? it('rpdTplReset()', 'Revenir au style d’origine') : '')
-    + (list.length ? '<div class="rp-dd-title">' + escHtmlAttr(tr('Mes modèles')) + '</div>' + list.map((x, i) => '<div class="rp-tpl-row"><button type="button" class="rp-dd-it" onclick="rpdTplApply(' + i + ')"><span class="rp-dd-sw" style="background:' + escHtmlAttr(x.color) + ';height:' + (x.width || 2) + 'px"></span>' + escHtmlAttr(x.name) + '</button><button type="button" class="rp-lg-b" aria-label="' + escHtmlAttr(tr('Supprimer')) + '" onclick="rpdTplDel(' + i + ')">×</button></div>').join('') : '');
+    + (list.length ? '<div class="rp-dd-title">' + escHtmlAttr(tr('Mes modèles')) + '</div>' + list.map((x, i) => '<div class="rp-tpl-row"><button type="button" class="rp-dd-it" onclick="rpdTplApply(' + i + ')"><span class="rp-dd-sw" style="background:' + escHtmlAttr(x.color) + ';height:' + (+x.width || 2) + 'px"></span>' + escHtmlAttr(x.name) + '</button><button type="button" class="rp-lg-b" aria-label="' + escHtmlAttr(tr('Supprimer')) + '" onclick="rpdTplDel(' + i + ')">×</button></div>').join('') : '');
   m.hidden = false;
   const r = btn.getBoundingClientRect(), pr = m.offsetParent.getBoundingClientRect();
   m.style.left = Math.max(4, Math.min(r.left - pr.left, pr.width - m.offsetWidth - 4)) + 'px'; m.style.top = (r.bottom - pr.top + 6) + 'px';
@@ -291,22 +291,22 @@ function rpdOrderLines() {
   if (!r.error || r.error === 'stop') {
     const sgn = T.side === 'short' ? -1 : 1, qty = r.qty || 0;
     if (T.type !== 'market' && r.entry) out.push({ key: 'tk-e', price: P('tk-e', r.entry), color: T.side === 'short' ? SELL : BUY, dash: 1, tag: (T.type === 'limit' ? tr('LIMITE') : tr('STOP')) + ' ' + side(T.side), val: qty ? rpQtyFmt(qty) : '', drag: { kind: 'ticket', which: 'price' } });
-    if (r.sl) out.push({ key: 'tk-sl', price: P('tk-sl', r.sl), color: SLC, dash: 1, tag: 'SL', val: qty ? money(-r.risk) : '', valColor: SLC, drag: { kind: 'ticket', which: 'sl' }, close: "rpdTicketClear('sl')" });
-    if (r.tp) out.push({ key: 'tk-tp', price: P('tk-tp', r.tp), color: TPC, dash: 1, tag: 'TP', val: qty && r.reward != null ? money(r.reward) : '', valColor: TPC, drag: { kind: 'ticket', which: 'tp' }, close: "rpdTicketClear('tp')" });
+    if (r.sl) out.push({ key: 'tk-sl', price: P('tk-sl', r.sl), color: SLC, dash: 1, tag: 'SL', val: qty ? money(-r.risk) : '', valColor: SLC, drag: { kind: 'ticket', which: 'sl' }, close: () => rpdTicketClear('sl') });
+    if (r.tp) out.push({ key: 'tk-tp', price: P('tk-tp', r.tp), color: TPC, dash: 1, tag: 'TP', val: qty && r.reward != null ? money(r.reward) : '', valColor: TPC, drag: { kind: 'ticket', which: 'tp' }, close: () => rpdTicketClear('tp') });
   }
   // Positions ouvertes
   RP.positions.forEach(p => {
     const sgn = p.side === 'short' ? -1 : 1, u = c ? rpOpenPnl(p, c.close) : 0;
-    out.push({ key: p.id + '-e', price: p.entry, color: p.side === 'short' ? SELL : BUY, tag: side(p.side) + ' ' + rpQtyFmt(p.qty), val: money(u), valColor: u >= 0 ? TPC : SLC, close: "rpClosePos('" + p.id + "', 1)", closeTip: 'Fermer la position', add: p.tp == null ? "rpdAddLevel('" + p.id + "','tp')" : p.sl == null ? "rpdAddLevel('" + p.id + "','sl')" : null, addLabel: p.tp == null ? '+TP' : '+SL' });
-    if (p.sl != null) { const pr = P(p.id + '-sl', p.sl); out.push({ key: p.id + '-sl', price: pr, color: SLC, dash: 1, tag: 'SL', val: money((pr - p.entry) * sgn * p.qty), valColor: SLC, drag: { kind: 'pos', id: p.id, which: 'sl' }, close: "rpdRemoveLevel('" + p.id + "','sl')", closeTip: 'Retirer le stop' }); }
-    if (p.tp != null) { const pr = P(p.id + '-tp', p.tp); out.push({ key: p.id + '-tp', price: pr, color: TPC, dash: 1, tag: 'TP', val: money((pr - p.entry) * sgn * p.qty), valColor: TPC, drag: { kind: 'pos', id: p.id, which: 'tp' }, close: "rpdRemoveLevel('" + p.id + "','tp')", closeTip: 'Retirer l’objectif' }); }
+    out.push({ key: p.id + '-e', price: p.entry, color: p.side === 'short' ? SELL : BUY, tag: side(p.side) + ' ' + rpQtyFmt(p.qty), val: money(u), valColor: u >= 0 ? TPC : SLC, close: () => rpClosePos(p.id, 1), closeTip: 'Fermer la position', add: p.tp == null ? () => rpdAddLevel(p.id, 'tp') : p.sl == null ? () => rpdAddLevel(p.id, 'sl') : null, addLabel: p.tp == null ? '+TP' : '+SL' });
+    if (p.sl != null) { const pr = P(p.id + '-sl', p.sl); out.push({ key: p.id + '-sl', price: pr, color: SLC, dash: 1, tag: 'SL', val: money((pr - p.entry) * sgn * p.qty), valColor: SLC, drag: { kind: 'pos', id: p.id, which: 'sl' }, close: () => rpdRemoveLevel(p.id, 'sl'), closeTip: 'Retirer le stop' }); }
+    if (p.tp != null) { const pr = P(p.id + '-tp', p.tp); out.push({ key: p.id + '-tp', price: pr, color: TPC, dash: 1, tag: 'TP', val: money((pr - p.entry) * sgn * p.qty), valColor: TPC, drag: { kind: 'pos', id: p.id, which: 'tp' }, close: () => rpdRemoveLevel(p.id, 'tp'), closeTip: 'Retirer l’objectif' }); }
   });
   // Ordres en attente
   RP.orders.forEach(o => {
     const sgn = o.side === 'short' ? -1 : 1, e = P(o.id + '-o', o.price);
-    out.push({ key: o.id + '-o', price: e, color: o.side === 'short' ? SELL : BUY, dash: 2, tag: (o.type === 'limit' ? tr('LIMITE') : tr('STOP')) + ' ' + side(o.side) + ' ' + rpQtyFmt(o.qty), val: rpPrice(e), drag: { kind: 'pos', id: o.id, which: 'entry' }, close: "rpCancelOrder('" + o.id + "')", closeTip: 'Annuler l’ordre' });
-    if (o.sl != null) { const pr = P(o.id + '-sl', o.sl); out.push({ key: o.id + '-sl', price: pr, color: SLC, dash: 2, tag: 'SL', val: money((pr - e) * sgn * o.qty), valColor: SLC, drag: { kind: 'pos', id: o.id, which: 'sl' }, close: "rpdRemoveLevel('" + o.id + "','sl')" }); }
-    if (o.tp != null) { const pr = P(o.id + '-tp', o.tp); out.push({ key: o.id + '-tp', price: pr, color: TPC, dash: 2, tag: 'TP', val: money((pr - e) * sgn * o.qty), valColor: TPC, drag: { kind: 'pos', id: o.id, which: 'tp' }, close: "rpdRemoveLevel('" + o.id + "','tp')" }); }
+    out.push({ key: o.id + '-o', price: e, color: o.side === 'short' ? SELL : BUY, dash: 2, tag: (o.type === 'limit' ? tr('LIMITE') : tr('STOP')) + ' ' + side(o.side) + ' ' + rpQtyFmt(o.qty), val: rpPrice(e), drag: { kind: 'pos', id: o.id, which: 'entry' }, close: () => rpCancelOrder(o.id), closeTip: 'Annuler l’ordre' });
+    if (o.sl != null) { const pr = P(o.id + '-sl', o.sl); out.push({ key: o.id + '-sl', price: pr, color: SLC, dash: 2, tag: 'SL', val: money((pr - e) * sgn * o.qty), valColor: SLC, drag: { kind: 'pos', id: o.id, which: 'sl' }, close: () => rpdRemoveLevel(o.id, 'sl') }); }
+    if (o.tp != null) { const pr = P(o.id + '-tp', o.tp); out.push({ key: o.id + '-tp', price: pr, color: TPC, dash: 2, tag: 'TP', val: money((pr - e) * sgn * o.qty), valColor: TPC, drag: { kind: 'pos', id: o.id, which: 'tp' }, close: () => rpdRemoveLevel(o.id, 'tp') }); }
   });
   return out;
 }
@@ -409,7 +409,7 @@ function rpdDown(e) {
   const ol = rpdOlHit(loc.x, loc.y);
   if (ol) {
     rpdGrab(e);
-    if (ol.part === 'close' || ol.part === 'add') { rpdRelease(); new Function(ol.act)(); return; }
+    if (ol.part === 'close' || ol.part === 'add') { rpdRelease(); ol.act(); return; }
     if (ol.L && ol.L.drag) { RPD.drag = { ol: ol.L.key, line: ol.L, price: ol.L.price }; return; }
     rpdRelease(); return;
   }
