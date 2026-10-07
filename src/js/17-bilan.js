@@ -49,6 +49,7 @@ function renderBilan() {
     ['Trades', dayTrades.length, ''],
     ['TP', tp, 'green'],
     ['SL', sl, 'red'],
+    ['BE', be, be ? 'amber' : 'muted'],
     ['Win Rate', wr, tp/(tp+sl||1) >= .5 ? 'green' : 'red'],
     ['P&L (€)', eurDay.length ? fmtEUR(pnlEur,true) : '—', !eurDay.length ? 'muted' : pnlEur >= 0 ? 'green' : 'red'],
     ['P&L (R)', fmtR(pnlR, 2), pnlR >= 0 ? 'green' : 'red'],
@@ -120,7 +121,7 @@ function perfRowHtml(name, v, useEur, tag) {
     <span class="asset-name sans">${name}${tag || ''}</span>
     ${UI.meter(rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}
     <span class="asset-num">${Math.round(rate * 100)} %</span>
-    <span class="asset-num muted">${v.n}${low ? ' ⚠' : ''}</span>
+    <span class="asset-num muted" title="${raw(v.tp + ' TP · ' + v.sl + ' SL · ' + v.be + ' BE')}">${v.n}${v.be ? html` <span class="cal-be">· ${v.be} BE</span>` : ''}${low ? ' ⚠' : ''}</span>
     <span class="asset-num tone-${raw(v.net >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(v.net, true, 0) : fmtR(v.net, 1)}</span>
   </div>`;
 }

@@ -35,13 +35,14 @@ function computeDayData(dateStr, dayMap) {
   const lossesEur = dayTrades.filter(t=>t.pnlEur!==null && t.pnlEur!==undefined && t.pnlEur<0).reduce((s,t)=>s+t.pnlEur,0);
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;
-  const closed = dayTrades.filter(t=>['TP','SL','BE'].includes(t.res)).length;
+  const be = dayTrades.filter(t=>t.res==='BE').length;
+  const closed = tp + sl + be;
   const winPct = tp + sl > 0 ? Math.round(tp / (tp + sl) * 100) : 0;
   // Résultat net du jour utilisé pour la COULEUR : en € dès qu'un montant en € existe ce jour-là, sinon en R.
   // (Avant, le signe venait du R et l'intensité des € : un jour positif en € mais sans R s'affichait comme un break-even.)
   const hasEur = dayTrades.some(t => t.pnlEur !== null && t.pnlEur !== undefined);
   const net = hasEur ? pnlEurSum : pnlSum;
-  const data = { dayTrades, pnlSum, pnlEurSum, gainsEur, lossesEur, tp, sl, closed, winPct, hasEur, net };
+  const data = { dayTrades, pnlSum, pnlEurSum, gainsEur, lossesEur, tp, sl, be, closed, winPct, hasEur, net };
   calDayDataCache[dateStr] = data;
   return data;
 }
@@ -213,7 +214,7 @@ function renderCalendrier() {
       days.push(html`<div class="${cls}"${raw(vars ? ` style="${vars}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}>
         ${hasBestWorst && dateStr === bestDate && bestVal > 0 ? html`<span class="cal-badge" title="Meilleur jour du mois">🏆</span>` : ''}${hasBestWorst && dateStr === worstDate && worstVal < 0 ? html`<span class="cal-badge" title="Jour le plus coûteux">⚠️</span>` : ''}${streak ? html`<span class="cal-badge streak" title="${streak.length} jours ${streak.type === 'win' ? 'gagnants' : 'perdants'} d'affilée">${streak.type === 'win' ? '🔥' : '❄️'}${streak.length}</span>` : ''}
         <div class="cal-dnum">${d}</div>
-        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗ · ${data.winPct} %</div>` : ''}
+        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗${data.be ? html` <span class="cal-be" title="${raw(data.be + ' break-even')}">${data.be} BE</span>` : ''}${data.tp + data.sl ? ' · ' + data.winPct + ' %' : ''}</div>` : ''}
       </div>`);
     }
     const week = weekDays > 0
@@ -319,7 +320,7 @@ function renderRRTables() {
 
   const weekKeys = Object.keys(weekMap).sort().reverse();
   const monthKeys = Object.keys(monthMap).sort().reverse();
-  const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? ' ' + v.be + 'be' : ''})</span>`;
+  const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? html` <span class="cal-be">${v.be} BE</span>` : ''})</span>`;
   const rrCell = v => html`<td class="r strong tone-${raw(v.rr > 0 ? 'green' : v.rr < 0 ? 'red' : 'txt2')}">${fmtR(v.rr, 2)}</td>`;
   const table = (el, first, keys, label, map) => {
     if (!el) return;

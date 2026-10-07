@@ -610,3 +610,6 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rp-td-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .rp-td-row input{flex:1;min-width:220px;margin:0}
 .rp-td-row .btn-ghost{height:36px;display:inline-flex;align-items:center;padding:0 12px;text-decoration:none}
+/* Break-even visibles (calendrier, bilan) */
+.cal-be{color:var(--amber);font-weight:600}
+.cal-day.strong .cal-be{color:inherit}

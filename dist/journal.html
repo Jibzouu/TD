@@ -2335,6 +2335,9 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rp-td-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .rp-td-row input{flex:1;min-width:220px;margin:0}
 .rp-td-row .btn-ghost{height:36px;display:inline-flex;align-items:center;padding:0 12px;text-decoration:none}
+/* Break-even visibles (calendrier, bilan) */
+.cal-be{color:var(--amber);font-weight:600}
+.cal-day.strong .cal-be{color:inherit}
 
 </style>
 </head>
@@ -9906,13 +9909,14 @@ function computeDayData(dateStr, dayMap) {
   const lossesEur = dayTrades.filter(t=>t.pnlEur!==null && t.pnlEur!==undefined && t.pnlEur<0).reduce((s,t)=>s+t.pnlEur,0);
   const tp = dayTrades.filter(t=>t.res==='TP').length;
   const sl = dayTrades.filter(t=>t.res==='SL').length;
-  const closed = dayTrades.filter(t=>['TP','SL','BE'].includes(t.res)).length;
+  const be = dayTrades.filter(t=>t.res==='BE').length;
+  const closed = tp + sl + be;
   const winPct = tp + sl > 0 ? Math.round(tp / (tp + sl) * 100) : 0;
   // Résultat net du jour utilisé pour la COULEUR : en € dès qu'un montant en € existe ce jour-là, sinon en R.
   // (Avant, le signe venait du R et l'intensité des € : un jour positif en € mais sans R s'affichait comme un break-even.)
   const hasEur = dayTrades.some(t => t.pnlEur !== null && t.pnlEur !== undefined);
   const net = hasEur ? pnlEurSum : pnlSum;
-  const data = { dayTrades, pnlSum, pnlEurSum, gainsEur, lossesEur, tp, sl, closed, winPct, hasEur, net };
+  const data = { dayTrades, pnlSum, pnlEurSum, gainsEur, lossesEur, tp, sl, be, closed, winPct, hasEur, net };
   calDayDataCache[dateStr] = data;
   return data;
 }
@@ -10084,7 +10088,7 @@ function renderCalendrier() {
       days.push(html`<div class="${cls}"${raw(vars ? ` style="${vars}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}>
         ${hasBestWorst && dateStr === bestDate && bestVal > 0 ? html`<span class="cal-badge" title="Meilleur jour du mois">🏆</span>` : ''}${hasBestWorst && dateStr === worstDate && worstVal < 0 ? html`<span class="cal-badge" title="Jour le plus coûteux">⚠️</span>` : ''}${streak ? html`<span class="cal-badge streak" title="${streak.length} jours ${streak.type === 'win' ? 'gagnants' : 'perdants'} d'affilée">${streak.type === 'win' ? '🔥' : '❄️'}${streak.length}</span>` : ''}
         <div class="cal-dnum">${d}</div>
-        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗ · ${data.winPct} %</div>` : ''}
+        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗${data.be ? html` <span class="cal-be" title="${raw(data.be + ' break-even')}">${data.be} BE</span>` : ''}${data.tp + data.sl ? ' · ' + data.winPct + ' %' : ''}</div>` : ''}
       </div>`);
     }
     const week = weekDays > 0
@@ -10190,7 +10194,7 @@ function renderRRTables() {
 
   const weekKeys = Object.keys(weekMap).sort().reverse();
   const monthKeys = Object.keys(monthMap).sort().reverse();
-  const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? ' ' + v.be + 'be' : ''})</span>`;
+  const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? html` <span class="cal-be">${v.be} BE</span>` : ''})</span>`;
   const rrCell = v => html`<td class="r strong tone-${raw(v.rr > 0 ? 'green' : v.rr < 0 ? 'red' : 'txt2')}">${fmtR(v.rr, 2)}</td>`;
   const table = (el, first, keys, label, map) => {
     if (!el) return;
@@ -10264,6 +10268,7 @@ function renderBilan() {
     ['Trades', dayTrades.length, ''],
     ['TP', tp, 'green'],
     ['SL', sl, 'red'],
+    ['BE', be, be ? 'amber' : 'muted'],
     ['Win Rate', wr, tp/(tp+sl||1) >= .5 ? 'green' : 'red'],
     ['P&L (€)', eurDay.length ? fmtEUR(pnlEur,true) : '—', !eurDay.length ? 'muted' : pnlEur >= 0 ? 'green' : 'red'],
     ['P&L (R)', fmtR(pnlR, 2), pnlR >= 0 ? 'green' : 'red'],
@@ -10335,7 +10340,7 @@ function perfRowHtml(name, v, useEur, tag) {
     <span class="asset-name sans">${name}${tag || ''}</span>
     ${UI.meter(rate * 100, 'accent', { tick: be !== null ? be * 100 : null })}
     <span class="asset-num">${Math.round(rate * 100)} %</span>
-    <span class="asset-num muted">${v.n}${low ? ' ⚠' : ''}</span>
+    <span class="asset-num muted" title="${raw(v.tp + ' TP · ' + v.sl + ' SL · ' + v.be + ' BE')}">${v.n}${v.be ? html` <span class="cal-be">· ${v.be} BE</span>` : ''}${low ? ' ⚠' : ''}</span>
     <span class="asset-num tone-${raw(v.net >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(v.net, true, 0) : fmtR(v.net, 1)}</span>
   </div>`;
 }

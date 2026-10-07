@@ -1401,3 +1401,17 @@ test('backtest replay : forex en direct via Twelve Data (clé gratuite), EUR/USD
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('break-even visibles dans le calendrier, ses tableaux semaine / mois et le bilan journalier', async () => {
+  const tr = [T({ id: 1, date: '2026-06-15', res: 'TP', pnl: 2, pnlEur: 200 }), T({ id: 2, date: '2026-06-15', res: 'BE', pnl: 0, pnlEur: 0 }), T({ id: 3, date: '2026-06-15', res: 'SL', pnl: -1, pnlEur: -100 }), T({ id: 4, date: '2026-06-16', res: 'BE', pnl: 0, pnlEur: 0 })];
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: tr }, time: Date.parse('2026-06-20T12:00:00Z') });
+  await goto(page, 'calendrier');
+  const cells = await page.evaluate(() => [...document.querySelectorAll('.cal-win')].map(e => e.innerText.replace(/\s+/g, ' ').trim()));
+  assert.ok(cells.includes('1✓ 1✗ 1 BE · 50 %'), cells.join(' | '));
+  assert.ok(cells.includes('0✓ 0✗ 1 BE'), 'jour avec seulement un BE');
+  assert.match(await page.locator('#rr-week-table').innerText(), /4\s*\(1✓ 1✗ 2 BE\)/);
+  await page.evaluate(() => { showPage('bilan', document.querySelector('.nav-item[data-page=bilan]')); const s = document.getElementById('bilan-date-select'); s.value = '2026-06-15'; renderBilan(); });
+  assert.match(await page.locator('.bl-kpis').innerText(), /BE\s+1\s+Win Rate\s+50 %/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
