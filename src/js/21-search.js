@@ -14,6 +14,7 @@ const SEARCH_PAGES = [
   { page:'scaling', icon:'📈' },
   { page:'export', icon:'💾' },
   { page:'parametres', icon:'⚙️' },
+  { page:'guide', icon:'📖' },
 ].map(p => Object.assign(p, { label: t(p.key || 'nav.' + p.page) }));
 const SEARCH_ACTIONS = [
   { icon:'⚡', label:'Saisie rapide d\'un trade (N)', run: () => { closeGlobalSearch(); openQuickAdd(); } },

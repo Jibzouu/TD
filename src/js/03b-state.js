@@ -111,6 +111,7 @@ const PAGE_RENDERERS = {
   playbooks: () => [renderPlaybooks],
   replay: () => [renderReplay],
   parametres: () => [renderAccountsCard],
+  guide: () => [renderGuide, renderShortcutsPage],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }

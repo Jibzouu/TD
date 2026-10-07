@@ -88,6 +88,10 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1M12.4 12.4l-1.1-1.1M4.7 4.7 3.6 3.6"/></svg>
         <span data-i18n="nav.parametres">Paramètres</span>
       </button>
+      <button class="nav-item" onclick="showPage('guide',this)" data-page="guide" data-navid="guide">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.2c1.8-.6 3.6-.4 5.5.8v9c-1.9-1.2-3.7-1.4-5.5-.8z"/><path d="M13.5 3.2c-1.8-.6-3.6-.4-5.5.8v9c1.9-1.2 3.7-1.4 5.5-.8z"/></svg>
+        <span data-i18n="nav.guide">Guide</span>
+      </button>
     </nav>
     <div class="sidebar-footer">
       <p>Trades enregistrés<br><span id="trade-total-count">0</span> trade(s) · Données locales</p>
@@ -1234,16 +1238,26 @@
       </div>
     </div>
 
+    <div id="page-guide" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2 data-i18n="page.guide.title">Guide</h2><p data-i18n="page.guide.sub">Comment utiliser le journal, page par page, et tous les raccourcis clavier</p></div>
+      </div>
+      <div class="gd-head">
+        <div class="gd-jump"><button class="btn-ghost" onclick="guideJump('guide-list')">📖 Mode d'emploi</button><button class="btn-ghost" onclick="guideJump('gd-keys-sec')">⌨️ Raccourcis clavier</button></div>
+        <input type="search" id="guide-q" class="gd-q" placeholder="Rechercher dans le guide…" oninput="renderGuide()">
+      </div>
+      <div id="guide-list" class="gd-list"></div>
+      <section id="gd-keys-sec" class="gd-keys-sec">
+        <h3 class="gd-h3">⌨️ Raccourcis clavier</h3>
+        <p class="gd-note">Les raccourcis ne marchent pas pendant que tu écris dans un champ. Appuie sur ? n'importe où pour un aide-mémoire.</p>
+        <div id="keys-list" class="gd-keys-grid"></div>
+      </section>
+    </div>
+
     <div id="page-parametres" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2 data-i18n="page.parametres.title">Paramètres</h2><p data-i18n="page.parametres.sub">Ton compte, puis l'apparence (commune aux trois journaux) — tout est sauvegardé localement</p></div>
       </div>
-      <div class="set-tabs" role="tablist" aria-label="Paramètres">
-        <button class="set-tab active" role="tab" data-set="settings" aria-selected="true" onclick="showSettingsTab('settings')">⚙️ Réglages</button>
-        <button class="set-tab" role="tab" data-set="guide" aria-selected="false" onclick="showSettingsTab('guide')">📖 Guide d'utilisation</button>
-        <button class="set-tab" role="tab" data-set="keys" aria-selected="false" onclick="showSettingsTab('keys')">⌨️ Raccourcis clavier</button>
-      </div>
-      <div class="set-pane" data-set="settings" role="tabpanel">
 
       <div class="panel mb-20" id="lang-card">
         <div class="panel-hdr"><span><span data-i18n="settings.lang.title">Langue</span><small class="panel-sub" data-i18n="settings.lang.sub">langue de l'interface — commune aux trois journaux</small></span></div>
@@ -1405,15 +1419,6 @@
             </div>
           </div>
         </details>
-      </div>
-      </div>
-      <div class="set-pane" data-set="guide" role="tabpanel" hidden>
-        <div class="gd-head"><p>Comment utiliser le journal, page par page. Clique une section pour la déplier, ou cherche un mot.</p><input type="search" id="guide-q" class="gd-q" placeholder="Rechercher dans le guide…" oninput="renderGuide()"></div>
-        <div id="guide-list" class="gd-list"></div>
-      </div>
-      <div class="set-pane" data-set="keys" role="tabpanel" hidden>
-        <p class="gd-head">Les raccourcis ne marchent pas pendant que tu écris dans un champ. Appuie sur ? n'importe où pour un aide-mémoire.</p>
-        <div id="keys-list" class="gd-keys-grid"></div>
       </div>
     </div>
 

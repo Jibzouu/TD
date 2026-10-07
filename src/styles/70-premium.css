@@ -614,12 +614,7 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .cal-be{color:var(--amber);font-weight:600}
 .cal-day.strong .cal-be{color:inherit}
 
-/* Paramètres : onglets Réglages / Guide / Raccourcis */
-.set-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin:0 0 20px}
-.set-tab{border:0;background:transparent;color:var(--txt3);font:500 14px var(--sans);padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
-.set-tab:hover{color:var(--txt)}
-.set-tab.active{color:var(--txt);border-bottom-color:var(--accent);font-weight:600}
-.set-pane[hidden]{display:none}
+/* Guide : sections et raccourcis */
 .gd-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--txt2);font-size:13.5px;margin:0 0 14px}
 .gd-head p{margin:0}
 .gd-q{height:36px;min-width:260px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font:14px var(--sans);padding:0 12px}
@@ -640,3 +635,10 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .gd-keys-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
 .gd-keys .sh-grid{padding:4px 2px}
 @media (max-width:700px){.gd-body{padding:0 14px 14px 14px}.gd-q{min-width:0;width:100%}.gd-keys-grid{grid-template-columns:1fr}}
+/* Page Guide */
+#page-guide{max-width:1100px}
+.gd-jump{display:flex;gap:8px;flex-wrap:wrap}
+.gd-keys-sec{margin-top:34px;scroll-margin-top:16px}
+.gd-h3{font-size:19px;font-weight:650;margin:0 0 6px}
+.gd-note{color:var(--txt2);font-size:13.5px;margin:0 0 14px}
+#guide-list{scroll-margin-top:16px}

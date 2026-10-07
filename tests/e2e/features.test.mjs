@@ -1433,34 +1433,33 @@ test('journal des trades groupé par jour par défaut, choix gardé', async () =
   await ctx.close();
 });
 
-test('Paramètres : guide d\'utilisation (une section par page du menu) et page des raccourcis', async () => {
+test('Guide (page du menu sous Paramètres) : une section par page, recherche, raccourcis clavier en bas', async () => {
   const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_trades: [T({ id: 1 })] } });
-  await goto(page, 'parametres');
-  await page.click('.set-tab[data-set=guide]');
-  assert.equal(await page.locator('#accounts-card').isVisible(), false);
-  // Chaque page du menu (tous comptes confondus) a sa section dans le guide : à compléter à chaque nouvelle page.
+  // Entrée « Guide » juste sous « Paramètres » dans le menu.
+  const nav = await page.evaluate(() => [...document.querySelectorAll('.nav > .nav-item')].map(b => b.dataset.page));
+  assert.equal(nav[nav.indexOf('parametres') + 1], 'guide');
+  await page.click('.nav-item[data-page=guide]');
+  assert.equal(await page.evaluate(() => currentPage()), 'guide');
+  // Chaque page du menu (tous comptes confondus) a sa section : à compléter à chaque nouvelle page.
   const missing = await page.evaluate(() => [...document.querySelectorAll('.page[id^="page-"]')].map(p => p.id.slice(5)).filter(id => !GUIDE.some(s => s.page === id)));
   assert.deepEqual(missing, [], 'pages sans section dans le guide');
-  assert.ok(await page.locator('.gd-sec').count() >= 15);
+  assert.ok(await page.locator('.gd-sec').count() >= 16);
+  // Raccourcis clavier dans la même page, outils de dessin lus dans RPD_TOOLS.
+  const keys = await page.locator('#gd-keys-sec').innerText();
+  assert.match(keys, /Saisie rapide/); assert.match(keys, /Alt \+ F\s+Retracement de Fibonacci/); assert.match(keys, /Lecture \/ pause/);
+  // Recherche et lien vers la page.
   await page.fill('#guide-q', 'Fibonacci');
   assert.equal(await page.locator('.gd-sec').count(), 1);
-  assert.match(await page.locator('.gd-sec').innerText(), /Backtest replay/);
   await page.click('.gd-sec >> text=Ouvrir la page');
   assert.equal(await page.evaluate(() => currentPage()), 'replay');
-  // Raccourcis : groupes, dont les outils de dessin lus dans RPD_TOOLS ; onglet gardé.
-  await goto(page, 'parametres');
-  await page.click('.set-tab[data-set=keys]');
-  const keys = await page.locator('#keys-list').innerText();
-  assert.match(keys, /Saisie rapide/); assert.match(keys, /Alt \+ F\s+Retracement de Fibonacci/); assert.match(keys, /Lecture \/ pause/);
-  await page.evaluate(() => DB.flush());
-  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
-  await goto(page, 'parametres');
-  assert.equal(await page.locator('#keys-list').isVisible(), true);
-  // Depuis l'aide « ? » : lien vers la page complète.
-  await page.evaluate(() => showSettingsTab('settings'));
+  // Depuis l'aide « ? » : « Tous les raccourcis » ouvre le Guide.
   await page.keyboard.press('?');
   await page.click('#shortcuts-help >> text=Tous les raccourcis');
-  assert.equal(await page.locator('#keys-list').isVisible(), true);
+  assert.equal(await page.evaluate(() => currentPage()), 'guide');
+  // Paramètres n'a plus d'onglets.
+  await goto(page, 'parametres');
+  assert.equal(await page.locator('#page-parametres .set-tab').count(), 0);
+  assert.equal(await page.locator('#accounts-card').isVisible(), true);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

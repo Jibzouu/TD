@@ -1,4 +1,4 @@
-// ── GUIDE D'UTILISATION ET RACCOURCIS (Paramètres → Guide / Raccourcis) ──
+// ── GUIDE D'UTILISATION ET RACCOURCIS (page « Guide » du menu, sous Paramètres) ──
 // Source unique du mode d'emploi : chaque page du menu a sa section (test e2e : une page sans section fait échouer
 // les tests). À METTRE À JOUR À CHAQUE NOUVELLE FONCTIONNALITÉ (voir CLAUDE.md).
 // Textes bilingues : [français, anglais].
@@ -113,8 +113,13 @@ const GUIDE = [
     intro: ['Ton compte et l’apparence du journal.', 'Your account and the journal’s look.'],
     items: [
       ['Langue, comptes, solde de départ, perte journalière max, disposition du Dashboard.', 'Language, accounts, starting balance, daily max loss, Dashboard layout.'],
-      ['Thèmes (dont Néon) et « Personnaliser mon thème » : couleurs, ambiance, formes et polices, graphiques, mes thèmes.', 'Themes (including Neon) and “Customize my theme”: colors, mood, shapes and fonts, charts, my themes.'],
-      ['Ce guide et la liste des raccourcis clavier (onglets en haut de cette page).', 'This guide and the keyboard shortcut list (tabs at the top of this page).']
+      ['Thèmes (dont Néon) et « Personnaliser mon thème » : couleurs, ambiance, formes et polices, graphiques, mes thèmes.', 'Themes (including Neon) and “Customize my theme”: colors, mood, shapes and fonts, charts, my themes.']
+    ] },
+  { id: 'guide', page: 'guide', icon: '📖', title: ['Guide', 'Guide'],
+    intro: ['Cette page : le mode d’emploi du journal et tous les raccourcis clavier.', 'This page: the journal’s user manual and every keyboard shortcut.'],
+    items: [
+      ['Cherche un mot dans le guide, ou clique une section pour la déplier ; « Ouvrir la page » t’y emmène.', 'Search for a word in the guide, or click a section to expand it; “Open the page” takes you there.'],
+      ['Les raccourcis clavier sont en bas de la page ; la touche ? affiche un aide-mémoire partout.', 'Keyboard shortcuts are at the bottom of the page; the ? key shows a cheat sheet anywhere.']
     ] }
 ];
 
@@ -143,7 +148,7 @@ function renderGuide() {
       <summary><span class="gd-ic" aria-hidden="true">${s.icon}</span><span class="gd-tt">${guideText(s.title)}<small>${guideText(s.intro)}</small></span><span class="cz-chev" aria-hidden="true"></span></summary>
       <div class="gd-body">
         ${s.items.length ? html`<ul>${s.items.map(it => html`<li>${guideText(it)}</li>`)}</ul>` : ''}
-        ${s.page && s.page !== 'parametres' ? (guideAvailable(s)
+        ${s.page && s.page !== 'guide' ? (guideAvailable(s)
           ? html`<button class="btn-ghost gd-go" onclick="${raw("showPage('" + s.page + "', document.querySelector('.nav-item[data-page=" + s.page + "]'))")}">${L('Ouvrir la page', 'Open the page')} →</button>`
           : html`<p class="gd-na">${L('Disponible sur un autre type de compte.', 'Available on another account type.')}</p>`) : ''}
       </div></details>`)}`
@@ -154,19 +159,9 @@ function renderShortcutsPage() {
   mount(el, html`${shortcutGroups().map(g => html`<div class="panel gd-keys"><div class="panel-hdr"><span>${g.title}</span></div>
     <div class="sh-grid">${g.rows.map(([k, d]) => html`<kbd>${k}</kbd><span>${d}</span>`)}</div></div>`)}`);
 }
-// Onglets de la page Paramètres : Réglages / Guide d'utilisation / Raccourcis (dernier onglet gardé).
-function showSettingsTab(id) {
-  id = ['settings', 'guide', 'keys'].includes(id) ? id : 'settings';
-  document.querySelectorAll('#page-parametres .set-tab').forEach(b => { const on = b.dataset.set === id; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
-  document.querySelectorAll('#page-parametres .set-pane').forEach(p => { p.hidden = p.dataset.set !== id; });
-  try { DB.setItem('g_set_tab', id); } catch (e) {}
-  if (id === 'guide') renderGuide();
-  if (id === 'keys') renderShortcutsPage();
-}
+function guideJump(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 function openGuide(sectionId) {
-  showPage('parametres', document.querySelector('.nav-item[data-page="parametres"]'));
-  showSettingsTab('guide');
+  showPage('guide', document.querySelector('.nav-item[data-page="guide"]'));
   if (sectionId) { const d = document.getElementById('gd-' + sectionId); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
 }
-function openShortcutsPage() { closeShortcutsHelp(); showPage('parametres', document.querySelector('.nav-item[data-page="parametres"]')); showSettingsTab('keys'); }
-onReady(() => showSettingsTab(DB.getItem('g_set_tab') || 'settings'));
+function openShortcutsPage() { closeShortcutsHelp(); showPage('guide', document.querySelector('.nav-item[data-page="guide"]')); setTimeout(() => guideJump('gd-keys-sec'), 30); }
