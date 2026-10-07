@@ -716,6 +716,7 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rk-steps li.done{opacity:.75}
 .rk-steps li.custom{border-style:dashed}.rk-steps li.custom.cur{border-style:solid}
 .rk-custom{margin:4px 0 12px;max-width:520px}
+.rk-warn{margin:10px 0 0;padding:8px 12px;border-radius:var(--r);background:color-mix(in srgb,var(--amber,#f59e0b) 12%,transparent);color:var(--txt);font-size:13px}
 .rk-dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--bg3);color:var(--txt2)}
 .rk-steps li.cur .rk-dot{background:var(--accent);color:#fff}.rk-steps li.done .rk-dot{background:var(--green);color:#fff}
 .rk-steps small{font-size:12px;color:var(--txt3)}

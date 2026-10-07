@@ -2441,6 +2441,7 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rk-steps li.done{opacity:.75}
 .rk-steps li.custom{border-style:dashed}.rk-steps li.custom.cur{border-style:solid}
 .rk-custom{margin:4px 0 12px;max-width:520px}
+.rk-warn{margin:10px 0 0;padding:8px 12px;border-radius:var(--r);background:color-mix(in srgb,var(--amber,#f59e0b) 12%,transparent);color:var(--txt);font-size:13px}
 .rk-dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--bg3);color:var(--txt2)}
 .rk-steps li.cur .rk-dot{background:var(--accent);color:#fff}.rk-steps li.done .rk-dot{background:var(--green);color:#fff}
 .rk-steps small{font-size:12px;color:var(--txt3)}
@@ -3324,7 +3325,7 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
       <div class="panel mb-20"><div class="panel-hdr"><span>🪜 Parcours de progression<small class="panel-sub">augmente ton risque seulement quand tes résultats le prouvent</small></span></div><div id="rk-path"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🎯 Discipline<small class="panel-sub">ton process compte plus que ton P&amp;L</small></span></div><div id="rk-disc"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🎲 Simulateur de risque de ruine<small class="panel-sub">des milliers de suites de trades possibles avec tes chiffres : combien risquer sans te mettre en danger</small></span></div><div id="rk-sim"></div></div>
-      <div class="panel mb-20"><div class="panel-hdr"><span>🌱 Plan débutant<small class="panel-sub">de bonnes règles de départ, modifiables ensuite</small></span></div><div id="rk-beginner"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span id="rk-plan-hdr">🌱 Plan débutant<small class="panel-sub">de bonnes règles de départ, modifiables ensuite</small></span></div><div id="rk-beginner"></div></div>
     </div>
 
     <div id="page-replay" class="page">
@@ -15575,7 +15576,7 @@ const GUIDE = [
       ['Parcours de progression : Backtest → Live 0,25 % → Live 0,5 % → 1 %. Chaque étape se débloque sur des critères (nombre de trades, discipline, espérance, profit factor, baisse max). Déjà expérimenté : choisis ton étape, ou « Personnalisé » : tes propres règles, sans plafond ni critères. Les règles débutant du garde-fou y sont désactivées (0 = désactivé) et tes réglages d’avant reviennent (perte max du jour, TP / SL max, checklist, risque du Scaling, même si tu avais appliqué le plan débutant). Tu peux y fixer un risque max par trade et réactiver ce que tu veux ; le parcours garde ses propres réglages pour y revenir.', 'Progression path: Backtest → Live 0.25 % → Live 0.5 % → 1 %. Each step unlocks on criteria (number of trades, discipline, expectancy, profit factor, max drawdown). Already experienced: pick your step, or “Custom”: your own rules, with no cap or criteria. The beginner guard rules are off there (0 = off) and your previous settings come back (daily max loss, max TP / SL, checklist, Scaling risk, even if you had applied the beginner plan). You can set a max risk per trade and turn back on what you want; the path keeps its own settings to return to.'],
       ['Discipline : un score par jour (stop prévu, checklist, erreurs, limites du jour, taille normale, pas de revanche) et ta série de jours « propres ». Les tailles anormales et trades de revanche sont signalés.', 'Discipline: a daily score (stop planned, checklist, mistakes, daily limits, normal size, no revenge) and your streak of “clean” days. Unusual sizes and revenge trades are flagged.'],
       ['Simulateur de risque de ruine : rejoue des milliers de suites de trades avec tes résultats pour voir combien risquer sans te mettre en danger.', 'Risk-of-ruin simulator: replays thousands of trade sequences with your results to see how much to risk without endangering your account.'],
-      ['Plan débutant : de bonnes règles de départ en un clic (proposé aussi au premier lancement) : risque ≤ 0,5 % par trade, perte max 1 % par jour, stop après 2 pertes d’affilée. Le risque conseillé est toujours limité pour que tes pertes d’affilée permises tiennent dans ta perte max du jour (1 % ÷ 2 pertes = 0,5 %).', 'Beginner plan: good starting rules in one click (also offered at first launch): risk ≤ 0.5 % per trade, max loss 1 % per day, stop after 2 losses in a row. The suggested risk is always limited so your allowed losses in a row fit within your daily max loss (1 % ÷ 2 losses = 0.5 %).']
+      ['Plan de ton étape : la dernière partie de la page suit ton parcours. À chaque étape, ses règles en un clic (le plan débutant est aussi proposé au premier lancement) : risque ≤ plafond de l’étape, perte max du jour = 2 pertes d’affilée (au moins 1 %), stop après 2 pertes d’affilée. En « Personnalisé », pas de plan imposé : la partie devient « Mon plan personnalisé », le résumé de tes propres règles (avec une alerte si ton risque × tes pertes d’affilée dépasse ta perte max du jour). Le risque conseillé est toujours limité pour que tes pertes d’affilée permises tiennent dans ta perte max du jour (1 % ÷ 2 pertes = 0,5 %).', 'Plan for your step: the last part of the page follows your path. At each step, its rules in one click (the beginner plan is also offered at first launch): risk ≤ the step cap, daily max loss = 2 losses in a row (at least 1 %), stop after 2 losses in a row. In “Custom”, no imposed plan: the part becomes “My custom plan”, a summary of your own rules (with a warning if your risk × your losses in a row exceeds your daily max loss). The suggested risk is always limited so your allowed losses in a row fit within your daily max loss (1 % ÷ 2 losses = 0.5 %).']
     ] },
   { id: 'plan', page: 'plan', icon: '🧭', title: ['Plan de trading', 'Trading plan'],
     intro: ['Tes règles écrites, utilisées partout dans le journal.', 'Your written rules, used throughout the journal.'],
@@ -15848,27 +15849,36 @@ function rkRestoreBackup() {
   return true;
 }
 
-// ── Plan débutant ──
-const RK_BEGINNER_ITEMS = ['Stop loss placé avant d’entrer', 'RR d’au moins 1,5', 'Risque ≤ 0,5 % du capital', 'Pas de trade dans les 30 min après une perte'];
+// ── Plan de l'étape (plan débutant) ──
+// Chaque étape du parcours a son plan : risque par trade = plafond de l'étape, perte max du jour = 2 pertes d'affilée
+// (au moins 1 %), semaine et mois en proportion. « Personnalisé » n'a pas de plan imposé : on y résume tes propres règles.
+const RK_BEGINNER_ITEMS = ['Stop loss placé avant d’entrer', 'RR d’au moins 1,5', 'Risque ≤ risque conseillé du garde-fou', 'Pas de trade dans les 30 min après une perte'];
+const RK_OLD_ITEMS = ['Risque ≤ 1 % du capital', 'Risque ≤ 0,5 % du capital'];
+function rkStagePlan(s) {
+  const r = RK_STAGES[s] && RK_STAGES[s].risk || 0.25, day = Math.max(1, r * RK_DEF.maxConsec), week = Math.max(RK_DEF.weekPct, day * 2);
+  return { risk: r, day, week, month: week * 2 };
+}
 function applyBeginnerPlan(silent, keepCore) {
-  if (!silent && !confirm(rkL('Appliquer le plan débutant ? Tes limites du jour, ton garde-fou et ta checklist seront mis à jour (tes trades ne changent pas).', 'Apply the beginner plan? Your daily limits, guard and checklist will be updated (your trades stay the same).'))) return;
+  const cur = rkProg().stage, s = RK_STAGES[cur] && !RK_STAGES[cur].custom ? cur : JOURNAL_TYPE === 'backtest' ? 0 : 1, P = rkStagePlan(s);
+  if (!silent && !confirm(rkL('Appliquer le plan de l’étape « ', 'Apply the plan of the “') + guideText(RK_STAGES[s].name) + rkL(' » ? Tes limites du jour, ton garde-fou et ta checklist seront mis à jour (tes trades ne changent pas).', '” step? Your daily limits, guard and checklist will be updated (your trades stay the same).'))) return;
   if (!keepCore) rkSaveBackup();
-  rkSaveCfg(Object.assign({}, RK_DEF), false);
-  if (rkIsCustom()) rkSaveProg(Object.assign(rkProg(), { stage: JOURNAL_TYPE === 'backtest' ? 0 : 1, since: localDateStr() }));   // le plan débutant ramène sur le parcours
+  rkSaveCfg(Object.assign({}, RK_DEF, { weekPct: P.week, monthPct: P.month }), false);
+  if (rkIsCustom()) rkSaveProg(Object.assign(rkProg(), { stage: s, since: localDateStr() }));   // le plan ramène sur le parcours
   if (!keepCore) {
-    if (loadDDLimitPct() > 1) DB.setItem(JP + 'dd_limit_pct', '1');
+    DB.setItem(JP + 'dd_limit_pct', String(P.day));
     if (planData) { planData.maxSL = 2; if (!(planData.maxTP > 0)) planData.maxTP = 2; }
     const st = typeof getScalingState === 'function' && typeof scalingConfigured === 'function' && scalingConfigured() ? getScalingState() : null;
-    if (st && st.riskPct > 0.5) { st.riskPct = 0.5; saveScalingState(); }
+    if (st && st.riskPct > P.risk) { st.riskPct = P.risk; saveScalingState(); }
   }
   if (planData) {
     if (!Array.isArray(planData.entryItems) || !planData.entryItems.length) planData.entryItems = (typeof CHECKLIST_ENTRY !== 'undefined' ? CHECKLIST_ENTRY.slice() : []);
+    planData.entryItems = planData.entryItems.filter(x => !RK_OLD_ITEMS.includes(x));
     RK_BEGINNER_ITEMS.forEach(x => { if (!planData.entryItems.includes(x)) planData.entryItems.push(x); });
     planData.risk = Array.isArray(planData.risk) ? planData.risk : [];
     [['RR minimum', '1,5'], ['Trade sans stop', 'jamais'], ['Pertes d’affilée max', '2 puis stop']].forEach(r => { if (!planData.risk.some(x => x[0] === r[0])) planData.risk.push(r); });
     DB.setItem(JP + 'plan', JSON.stringify(planData));
   }
-  if (!silent) { showToast(rkL('Plan débutant appliqué ✓', 'Beginner plan applied ✓'), 'success'); renderAll(); renderRiskPage(); }
+  if (!silent) { showToast(rkL('Plan de l’étape appliqué ✓', 'Step plan applied ✓'), 'success'); renderAll(); renderRiskPage(); }
 }
 
 // ── Carte du Dashboard ──
@@ -15992,14 +16002,30 @@ function renderRiskPage() {
     ${lastDays.length ? html`<table class="rk-table"><thead><tr><th>${rkL('Jour', 'Day')}</th><th>${rkL('Trades', 'Trades')}</th><th>Score</th><th>${rkL('À corriger', 'To fix')}</th></tr></thead><tbody>${lastDays.map(x => html`<tr><td>${fmtDateFR(x.date, true)}</td><td>${x.n}</td><td><b class="tone-${raw(x.clean ? 'green' : x.score >= 0.6 ? 'amber' : 'red')}">${Math.round(x.score * 100)} %</b></td><td class="tone-muted">${x.checks.filter(c => !c[1]).map(c => c[0]).join(' · ') || '✓'}</td></tr>`)}</tbody></table>`
       : html`<p class="empty-note">${rkL('Ton score de discipline apparaîtra dès tes premiers trades.', 'Your discipline score will appear with your first trades.')}</p>`}
     ${d.flags.length ? html`<div class="rk-flags">${d.flags.slice(-6).reverse().map(f => html`<button class="rk-flag" onclick="${raw('openTradeDetail(' + f.t.id + ')')}">${f.kind === 'revenge' ? '😤 ' + rkL('Revanche', 'Revenge') : '📏 ' + rkL('Taille anormale', 'Unusual size')} · ${fmtDateNum(f.t.date)} ${f.t.entry || ''} · ${f.t.asset || ''} · ${rkL('risque', 'risk')} ${fmtEUR(f.risk, false, 0)} (${rkL('habituel', 'usual')} ${fmtEUR(f.ref, false, 0)})</button>`)}</div>` : ''}`);
-  // 6) Plan débutant
-  mount('rk-beginner', html`<ul class="rk-rules">
-      <li>${rkL('Risque ≤ 0,5 % du capital par trade (ton étape peut le baisser encore) : 2 pertes d’affilée = 1 %, ta perte max du jour', 'Risk ≤ 0.5 % of capital per trade (your step may lower it further): 2 losses in a row = 1 %, your daily max loss')}</li>
-      <li>${rkL('Perte max : 1 % par jour, 3 % par semaine, 6 % par mois', 'Max loss: 1 % per day, 3 % per week, 6 % per month')}</li>
-      <li>${rkL('2 pertes d’affilée → stop pour la journée · 3 trades max par jour', '2 losses in a row → stop for the day · 3 trades max per day')}</li>
-      <li>${rkL('Pause de 30 min après une perte · aucun trade sans stop · RR d’au moins 1,5', '30-min break after a loss · no trade without a stop · RR of at least 1.5')}</li>
-      <li>${rkL('Plancher à 90 % du capital de départ ; risque divisé par 2 à −5 %, par 4 à −10 %', 'Floor at 90 % of starting capital; risk halved at −5 %, quartered at −10 %')}</li>
-    </ul><button class="btn-primary" onclick="applyBeginnerPlan()">${rkL('Appliquer le plan débutant', 'Apply the beginner plan')}</button>`);
+  // 6) Plan de l'étape (ou résumé de mes règles en « Personnalisé »)
+  const pct = v => fmtRate(v, 2), off = rkL('désactivé', 'off');
+  if (custom) {
+    const cr = g.prog.customRisk > 0 ? g.prog.customRisk : null, dayP = loadDDLimitPct();
+    mount('rk-plan-hdr', html`✎ ${rkL('Mon plan personnalisé', 'My custom plan')}<small class="panel-sub">${rkL('tes propres règles, en un coup d’œil — modifiables dans le garde-fou et la protection du capital', 'your own rules at a glance — edit them in the guard and capital protection')}</small>`);
+    mount('rk-beginner', html`<ul class="rk-rules">
+        <li>${rkL('Risque max par trade : ', 'Max risk per trade: ')}<b>${cr ? pct(cr) : rkL('pas de plafond (ton plan de Scaling)', 'no cap (your Scaling plan)')}</b> · ${rkL('conseillé maintenant : ', 'suggested now: ')}<b>${fmtEUR(g.rec, false, 2)}</b></li>
+        <li>${rkL('Perte max : ', 'Max loss: ')}<b>${pct(dayP)}</b> ${rkL('par jour', 'per day')} · ${rkL('semaine ', 'week ')}<b>${c.weekPct > 0 ? pct(c.weekPct) : off}</b> · ${rkL('mois ', 'month ')}<b>${c.monthPct > 0 ? pct(c.monthPct) : off}</b></li>
+        <li>${rkL('Pertes d’affilée max : ', 'Max losses in a row: ')}<b>${c.maxConsec > 0 ? c.maxConsec : off}</b> · ${rkL('trades max par jour : ', 'max trades per day: ')}<b>${c.maxTrades > 0 ? c.maxTrades : off}</b> · ${rkL('pause après une perte : ', 'break after a loss: ')}<b>${c.pauseMin > 0 ? c.pauseMin + ' min' : off}</b></li>
+        <li>${rkL('TP max par jour : ', 'Max TP per day: ')}<b>${planData && planData.maxTP > 0 ? planData.maxTP : off}</b> · ${rkL('SL max par jour : ', 'Max SL per day: ')}<b>${planData && planData.maxSL > 0 ? planData.maxSL : off}</b></li>
+        <li>${rkL('Plancher du capital : ', 'Capital floor: ')}<b>${c.floorPct > 0 ? pct(c.floorPct) : off}</b> · ${rkL('réduction du risque en baisse : ', 'risk cut in drawdown: ')}<b>${(c.cuts || []).some(x => x[1] < 1) ? c.cuts.filter(x => x[1] < 1).map(x => '−' + x[0] + ' % → ' + Math.round(x[1] * 100) + ' %').join(', ') : off}</b></li>
+      </ul>
+      ${cr && c.maxConsec > 0 && cr * c.maxConsec > dayP + 1e-9 ? html`<p class="rk-warn">⚠️ ${c.maxConsec} × ${pct(cr)} = ${pct(cr * c.maxConsec)} ${rkL('> ta perte max du jour (', '> your daily max loss (')}${pct(dayP)}${rkL(') : le risque conseillé est limité à ', '): the suggested risk is limited to ')}${pct(dayP / c.maxConsec)}.</p>` : ''}`);
+  } else {
+    const P = rkStagePlan(st), nm = guideText(RK_STAGES[st].name);
+    mount('rk-plan-hdr', html`🌱 ${st === 0 ? rkL('Plan débutant — étape Backtest', 'Beginner plan — Backtest step') : rkL('Plan de ton étape : ', 'Plan for your step: ') + nm}<small class="panel-sub">${rkL('de bonnes règles pour cette étape, modifiables ensuite', 'good rules for this step, editable afterwards')}</small>`);
+    mount('rk-beginner', html`<ul class="rk-rules">
+        <li>${rkL('Risque ≤ ', 'Risk ≤ ')}${pct(P.risk)}${rkL(' du capital par trade', ' of capital per trade')}${st === 0 ? rkL(' (simulé : pas d’argent réel à cette étape)', ' (simulated: no real money at this step)') : ''} : ${RK_DEF.maxConsec}${rkL(' pertes d’affilée = ', ' losses in a row = ')}${pct(P.risk * RK_DEF.maxConsec)}${P.risk * RK_DEF.maxConsec < P.day ? rkL(', sous ta perte max du jour', ', below your daily max loss') : rkL(', ta perte max du jour', ', your daily max loss')}</li>
+        <li>${rkL('Perte max : ', 'Max loss: ')}${pct(P.day)}${rkL(' par jour, ', ' per day, ')}${pct(P.week)}${rkL(' par semaine, ', ' per week, ')}${pct(P.month)}${rkL(' par mois', ' per month')}</li>
+        <li>${rkL('2 pertes d’affilée → stop pour la journée · 3 trades max par jour', '2 losses in a row → stop for the day · 3 trades max per day')}</li>
+        <li>${rkL('Pause de 30 min après une perte · aucun trade sans stop · RR d’au moins 1,5', '30-min break after a loss · no trade without a stop · RR of at least 1.5')}</li>
+        <li>${rkL('Plancher à 90 % du capital de départ ; risque divisé par 2 à −5 %, par 4 à −10 %', 'Floor at 90 % of starting capital; risk halved at −5 %, quartered at −10 %')}</li>
+      </ul><button class="btn-primary" onclick="applyBeginnerPlan()">${st === 0 ? rkL('Appliquer le plan débutant', 'Apply the beginner plan') : rkL('Appliquer le plan de cette étape', 'Apply this step’s plan')}</button>`);
+  }
   renderRiskSim();
 }
 // 5) Simulateur

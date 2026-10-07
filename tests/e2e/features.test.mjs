@@ -1510,6 +1510,10 @@ test('gestion du risque : garde-fou, plancher et réduction du risque, parcours,
   assert.equal(await page.evaluate(() => rkGuard().capPct), 2);
   assert.doesNotMatch(await page.locator('#rk-path').innerText(), /Trades à cette étape|étape suivante|étape précédente/);
   assert.equal(await page.evaluate(() => rkProg().stage), 4);
+  // Plus de plan débutant en « Personnalisé » : résumé de mes règles, sans bouton « Appliquer ».
+  assert.match(await page.locator('#rk-plan-hdr').innerText(), /Mon plan personnalisé/);
+  assert.equal(await page.locator('#rk-beginner .btn-primary').count(), 0);
+  assert.match(await page.locator('#rk-beginner').innerText(), /Risque max par trade : 2,00 %/);
   page.once('dialog', d => d.accept());
   await page.selectOption('#rk-path select', '1');
   assert.equal(await page.evaluate(() => rkProg().customRisk), 2);
@@ -1548,6 +1552,10 @@ test('gestion du risque : garde-fou, plancher et réduction du risque, parcours,
   const plan = await page.evaluate(() => ({ cfg: rkCfg(), items: planData.entryItems, maxSL: planData.maxSL }));
   assert.equal(plan.cfg.maxConsec, 2); assert.equal(plan.maxSL, 2);
   assert.ok(plan.items.includes('Stop loss placé avant d’entrer'));
+  // Le plan suit l'étape : « Rythme de croisière » → 1 % par trade, 2 % par jour.
+  await page.evaluate(() => rkSetStage(3));
+  assert.match(await page.locator('#rk-plan-hdr').innerText(), /Plan de ton étape : Rythme de croisière/);
+  assert.match(await page.locator('#rk-beginner').innerText(), /Risque ≤ 1,00 %[\s\S]*Perte max : 2,00 % par jour/);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
