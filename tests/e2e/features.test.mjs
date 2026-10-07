@@ -1415,3 +1415,20 @@ test('break-even visibles dans le calendrier, ses tableaux semaine / mois et le 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('journal des trades groupé par jour par défaut, choix gardé', async () => {
+  const tr = [T({ id: 1, date: '2026-06-15' }), T({ id: 2, date: '2026-06-15', res: 'SL', pnl: -1, pnlEur: -50 }), T({ id: 3, date: '2026-06-16' })];
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: tr } });
+  await goto(page, 'trades');
+  assert.equal(await page.locator('#tbody .day-group-row').count(), 2);
+  assert.equal(await page.getAttribute('#btn-group-day', 'aria-pressed'), 'true');
+  await page.click('#btn-group-day');
+  assert.equal(await page.locator('#tbody .day-group-row').count(), 0);
+  await page.evaluate(() => DB.flush());
+  await page.reload();
+  await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'trades');
+  assert.equal(await page.locator('#tbody .day-group-row').count(), 0, 'dégroupé gardé');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

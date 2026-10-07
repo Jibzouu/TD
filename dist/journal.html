@@ -8022,7 +8022,7 @@ function drawDonut(key, parts, center, centerLbl, sub, title) {
 // ── TABLE ────────────────────────────────────────────────────────────
 // ── FILTRES / TRI / GROUPEMENT ──────────────────────────────────────
 let tableSortKey = null, tableSortDir = 1;
-let groupByDayMode = false;
+let groupByDayMode = null;   // groupé par jour par défaut ; le choix est gardé (g_group_day)
 // Pagination : 25 trades affichés, « Afficher plus » ajoute 25 lignes. Revient à 25 quand la sélection change.
 const TABLE_PAGE = 25;
 let tableLimit = TABLE_PAGE, tableSelKey = '';
@@ -8055,10 +8055,16 @@ function sortTable(key) {
   if (tableSortKey === key) tableSortDir *= -1; else { tableSortKey = key; tableSortDir = 1; }
   renderTable();
 }
-function toggleGroupByDay() {
-  groupByDayMode = !groupByDayMode;
+function syncGroupByDay() {
+  if (groupByDayMode === null) groupByDayMode = DB.getItem('g_group_day') !== '0';
   const btn = document.getElementById('btn-group-day');
-  if (btn) btn.classList.toggle('style-btn-active', groupByDayMode);
+  if (btn) { btn.classList.toggle('style-btn-active', groupByDayMode); btn.setAttribute('aria-pressed', String(groupByDayMode)); }
+}
+function toggleGroupByDay() {
+  syncGroupByDay();
+  groupByDayMode = !groupByDayMode;
+  try { DB.setItem('g_group_day', groupByDayMode ? '1' : '0'); } catch (e) {}
+  syncGroupByDay();
   renderTable();
 }
 function resetTradeFilters() {
@@ -8086,6 +8092,7 @@ function tradeRowHtml(t, num) {
 }
 
 function renderTable(opts) {
+  syncGroupByDay();
   let filtered = filterTrades();
   const selKey = filtered.length + ':' + (filtered[0] ? filtered[0].id : '') + ':' + groupByDayMode + ':' + tableSortKey + tableSortDir;
   if (!(opts && opts.keepLimit) && selKey !== tableSelKey) tableLimit = TABLE_PAGE;
@@ -8161,7 +8168,7 @@ function renderTable(opts) {
       const dayTrades = byDay[day];
       const dayR = dayTrades.reduce((s,t) => s+(t.pnl||0), 0);
       const dayEur = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur, 0);
-      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day === 'Sans date' ? day : fmtDateFR(day, true)} — ${dayTrades.length} trade(s) · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
+      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day === 'Sans date' ? day : fmtDateFR(day, true)} — ${dayTrades.length} trade(s) · ${dayTrades.filter(t => t.res === 'TP').length}✓ ${dayTrades.filter(t => t.res === 'SL').length}✗${dayTrades.some(t => t.res === 'BE') ? html` <span class="cal-be">${dayTrades.filter(t => t.res === 'BE').length} BE</span>` : ''} · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
     })}${moreRow}`);
   } else {
     mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}${moreRow}`);
