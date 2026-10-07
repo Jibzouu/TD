@@ -23,7 +23,7 @@ html:not(.app-ready) .main{opacity:0}
 .fb-summary{font-family:var(--mono);font-size:13px;color:var(--txt2);align-self:center}
 .fb-reset{padding:6px 12px !important;font-size:13px !important;align-self:center}
 .fb-toggle{display:none}
-.fb-count{display:inline-block;min-width:16px;margin-left:6px;padding:0 5px;border-radius:8px;background:var(--accent);color:#fff;font:600 12px/16px var(--mono);text-align:center}
+.fb-count{display:inline-block;min-width:16px;margin-left:6px;padding:0 5px;border-radius:8px;background:var(--accent);color:var(--on-accent,#fff);font:600 12px/16px var(--mono);text-align:center}
 .fb-count:empty{display:none}
 @media (max-width: 860px){
   /* Mobile : la période et un bouton « Filtres » tiennent sur la ligne du menu ; le reste se déplie à la demande. */
@@ -54,7 +54,7 @@ html:not(.app-ready) .main{opacity:0}
 .lb-btn:hover:not(:disabled){background:rgba(255,255,255,.16)}
 .lb-btn:disabled{opacity:.35;cursor:default}
 .lb-btn.active{background:var(--accent);border-color:var(--accent)}
-.lb-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.lb-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}
 .lb-counter{font-family:var(--mono);font-size:13.5px;color:#cfd4de;min-width:48px;text-align:center}
 .lb-tools{align-items:center;gap:6px;flex-wrap:wrap}
 .lb-sep{width:1px;height:22px;background:rgba(255,255,255,.18);margin:0 4px}

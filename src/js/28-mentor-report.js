@@ -95,7 +95,7 @@ async function buildMentorReport(opts) {
   const title = 'Rapport de trading — ' + JOURNALS[JOURNAL_ID].title;
   const periodTxt = span[0] ? `du ${fmtDateFR(span[0], true)} au ${fmtDateFR(span[1], true)}` : 'aucune période';
   const body = html`
-  <header><h1>${title}</h1><p>${periodTxt} · ${list.length} trade${list.length > 1 ? 's' : ''} sur ${S.days} jour${S.days > 1 ? 's' : ''} · généré le ${fmtDateFR(localDateStr(), true)}${hide ? ' · montants en R uniquement' : ''}</p></header>
+  <header><div class="brand">${raw(brandLogoSVG('#0E1020', 30))}</div><h1>${title}</h1><p>${periodTxt} · ${list.length} trade${list.length > 1 ? 's' : ''} sur ${S.days} jour${S.days > 1 ? 's' : ''} · généré le ${fmtDateFR(localDateStr(), true)}${hide ? ' · montants en R uniquement' : ''}</p></header>
   <section class="kpis">
     ${hide ? '' : kpi('Résultat net', fmtEUR(S.net, true, 0), tone(S.net), S.fees ? 'après ' + fmtEUR(S.fees, false, 0) + ' de frais' : '')}
     ${kpi('Résultat en R', fmtR(S.rSum, 1), tone(S.rSum), S.exp != null ? fmtR(S.exp, 2) + ' par trade' : '')}
@@ -118,10 +118,10 @@ async function buildMentorReport(opts) {
   <section><h2>Trades</h2>${tbl(['Date', 'Actif', 'Sens', 'Setup', 'Rés.', 'Résultat', 'Notes'], list.map(t => [
     fmtDateNum(t.date) + (t.entry ? ' ' + t.entry : ''), t.asset || '—', t.dir || '—', t.setup || '—', t.res || '—', cell(hide ? null : t.pnlEur, S.rOf(t)),
     html`${t.desc || ''}${t.review ? html`<div class="rev">↳ ${t.review}</div>` : ''}${(t.mistakes || []).length ? html`<div class="mis">${t.mistakes.join(' · ')}</div>` : ''}${caps[t.id] ? html`<img src="${raw(safeImgSrc(caps[t.id]))}" alt="Capture">` : ''}`]), [5])}</section>
-  <footer>Rapport généré par le Journal de trading · les chiffres portent sur les trades de la période uniquement.</footer>`;
+  <footer>Rapport généré par Untilt, le journal de trading · les chiffres portent sur les trades de la période uniquement.</footer>`;
 
   const css = `*{box-sizing:border-box}body{font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1d2330;background:#fff;margin:0;padding:32px;max-width:1080px;margin:auto}
-h1{font-size:24px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 10px;text-transform:uppercase;letter-spacing:.05em;color:#4a5263}header p{color:#6b7385;margin:0}
+h1{font-size:24px;margin:0 0 4px}.brand{margin:0 0 14px}h2{font-size:15px;margin:28px 0 10px;text-transform:uppercase;letter-spacing:.05em;color:#4a5263}header p{color:#6b7385;margin:0}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:22px}.kpi{border:1px solid #e3e6ec;border-radius:10px;padding:12px 14px}
 .kpi .l{font-size:12px;color:#6b7385}.kpi .v{font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}.kpi .s{font-size:11.5px;color:#6b7385}
 .pos{color:#1f9d8f}.neg{color:#d64545}.eq{width:100%;height:auto;border:1px solid #e3e6ec;border-radius:10px}

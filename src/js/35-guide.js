@@ -5,7 +5,7 @@
 
 const GUIDE = [
   { id: 'start', icon: '🚀', title: ['Bien démarrer', 'Getting started'],
-    intro: ['Le journal fonctionne entièrement dans ton navigateur : rien n’est envoyé sur un serveur.', 'The journal runs entirely in your browser: nothing is sent to a server.'],
+    intro: ['Untilt, ton journal de trading, fonctionne entièrement dans ton navigateur : rien n’est envoyé sur un serveur. Le logo (un niveau à bulle) résume l’idée : rester à niveau, sans « tilt ».', 'Untilt, your trading journal, runs entirely in your browser: nothing is sent to a server. The logo (a spirit level) sums up the idea: stay level, no “tilt”.'],
     items: [
       ['Mode simple (débutant) : au départ, le menu ne montre que l’essentiel (Dashboard, Journal, Gestion du risque, Guide, plus Export et Paramètres). Les autres pages se débloquent avec ton parcours de progression ; « Tout afficher » en bas du menu, ou Paramètres → Mode et sécurité.', 'Simple mode (beginner): at first the menu shows only the essentials (Dashboard, Journal, Risk management, Guide, plus Export and Settings). Other pages unlock with your progression path; “Show all” at the bottom of the menu, or Settings → Mode and security.'],
       ['Mini-leçons : une leçon de 2 minutes s’affiche au bon moment (premier SL, 2 pertes d’affilée, journée rouge, drawdown…), une seule fois. Toutes sont relisibles dans le Guide.', 'Mini-lessons: a 2-minute lesson shows up at the right time (first SL, 2 losses in a row, red day, drawdown…), only once. All can be reread in the Guide.'],

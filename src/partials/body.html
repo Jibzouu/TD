@@ -3,22 +3,20 @@
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
 </button>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
-<button class="fab-add" onclick="openTradePanel()" aria-label="Ajouter un trade" title="Ajouter un trade">＋</button>
+<button class="fab-add" id="fab-add" onclick="openQuickAdd()" aria-label="Ajouter un trade" title="Ajouter un trade (saisie rapide)">＋</button>
 
 <div class="app">
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="logo">
-      <div class="logo-row">
-        <svg class="logo-mark" viewBox="0 0 28 28" fill="none">
-          <rect x="1" y="1" width="26" height="26" rx="8" fill="var(--logo-color)"/>
-          <text x="14" y="19.5" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="var(--bg)" text-anchor="middle">JT</text>
-        </svg>
-        <div>
-          <h1 id="jr-title">Journal de Trading</h1>
-          <p id="jr-sub">Trades réels · Forex · Indices</p>
-        </div>
+      <!-- Marque Untilt : symbole (niveau à bulle) + mot dessiné ; le point du « i » est la bulle -->
+      <div class="brand-row" role="img" aria-label="Untilt">
+        <svg class="brand-mark" viewBox="0 0 52 24" aria-hidden="true"><rect x="5" y="3.5" width="42" height="17" rx="8.5" fill="none" stroke="currentColor" stroke-width="3.4"/><circle cx="26" cy="12" r="4.3" fill="var(--brand-acc)"/></svg>
+        <svg class="brand-word" viewBox="0 0 262 108" aria-hidden="true"><path d="M6 40 V78 A22 22 0 0 0 50 78 V40 M50 78 V100 M70 100 V40 M70 62 A22 22 0 0 1 114 62 V100 M140 18 V86 A14 14 0 0 0 154 100 H160 M128 42 H158 M180 46 V100 M200 10 V86 A14 14 0 0 0 214 100 M238 18 V86 A14 14 0 0 0 252 100 H258 M226 42 H256" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><circle cx="180" cy="20" r="9" fill="var(--brand-acc)"/></svg>
       </div>
+      <p class="brand-tag">journal de trading</p>
+      <h1 id="jr-title" hidden>Journal de Trading</h1>
+      <p id="jr-sub" hidden>Trades réels · Forex · Indices</p>
       <div class="acc-switch" id="acc-switch">
         <button class="acc-current" id="acc-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="acc-menu" onclick="toggleAccountMenu()"></button>
         <div class="acc-menu" id="acc-menu" role="listbox" aria-label="Mes comptes" hidden></div>

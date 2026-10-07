@@ -184,3 +184,19 @@ test('synchronisation : un seul point d’entrée, deux appareils identiques apr
   assert.deepEqual(A.errors.concat(B.errors), []);
   await A.ctx.close(); await B.ctx.close();
 });
+
+test('marque Untilt : logo, titre, accent menthe (accent choisi à la main gardé), logo sur la carte et le rapport', async () => {
+  let { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], g_theme: JSON.stringify({ '--preset-key': 'default', '--accent': '#5d6cf6' }) } });
+  assert.equal(await page.locator('.brand-row').getAttribute('aria-label'), 'Untilt');
+  assert.match(await page.title(), /Untilt/);
+  const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
+  assert.equal(await css('--accent'), '#3ee6a8');
+  assert.equal(await css('--on-accent'), '#06281c');
+  assert.match(await page.evaluate(() => brandLogoSVG('#000')), /aria-label="Untilt"/);
+  assert.equal(await page.evaluate(() => { const c = drawWeekCard(weekCardData()); return c.width; }), 1080);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+  ({ page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--accent': '#ff8800' }) } }));
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#ff8800', 'accent personnel gardé');
+  await ctx.close();
+});

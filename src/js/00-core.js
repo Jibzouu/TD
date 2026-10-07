@@ -33,7 +33,7 @@ const JOURNAL_ID = (() => { try { const v = DB.getItem('journal_active'); return
 const JOURNAL_TYPE = JOURNALS[JOURNAL_ID].type;
 const IS_PROPFIRM = JOURNAL_TYPE === 'propfirm';
 const JP = JOURNAL_ID + '_';   // préfixe de stockage du compte ouvert
-document.title = JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
+document.title = JOURNALS[JOURNAL_ID].title + ' · Untilt';
 
 // ── APPARENCE COMMUNE aux trois journaux (thème, thèmes enregistrés, grain, auto clair/sombre, intensités) ──
 const GP = 'g_';

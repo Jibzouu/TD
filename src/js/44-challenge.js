@@ -80,6 +80,7 @@ function drawWeekCard(D) {
   if (D.ch && !D.ch.fail) { g.fillStyle = '#fbbf24'; g.fillText('🏁 ' + chL('Défi 30 jours : jour ', '30-day challenge: day ') + D.ch.done + ' / ' + CH_DAYS, 80, 900); }
   g.fillStyle = '#6b7280'; g.font = '400 26px ' + F;
   g.fillText(chL('Sans montants · le process avant le P&L', 'No amounts · process over P&L'), 80, 1010);
+  drawBrandLogo(g, 740, 960, 66, '#F5F7FB');   // la marque, en bas à droite de chaque carte partagée
   return c;
 }
 function shareWeekCard() {

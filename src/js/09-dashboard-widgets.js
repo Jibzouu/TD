@@ -42,8 +42,8 @@ function renderKPIs() {
     eurEl.style.color = totalEur > 0 ? 'var(--green)' : totalEur < 0 ? 'var(--red)' : 'var(--txt)';
     const fees = eurArr.reduce((s, t) => s + (typeof t.fees === 'number' ? t.fees : 0), 0);
     document.getElementById('k-pnleur-sub').textContent = fmtEUR(totalEur / eurArr.length, true, 2) + ' en moyenne par trade · ' + eurArr.length + ' trade(s) avec montant' + (fees ? ' · net de ' + fmtEUR(fees, false, 0) + ' de frais' : '');
-    document.title = fmtEUR(totalEur, true) + ' · ' + JOURNALS[JOURNAL_ID].title + ' · Journal de trading';
-  } else { eurEl.textContent = '—'; lastHeroValue = null; eurEl.style.color = 'var(--txt3)'; document.getElementById('k-pnleur-sub').textContent = 'en euros'; document.title = JOURNALS[JOURNAL_ID].title; }
+    document.title = fmtEUR(totalEur, true) + ' · ' + JOURNALS[JOURNAL_ID].title + ' · Untilt';
+  } else { eurEl.textContent = '—'; lastHeroValue = null; eurEl.style.color = 'var(--txt3)'; document.getElementById('k-pnleur-sub').textContent = 'en euros'; document.title = JOURNALS[JOURNAL_ID].title + ' · Untilt'; }
 
   // Streak
   const streakEl = document.getElementById('k-streak');

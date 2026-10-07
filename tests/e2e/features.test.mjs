@@ -886,14 +886,14 @@ test('charte premium : le thème personnel « 02 » devient « Néon », en têt
   assert.match(await first.innerText(), /Néon/);
   assert.match(await first.getAttribute('class'), /active/);
   await page.locator('#theme-preset-grid .theme-swatch', { hasText: 'Graphite' }).click();
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#5d6cf6');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#3ee6a8');   // accent de la marque Untilt
   await first.click();
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#ff2bd6');
   assert.deepEqual(errors, []);
   await ctx.close();
   // Ancien thème prédéfini « Terminal pro » enregistré : il passe sur Graphite et perd ses anciens réglages de structure.
   ({ page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], g_theme: JSON.stringify({ '--preset-key': 'default', '--bg': '#0a0c10', '--accent': '#4c8dff', '--font-mono': "'JetBrains Mono',monospace" }) } }));
-  assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), getComputedStyle(document.documentElement).getPropertyValue('--mono').trim().startsWith("'Inter'")]), ['#5d6cf6', true]);
+  assert.deepEqual(await page.evaluate(() => [getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), getComputedStyle(document.documentElement).getPropertyValue('--mono').trim().startsWith("'Inter'")]), ['#3ee6a8', true]);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
