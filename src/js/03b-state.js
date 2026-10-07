@@ -98,21 +98,21 @@ function toggleFilterBar() {
 let DATA_VERSION = 1;
 const pageRenderedVersion = {};
 const PAGE_RENDERERS = {
-  dashboard: () => [renderGuardCard, renderRoutine, renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderRuleAlerts, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
+  dashboard: () => [renderGuardCard, renderCoachDash, renderRoutine, renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderRuleAlerts, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
   trades: () => [renderTable],
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
   bilan: () => [applyChartDefaults, renderBilan],
-  propfirm: () => IS_PROPFIRM ? [applyChartDefaults, renderPropFirm] : [],
+  propfirm: () => IS_PROPFIRM ? [applyChartDefaults, renderPropFirm, renderPfPresets] : [],
   scaling: () => [fillScalingForm, () => renderScaling({ center: true })],
   export: () => [renderTrashUI, renderBackupSettings],
   plan: () => [renderPositionCalc, renderRiskRules],
   watchlist: () => [renderWatchlist],
   playbooks: () => [renderPlaybooks],
   replay: () => [renderReplay],
-  parametres: () => [renderAccountsCard],
-  guide: () => [renderGuide, renderShortcutsPage],
-  risque: () => [applyChartDefaults, renderRiskPage],
+  parametres: () => [renderAccountsCard, renderLockSettings, applySimpleMode],
+  guide: () => [renderGuide, renderShortcutsPage, renderLessonsList],
+  risque: () => [applyChartDefaults, renderRiskPage, renderChallenge],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }

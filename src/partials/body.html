@@ -312,6 +312,7 @@
         <span class="fs-16">💾</span>
         <span id="export-reminder-text"></span>
         <button class="btn-ghost btn-amber" onclick="showPage('export', document.querySelector('.nav-item[onclick*=export]'));exportData()">Exporter maintenant</button>
+        <button class="btn-ghost" onclick="showPage('export', document.querySelector('.nav-item[data-page=export]'));setTimeout(() => { const f = document.querySelector('#backup-slots-list'); if (f) { const d = f.closest('details'); if (d) d.open = true; f.scrollIntoView({ block: 'center' }); } }, 80)">Sauvegarde automatique</button>
         <button class="btn-ghost btn-s7" onclick="dismissExportReminder()">Plus tard</button>
       </div>
       <div id="import-reminder" style="display:none">
@@ -344,6 +345,7 @@
       </div>
       <div id="r-coverage"></div>
       <section class="guard-card" id="guard-card" hidden aria-label="Garde-fou du jour"></section>
+      <section class="coach-card" id="coach-dash" hidden aria-label="Coach"></section>
       <section class="routine" id="routine" hidden aria-label="Routine du jour"></section>
 
       <!-- ═══ AUJOURD'HUI : P&L du jour, perte max autorisée, constats ═══ -->
@@ -749,6 +751,7 @@
             Activer le suivi
           </label>
         </div>
+        <div class="pf-presets" id="pf-presets"></div>
         <div class="pf-grid">
           <div class="field"><label>Objectif de profit (%)</label><input type="number" id="pf-target-pct" step="0.5" min="0" oninput="savePfSetting('target_pct', this.value); renderPropFirm()"></div>
           <div class="field"><label>Perte totale max (%)</label><input type="number" id="pf-maxdd-pct" step="0.5" min="0" oninput="savePfSetting('maxdd_pct', this.value); renderPropFirm()"></div>
@@ -844,6 +847,7 @@
       <div class="panel mb-20"><div class="panel-hdr"><span>🛡️ Protection du capital<small class="panel-sub">un plancher à ne jamais franchir, et un risque qui baisse tout seul quand le compte baisse</small></span></div><div id="rk-capital"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🪜 Parcours de progression<small class="panel-sub">augmente ton risque seulement quand tes résultats le prouvent</small></span></div><div id="rk-path"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🎯 Discipline<small class="panel-sub">ton process compte plus que ton P&amp;L</small></span></div><div id="rk-disc"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🏁 Défi « 30 jours de discipline »<small class="panel-sub">30 jours d'affilée sans journée « pas propre » : le meilleur entraînement pour un débutant</small></span></div><div id="rk-challenge"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🎲 Simulateur de risque de ruine<small class="panel-sub">des milliers de suites de trades possibles avec tes chiffres : combien risquer sans te mettre en danger</small></span></div><div id="rk-sim"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span id="rk-plan-hdr">🌱 Plan débutant<small class="panel-sub">de bonnes règles de départ, modifiables ensuite</small></span></div><div id="rk-beginner"></div></div>
     </div>
@@ -1097,6 +1101,7 @@
         <div class="page-hdr-left"><h2 data-i18n="page.bilan.title">Bilan journalier</h2><p data-i18n="page.bilan.sub">Ta journée de trading : préparation, chiffres, trades et leçons</p></div>
         <div class="bl-nav"><button class="btn-ghost" id="bilan-prev" onclick="stepBilanDate(1)" title="Journée tradée précédente" aria-label="Journée précédente">←</button><select id="bilan-date-select" class="filter-select" onchange="renderBilan()"></select><button class="btn-ghost" id="bilan-next" onclick="stepBilanDate(-1)" title="Journée tradée suivante" aria-label="Journée suivante">→</button></div>
       </div>
+      <section class="coach-card" id="coach-day" hidden aria-label="Coach du jour"></section>
       <div id="bilan-content"></div>
       <div id="bilan-journal"></div>
       <p class="ui-muted mt-12">Les résultats par heure, session et jour de la semaine sont dans <a href="#" class="pb-link" onclick="event.preventDefault();goStatsTab('timing')">Statistiques → Timing &amp; comportement</a>.</p>
@@ -1111,9 +1116,11 @@
           <span id="revue-week-label" class="revue-week"></span>
           <button class="btn-ghost" onclick="revueStep(1)" aria-label="Semaine suivante">→</button>
           <button class="btn-ghost" onclick="revueThisWeek()">Cette semaine</button>
+          <button class="btn-ghost" onclick="shareWeekCard()" title="Image à partager, sans montants">📤 Carte de la semaine</button>
           <button class="btn-primary" onclick="printWeeklyReview()">⎙ Exporter en PDF</button>
         </div>
       </div>
+      <section class="coach-card" id="coach-week" hidden aria-label="Coach de la semaine"></section>
       <div id="revue-content"></div>
     </div>
 
@@ -1130,6 +1137,7 @@
           <div class="export-desc">Backup complet (JSON, réimportable à tout moment) ou tableau CSV de tes trades pour Excel, LibreOffice ou Google Sheets.</div>
           <div class="export-actions">
             <button class="btn-primary" onclick="exportData()">Télécharger le backup</button>
+            <button class="btn-ghost" onclick="exportEncrypted()" title="Backup complet chiffré : illisible sans ton mot de passe">🔒 Sauvegarde protégée</button>
             <button class="btn-ghost" onclick="exportTradesCSV()" title="Tableau lisible dans Excel, LibreOffice ou Google Sheets (filtre global appliqué)">Exporter en CSV (Excel)</button>
           </div>
         </div>
@@ -1168,9 +1176,25 @@
           <div class="export-icon">📊</div>
           <div class="export-title">Importer l'historique de ton broker</div>
           <div class="export-desc"><b>MetaTrader 4 / 5</b> : onglet Historique → clic droit → « Rapport » / « Enregistrer comme rapport détaillé » (fichier .htm). <b>cTrader</b> : export de l'historique (HTML ou CSV). <b>TradingView</b> et autres brokers : fichiers CSV. Sélectionne-les en une fois : le journal reconnaît chaque format, calcule les frais, le P&amp;L net et le R, et ignore les doublons si tu réimportes un export plus récent.</div>
-          <input type="file" id="csv-import-file" accept=".csv,text/csv,.htm,.html,text/html" multiple style="display:none" onchange="handleCsvImport(this)">
-          <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers (HTML, CSV)…</button>
+          <input type="file" id="csv-import-file" accept=".csv,text/csv,.htm,.html,text/html,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple style="display:none" onchange="handleCsvImport(this)">
+          <button class="btn-ghost" onclick="document.getElementById('csv-import-file').click()">Choisir un ou plusieurs fichiers (HTML, Excel, CSV)…</button>
           <p id="csv-import-status"></p>
+          <details class="fold mt5-guide">
+            <summary>📘 Pas à pas : exporter ton historique depuis MetaTrader 5 (2 minutes)</summary>
+            <div class="fold-body">
+              <ol class="mt5-steps">
+                <li><div class="mt5-mock"><span class="mk-bar">Affichage</span><span class="mk-menu"><span>Market Watch</span><span class="on">Boîte à outils <kbd>Ctrl+T</kbd></span></span></div>
+                  <p><b>Ouvre la Boîte à outils</b> : menu <i>Affichage</i> → <i>Boîte à outils</i> (ou <kbd>Ctrl</kbd>+<kbd>T</kbd>).</p></li>
+                <li><div class="mt5-mock"><span class="mk-tabs"><span>Trade</span><span>Exposition</span><span class="on">Historique</span></span><span class="mk-rows"><i></i><i></i><i></i></span></div>
+                  <p><b>Onglet Historique</b>, puis clic droit dans la liste → <i>Positions</i> et la période (ex. <i>Tout l'historique</i>).</p></li>
+                <li><div class="mt5-mock"><span class="mk-menu"><span>Positions</span><span>Période personnalisée…</span><span class="on">Rapport ▸</span><span class="mk-sub"><span class="on">Open XML (MS Office Excel 2007)</span><span>HTML (Internet Explorer)</span></span></span></div>
+                  <p>Clic droit → <b>Rapport</b> → <i>Open XML (Excel)</i> ou <i>HTML</i>, et enregistre le fichier.</p></li>
+                <li><div class="mt5-mock"><span class="mk-btn">Choisir un ou plusieurs fichiers…</span><span class="mk-ok">✓ 42 trades importés</span></div>
+                  <p><b>Importe le fichier ici</b> : frais, swap, P&amp;L net et R sont calculés, et les doublons ignorés (tu peux réimporter chaque semaine).</p></li>
+              </ol>
+              <p class="ui-muted">Sur téléphone, l'application MetaTrader ne sait pas exporter : fais-le depuis un ordinateur (MT5 pour Windows ou Mac, ou le terminal web de ton broker).</p>
+            </div>
+          </details>
           <details class="fold" id="import-settings">
             <summary>Réglages d'import <span class="fold-hint">fuseau horaire et devise — seulement si ton broker exporte en UTC ou dans une autre devise</span></summary>
             <div class="fold-body">
@@ -1267,10 +1291,15 @@
         <div class="page-hdr-left"><h2 data-i18n="page.guide.title">Guide</h2><p data-i18n="page.guide.sub">Comment utiliser le journal, page par page, et tous les raccourcis clavier</p></div>
       </div>
       <div class="gd-head">
-        <div class="gd-jump"><button class="btn-ghost" onclick="guideJump('guide-list')">📖 Mode d'emploi</button><button class="btn-ghost" onclick="guideJump('gd-keys-sec')">⌨️ Raccourcis clavier</button></div>
+        <div class="gd-jump"><button class="btn-ghost" onclick="guideJump('guide-list')">📖 Mode d'emploi</button><button class="btn-ghost" onclick="guideJump('gd-lessons-sec')">🎓 Mini-leçons</button><button class="btn-ghost" onclick="guideJump('gd-keys-sec')">⌨️ Raccourcis clavier</button></div>
         <input type="search" id="guide-q" class="gd-q" placeholder="Rechercher dans le guide…" oninput="renderGuide()">
       </div>
       <div id="guide-list" class="gd-list"></div>
+      <section id="gd-lessons-sec" class="gd-keys-sec">
+        <h3 class="gd-h3">🎓 Mini-leçons</h3>
+        <p class="gd-note">Des leçons de 2 minutes sur les bases : elles s'affichent au bon moment, et tu peux les relire ici quand tu veux.</p>
+        <div id="lessons-list"></div>
+      </section>
       <section id="gd-keys-sec" class="gd-keys-sec">
         <h3 class="gd-h3">⌨️ Raccourcis clavier</h3>
         <p class="gd-note">Les raccourcis ne marchent pas pendant que tu écris dans un champ. Appuie sur ? n'importe où pour un aide-mémoire.</p>
@@ -1287,6 +1316,12 @@
         <div class="panel-hdr"><span><span data-i18n="settings.lang.title">Langue</span><small class="panel-sub" data-i18n="settings.lang.sub">langue de l'interface — commune aux trois journaux</small></span></div>
         <div class="center-row"><select id="lang-select" class="filter-select" onchange="setLang(this.value)" aria-label="Langue"></select></div>
         <p class="ui-muted mt-10" id="lang-note" data-i18n="settings.lang.beta" hidden>La traduction anglaise est en cours : seuls la navigation, les titres de pages et la recherche sont traduits pour l'instant.</p>
+      </div>
+
+      <div class="panel mb-20" id="mode-card">
+        <div class="panel-hdr"><span>Mode et sécurité<small class="panel-sub">propre au compte ouvert, sauf le code de verrouillage (tout le journal)</small></span></div>
+        <label class="ob-check sm-toggle"><input type="checkbox" id="simple-mode-toggle" onchange="setSimpleMode(this.checked)"><span><b>Mode simple (débutant)</b> : seulement l'essentiel dans le menu (Dashboard, Journal, Gestion du risque, Guide). Les autres pages se débloquent avec ton parcours de progression.</span></label>
+        <div id="lock-settings"></div>
       </div>
 
       <div class="panel mb-20" id="accounts-card">
@@ -1513,7 +1548,7 @@
     <p>L'essentiel en 3 champs — le reste (prix, captures, checklist) se complète plus tard via « Modifier ».</p>
     <div id="guard-qa-banner" class="guard-mini" role="status" hidden></div>
     <div class="qa-grid">
-      <div class="field"><label for="qa-asset">Actif</label><input id="qa-asset" list="qa-asset-list" autocomplete="off" placeholder="ex : EUR/USD"><datalist id="qa-asset-list"></datalist></div>
+      <div class="field"><label for="qa-asset">Actif</label><input id="qa-asset" list="qa-asset-list" autocomplete="off" placeholder="ex : EUR/USD"><datalist id="qa-asset-list"></datalist><div class="qa-chips" id="qa-asset-chips"></div></div>
       <div class="field"><label>Résultat</label>
         <div class="seg qa-res" role="radiogroup" aria-label="Résultat">
           <button type="button" class="seg-btn" data-res="TP" role="radio" onclick="setQuickRes('TP')">Gagnant</button>
@@ -1521,10 +1556,14 @@
           <button type="button" class="seg-btn" data-res="BE" role="radio" onclick="setQuickRes('BE')">BE</button>
         </div>
       </div>
-      <div class="field"><label for="qa-pnl">P&amp;L en €</label><input id="qa-pnl" type="number" step="0.01" placeholder="+150 ou -60"></div>
+      <div class="field"><label for="qa-pnl">P&amp;L en €</label><input id="qa-pnl" type="number" step="0.01" inputmode="decimal" placeholder="+150 ou -60"></div>
       <div class="field"><label for="qa-setup">Setup (optionnel)</label><input id="qa-setup" list="setup-list" autocomplete="off" maxlength="60"></div>
       <div class="field"><label for="qa-dir">Sens (optionnel)</label><select id="qa-dir"><option value="">—</option><option>Long</option><option>Short</option></select></div>
       <div class="field"><label for="qa-date">Date</label><input id="qa-date" type="date"></div>
+      <div class="field qa-photo-f"><label>Capture (optionnel)</label>
+        <label class="btn-ghost qa-photo-btn"><input type="file" id="qa-photo" accept="image/*" capture="environment" hidden onchange="qaAddPhoto(this)">📷 Photo ou image</label>
+        <div class="qa-thumbs" id="qa-thumbs"></div>
+      </div>
     </div>
     <div class="modal-btns">
       <span class="qa-hint">Entrée = enregistrer · Échap = fermer</span>

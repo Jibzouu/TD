@@ -420,7 +420,10 @@ async function handleCsvImport(input) {
   const fileData = [];
   for (const file of files) {
     try {
-      const text = decodeFileBuffer(await readFileAsBuffer(file));
+      const buf = await readFileAsBuffer(file);
+      // Rapport Excel (.xlsx, MetaTrader 5 « Open XML ») : lu comme un relevé HTML.
+      if (isZipBuffer(buf)) { const t = await xlsxToRows(buf); fileData.push({ name: file.name, rows: t.rows, text: t.text, html: true }); continue; }
+      const text = decodeFileBuffer(buf);
       if (looksLikeHTML(text)) { const t = htmlTablesToRows(text); fileData.push({ name: file.name, rows: t.rows, text: t.text, html: true }); }
       else fileData.push({ name: file.name, rows: parseCSVGeneric(text), text: '' });
     } catch {

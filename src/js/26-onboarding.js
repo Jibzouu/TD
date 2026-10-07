@@ -8,7 +8,7 @@ function openOnboarding() {
   const acc = ACCOUNTS.find(a => a.id === JOURNAL_ID) || { name: JOURNALS[JOURNAL_ID].title, type: JOURNAL_TYPE };
   const st = getScalingState();
   obData = { name: acc.name, type: acc.type, capital: accountSize > 0 ? accountSize : 10000, riskPct: st.riskPct || 1,
-    ddPct: loadDDLimitPct(), maxTP: planData && planData.maxTP > 0 ? planData.maxTP : 1, maxSL: planData && planData.maxSL > 0 ? planData.maxSL : 2, beginner: true };
+    ddPct: loadDDLimitPct(), maxTP: planData && planData.maxTP > 0 ? planData.maxTP : 1, maxSL: planData && planData.maxSL > 0 ? planData.maxSL : 2, beginner: true, simple: true };
   obStep = 0;
   const ov = document.getElementById('onboard');
   ov.hidden = false;
@@ -32,7 +32,7 @@ function obReadStep() {
     const riskPct = num('ob-risk'), ddPct = num('ob-dd');
     if (!(riskPct > 0 && riskPct < 100)) { showToast('Indique un risque par trade entre 0 et 100 %', 'error'); return false; }
     const bg = document.getElementById('ob-beginner');
-    Object.assign(obData, { riskPct, ddPct: ddPct > 0 ? ddPct : obData.ddPct, maxTP: parseInt(v('ob-tp'), 10) || null, maxSL: parseInt(v('ob-sl'), 10) || null, beginner: bg ? bg.checked : obData.beginner });
+    Object.assign(obData, { riskPct, ddPct: ddPct > 0 ? ddPct : obData.ddPct, maxTP: parseInt(v('ob-tp'), 10) || null, maxSL: parseInt(v('ob-sl'), 10) || null, beginner: bg ? bg.checked : obData.beginner, simple: (document.getElementById('ob-simple') || {}).checked ?? obData.simple });
   }
   return true;
 }
@@ -55,7 +55,9 @@ function finishOnboarding(action) {
   saveScalingState();
   DB.setItem(JP + 'dd_limit_pct', String(d.ddPct));
   if (planData) { planData.maxTP = d.maxTP; planData.maxSL = d.maxSL; DB.setItem(JP + 'plan', JSON.stringify(planData)); }
-  if (d.beginner && typeof applyBeginnerPlan === 'function') applyBeginnerPlan(true, true);   // garde-fous + checklist, sans toucher aux réglages choisis ci-dessus
+  if (d.beginner && typeof applyBeginnerPlan === 'function') applyBeginnerPlan(true, true);
+  DB.setItem(JP + 'simple', d.simple ? '1' : '0');
+  if (typeof applySimpleMode === 'function') applySimpleMode();   // garde-fous + checklist, sans toucher aux réglages choisis ci-dessus
   closeOnboarding(true);
   // Type changé (ex. prop firm) : le menu et les pages dépendent du type → on recharge puis on lance l'action.
   if (d.type !== prevType) {
@@ -96,7 +98,8 @@ function renderOnboarding() {
         <label class="field"><span>TP max par jour</span><input type="number" id="ob-tp" min="0" step="1" value="${d.maxTP || ''}" placeholder="aucun"><small>objectif atteint : la journée s'arrête</small></label>
         <label class="field"><span>SL max par jour</span><input type="number" id="ob-sl" min="0" step="1" value="${d.maxSL || ''}" placeholder="aucun"><small>limite atteinte : stop pour aujourd'hui</small></label>
       </div>
-      <label class="ob-check"><input type="checkbox" id="ob-beginner" ${raw(d.beginner ? 'checked' : '')}><span><b>Activer les garde-fous du plan débutant</b> (recommandé) : stop après 2 pertes d'affilée, 3 trades max par jour, pause de 30 min après une perte, pertes max par semaine et par mois, plancher à 90 % de ton capital.</span></label>`,
+      <label class="ob-check"><input type="checkbox" id="ob-beginner" ${raw(d.beginner ? 'checked' : '')}><span><b>Activer les garde-fous du plan débutant</b> (recommandé) : stop après 2 pertes d'affilée, 3 trades max par jour, pause de 30 min après une perte, pertes max par semaine et par mois, plancher à 90 % de ton capital.</span></label>
+      <label class="ob-check"><input type="checkbox" id="ob-simple" ${raw(d.simple ? 'checked' : '')}><span><b>Mode simple</b> (recommandé si tu débutes) : seulement l'essentiel dans le menu ; les autres pages arrivent au fil de ton parcours. « Tout afficher » à tout moment.</span></label>`,
     () => html`<h2 id="ob-title">C'est prêt ! Comment veux-tu commencer ?</h2><p class="ob-lead">${d.name} · ${fmtEUR(d.capital)} · ${fmtRate(d.riskPct, d.riskPct % 1 ? 2 : 0)} par trade (${fmtEUR(riskEur, false, 2)})</p>
       <div class="ob-choices">
         <button class="ob-choice" onclick="finishOnboarding('trade')"><b>＋ Ajouter mon premier trade</b><span>Formulaire complet : résultat, prix, captures, erreurs…</span></button>

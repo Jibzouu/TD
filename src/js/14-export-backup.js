@@ -41,9 +41,12 @@ function isValidTradesArray(arr) {
   return arr.every(t => t && typeof t === 'object' && (typeof t.id === 'number' || typeof t.id === 'string'));
 }
 
+function backupData() {
+  return { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: Object.assign(imagesOf(trades), playbookImages()), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
+}
 function exportData() {
   // version 3 : captures rangées à part ({ id: image }), trades avec uid / createdAt / updatedAt, traces de suppression.
-  const data = { version: 3, journal: JOURNAL_ID, exportedAt: new Date().toISOString(), trades, images: Object.assign(imagesOf(trades), playbookImages()), tombstones: TradeStore.tombstones(), watchData, planData, settings: collectAllSettings(), settingsMeta: settingsSnapshot() };
+  const data = backupData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -135,7 +138,9 @@ async function writeBackupToSlot(slot) {
     const fname = 'journal-trading-sauvegarde-' + localDateStr() + '.json';
     const fileHandle = await handle.getFileHandle(fname, { create: true });
     const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(fullBackupPayload(), null, 2));
+    // Journal verrouillé : la copie est chiffrée avec le même code (sinon elle laisserait les données lisibles sur le disque).
+    const plain = JSON.stringify(fullBackupPayload(), null, 2), sealed = DB.locked ? await DB.sealWithLock(plain) : null;
+    await writable.write(sealed ? JSON.stringify(sealed) : plain);
     await writable.close();
     return { slot, ok: true, name: handle.name, file: fname };
   } catch (e) { return { slot, ok: false, reason: e.message, name: handle.name }; }
@@ -209,8 +214,11 @@ function importData(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
+    let parsed;
+    try { parsed = JSON.parse(e.target.result); } catch { showToast('Fichier invalide ou corrompu', 'error'); return; }
+    bkUnseal(parsed, data => {   // fichier protégé par mot de passe : déchiffré d'abord
     try {
-      const data = JSON.parse(e.target.result);
+      if (isFullBackup(data)) { restoreFullBackup(data); return; }   // sauvegarde automatique (tous les comptes)
       if (!isValidTradesArray(data.trades)) throw new Error('Format invalide');
       const hasSettings = data.settings && typeof data.settings === 'object';
       const other = data.journal && data.journal !== JOURNAL_ID && JOURNALS[data.journal];
@@ -227,6 +235,7 @@ function importData(input) {
         showToast('Import réussi — '+trades.length+' trades'+(hasSettings?' + réglages':''), 'success');
       });
     } catch { showToast('Fichier invalide ou corrompu', 'error'); }
+    });
   };
   reader.readAsText(file);
   input.value = '';
@@ -293,23 +302,18 @@ function mergeBackup(input) {
   input.value = '';
   const reader = new FileReader();
   reader.onload = e => {
-    let data;
-    try { data = JSON.parse(e.target.result); if (!isValidTradesArray(data.trades)) throw new Error('Format invalide'); }
-    catch (x) { showToast('Fichier invalide ou corrompu', 'error'); return; }
+    let parsed;
+    try { parsed = JSON.parse(e.target.result); } catch (x) { showToast('Fichier invalide ou corrompu', 'error'); return; }
+    bkUnseal(parsed, data => {
+    if (isFullBackup(data)) { showToast('Sauvegarde automatique (tous les comptes) : utilise « Restaurer » pour la remettre en place.', 'error'); return; }
+    if (!data || !isValidTradesArray(data.trades)) { showToast('Fichier invalide ou corrompu', 'error'); return; }
     const other = data.journal && data.journal !== JOURNAL_ID && JOURNALS[data.journal];
     const warn = other ? `⚠️ Ce backup vient du compte « ${other.tab} » alors que tu es dans « ${JOURNALS[JOURNAL_ID].tab} ». ` : '';
     openModal('Fusionner ce backup ?', `${warn}Les ${data.trades.length} trades du fichier sont fusionnés avec les tiens : rien n'est écrasé à l'aveugle, la version la plus récente de chaque trade et de chaque réglage est gardée.`, () => {
       createSafetySnapshot('avant fusion de backup');
-      const imgs = data.images && typeof data.images === 'object' && !Array.isArray(data.images) ? data.images : null;
-      const st = TradeStore.merge(data.trades, imgs, data.tombstones);
+      const st = Sync.apply(data);   // point d'entrée unique de la synchronisation (45-sync.js)
       if (!st) return;
-      const ns = mergeSettingsMeta(data.settingsMeta);
-      if (ns) {
-        watchData = loadJSON(JP + 'watch', watchData);
-        planData = loadJSON(JP + 'plan', planData);
-        restorePlaybookImages(imgs);
-        applyRestoredSettings();
-      } else renderAll();
+      const ns = st.settings;
       const parts = [];
       if (st.added) parts.push(st.added + ' ajouté' + (st.added > 1 ? 's' : ''));
       if (st.updated) parts.push(st.updated + ' mis à jour');
@@ -318,6 +322,7 @@ function mergeBackup(input) {
       DB.setItem(JP + 'last_merge', Date.now());
       showToast(parts.length ? 'Fusion terminée — ' + parts.join(' · ') : 'Déjà à jour : rien de nouveau dans ce fichier', 'success');
     }, { confirmLabel: 'Fusionner' });
+    });
   };
   reader.readAsText(file);
 }
@@ -432,7 +437,8 @@ function checkExportReminder() {
   if (sessionStorage.getItem((JP + 'export_reminder_dismissed'))) { el.style.display = 'none'; return; }
   const real = trades.filter(t => !t.demo).length;   // les trades d'exemple ne justifient pas un rappel de backup
   if (real < 5) { el.style.display = 'none'; return; }
-  const last = parseInt(DB.getItem((JP + 'last_export')) || '0', 10);
+  // Un export manuel OU une sauvegarde automatique réussie (dans un dossier) comptent comme sauvegarde.
+  const last = Math.max(parseInt(DB.getItem((JP + 'last_export')) || '0', 10) || 0, parseInt(DB.getItem((GP + 'last_backup_run')) || '0', 10) || 0);
   const days = last ? (Date.now() - last) / 86400000 : Infinity;
   if (days >= 7) {
     document.getElementById('export-reminder-text').textContent = last

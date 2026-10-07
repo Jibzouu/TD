@@ -167,6 +167,7 @@ function rkSetStage(s, confirmMsg) {
   const restored = RK_STAGES[stage].custom && rkRestoreBackup();
   if (restored) { showToast(rkL('Tes réglages d’avant le plan débutant sont revenus ✓', 'Your settings from before the beginner plan are back ✓'), 'success'); renderAll(); }
   renderRiskPage(); safeRun(renderGuardCard, 'renderGuardCard');
+  if (typeof applySimpleMode === 'function') safeRun(applySimpleMode, 'applySimpleMode');   // le mode simple débloque des pages selon l'étape
 }
 function rkPickStage(s) {
   const msg = RK_STAGES[s] && RK_STAGES[s].custom

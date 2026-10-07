@@ -5,10 +5,15 @@
 //   - Premier lancement : les données existantes de localStorage sont copiées dans IndexedDB (localStorage n'est
 //     pas effacé : il reste une copie de secours lisible par l'ancienne version du journal).
 //   - Si IndexedDB est indisponible (navigation privée de certains navigateurs…), repli transparent sur localStorage.
+//   - Code de verrouillage (optionnel) : chaque valeur est chiffrée (AES-GCM, crypto.js) avant d'être écrite dans IndexedDB ;
+//     au démarrage, l'écran de verrouillage demande le code, puis tout est déchiffré en mémoire. Sans le code, les
+//     données sur le disque sont illisibles. La fiche du verrou (sel + témoin chiffré) est rangée sous la clé LOCK.
 const DB = (() => {
-  const NAME = 'journal-trading', STORE = 'kv', MIGRATED = '__migrated_from_localstorage';
+  const NAME = 'journal-trading', STORE = 'kv', MIGRATED = '__migrated_from_localstorage', LOCK = '__lock', CHECK = 'journal-ok';
   const mem = new Map();
   let idb = null, mode = 'memory', pending = new Map(), flushScheduled = false, lastError = null;
+  let lockKey = null, lockMeta = null, flushChain = Promise.resolve();
+  const isBox = v => !!(v && typeof v === 'object' && typeof v.ct === 'string' && typeof v.iv === 'string');
   const listeners = [];
 
   function openIDB() {
@@ -47,6 +52,12 @@ const DB = (() => {
           tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
         });
       }
+      if (all.has(LOCK)) {
+        lockMeta = all.get(LOCK);
+        lockKey = await askUnlock(lockMeta);
+        for (const [k, v] of all) if (isBox(v)) all.set(k, await JTC.decrypt(lockKey, v));
+        all.delete(LOCK);
+      }
       all.forEach((v, k) => mem.set(k, v));
       mode = 'indexeddb';
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
@@ -64,19 +75,87 @@ const DB = (() => {
     flushScheduled = true;
     Promise.resolve().then(flush);
   }
+  // Les écritures passent l'une après l'autre (chaîne) : avec le chiffrement (asynchrone), un lot plus récent ne peut
+  // jamais être écrit avant un lot plus ancien.
   function flush() {
     flushScheduled = false;
-    if (!idb || !pending.size) return Promise.resolve();
+    if (!idb || !pending.size) return flushChain;
     const batch = pending; pending = new Map();
+    flushChain = flushChain.then(() => writeBatch(batch));
+    return flushChain;
+  }
+  async function writeBatch(batch) {
+    const key = lockKey, rows = [];
+    for (const [k, v] of batch) rows.push([k, v === null || !key ? v : await JTC.encrypt(key, v)]);
     return new Promise(resolve => {
       let tx;
       try { tx = idb.transaction(STORE, 'readwrite'); } catch (e) { onError(e); return resolve(); }
       const st = tx.objectStore(STORE);
-      batch.forEach((v, k) => { if (v === null) st.delete(k); else st.put(v, k); });
+      rows.forEach(([k, v]) => { if (v === null) st.delete(k); else st.put(v, k); });
       tx.oncomplete = () => { lastError = null; resolve(); };
       tx.onerror = tx.onabort = () => { onError(tx.error || new Error('Écriture IndexedDB refusée')); resolve(); };
     });
   }
+  // Réécrit tout le contenu (chiffré ou en clair selon le verrou), plus la fiche du verrou.
+  async function rewriteAll() {
+    await flush();
+    const batch = new Map(mem);
+    batch.set(MIGRATED, mem.get(MIGRATED) || String(Date.now()));
+    await (flushChain = flushChain.then(() => writeBatch(batch)));
+    await new Promise((resolve, reject) => {
+      const tx = idb.transaction(STORE, 'readwrite'), st = tx.objectStore(STORE);
+      if (lockMeta) st.put(lockMeta, LOCK); else st.delete(LOCK);
+      tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error);
+    });
+  }
+  async function verify(meta, code) {
+    try { const k = await JTC.deriveKey(code, meta.salt, meta.iter); return (await JTC.decrypt(k, meta.check)) === CHECK ? k : null; } catch (e) { return null; }
+  }
+  async function enableLock(code) {
+    if (mode !== 'indexeddb' || !JTC.ok()) throw new Error('Verrouillage indisponible dans ce navigateur');
+    const salt = JTC.randomSalt(), key = await JTC.deriveKey(code, salt, JTC.ITER);
+    lockMeta = { v: 1, salt, iter: JTC.ITER, check: await JTC.encrypt(key, CHECK) };
+    lockKey = key;
+    await rewriteAll();
+    // L'ancienne copie de secours en clair (localStorage, avant IndexedDB) est effacée : sinon elle resterait lisible.
+    lsSafe(() => localStorage.clear());
+  }
+  async function disableLock(code) {
+    if (!lockMeta) return true;
+    if (!(await verify(lockMeta, code))) return false;
+    lockKey = null; lockMeta = null;
+    await rewriteAll();
+    return true;
+  }
+  // Écran de verrouillage (avant que le journal ne démarre) : se résout avec la clé une fois le bon code saisi.
+  function askUnlock(meta) {
+    return new Promise(resolve => {
+      const wrap = document.createElement('div');
+      wrap.id = 'lock-screen';
+      wrap.innerHTML = '<form class="lk-box" autocomplete="off"><div class="lk-ic">🔒</div><h1>Journal verrouillé</h1><p>Entre ton code pour ouvrir le journal.<br><small>Journal locked: enter your code.</small></p>'
+        + '<input type="password" id="lock-code" inputmode="numeric" aria-label="Code" autofocus><button type="submit" id="lock-go">Ouvrir</button><p class="lk-err" id="lock-err" role="alert"></p>'
+        + '<details class="lk-forgot"><summary>Code oublié ?</summary><p>Les données sont chiffrées avec ton code : sans lui, personne (pas même nous) ne peut les lire. Tu peux tout effacer et repartir de zéro, puis restaurer une sauvegarde.</p><button type="button" id="lock-wipe">Effacer toutes les données de ce navigateur</button></details></form>';
+      document.body.appendChild(wrap);
+      const input = wrap.querySelector('#lock-code'), err = wrap.querySelector('#lock-err');
+      setTimeout(() => input.focus(), 30);
+      wrap.querySelector('form').addEventListener('submit', async e => {
+        e.preventDefault();
+        err.textContent = 'Vérification…';
+        const k = await verify(meta, input.value);
+        if (!k) { err.textContent = 'Code incorrect.'; input.select(); return; }
+        wrap.remove();
+        resolve(k);
+      });
+      wrap.querySelector('#lock-wipe').addEventListener('click', () => {
+        if (!confirm('Effacer DÉFINITIVEMENT toutes les données du journal dans ce navigateur ?')) return;
+        if (idb) idb.close();
+        const req = indexedDB.deleteDatabase(NAME);
+        req.onsuccess = req.onerror = req.onblocked = () => { lsSafe(() => localStorage.clear()); location.reload(); };
+      });
+    });
+  }
+  // Sauvegarde automatique d'un journal verrouillé : chiffrée avec le même code (restaurable avec lui).
+  async function sealWithLock(text) { return lockKey ? JTC.sealText(null, text, lockMeta.salt, lockKey) : null; }
   function onError(e) {
     lastError = e;
     console.error('Écriture impossible dans IndexedDB :', e);
@@ -92,7 +171,9 @@ const DB = (() => {
   }
 
   return {
-    init, flush, refreshEstimate,
+    init, flush, refreshEstimate, enableLock, disableLock, sealWithLock,
+    get locked() { return !!lockMeta; },
+    async checkCode(code) { return !!(lockMeta && await verify(lockMeta, code)); },
     get mode() { return mode; },
     get usage() { return usage; },
     get quota() { return quota; },

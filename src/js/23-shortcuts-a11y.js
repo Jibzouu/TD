@@ -32,10 +32,29 @@ function openQuickAdd() {
   mount('qa-asset-list', html`${assets.map(a => html`<option value="${a}"></option>`)}`);
   // Dernier actif tradé proposé par défaut : c'est le plus probable.
   if (trades[0] && trades[0].asset) document.getElementById('qa-asset').value = trades[0].asset;
+  // Actifs récents en boutons : un toucher suffit sur téléphone.
+  const recent = [...new Set(trades.map(t => t.asset).filter(Boolean))].slice(0, 5);
+  mount('qa-asset-chips', html`${recent.map((a, i) => html`<button type="button" class="qa-chip" onclick="${raw('qaPickAsset(' + i + ')')}">${a}</button>`)}`);
+  qaRecent = recent; qaImgs = []; renderQaThumbs();
   setQuickRes('');
   rememberFocus();
   box.classList.add('open');
-  setTimeout(() => { const a = document.getElementById('qa-asset'); a.focus(); a.select(); }, 30);
+  // Sur téléphone, pas de clavier ouvert d'office : on commence par toucher l'actif et le résultat.
+  if (!window.matchMedia('(max-width: 860px)').matches) setTimeout(() => { const a = document.getElementById('qa-asset'); a.focus(); a.select(); }, 30);
+}
+let qaRecent = [], qaImgs = [];
+function qaPickAsset(i) { const a = qaRecent[+i]; if (a) document.getElementById('qa-asset').value = a; document.querySelectorAll('.qa-chip').forEach((b, j) => b.classList.toggle('on', j === +i)); }
+function qaAddPhoto(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f || !f.type.startsWith('image/')) return;
+  if (qaImgs.length >= MAX_CAPS) { showToast('Maximum ' + MAX_CAPS + ' captures par trade', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => compressDataUrl(e.target.result, out => { if (safeImgSrc(out)) { qaImgs.push(out); renderQaThumbs(); } });
+  reader.readAsDataURL(f);
+}
+function renderQaThumbs() {
+  mount('qa-thumbs', html`${qaImgs.map((src, i) => html`<span class="qa-thumb"><img src="${raw(safeImgSrc(src))}" alt="Capture ${i + 1}"><button type="button" aria-label="Retirer" onclick="${raw('qaImgs.splice(' + i + ',1);renderQaThumbs()')}">×</button></span>`)}`);
 }
 function closeQuickAdd() { const b = document.getElementById('quick-add'); if (b && b.classList.contains('open')) { b.classList.remove('open'); restoreFocus(); } }
 function setQuickRes(r) {
@@ -53,7 +72,7 @@ function saveQuickAdd() {
   const date = document.getElementById('qa-date').value || localDateStr();
   const cr = computeRWithSource(pnlEur, res);
   const t = TradeStore.add({ date, asset, dir: document.getElementById('qa-dir').value, res, pnlEur, pnl: cr.r, rr: Math.abs(cr.r) || null, rSrc: cr.src,
-    setup: document.getElementById('qa-setup').value.trim().slice(0, 60), entry: date === localDateStr() ? hh : '', session: date === localDateStr() ? sessionFromHour(now.getHours(), 0) : '', emotion: null, tf: '', desc: '' });
+    setup: document.getElementById('qa-setup').value.trim().slice(0, 60), entry: date === localDateStr() ? hh : '', session: date === localDateStr() ? sessionFromHour(now.getHours(), 0) : '', emotion: null, tf: '', desc: '' }, qaImgs.slice());
   if (!t) return;
   closeQuickAdd();
   refreshAssetDropdowns();

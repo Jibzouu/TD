@@ -7,6 +7,9 @@ const GUIDE = [
   { id: 'start', icon: '🚀', title: ['Bien démarrer', 'Getting started'],
     intro: ['Le journal fonctionne entièrement dans ton navigateur : rien n’est envoyé sur un serveur.', 'The journal runs entirely in your browser: nothing is sent to a server.'],
     items: [
+      ['Mode simple (débutant) : au départ, le menu ne montre que l’essentiel (Dashboard, Journal, Gestion du risque, Guide, plus Export et Paramètres). Les autres pages se débloquent avec ton parcours de progression ; « Tout afficher » en bas du menu, ou Paramètres → Mode et sécurité.', 'Simple mode (beginner): at first the menu shows only the essentials (Dashboard, Journal, Risk management, Guide, plus Export and Settings). Other pages unlock with your progression path; “Show all” at the bottom of the menu, or Settings → Mode and security.'],
+      ['Mini-leçons : une leçon de 2 minutes s’affiche au bon moment (premier SL, 2 pertes d’affilée, journée rouge, drawdown…), une seule fois. Toutes sont relisibles dans le Guide.', 'Mini-lessons: a 2-minute lesson shows up at the right time (first SL, 2 losses in a row, red day, drawdown…), only once. All can be reread in the Guide.'],
+      ['Sur téléphone : le bouton rond « + » en bas à droite ouvre la saisie rapide (actif récent en un toucher, résultat, P&L, photo de la capture).', 'On a phone: the round “+” button at the bottom right opens quick entry (recent asset in one tap, result, P&L, screenshot photo).'],
       ['Trois comptes séparés : Live (trades réels), Backtest (stratégies testées, avec le Backtest replay) et Prop Firm (challenge). Change de compte avec le menu en haut à gauche.', 'Three separate accounts: Live (real trades), Backtest (tested strategies, with Backtest replay) and Prop Firm (challenge). Switch with the menu at the top left.'],
       ['Tu débutes ? Garde coché « plan débutant » au premier lancement (ou applique-le depuis Gestion du risque) et choisis ton étape dans le parcours de progression : le journal t’arrêtera avant les erreurs classiques.', 'New to trading? Keep “beginner plan” ticked at first launch (or apply it from Risk management) and pick your step in the progression path: the journal will stop you before the classic mistakes.'],
       ['Ajouter un trade : bouton « Nouveau trade » (formulaire complet) ou touche N (saisie rapide : actif, résultat, P&L).', 'Add a trade: “New trade” button (full form) or the N key (quick entry: asset, result, P&L).'],
@@ -18,6 +21,7 @@ const GUIDE = [
   { id: 'dashboard', page: 'dashboard', icon: '📊', title: ['Dashboard', 'Dashboard'],
     intro: ['Ta vue d’ensemble : solde du compte et performance globale en haut, puis où tu gagnes et comment tu trades.', 'Your overview: account balance and overall performance at the top, then where you win and how you trade.'],
     items: [
+      ['Coach (sous le garde-fou) : les 3 constats les plus importants de ta journée, ou de tes 7 derniers jours (pertes concentrées sur un jour ou une heure, trades de revanche, valeur de ta checklist, journées trop chargées, meilleur setup…).', 'Coach (under the guard): the 3 most important findings of your day, or of your last 7 days (losses concentrated on a day or hour, revenge trades, value of your checklist, overloaded days, best setup…).'],
       ['Win rate = gagnants ÷ (gagnants + perdants) : les break-even ne comptent ni comme gains ni comme pertes. Il est vert au-dessus de ton seuil de rentabilité (calculé avec ton gain moyen et ta perte moyenne).', 'Win rate = wins ÷ (wins + losses): break-evens count as neither. It turns green above your break-even threshold (computed from your average win and loss).'],
       ['Garde-fou du jour (sous la performance) : feu vert / orange / rouge, ce qu’il te reste à perdre aujourd’hui, risque conseillé, marge au-dessus du plancher et discipline. Clique dessus pour la page Gestion du risque.', 'Daily guard (below performance): green / orange / red light, what you can still lose today, suggested risk, room above the floor and discipline. Click it for the Risk management page.'],
       ['Sous 100 trades, un rappel te dit qu’il est trop tôt pour juger ta stratégie : les chiffres d’un petit échantillon trompent.', 'Under 100 trades, a reminder tells you it is too early to judge your strategy: small-sample numbers are misleading.'],
@@ -44,6 +48,7 @@ const GUIDE = [
   { id: 'bilan', page: 'bilan', icon: '🗓️', title: ['Bilan journalier', 'Daily review'],
     intro: ['La page de ta séance : préparation avant, bilan après.', 'Your session page: preparation before, review after.'],
     items: [
+      ['Coach du jour (en haut) : ce que disent les trades de la journée choisie, en phrases claires.', 'Coach of the day (at the top): what the chosen day’s trades say, in plain sentences.'],
       ['Avant la séance : biais, plan, point de vigilance, humeur.', 'Before the session: bias, plan, point of attention, mood.'],
       ['Chiffres du jour : trades, TP, SL, BE, win rate, P&L en € et en R, humeur moyenne, et la liste des trades.', 'Day figures: trades, TP, SL, BE, win rate, P&L in € and R, average mood, and the trade list.'],
       ['Après la séance : ce qui s’est passé, la leçon, la discipline.', 'After the session: what happened, the lesson, discipline.'],
@@ -61,6 +66,7 @@ const GUIDE = [
   { id: 'revue', page: 'revue', icon: '🗒️', title: ['Revue hebdo', 'Weekly review'],
     intro: ['Une revue guidée de ta semaine, à faire le week-end.', 'A guided review of your week, for the weekend.'],
     items: [
+      ['Coach de la semaine (en haut) : à lire avant de répondre aux questions. « 📤 Carte de la semaine » : une image à partager, sans montants (R, win rate, discipline, défi 30 jours).', 'Coach of the week (at the top): read it before answering the questions. “📤 Week card”: an image to share, with no amounts (R, win rate, discipline, 30-day challenge).'],
       ['Meilleurs et pires trades, erreurs de la semaine, setups, comparaison avec la semaine précédente.', 'Best and worst trades, mistakes of the week, setups, comparison with the previous week.'],
       ['Réponds aux questions et fixe ton objectif pour la semaine suivante ; export PDF possible.', 'Answer the questions and set next week’s goal; PDF export available.']
     ] },
@@ -75,6 +81,7 @@ const GUIDE = [
   { id: 'propfirm', page: 'propfirm', icon: '🏁', title: ['Prop Firm', 'Prop firm'],
     intro: ['Compte Prop Firm uniquement : suis les règles de ton challenge.', 'Prop Firm account only: track your challenge rules.'],
     items: [
+      ['Règles pré-remplies : choisis ta prop firm (FTMO, The5ers, FundedNext, Topstep, Apex) et l’étape : objectif, pertes max, type de drawdown, jours minimum et perte max du jour sont réglés en un clic. Vérifie toujours les règles exactes de ton offre.', 'Pre-filled rules: pick your prop firm (FTMO, The5ers, FundedNext, Topstep, Apex) and the step: target, max losses, drawdown type, minimum days and daily max loss are set in one click. Always check your plan’s exact rules.'],
       ['Objectif de profit, perte maximale journalière et totale, jours minimum : avancement et marge restante.', 'Profit target, daily and total max loss, minimum days: progress and remaining margin.']
     ] },
   { id: 'replay', page: 'replay', icon: '⏯️', title: ['Backtest replay', 'Backtest replay'],
@@ -95,6 +102,7 @@ const GUIDE = [
   { id: 'risque', page: 'risque', icon: '🛡️', title: ['Gestion du risque', 'Risk management'],
     intro: ['Protège ton capital de départ et avance doucement : le journal t’arrête avant l’erreur.', 'Protect your starting capital and progress slowly: the journal stops you before the mistake.'],
     items: [
+      ['Défi « 30 jours de discipline » : 30 jours d’affilée sans journée « pas propre » (les jours sans trade comptent). Une grille montre chaque jour ; relance-le s’il est interrompu.', '“30 days of discipline” challenge: 30 days in a row without a “not clean” day (days without trades count). A grid shows each day; restart it if it breaks.'],
       ['Garde-fou du jour (aussi en haut du Dashboard et dans le formulaire de trade) : feu vert, orange ou rouge selon tes pertes du jour, de la semaine et du mois, tes pertes d’affilée, ton nombre de trades et la pause après une perte. Il te dit combien tu peux encore perdre aujourd’hui. Toutes ses limites (jour, semaine, mois, pertes d’affilée, trades, TP / SL max, pause) se règlent dans la page.', 'Daily guard (also at the top of the Dashboard and in the trade form): green, orange or red light based on your daily, weekly and monthly losses, losses in a row, number of trades and the break after a loss. It tells you how much you can still lose today. All its limits (day, week, month, losses in a row, trades, max TP / SL, break) are set on the page.'],
       ['Protection du capital : un plancher (ex. 90 % du capital de départ) à ne jamais franchir, et un risque qui baisse tout seul quand le compte baisse (÷ 2 à −5 %, ÷ 4 à −10 %, réglable).', 'Capital protection: a floor (e.g. 90 % of starting capital) never to cross, and a risk that drops by itself when the account drops (÷ 2 at −5 %, ÷ 4 at −10 %, adjustable).'],
       ['Risque conseillé : ton plan de Scaling, plafonné par ton étape du parcours et réduit si le compte baisse.', 'Suggested risk: your Scaling plan, capped by your progression step and reduced if the account drops.'],
@@ -121,6 +129,9 @@ const GUIDE = [
   { id: 'export', page: 'export', icon: '💾', title: ['Export / Import', 'Export / Import'],
     intro: ['Tes données t’appartiennent.', 'Your data belongs to you.'],
     items: [
+      ['🔒 Sauvegarde protégée : le backup complet chiffré par un mot de passe (illisible sans lui). Restaurer et Fusionner le reconnaissent et demandent le mot de passe.', '🔒 Protected backup: the full backup encrypted with a password (unreadable without it). Restore and Merge recognize it and ask for the password.'],
+      ['Les fichiers de la sauvegarde automatique hebdomadaire (tous les comptes) se restaurent avec « Restaurer » ; un rappel apparaît si aucune sauvegarde n’a été faite depuis 7 jours.', 'Weekly automatic backup files (all accounts) are restored with “Restore”; a reminder shows up if no backup was made for 7 days.'],
+      ['Import MetaTrader 5 : rapport d’historique en HTML ou en Excel (.xlsx), avec un pas à pas illustré sous le bouton d’import.', 'MetaTrader 5 import: history report as HTML or Excel (.xlsx), with an illustrated step-by-step under the import button.'],
       ['Sauvegarde complète (fichier) et restauration ; synchronisation entre appareils par fichier (fusion sans doublons).', 'Full backup (file) and restore; sync between devices by file (merge without duplicates).'],
       ['Export CSV de tes trades ; import TradingView, MetaTrader 4/5, cTrader.', 'CSV export of your trades; TradingView, MetaTrader 4/5, cTrader import.'],
       ['Rapport mentor : un fichier à partager avec ton mentor sur la période choisie.', 'Mentor report: a file to share with your mentor for the chosen period.'],
@@ -130,12 +141,14 @@ const GUIDE = [
   { id: 'parametres', page: 'parametres', icon: '⚙️', title: ['Paramètres', 'Settings'],
     intro: ['Ton compte et l’apparence du journal.', 'Your account and the journal’s look.'],
     items: [
+      ['Mode et sécurité : mode simple (débutant) et code de verrouillage. Avec un code, tes données sont chiffrées sur l’appareil et le journal demande le code à l’ouverture ; sans le code, personne ne peut les lire (garde une sauvegarde, un code oublié ne se récupère pas).', 'Mode and security: simple mode (beginner) and lock code. With a code, your data is encrypted on the device and the journal asks for the code when opening; without the code nobody can read it (keep a backup, a forgotten code cannot be recovered).'],
       ['Langue, comptes, solde de départ, perte journalière max, disposition du Dashboard.', 'Language, accounts, starting balance, daily max loss, Dashboard layout.'],
       ['Thèmes (dont Néon) et « Personnaliser mon thème » : couleurs, ambiance, formes et polices, graphiques, mes thèmes.', 'Themes (including Neon) and “Customize my theme”: colors, mood, shapes and fonts, charts, my themes.']
     ] },
   { id: 'guide', page: 'guide', icon: '📖', title: ['Guide', 'Guide'],
     intro: ['Cette page : le mode d’emploi du journal et tous les raccourcis clavier.', 'This page: the journal’s user manual and every keyboard shortcut.'],
     items: [
+      ['Mini-leçons (au milieu de la page) : toutes les leçons de 2 minutes, à relire quand tu veux ; tu peux couper leur affichage automatique.', 'Mini-lessons (middle of the page): all the 2-minute lessons, to reread anytime; you can turn off their automatic display.'],
       ['Cherche un mot dans le guide, ou clique une section pour la déplier ; « Ouvrir la page » t’y emmène.', 'Search for a word in the guide, or click a section to expand it; “Open the page” takes you there.'],
       ['Les raccourcis clavier sont en bas de la page ; la touche ? affiche un aide-mémoire partout.', 'Keyboard shortcuts are at the bottom of the page; the ? key shows a cheat sheet anywhere.']
     ] }

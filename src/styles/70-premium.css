@@ -749,3 +749,95 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .hero-bal-value{color:var(--txt)}
 @media (max-width:1100px){.hero-metric{grid-template-columns:1fr 1fr}.hero-bal{border-right:0;padding-right:0}.hero-side{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:700px){.hero-metric{grid-template-columns:1fr}}
+
+/* ── Mode simple ── */
+.nav-simple-hidden{display:none!important}
+.nav-simple-foot{margin:8px 10px 0;padding:8px 10px;border:1px dashed var(--border);border-radius:var(--r);display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--txt3)}
+.nav-simple-foot[hidden]{display:none}
+.sm-toggle{margin:4px 0 10px}
+
+/* ── Coach ── */
+.coach-card{margin:0 0 16px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r2,12px);background:var(--bg2,var(--bg))}
+.coach-card[hidden]{display:none}
+.coach-hdr{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.coach-hdr b{font-size:14px}.coach-hdr small{color:var(--txt3);font-size:12px}
+.coach-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.coach-list li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.45;padding:7px 10px;border-radius:var(--r);background:color-mix(in srgb,var(--txt) 4%,transparent)}
+.coach-list li.co-warn{background:color-mix(in srgb,var(--amber,#f59e0b) 11%,transparent)}
+.coach-list li.co-good{background:color-mix(in srgb,var(--green) 11%,transparent)}
+.coach-more{margin:8px 0 0;font-size:12px;color:var(--txt3)}
+
+/* ── Mini-leçons ── */
+.lesson-pop{position:fixed;right:18px;bottom:18px;z-index:900;width:min(400px,calc(100vw - 32px));padding:14px 16px;border-radius:14px;border:1px solid var(--border);background:var(--bg2,var(--bg));box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;line-height:1.5}
+.lp-hdr{display:flex;gap:10px;align-items:flex-start;margin-bottom:6px}.lp-ic{font-size:22px}.lp-hdr small{display:block;color:var(--txt3);font-size:11.5px}.lp-hdr b{font-size:15px}
+.lp-x{margin-left:auto;background:none;border:none;color:var(--txt3);font-size:20px;cursor:pointer;line-height:1}
+.lesson-pop p{margin:6px 0}.lp-act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.gd-lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:10px}
+.gd-lesson{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:10px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--txt);cursor:pointer}
+.gd-lesson small{color:var(--txt3);font-size:11.5px}.gd-lesson.seen{opacity:.75}
+@media (max-width:600px){.lesson-pop{right:16px;bottom:76px}}
+
+/* ── Prop firm : règles pré-remplies ── */
+.pf-presets{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 14px;padding:10px 12px;border-radius:var(--r);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.pf-preset-lbl{display:flex;align-items:center;gap:8px;font-weight:500;font-size:13px}.pf-preset-note{color:var(--txt3);font-size:12px;flex:1;min-width:220px}
+
+/* ── Code de verrouillage ── */
+#lock-screen{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg,#0a0c10);color:var(--txt,#e8eaf0);font-family:var(--sans,system-ui,sans-serif)}
+.lk-box{width:min(360px,100%);text-align:center;display:flex;flex-direction:column;gap:10px}
+.lk-box h1{font-size:20px;margin:0}.lk-box p{margin:0;color:var(--txt3,#9aa0ad);font-size:14px}.lk-ic{font-size:40px}
+.lk-box input{font-size:22px;letter-spacing:.3em;text-align:center;padding:12px;border-radius:12px;border:1px solid var(--border,#2a2f3a);background:var(--bg2,#12151b);color:inherit}
+.lk-box button{padding:12px;border-radius:12px;border:none;background:var(--accent,#6366f1);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.lk-err{min-height:18px;color:var(--red,#ef4444)!important}
+.lk-forgot{text-align:left;font-size:13px;color:var(--txt3,#9aa0ad)}.lk-forgot summary{cursor:pointer;text-align:center}.lk-forgot p{margin:8px 0}
+.lk-forgot button{background:transparent;border:1px solid var(--red,#ef4444);color:var(--red,#ef4444);font-size:13px;padding:8px;width:100%}
+.lk-set{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;padding:10px 0 2px;border-top:1px solid var(--border);font-size:13.5px}
+.lk-btns{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ── Saisie rapide : téléphone ── */
+.qa-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.qa-chip{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--txt);font-size:12.5px;cursor:pointer}
+.qa-chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--bg))}
+.qa-photo-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;width:max-content}
+.qa-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.qa-thumb{position:relative}.qa-thumb img{width:64px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
+.qa-thumb button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:13px;line-height:1;cursor:pointer}
+.fab-add{display:none}
+@media (max-width:860px){
+  .fab-add{display:flex;position:fixed;right:16px;bottom:16px;z-index:800;width:56px;height:56px;border-radius:50%;border:none;align-items:center;justify-content:center;font-size:30px;line-height:1;color:#fff;background:var(--accent);box-shadow:0 10px 28px rgba(0,0,0,.35);cursor:pointer}
+  body:has(.modal-overlay.open) .fab-add,body:has(#nt-panel:not([hidden])) .fab-add,body:has(.lesson-pop) .fab-add{display:none}
+  #quick-add.open{align-items:flex-end}
+  #quick-add .qa-modal{width:100%;max-width:none;border-radius:18px 18px 0 0;max-height:92vh;overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  #quick-add .qa-grid{grid-template-columns:1fr 1fr}
+  #quick-add .qa-grid .field:first-child,#quick-add .qa-grid .field:nth-child(2),#quick-add .qa-photo-f{grid-column:1/-1}
+  #quick-add .qa-res .seg-btn{padding:14px 8px;font-size:15px}
+  #quick-add input,#quick-add select{font-size:16px}
+  #quick-add .qa-hint{display:none}
+  #quick-add .modal-btns .btn-primary{flex:1;padding:14px}
+}
+
+/* ── Défi 30 jours ── */
+.ch-intro{margin:0 0 12px;font-size:13.5px;color:var(--txt2,var(--txt))}
+.ch-head{margin:0 0 10px;font-size:14px}
+.ch-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;max-width:560px}
+.ch-cell{display:inline-flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:8px;font-size:12px;font-variant-numeric:tabular-nums;border:1px solid var(--border);color:var(--txt3)}
+.ch-clean{background:color-mix(in srgb,var(--green) 30%,transparent);border-color:var(--green);color:var(--txt)}
+.ch-bad{background:color-mix(in srgb,var(--red) 30%,transparent);border-color:var(--red);color:var(--txt)}
+.ch-rest{background:color-mix(in srgb,var(--txt) 7%,transparent)}
+.ch-future{opacity:.5;border-style:dashed}
+.ch-legend{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin:10px 0;font-size:12px;color:var(--txt3)}.ch-legend .ch-cell{width:14px;height:14px;aspect-ratio:auto;border-radius:4px;margin-left:8px}
+.ch-legend .ch-cell:first-child{margin-left:0}
+.ch-act{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── Guide d'export MT5 ── */
+.mt5-steps{list-style:none;counter-reset:m;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;text-align:left}
+.mt5-steps li{counter-increment:m;position:relative;border:1px solid var(--border);border-radius:var(--r);padding:12px;background:var(--bg)}
+.mt5-steps li::before{content:counter(m);position:absolute;top:-10px;left:-8px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.mt5-steps p{margin:8px 0 0;font-size:13px;line-height:1.45}
+.mt5-mock{display:flex;flex-direction:column;gap:4px;padding:8px;border-radius:6px;background:#f3f4f6;color:#1f2937;font:12px/1.3 Segoe UI,system-ui,sans-serif;min-height:96px}
+.mt5-mock .on{background:#cfe3ff;color:#0b3b8c;font-weight:600}
+.mk-bar{font-weight:600;border-bottom:1px solid #d1d5db;padding-bottom:3px}
+.mk-menu{display:flex;flex-direction:column;border:1px solid #d1d5db;background:#fff;border-radius:4px;padding:2px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.mk-menu>span{padding:3px 6px;border-radius:3px}.mk-menu kbd{font-size:10px;margin-left:6px;color:#6b7280}
+.mk-sub{display:flex;flex-direction:column;margin:2px 0 0 16px;border:1px solid #d1d5db;border-radius:4px;padding:2px;background:#fff}.mk-sub>span{padding:3px 6px;border-radius:3px}
+.mk-tabs{display:flex;gap:2px;overflow:hidden}.mk-tabs span{padding:3px 6px;border:1px solid #d1d5db;border-bottom:none;border-radius:4px 4px 0 0;background:#fff}
+.mk-rows{display:flex;flex-direction:column;gap:3px;border:1px solid #d1d5db;padding:4px;background:#fff}.mk-rows i{height:8px;background:#e5e7eb;border-radius:2px}
+.mk-btn{align-self:flex-start;padding:5px 9px;border-radius:6px;background:#6366f1;color:#fff;font-weight:600}.mk-ok{color:#047857;font-weight:600}
