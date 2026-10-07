@@ -200,3 +200,12 @@ test('marque Untilt : logo, titre, accent menthe (accent choisi à la main gard�
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#ff8800', 'accent personnel gardé');
   await ctx.close();
 });
+
+test('bilan journalier : le menu de date n’est pas coupé (texte centré, pas de marge verticale en trop)', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--font-sans': "'Space Mono',monospace" }) } });
+  await goto(page, 'bilan');
+  const r = await page.evaluate(() => { const s = document.getElementById('bilan-date-select'), cs = getComputedStyle(s); return { pt: cs.paddingTop, pb: cs.paddingBottom, fits: s.scrollHeight <= s.clientHeight + 1 }; });
+  assert.deepEqual(r, { pt: '0px', pb: '0px', fits: true });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
