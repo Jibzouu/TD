@@ -1487,6 +1487,11 @@ test('gestion du risque : garde-fou, plancher et réduction du risque, parcours,
   await goto(page, 'risque');
   await page.fill('#rk-guard input >> nth=0', '3'); await page.dispatchEvent('#rk-guard input >> nth=0', 'change');
   assert.equal(await page.evaluate(() => rkCfg().maxConsec), 3);
+  // Perte max du jour et TP / SL max réglables ici aussi (partagés avec Paramètres et le Plan).
+  await page.fill('#rk-dd-day', '2'); await page.dispatchEvent('#rk-dd-day', 'change');
+  await page.fill('#rk-max-sl', '3'); await page.dispatchEvent('#rk-max-sl', 'change');
+  await page.fill('#rk-guard input[type=number] >> nth=4', '8'); await page.dispatchEvent('#rk-guard input[type=number] >> nth=4', 'change');
+  assert.deepEqual(await page.evaluate(() => [loadDDLimitPct(), planData.maxSL, rkCfg().monthPct]), [2, 3, 8]);
   assert.doesNotMatch(await page.evaluate(() => rkGuard().stops.join(' ')), /pertes d’affilée/);
   // Réduction du risque : compte à −6 % de son plus haut → risque × 0,5.
   const g = await page.evaluate(() => { trades.unshift(Object.assign({}, trades[0], { id: 999, date: '2026-06-16', entry: '18:00', res: 'SL', pnl: -12, pnlEur: -600 })); return rkGuard(); });

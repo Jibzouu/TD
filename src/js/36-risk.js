@@ -203,6 +203,21 @@ function rkSetCfg(k, v) {
   else c[k] = isFinite(n) && n >= 0 ? n : RK_DEF[k];
   rkSaveCfg(c); renderRiskPage(); safeRun(renderGuardCard, 'renderGuardCard');
 }
+// Réglages partagés avec Paramètres (perte max du jour) et le Plan de trading (TP / SL max) : modifiables ici aussi.
+function rkSetDayLimit(v) {
+  const n = parseFloat(String(v).replace(',', '.'));
+  if (!(n > 0)) { showToast(rkL('Indique un pourcentage supérieur à 0', 'Enter a percentage above 0'), 'error'); renderRiskPage(); return; }
+  DB.setItem(JP + 'dd_limit_pct', String(n));
+  const acc = document.getElementById('dd-limit-pct'); if (acc) acc.value = n;
+  renderAll(); renderRiskPage();
+}
+function rkSetPlanMax(k, v) {
+  if (!planData) return;
+  const n = parseInt(v, 10);
+  planData[k] = n > 0 ? n : null;
+  DB.setItem(JP + 'plan', JSON.stringify(planData));
+  renderAll(); renderRiskPage();
+}
 function rkSimSet(k, v) { RK_SIM[k] = k === 'src' ? v : parseFloat(String(v).replace(',', '.')) || 0; renderRiskSim(); }
 function renderRiskPage() {
   const page = document.getElementById('page-risque'); if (!page) return;
@@ -224,8 +239,9 @@ function renderRiskPage() {
       ${num('pauseMin', rkL('Pause après une perte', 'Break after a loss'), rkL('pour éviter le trade de revanche', 'to avoid revenge trading'), 'min')}
       ${num('weekPct', rkL('Perte max de la semaine', 'Weekly max loss'), rkL('du solde du lundi', 'of Monday’s balance'), '%', 0.5)}
       ${num('monthPct', rkL('Perte max du mois', 'Monthly max loss'), rkL('du solde du 1er du mois', 'of the 1st-of-month balance'), '%', 0.5)}
-      <div class="rk-f"><span>${rkL('Perte max du jour', 'Daily max loss')}<small>${rkL('réglée dans Paramètres', 'set in Settings')}</small></span><button class="link-btn" onclick="${raw(go('parametres'))}">${fmtRate(loadDDLimitPct(), 1)}</button></div>
-      <div class="rk-f"><span>${rkL('TP / SL max par jour', 'Max TP / SL per day')}<small>${rkL('réglés dans le Plan de trading', 'set in the Trading plan')}</small></span><button class="link-btn" onclick="${raw(go('plan'))}">${(planData && planData.maxTP) || '—'} / ${(planData && planData.maxSL) || '—'}</button></div>
+      <label class="rk-f"><span>${rkL('Perte max du jour', 'Daily max loss')}<small>${rkL('du solde en début de journée (aussi dans Paramètres)', 'of the start-of-day balance (also in Settings)')}</small></span><span class="rk-in"><input type="number" id="rk-dd-day" min="0.1" step="0.1" value="${loadDDLimitPct()}" onchange="rkSetDayLimit(this.value)"><em>%</em></span></label>
+      <label class="rk-f"><span>${rkL('TP max par jour', 'Max TP per day')}<small>${rkL('objectif atteint : la journée s’arrête (aussi dans le Plan)', 'target hit: the day stops (also in the Plan)')}</small></span><span class="rk-in"><input type="number" id="rk-max-tp" min="0" step="1" value="${(planData && planData.maxTP) || ''}" placeholder="—" onchange="rkSetPlanMax('maxTP', this.value)"><em>TP</em></span></label>
+      <label class="rk-f"><span>${rkL('SL max par jour', 'Max SL per day')}<small>${rkL('limite atteinte : stop pour aujourd’hui (aussi dans le Plan)', 'limit hit: stop for today (also in the Plan)')}</small></span><span class="rk-in"><input type="number" id="rk-max-sl" min="0" step="1" value="${(planData && planData.maxSL) || ''}" placeholder="—" onchange="rkSetPlanMax('maxSL', this.value)"><em>SL</em></span></label>
     </div>`);
   // 2) Protection du capital
   const lo = Math.min(g.floor, g.eq) * 0.98, hi = Math.max(g.peak, accountSize) * 1.02, pos = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo || 1) * 100));
