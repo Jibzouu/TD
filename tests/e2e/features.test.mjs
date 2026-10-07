@@ -484,24 +484,25 @@ test('règles du jour : 1 TP max et 2 SL max en alerte ; export CSV lisible par 
   const tr = [T({ id: 1, date: today, entry: '09:00', res: 'SL', pnl: -1, pnlEur: -30 }), T({ id: 2, date: today, entry: '10:00', res: 'TP', pnl: 2, pnlEur: 60 }),
     T({ id: 3, date: today, entry: '11:00', res: 'SL', pnl: -1, pnlEur: -30, asset: 'DAX; "40"', desc: 'note\nsur deux lignes' })];
   const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: tr, tj_plan: { ce: [], cf: [], notes: '', risk: [], maxTP: 1, maxSL: 2 } } });
-  const alert = page.locator('#rule-alert');
-  assert.equal(await alert.isVisible(), true);
-  let txt = await alert.innerText();
-  assert.match(txt, /Journée terminée selon ton plan/);
+  // Les règles du jour sont reprises par le garde-fou du Dashboard (carte « Gestion du risque »).
+  const reasons = () => page.evaluate(() => { const g = rkGuard(); return g.level + ' | ' + g.stops.concat(g.warns).join(' | '); });
+  assert.equal(await page.locator('#guard-card').isVisible(), true);
+  assert.equal(await page.locator('#rule-alert').isVisible(), false, 'pas de double alerte');
+  let txt = await reasons();
   assert.match(txt, /1 TP sur 1 : objectif du jour atteint/);
   assert.match(txt, /2 SL sur 2 : limite atteinte, stop pour aujourd'hui/);
   assert.match(await page.locator('#summary-banner').innerText(), /Règles du jour\s*1\/1 TP · 2\/2 SL/);
   // Un 2e TP : au-delà du plan → rouge.
   await page.evaluate(() => { trades.unshift(Object.assign({}, trades[0], { id: 99, entry: '12:00', res: 'TP', pnl: 1, pnlEur: 30, asset: 'EUR/USD', desc: '' })); renderAll(); });
-  txt = await alert.innerText();
-  assert.match(txt, /Règle de ton plan dépassée/);
+  txt = await reasons();
+  assert.match(txt, /^stop/);
   assert.match(txt, /2 TP aujourd'hui pour un maximum de 1/);
-  assert.equal(await alert.getAttribute('class'), 'rule-alert crit');
+  assert.match(await page.locator('#guard-card').innerText(), /STOP pour aujourd’hui/);
   // SL max relevé à 3 dans le Plan : plus d'alerte SL.
   await goto(page, 'plan');
   await page.fill('input[aria-label="SL max par jour"]', '3'); await page.dispatchEvent('input[aria-label="SL max par jour"]', 'change');
   await goto(page, 'dashboard');
-  assert.doesNotMatch(await page.locator('#rule-alert').innerText(), /SL sur/);
+  assert.doesNotMatch(await reasons(), /SL sur/);
   // CSV : BOM, « ; », virgule décimale, guillemets échappés, une ligne par trade.
   const csv = await page.evaluate(() => tradesToCSV(trades));
   assert.ok(csv.startsWith('﻿Date;Entrée;Sortie;Actif;Sens'));
@@ -1460,6 +1461,55 @@ test('Guide (page du menu sous Paramètres) : une section par page, recherche, r
   await goto(page, 'parametres');
   assert.equal(await page.locator('#page-parametres .set-tab').count(), 0);
   assert.equal(await page.locator('#accounts-card').isVisible(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('gestion du risque : garde-fou, plancher et réduction du risque, parcours, discipline, simulateur, plan débutant', async () => {
+  const day = '2026-06-17';
+  const past = Array.from({ length: 12 }, (_, i) => T({ id: 100 + i, date: '2026-06-0' + (1 + (i % 9)), entry: '10:00', exit: '10:30', res: i % 3 ? 'TP' : 'SL', pnl: i % 3 ? 2 : -1, rr: 2, pnlEur: i % 3 ? 100 : -50 }));
+  const tr = past.concat([T({ id: 1, date: day, entry: '09:00', exit: '09:10', res: 'SL', pnl: -1, rr: 2, pnlEur: -50 })]);
+  const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_trades: tr, tj_account: '10000' } });
+  // Dashboard : carte du garde-fou, « encore une perte et ta journée s'arrête ».
+  const card = page.locator('#guard-card');
+  assert.equal(await card.isVisible(), true);
+  assert.match(await card.innerText(), /Prudence|Feu vert/);
+  assert.match(await card.innerText(), /Reste aujourd’hui/);
+  // 2e perte d'affilée : STOP, et bandeau dans le formulaire de trade.
+  await page.evaluate(() => { TradeStore.add({ date: '2026-06-17', entry: '09:20', exit: '09:25', asset: 'EUR/USD', dir: 'Long', res: 'SL', pnl: -1, rr: 2, pnlEur: -50 }); renderAll(); });
+  assert.match(await card.innerText(), /STOP pour aujourd’hui/);
+  assert.match(await card.innerText(), /2 pertes d’affilée/);
+  await page.evaluate(() => openTradePanel());
+  assert.equal(await page.locator('#guard-form-banner').isVisible(), true);
+  assert.match(await page.locator('#guard-form-banner').innerText(), /STOP/);
+  await page.evaluate(() => closeTradePanel());
+  // Page : réglages du garde-fou modifiables (3 pertes d'affilée → plus de STOP pour la série).
+  await goto(page, 'risque');
+  await page.fill('#rk-guard input >> nth=0', '3'); await page.dispatchEvent('#rk-guard input >> nth=0', 'change');
+  assert.equal(await page.evaluate(() => rkCfg().maxConsec), 3);
+  assert.doesNotMatch(await page.evaluate(() => rkGuard().stops.join(' ')), /pertes d’affilée/);
+  // Réduction du risque : compte à −6 % de son plus haut → risque × 0,5.
+  const g = await page.evaluate(() => { trades.unshift(Object.assign({}, trades[0], { id: 999, date: '2026-06-16', entry: '18:00', res: 'SL', pnl: -12, pnlEur: -600 })); return rkGuard(); });
+  assert.equal(g.factor, 0.5);
+  assert.ok(g.dd > 0.05);
+  // Parcours : étape 1 (backtest) ; on choisit l'étape « Live prudent », les critères repartent d'aujourd'hui.
+  page.once('dialog', d => d.accept());
+  await page.selectOption('#rk-path select', '1');
+  assert.equal(await page.evaluate(() => rkProg().stage), 1);
+  assert.match(await page.locator('#rk-path').innerText(), /Trades à cette étape/);
+  // Discipline : tableau des jours et score.
+  assert.match(await page.locator('#rk-disc').innerText(), /Discipline \(20 jours\)/);
+  // Simulateur : 6 niveaux de risque, ligne conseillée, graphique.
+  assert.equal(await page.locator('#rk-sim tbody tr').count(), 6);
+  await page.click('#rk-sim tbody tr >> nth=4');
+  assert.equal(await page.evaluate(() => RK_SIM.riskSel), 2);
+  assert.ok(await page.evaluate(() => !!rkSimChart));
+  // Plan débutant.
+  page.once('dialog', d => d.accept());
+  await page.click('#rk-beginner .btn-primary');
+  const plan = await page.evaluate(() => ({ cfg: rkCfg(), items: planData.entryItems, maxSL: planData.maxSL }));
+  assert.equal(plan.cfg.maxConsec, 2); assert.equal(plan.maxSL, 2);
+  assert.ok(plan.items.includes('Stop loss placé avant d’entrer'));
   assert.deepEqual(errors, []);
   await ctx.close();
 });

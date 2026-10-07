@@ -63,6 +63,10 @@
         <span data-i18n="nav.propfirm">Prop Firm</span>
       </button>
       <div class="nav-sep nav-group" data-navid="grp-prep"><span>Préparation</span></div>
+      <button class="nav-item" onclick="showPage('risque',this)" data-page="risque" data-navid="risque">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8 13.2 3.6v4.1c0 3.1-2.2 5.4-5.2 6.5-3-1.1-5.2-3.4-5.2-6.5V3.6z"/><path d="m5.7 8 1.6 1.6 3-3.2"/></svg>
+        <span data-i18n="nav.risque">Gestion du risque</span>
+      </button>
       <button class="nav-item" onclick="showPage('replay',this)" data-page="replay" data-navid="replay">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 2v12M3 9h2.5V5H3M8.5 4v10M8.5 6H11v5H8.5M13 2v4"/></svg>
         <span data-i18n="nav.replay">Backtest replay</span>
@@ -138,6 +142,7 @@
               <button type="button" class="nt-link" onclick="closeTradePanel();showPage('export', document.querySelector('.nav-item[data-page=export]'))">📥 Importer un CSV</button>
               <button type="button" class="nt-close" onclick="closeTradePanel()" aria-label="Fermer (le brouillon est conservé)" title="Fermer — ta saisie est conservée">✕</button>
             </span></div>
+          <div id="guard-form-banner" class="guard-mini" role="status" hidden></div>
           <div id="edit-trade-banner" style="display:none">
             <span>✏️</span><span id="edit-trade-banner-text">Modification d'un trade existant</span>
             <button class="btn-ghost btn-xs2" onclick="cancelEditTrade()">Annuler</button>
@@ -333,6 +338,7 @@
         <div class="hero-side" id="hero-side"></div>
       </div>
       <div id="r-coverage"></div>
+      <section class="guard-card" id="guard-card" hidden aria-label="Garde-fou du jour"></section>
       <section class="routine" id="routine" hidden aria-label="Routine du jour"></section>
 
       <!-- ═══ AUJOURD'HUI : P&L du jour, perte max autorisée, constats ═══ -->
@@ -825,6 +831,18 @@
       <div id="playbooks-body"></div>
     </div>
 
+    <div id="page-risque" class="page">
+      <div class="page-hdr">
+        <div class="page-hdr-left"><h2 data-i18n="page.risque.title">Gestion du risque</h2><p data-i18n="page.risque.sub">Protège ton capital de départ, avance étape par étape et récompense ta discipline</p></div>
+      </div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🚦 Garde-fou du jour<small class="panel-sub">vérifié à chaque trade : il t'arrête avant l'erreur</small></span></div><div id="rk-guard"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🛡️ Protection du capital<small class="panel-sub">un plancher à ne jamais franchir, et un risque qui baisse tout seul quand le compte baisse</small></span></div><div id="rk-capital"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🪜 Parcours de progression<small class="panel-sub">augmente ton risque seulement quand tes résultats le prouvent</small></span></div><div id="rk-path"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🎯 Discipline<small class="panel-sub">ton process compte plus que ton P&amp;L</small></span></div><div id="rk-disc"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🎲 Simulateur de risque de ruine<small class="panel-sub">des milliers de suites de trades possibles avec tes chiffres : combien risquer sans te mettre en danger</small></span></div><div id="rk-sim"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🌱 Plan débutant<small class="panel-sub">de bonnes règles de départ, modifiables ensuite</small></span></div><div id="rk-beginner"></div></div>
+    </div>
+
     <div id="page-replay" class="page">
       <div class="page-hdr">
         <div class="page-hdr-left"><h2>Backtest replay</h2><p>Rejoue le marché bougie par bougie, sans voir le futur, et teste tes setups comme en réel</p></div>
@@ -967,6 +985,7 @@
         <div class="plan-card">
           <div class="plan-card-title"><div class="plan-dot dot-amber"></div>Gestion du risque</div>
           <div id="risk-rules"></div>
+          <div class="rk-plan-link"><button class="btn-ghost" onclick="showPage('risque', document.querySelector('.nav-item[data-page=risque]'))">🛡️ Garde-fou, plancher du capital et plan débutant →</button></div>
         </div>
         <div class="plan-card">
           <div class="plan-card-title"><div class="plan-dot dot-accent"></div>Mes setups <span class="th-sub">(proposés dans le formulaire et le filtre global)</span></div>
@@ -1487,6 +1506,7 @@
   <div class="modal qa-modal" role="dialog" aria-modal="true" aria-labelledby="qa-title">
     <h3 id="qa-title">Saisie rapide</h3>
     <p>L'essentiel en 3 champs — le reste (prix, captures, checklist) se complète plus tard via « Modifier ».</p>
+    <div id="guard-qa-banner" class="guard-mini" role="status" hidden></div>
     <div class="qa-grid">
       <div class="field"><label for="qa-asset">Actif</label><input id="qa-asset" list="qa-asset-list" autocomplete="off" placeholder="ex : EUR/USD"><datalist id="qa-asset-list"></datalist></div>
       <div class="field"><label>Résultat</label>

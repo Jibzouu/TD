@@ -6,6 +6,7 @@ const SEARCH_PAGES = [
   { page:'bilan', icon:'🕐' },
   { page:'revue', icon:'🗒️', key:'nav.revue_long' },
   { page:'trades', icon:'📋' },
+  { page:'risque', icon:'🛡️' },
   { page:'plan', icon:'📝' },
   { page:'playbooks', icon:'📘' },
   { page:'replay', icon:'🕹️' },

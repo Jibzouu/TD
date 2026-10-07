@@ -98,7 +98,7 @@ function toggleFilterBar() {
 let DATA_VERSION = 1;
 const pageRenderedVersion = {};
 const PAGE_RENDERERS = {
-  dashboard: () => [renderRoutine, renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderRuleAlerts, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
+  dashboard: () => [renderGuardCard, renderRoutine, renderKPIs, renderKpiSparklines, renderWinDonuts, renderSummaryBanner, renderRuleAlerts, renderScalingAlert, renderWelcomeCard, renderRCoverage, applyChartDefaults, renderYearProgress, renderWinRateMeters, renderRDistribution, renderHeatmapDH, renderMonthlyReturnsTable, renderRadar, renderAssetBars, renderDDBanner],
   trades: () => [renderTable],
   stats: () => [applyChartDefaults, renderStats, restoreStatsSubtab],
   calendrier: () => [renderCalendrier],
@@ -112,6 +112,7 @@ const PAGE_RENDERERS = {
   replay: () => [renderReplay],
   parametres: () => [renderAccountsCard],
   guide: () => [renderGuide, renderShortcutsPage],
+  risque: () => [applyChartDefaults, renderRiskPage],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }

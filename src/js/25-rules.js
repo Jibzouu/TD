@@ -23,7 +23,8 @@ function renderRuleAlerts() {
   const el = document.getElementById('rule-alert');
   if (!el) return;
   const s = todayRuleStatus();
-  if (!s.alerts.length) { el.style.display = 'none'; return; }
+  // Le garde-fou du Dashboard (Gestion du risque) reprend déjà ces règles : pas de double alerte.
+  if (!s.alerts.length || document.getElementById('guard-card')) { el.style.display = 'none'; return; }
   const crit = s.alerts.some(a => a.lvl === 'crit');
   el.className = 'rule-alert ' + (crit ? 'crit' : 'warn');
   mount(el, html`<span class="fs-16" aria-hidden="true">${crit ? '🛑' : '✋'}</span><div class="rule-alert-txt"><b>${crit ? 'Règle de ton plan dépassée' : 'Journée terminée selon ton plan'}</b>${s.alerts.map(a => html`<span>${a.txt}</span>`)}</div><button class="btn-ghost" onclick="showPage('plan', document.querySelector('.nav-item[data-page=plan]'))">Voir le plan</button>`);
