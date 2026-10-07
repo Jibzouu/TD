@@ -13,7 +13,7 @@ const RK_STAGES = [
   { name: ['Backtest', 'Backtest'], risk: 0.25, desc: ['Prouve ta stratégie sur l’historique avant d’y mettre de l’argent.', 'Prove your strategy on history before putting money on it.'] },
   { name: ['Live prudent', 'Careful live'], risk: 0.25, desc: ['Premiers trades réels avec un risque minuscule : on apprend à exécuter.', 'First real trades with a tiny risk: you learn to execute.'] },
   { name: ['Live intermédiaire', 'Intermediate live'], risk: 0.5, desc: ['La méthode tient en réel : le risque double, toujours petit.', 'The method holds live: risk doubles, still small.'] },
-  { name: ['Rythme de croisière', 'Cruising'], risk: 1, desc: ['Risque normal de 1 %, tant que la discipline reste là.', 'Normal 1 % risk, as long as discipline holds.'] },
+  { name: ['Rythme de croisière', 'Cruising'], risk: 1, desc: ['Risque normal de 1 %, tant que la discipline reste là. Pour encaisser tes pertes d’affilée, ta perte max du jour doit suivre (2 pertes à 1 % = 2 %) : sinon le risque conseillé reste plus bas.', 'Normal 1 % risk, as long as discipline holds. To absorb your losses in a row, your daily max loss must follow (2 losses at 1 % = 2 %): otherwise the suggested risk stays lower.'] },
   { name: ['Personnalisé', 'Custom'], risk: null, custom: true, desc: ['Tes propres règles : aucun plafond ni critère imposé, et les règles débutant du garde-fou sont désactivées (tes limites d’avant restent). Active seulement ce que tu veux ci-dessus — 0 = désactivé.', 'Your own rules: no imposed cap or criteria, and the beginner guard rules are off (your previous limits stay). Turn on only what you want above — 0 = off.'] }
 ];
 const RK_PATH_N = 4;   // étapes du parcours guidé (la 5e, « Personnalisé », est hors parcours)
@@ -51,7 +51,10 @@ function rkGuard(day) {
   const factor = rkFactor(eqI.dd * 100, cfg.cuts), prog = rkProg(), stage = RK_STAGES[Math.min(prog.stage, RK_STAGES.length - 1)];
   const plan = typeof calcPlanRisk === 'function' ? calcPlanRisk() : null;
   const capPct = rkStageCap(stage, prog), base = plan ? plan.risk : eqI.eq * 0.01, cap = capPct == null ? Infinity : eqI.eq * capPct / 100;
-  const rec = Math.max(0, Math.min(base, cap) * factor);
+  // Cohérence : le risque par trade doit laisser encaisser toutes les pertes d'affilée permises sans dépasser la perte max du jour
+  // (1 % par jour et 2 pertes d'affilée → 0,5 % max par trade).
+  const streakCap = cfg.maxConsec > 0 && lim.day > 0 ? lim.day / cfg.maxConsec : Infinity;
+  const rec = Math.max(0, Math.min(base, cap, streakCap) * factor), byStreak = streakCap < Math.min(base, cap);
   const rule = typeof todayRuleStatus === 'function' && !day ? todayRuleStatus() : { alerts: [] };
   const stops = [], warns = [];
   if (cfg.floorPct > 0 && marginFloor <= 0) stops.push(rkL('Ton capital a touché ton plancher de ', 'Your capital hit your floor of ') + fmtEUR(floor) + rkL(' : arrête de trader en réel, reviens au backtest.', ': stop trading live, go back to backtesting.'));
@@ -73,7 +76,7 @@ function rkGuard(day) {
   const flags = rkBehaviorFlags(all).filter(f => f.t.date >= localDateStr(new Date(Date.now() - 7 * 86400000)));
   if (flags.length) warns.push(flags.length + rkL(' trade(s) récent(s) avec une taille anormale ou pris par revanche.', ' recent trade(s) with an unusual size or taken in revenge.'));
   const level = stops.length ? 'stop' : warns.length ? 'warn' : 'ok';
-  return { level, stops, warns, cfg, lim, pnl, capPct, remaining, remainDay: left('day'), floor, marginFloor, eq: eqI.eq, peak: eqI.peak, dd: eqI.dd, factor, rec, base, plan, stage, prog, streak, nToday: todays.length, flags };
+  return { level, stops, warns, cfg, lim, pnl, capPct, streakCap, byStreak, remaining, remainDay: left('day'), floor, marginFloor, eq: eqI.eq, peak: eqI.peak, dd: eqI.dd, factor, rec, base, plan, stage, prog, streak, nToday: todays.length, flags };
 }
 function rkHeadline(g) {
   if (g.level === 'stop') return rkL('STOP pour aujourd’hui', 'STOP for today');
@@ -187,7 +190,7 @@ function rkRestoreBackup() {
 }
 
 // ── Plan débutant ──
-const RK_BEGINNER_ITEMS = ['Stop loss placé avant d’entrer', 'RR d’au moins 1,5', 'Risque ≤ 1 % du capital', 'Pas de trade dans les 30 min après une perte'];
+const RK_BEGINNER_ITEMS = ['Stop loss placé avant d’entrer', 'RR d’au moins 1,5', 'Risque ≤ 0,5 % du capital', 'Pas de trade dans les 30 min après une perte'];
 function applyBeginnerPlan(silent, keepCore) {
   if (!silent && !confirm(rkL('Appliquer le plan débutant ? Tes limites du jour, ton garde-fou et ta checklist seront mis à jour (tes trades ne changent pas).', 'Apply the beginner plan? Your daily limits, guard and checklist will be updated (your trades stay the same).'))) return;
   if (!keepCore) rkSaveBackup();
@@ -197,7 +200,7 @@ function applyBeginnerPlan(silent, keepCore) {
     if (loadDDLimitPct() > 1) DB.setItem(JP + 'dd_limit_pct', '1');
     if (planData) { planData.maxSL = 2; if (!(planData.maxTP > 0)) planData.maxTP = 2; }
     const st = typeof getScalingState === 'function' && typeof scalingConfigured === 'function' && scalingConfigured() ? getScalingState() : null;
-    if (st && st.riskPct > 1) { st.riskPct = 1; saveScalingState(); }
+    if (st && st.riskPct > 0.5) { st.riskPct = 0.5; saveScalingState(); }
   }
   if (planData) {
     if (!Array.isArray(planData.entryItems) || !planData.entryItems.length) planData.entryItems = (typeof CHECKLIST_ENTRY !== 'undefined' ? CHECKLIST_ENTRY.slice() : []);
@@ -223,7 +226,7 @@ function renderGuardCard() {
     </button>
     <div class="gc-chips">
       ${chip(rkL('Reste aujourd’hui', 'Left today'), fmtEUR(g.remaining, false, 0), rkL('avant ta limite', 'before your limit'), g.remaining <= 0 ? 'red' : null)}
-      ${chip(rkL('Risque conseillé', 'Suggested risk'), fmtEUR(g.rec, false, 2), g.factor < 1 ? rkL('réduit (compte en baisse)', 'reduced (account down)') : rkL('plafond de ton étape : ', 'your step cap: ') + guideText(g.stage.name), g.factor < 1 ? 'amber' : null)}
+      ${chip(rkL('Risque conseillé', 'Suggested risk'), fmtEUR(g.rec, false, 2), g.factor < 1 ? rkL('réduit (compte en baisse)', 'reduced (account down)') : g.byStreak ? g.cfg.maxConsec + rkL(' pertes d’affilée = ta perte max du jour', ' losses in a row = your daily max loss') : rkL('plafond de ton étape : ', 'your step cap: ') + guideText(g.stage.name), g.factor < 1 ? 'amber' : null)}
       ${g.cfg.floorPct > 0 ? chip(rkL('Capital protégé', 'Protected capital'), fmtEUR(Math.max(0, g.marginFloor), false, 0), rkL('au-dessus du plancher', 'above the floor'), g.marginFloor <= 0 ? 'red' : g.marginFloor < accountSize * 0.03 ? 'amber' : 'green')
         : chip(rkL('Solde', 'Balance'), fmtEUR(g.eq, false, 0), rkL('pas de plancher réglé', 'no floor set'), g.eq >= accountSize ? 'green' : 'amber')}
       ${chip(rkL('Discipline', 'Discipline'), d.avg == null ? '—' : Math.round(d.avg * 100) + ' %', d.streak ? d.streak + rkL(' jour(s) propre(s) d’affilée', ' clean day(s) in a row') : rkL('20 derniers jours', 'last 20 days'), d.avg == null ? null : d.avg >= 0.8 ? 'green' : d.avg >= 0.6 ? 'amber' : 'red')}
@@ -302,7 +305,7 @@ function renderRiskPage() {
         ${[hasFloor ? [g.floor, rkL('Plancher', 'Floor'), 'floor'] : null, [accountSize, rkL('Départ', 'Start'), 'start'], g.peak > g.eq + 0.5 ? [g.peak, rkL('Plus haut', 'Peak'), 'peak'] : null, [g.eq, rkL('Maintenant', 'Now'), 'now']].filter(Boolean).map(([v, l, k]) => html`<span class="${raw('rk-mark ' + k)}" style="${raw('left:' + pos(v) + '%')}"><i></i><small>${l}<br><b>${fmtEUR(v, false, 0)}</b></small></span>`)}</div>
       <div class="rk-cap-txt">
         <p>${hasFloor ? html`${rkL('Marge avant le plancher : ', 'Room above the floor: ')}<b class="tone-${raw(g.marginFloor > 0 ? 'green' : 'red')}">${fmtEUR(g.marginFloor, false, 0)}</b>` : rkL('Pas de plancher (0 %)', 'No floor (0 %)')} · ${rkL('baisse depuis le plus haut : ', 'drawdown from peak: ')}<b>${fmtNum(g.dd * 100, 1)} %</b></p>
-        <p>${rkL('Risque conseillé maintenant : ', 'Suggested risk now: ')}<b>${fmtEUR(g.rec, false, 2)}</b> <small>= ${g.plan ? rkL('ton plan de Scaling', 'your Scaling plan') + ' (' + fmtEUR(g.base, false, 2) + ')' : rkL('1 % du capital', '1 % of capital')}, ${g.capPct == null ? rkL('sans plafond d’étape', 'no step cap') : rkL('plafonné par ton étape', 'capped by your step') + ' (' + fmtRate(g.capPct, 2) + ')'}${g.factor < 1 ? rkL(', réduit à ', ', cut to ') + Math.round(g.factor * 100) + ' %' : ''}</small></p>
+        <p>${rkL('Risque conseillé maintenant : ', 'Suggested risk now: ')}<b>${fmtEUR(g.rec, false, 2)}</b> <small>= ${g.plan ? rkL('ton plan de Scaling', 'your Scaling plan') + ' (' + fmtEUR(g.base, false, 2) + ')' : rkL('1 % du capital', '1 % of capital')}, ${g.capPct == null ? rkL('sans plafond d’étape', 'no step cap') : rkL('plafonné par ton étape', 'capped by your step') + ' (' + fmtRate(g.capPct, 2) + ')'}${g.byStreak ? rkL(', limité à ', ', limited to ') + fmtEUR(g.streakCap, false, 2) + rkL(' pour encaisser ', ' to absorb ') + g.cfg.maxConsec + rkL(' pertes d’affilée sans dépasser ta perte max du jour', ' losses in a row without exceeding your daily max loss') : ''}${g.factor < 1 ? rkL(', réduit à ', ', cut to ') + Math.round(g.factor * 100) + ' %' : ''}</small></p>
       </div></div>
     <div class="rk-grid">
       ${num('floorPct', rkL('Plancher du capital', 'Capital floor'), rkL('du capital de départ — en dessous : retour au backtest', 'of starting capital — below it: back to backtesting'), '%')}
@@ -332,7 +335,7 @@ function renderRiskPage() {
     ${d.flags.length ? html`<div class="rk-flags">${d.flags.slice(-6).reverse().map(f => html`<button class="rk-flag" onclick="${raw('openTradeDetail(' + f.t.id + ')')}">${f.kind === 'revenge' ? '😤 ' + rkL('Revanche', 'Revenge') : '📏 ' + rkL('Taille anormale', 'Unusual size')} · ${fmtDateNum(f.t.date)} ${f.t.entry || ''} · ${f.t.asset || ''} · ${rkL('risque', 'risk')} ${fmtEUR(f.risk, false, 0)} (${rkL('habituel', 'usual')} ${fmtEUR(f.ref, false, 0)})</button>`)}</div>` : ''}`);
   // 6) Plan débutant
   mount('rk-beginner', html`<ul class="rk-rules">
-      <li>${rkL('Risque ≤ 1 % du capital par trade (ton étape peut le baisser encore)', 'Risk ≤ 1 % of capital per trade (your step may lower it further)')}</li>
+      <li>${rkL('Risque ≤ 0,5 % du capital par trade (ton étape peut le baisser encore) : 2 pertes d’affilée = 1 %, ta perte max du jour', 'Risk ≤ 0.5 % of capital per trade (your step may lower it further): 2 losses in a row = 1 %, your daily max loss')}</li>
       <li>${rkL('Perte max : 1 % par jour, 3 % par semaine, 6 % par mois', 'Max loss: 1 % per day, 3 % per week, 6 % per month')}</li>
       <li>${rkL('2 pertes d’affilée → stop pour la journée · 3 trades max par jour', '2 losses in a row → stop for the day · 3 trades max per day')}</li>
       <li>${rkL('Pause de 30 min après une perte · aucun trade sans stop · RR d’au moins 1,5', '30-min break after a loss · no trade without a stop · RR of at least 1.5')}</li>

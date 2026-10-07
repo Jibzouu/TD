@@ -1530,6 +1530,11 @@ test('gestion du risque : garde-fou, plancher et réduction du risque, parcours,
   assert.ok(back.remaining);
   assert.equal(back.backup, null);
   assert.equal(back.path, 2);
+  // Cohérence : 1 % de perte max par jour et 2 pertes d'affilée permises → risque conseillé ≤ 0,5 %, même à l'étape 1 %.
+  const coh = await page.evaluate(() => { rkSetStage(3); DB.setItem(JP + 'dd_limit_pct', '1'); const g = rkGuard(); rkSetStage(1); return { by: g.byStreak, cap: g.streakCap / g.lim.day, rec: g.rec / (g.streakCap * g.factor) }; });
+  assert.equal(coh.by, true);
+  assert.equal(coh.cap, 0.5);
+  assert.ok(Math.abs(coh.rec - 1) < 1e-9);
   // Discipline : tableau des jours et score.
   assert.match(await page.locator('#rk-disc').innerText(), /Discipline \(20 jours\)/);
   // Simulateur : 6 niveaux de risque, ligne conseillée, graphique.

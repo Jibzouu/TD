@@ -1942,5 +1942,6 @@
  "2 puis stop": "2 then stop",
  "Solde du compte": "Account balance",
  "capital de départ": "starting capital",
- "départ {0} €": "start {0} €"
+ "départ {0} €": "start {0} €",
+ "Risque ≤ 0,5 % du capital": "Risk ≤ 0.5 % of capital"
 }
