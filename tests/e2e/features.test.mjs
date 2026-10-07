@@ -1513,6 +1513,23 @@ test('gestion du risque : garde-fou, plancher et réduction du risque, parcours,
   page.once('dialog', d => d.accept());
   await page.selectOption('#rk-path select', '1');
   assert.equal(await page.evaluate(() => rkProg().customRisk), 2);
+  // Plan débutant puis « Personnalisé » : les réglages d'avant reviennent, règles débutant coupées ; le parcours garde les siennes.
+  const back = await page.evaluate(() => {
+    DB.setItem(JP + 'dd_limit_pct', '6'); planData.maxSL = 5; planData.maxTP = 4; planData.entryItems = ['Mon setup'];
+    applyBeginnerPlan(true);
+    const after = [loadDDLimitPct(), planData.maxSL, planData.entryItems.length > 1];
+    rkSetStage(4);
+    const g = rkGuard();
+    const res = { after, restored: [loadDDLimitPct(), planData.maxSL, planData.maxTP, planData.entryItems], cfg: [g.cfg.maxConsec, g.cfg.maxTrades, g.cfg.weekPct, g.cfg.floorPct, g.factor], remaining: g.remaining > 0, backup: DB.getItem(JP + 'rk_backup') };
+    rkSetStage(1); res.path = rkCfg().maxConsec;
+    return res;
+  });
+  assert.deepEqual(back.after, [1, 2, true]);
+  assert.deepEqual(back.restored, [6, 5, 4, ['Mon setup']]);
+  assert.deepEqual(back.cfg, [0, 0, 0, 0, 1]);
+  assert.ok(back.remaining);
+  assert.equal(back.backup, null);
+  assert.equal(back.path, 2);
   // Discipline : tableau des jours et score.
   assert.match(await page.locator('#rk-disc').innerText(), /Discipline \(20 jours\)/);
   // Simulateur : 6 niveaux de risque, ligne conseillée, graphique.

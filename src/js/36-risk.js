@@ -14,14 +14,21 @@ const RK_STAGES = [
   { name: ['Live prudent', 'Careful live'], risk: 0.25, desc: ['Premiers trades réels avec un risque minuscule : on apprend à exécuter.', 'First real trades with a tiny risk: you learn to execute.'] },
   { name: ['Live intermédiaire', 'Intermediate live'], risk: 0.5, desc: ['La méthode tient en réel : le risque double, toujours petit.', 'The method holds live: risk doubles, still small.'] },
   { name: ['Rythme de croisière', 'Cruising'], risk: 1, desc: ['Risque normal de 1 %, tant que la discipline reste là.', 'Normal 1 % risk, as long as discipline holds.'] },
-  { name: ['Personnalisé', 'Custom'], risk: null, custom: true, desc: ['Tu fixes toi-même ton risque max par trade : pas de critères imposés, le garde-fou et la protection du capital restent actifs.', 'You set your own max risk per trade: no imposed criteria, the guard and capital protection stay on.'] }
+  { name: ['Personnalisé', 'Custom'], risk: null, custom: true, desc: ['Tes propres règles : aucun plafond ni critère imposé, et les règles débutant du garde-fou sont désactivées (tes limites d’avant restent). Active seulement ce que tu veux ci-dessus — 0 = désactivé.', 'Your own rules: no imposed cap or criteria, and the beginner guard rules are off (your previous limits stay). Turn on only what you want above — 0 = off.'] }
 ];
 const RK_PATH_N = 4;   // étapes du parcours guidé (la 5e, « Personnalisé », est hors parcours)
 // Plafond de risque (%) de l'étape : pour « Personnalisé », celui choisi par l'utilisateur (aucun plafond s'il est vide).
 function rkStageCap(stage, prog) { return stage.custom ? (prog.customRisk > 0 ? prog.customRisk : null) : stage.risk; }
 const rkL = (fr, en) => LANG === 'en' ? en : fr;
-function rkCfg() { const c = loadJSON(JP + 'guard', null); return Object.assign({}, RK_DEF, c && typeof c === 'object' && !Array.isArray(c) ? c : {}); }
-function rkSaveCfg(c) { try { DB.setItem(JP + 'guard', JSON.stringify(c)); } catch (e) { reportStorageError(e); } }
+// Étape « Personnalisé » : garde-fou à part (JP + 'guard_custom'), règles débutant coupées par défaut (0 = désactivé),
+// pour retrouver les réglages d'avant la page ; le garde-fou du parcours (JP + 'guard') est gardé tel quel pour y revenir.
+const RK_CUSTOM_DEF = { maxConsec: 0, maxTrades: 0, pauseMin: 0, weekPct: 0, monthPct: 0, floorPct: 0, cuts: [[5, 1], [10, 1]] };
+function rkIsCustom(p) { const s = RK_STAGES[(p || rkProg()).stage]; return !!(s && s.custom); }
+function rkCfg(custom) {
+  const cu = custom ?? rkIsCustom(), c = loadJSON(JP + (cu ? 'guard_custom' : 'guard'), null);
+  return Object.assign({}, cu ? RK_CUSTOM_DEF : RK_DEF, c && typeof c === 'object' && !Array.isArray(c) ? c : {});
+}
+function rkSaveCfg(c, custom) { try { DB.setItem(JP + ((custom ?? rkIsCustom()) ? 'guard_custom' : 'guard'), JSON.stringify(c)); } catch (e) { reportStorageError(e); } }
 function rkProg() { const p = loadJSON(JP + 'prog', null); return p && typeof p === 'object' && p.stage >= 0 ? p : { stage: JOURNAL_TYPE === 'backtest' ? 0 : 0, since: localDateStr() }; }
 function rkSaveProg(p) { try { DB.setItem(JP + 'prog', JSON.stringify(p)); } catch (e) {} }
 const rkSortT = l => l.slice().sort((a, b) => ((a.date || '') + (a.entry || '')).localeCompare((b.date || '') + (b.entry || '')));
@@ -37,17 +44,17 @@ function rkGuard(day) {
   const wk = rkMonday(today), mo = today.slice(0, 8) + '01';
   const lim = { day: balBefore(today) * loadDDLimitPct() / 100, week: balBefore(wk) * cfg.weekPct / 100, month: balBefore(mo) * cfg.monthPct / 100 };
   const pnl = { day: pnlFrom(today), week: pnlFrom(wk), month: pnlFrom(mo) };
-  const left = k => Math.max(0, lim[k] + Math.min(0, pnl[k]));
+  const left = k => lim[k] > 0 ? Math.max(0, lim[k] + Math.min(0, pnl[k])) : Infinity;   // limite à 0 = désactivée
   const floor = accountSize * cfg.floorPct / 100, marginFloor = eqI.eq - floor;
   const todays = all.filter(t => t.date === today), streak = rkLossStreak(todays);
-  const remaining = Math.max(0, Math.min(left('day'), left('week'), left('month'), Math.max(0, marginFloor)));
+  const remaining = Math.max(0, Math.min(left('day'), left('week'), left('month'), cfg.floorPct > 0 ? Math.max(0, marginFloor) : Infinity));
   const factor = rkFactor(eqI.dd * 100, cfg.cuts), prog = rkProg(), stage = RK_STAGES[Math.min(prog.stage, RK_STAGES.length - 1)];
   const plan = typeof calcPlanRisk === 'function' ? calcPlanRisk() : null;
   const capPct = rkStageCap(stage, prog), base = plan ? plan.risk : eqI.eq * 0.01, cap = capPct == null ? Infinity : eqI.eq * capPct / 100;
   const rec = Math.max(0, Math.min(base, cap) * factor);
   const rule = typeof todayRuleStatus === 'function' && !day ? todayRuleStatus() : { alerts: [] };
   const stops = [], warns = [];
-  if (marginFloor <= 0) stops.push(rkL('Ton capital a touché ton plancher de ', 'Your capital hit your floor of ') + fmtEUR(floor) + rkL(' : arrête de trader en réel, reviens au backtest.', ': stop trading live, go back to backtesting.'));
+  if (cfg.floorPct > 0 && marginFloor <= 0) stops.push(rkL('Ton capital a touché ton plancher de ', 'Your capital hit your floor of ') + fmtEUR(floor) + rkL(' : arrête de trader en réel, reviens au backtest.', ': stop trading live, go back to backtesting.'));
   if (lim.day > 0 && left('day') <= 0) stops.push(rkL('Perte max du jour atteinte (', 'Daily max loss reached (') + fmtEUR(pnl.day) + ').');
   if (lim.week > 0 && left('week') <= 0) stops.push(rkL('Perte max de la semaine atteinte (', 'Weekly max loss reached (') + fmtEUR(pnl.week) + rkL(') : stop jusqu’à lundi.', '): stop until Monday.'));
   if (lim.month > 0 && left('month') <= 0) stops.push(rkL('Perte max du mois atteinte (', 'Monthly max loss reached (') + fmtEUR(pnl.month) + rkL(') : stop jusqu’au mois prochain.', '): stop until next month.'));
@@ -142,16 +149,50 @@ function rkCriteria(stage) {
 }
 function rkSetStage(s, confirmMsg) {
   if (confirmMsg && !confirm(confirmMsg)) { renderRiskPage(); return; }
-  const prev = rkProg();
-  rkSaveProg({ stage: Math.max(0, Math.min(RK_STAGES.length - 1, s)), since: localDateStr(), customRisk: prev.customRisk });
+  const prev = rkProg(), stage = Math.max(0, Math.min(RK_STAGES.length - 1, s));
+  rkSaveProg({ stage, since: localDateStr(), customRisk: prev.customRisk });
+  const restored = RK_STAGES[stage].custom && rkRestoreBackup();
+  if (restored) { showToast(rkL('Tes réglages d’avant le plan débutant sont revenus ✓', 'Your settings from before the beginner plan are back ✓'), 'success'); renderAll(); }
   renderRiskPage(); safeRun(renderGuardCard, 'renderGuardCard');
+}
+function rkPickStage(s) {
+  const msg = RK_STAGES[s] && RK_STAGES[s].custom
+    ? rkL('Passer en « Personnalisé » ? Les règles débutant (pertes d’affilée, trades max, pause, limites semaine / mois, plancher, réduction du risque, plafond d’étape) sont désactivées et tes réglages d’avant sont gardés. Tu pourras réactiver ce que tu veux.', 'Switch to “Custom”? Beginner rules (losses in a row, max trades, break, weekly / monthly limits, floor, risk reduction, step cap) are turned off and your previous settings are kept. You can turn back on what you want.')
+    : rkL('Changer d’étape à la main ? Les critères repartent d’aujourd’hui.', 'Change step manually? Criteria restart from today.');
+  rkSetStage(s, msg);
+}
+// Sauvegarde des réglages touchés par le plan débutant (une seule fois, avant la 1re application), rendue en « Personnalisé ».
+function rkSaveBackup() {
+  if (DB.getItem(JP + 'rk_backup')) return;
+  const st = typeof getScalingState === 'function' && typeof scalingConfigured === 'function' && scalingConfigured() ? getScalingState() : null;
+  const b = { dd: DB.getItem(JP + 'dd_limit_pct'), scaling: st ? st.riskPct : null };
+  if (planData) Object.assign(b, { maxSL: planData.maxSL ?? null, maxTP: planData.maxTP ?? null, entryItems: Array.isArray(planData.entryItems) ? planData.entryItems.slice() : null, risk: Array.isArray(planData.risk) ? planData.risk.map(r => r.slice()) : null });
+  try { DB.setItem(JP + 'rk_backup', JSON.stringify(b)); } catch (e) {}
+}
+function rkRestoreBackup() {
+  const b = loadJSON(JP + 'rk_backup', null);
+  if (!b || typeof b !== 'object') return false;
+  if (b.dd == null) DB.removeItem(JP + 'dd_limit_pct'); else DB.setItem(JP + 'dd_limit_pct', b.dd);
+  const acc = document.getElementById('dd-limit-pct'); if (acc) acc.value = loadDDLimitPct();
+  if (planData && 'maxSL' in b) {
+    planData.maxSL = b.maxSL; planData.maxTP = b.maxTP;
+    if (b.entryItems) planData.entryItems = b.entryItems; else delete planData.entryItems;
+    if (b.risk) planData.risk = b.risk;
+    DB.setItem(JP + 'plan', JSON.stringify(planData));
+  }
+  const st = b.scaling != null && typeof getScalingState === 'function' && typeof scalingConfigured === 'function' && scalingConfigured() ? getScalingState() : null;
+  if (st) { st.riskPct = b.scaling; saveScalingState(); }
+  DB.removeItem(JP + 'rk_backup');
+  return true;
 }
 
 // ── Plan débutant ──
 const RK_BEGINNER_ITEMS = ['Stop loss placé avant d’entrer', 'RR d’au moins 1,5', 'Risque ≤ 1 % du capital', 'Pas de trade dans les 30 min après une perte'];
 function applyBeginnerPlan(silent, keepCore) {
   if (!silent && !confirm(rkL('Appliquer le plan débutant ? Tes limites du jour, ton garde-fou et ta checklist seront mis à jour (tes trades ne changent pas).', 'Apply the beginner plan? Your daily limits, guard and checklist will be updated (your trades stay the same).'))) return;
-  rkSaveCfg(Object.assign({}, RK_DEF));
+  if (!keepCore) rkSaveBackup();
+  rkSaveCfg(Object.assign({}, RK_DEF), false);
+  if (rkIsCustom()) rkSaveProg(Object.assign(rkProg(), { stage: JOURNAL_TYPE === 'backtest' ? 0 : 1, since: localDateStr() }));   // le plan débutant ramène sur le parcours
   if (!keepCore) {
     if (loadDDLimitPct() > 1) DB.setItem(JP + 'dd_limit_pct', '1');
     if (planData) { planData.maxSL = 2; if (!(planData.maxTP > 0)) planData.maxTP = 2; }
@@ -183,7 +224,8 @@ function renderGuardCard() {
     <div class="gc-chips">
       ${chip(rkL('Reste aujourd’hui', 'Left today'), fmtEUR(g.remaining, false, 0), rkL('avant ta limite', 'before your limit'), g.remaining <= 0 ? 'red' : null)}
       ${chip(rkL('Risque conseillé', 'Suggested risk'), fmtEUR(g.rec, false, 2), g.factor < 1 ? rkL('réduit (compte en baisse)', 'reduced (account down)') : rkL('plafond de ton étape : ', 'your step cap: ') + guideText(g.stage.name), g.factor < 1 ? 'amber' : null)}
-      ${chip(rkL('Capital protégé', 'Protected capital'), fmtEUR(Math.max(0, g.marginFloor), false, 0), rkL('au-dessus du plancher', 'above the floor'), g.marginFloor <= 0 ? 'red' : g.marginFloor < accountSize * 0.03 ? 'amber' : 'green')}
+      ${g.cfg.floorPct > 0 ? chip(rkL('Capital protégé', 'Protected capital'), fmtEUR(Math.max(0, g.marginFloor), false, 0), rkL('au-dessus du plancher', 'above the floor'), g.marginFloor <= 0 ? 'red' : g.marginFloor < accountSize * 0.03 ? 'amber' : 'green')
+        : chip(rkL('Solde', 'Balance'), fmtEUR(g.eq, false, 0), rkL('pas de plancher réglé', 'no floor set'), g.eq >= accountSize ? 'green' : 'amber')}
       ${chip(rkL('Discipline', 'Discipline'), d.avg == null ? '—' : Math.round(d.avg * 100) + ' %', d.streak ? d.streak + rkL(' jour(s) propre(s) d’affilée', ' clean day(s) in a row') : rkL('20 derniers jours', 'last 20 days'), d.avg == null ? null : d.avg >= 0.8 ? 'green' : d.avg >= 0.6 ? 'amber' : 'red')}
     </div>
     ${closed > 0 && closed < 100 ? html`<p class="gc-note">📏 ${closed} ${rkL('trade(s) : c’est trop tôt pour juger ta stratégie — vise 100 trades avant de tirer des conclusions.', 'trade(s): too early to judge your strategy — aim for 100 trades before drawing conclusions.')}</p>` : ''}`);
@@ -240,7 +282,7 @@ function renderRiskPage() {
     <div class="rk-kpis">
       ${[[rkL('Aujourd’hui', 'Today'), g.pnl.day, g.lim.day], [rkL('Cette semaine', 'This week'), g.pnl.week, g.lim.week], [rkL('Ce mois-ci', 'This month'), g.pnl.month, g.lim.month]].map(([l, p, lim]) => {
         const used = lim > 0 ? Math.min(1, Math.max(0, -p) / lim) : 0;
-        return html`<div class="rk-kpi"><span>${l}</span><b class="tone-${raw(p >= 0 ? 'green' : 'red')}">${fmtEUR(p, true, 0)}</b><div class="rk-meter"><i class="${raw(used >= 1 ? 'red' : used >= 0.65 ? 'amber' : 'green')}" style="${raw('width:' + Math.round(used * 100) + '%')}"></i></div><small>${rkL('limite ', 'limit ')}${fmtEUR(-lim, false, 0)}</small></div>`;
+        return html`<div class="rk-kpi"><span>${l}</span><b class="tone-${raw(p >= 0 ? 'green' : 'red')}">${fmtEUR(p, true, 0)}</b><div class="rk-meter"><i class="${raw(used >= 1 ? 'red' : used >= 0.65 ? 'amber' : 'green')}" style="${raw('width:' + Math.round(used * 100) + '%')}"></i></div><small>${lim > 0 ? rkL('limite ', 'limit ') + fmtEUR(-lim, false, 0) : rkL('pas de limite', 'no limit')}</small></div>`;
       })}
     </div>
     <div class="rk-grid">
@@ -254,12 +296,12 @@ function renderRiskPage() {
       <label class="rk-f"><span>${rkL('SL max par jour', 'Max SL per day')}<small>${rkL('limite atteinte : stop pour aujourd’hui (aussi dans le Plan)', 'limit hit: stop for today (also in the Plan)')}</small></span><span class="rk-in"><input type="number" id="rk-max-sl" min="0" step="1" value="${(planData && planData.maxSL) || ''}" placeholder="—" onchange="rkSetPlanMax('maxSL', this.value)"><em>SL</em></span></label>
     </div>`);
   // 2) Protection du capital
-  const lo = Math.min(g.floor, g.eq) * 0.98, hi = Math.max(g.peak, accountSize) * 1.02, pos = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo || 1) * 100));
+  const hasFloor = c.floorPct > 0, lo = Math.min(hasFloor ? g.floor : accountSize * 0.9, g.eq) * 0.98, hi = Math.max(g.peak, accountSize) * 1.02, pos = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo || 1) * 100));
   mount('rk-capital', html`<div class="rk-cap">
-      <div class="rk-cap-bar"><span class="rk-cap-floor" style="${raw('width:' + pos(g.floor) + '%')}"></span>
-        ${[[g.floor, rkL('Plancher', 'Floor'), 'floor'], [accountSize, rkL('Départ', 'Start'), 'start'], [g.peak, rkL('Plus haut', 'Peak'), 'peak'], [g.eq, rkL('Maintenant', 'Now'), 'now']].map(([v, l, k]) => html`<span class="${raw('rk-mark ' + k)}" style="${raw('left:' + pos(v) + '%')}"><i></i><small>${l}<br><b>${fmtEUR(v, false, 0)}</b></small></span>`)}</div>
+      <div class="rk-cap-bar">${hasFloor ? html`<span class="rk-cap-floor" style="${raw('width:' + pos(g.floor) + '%')}"></span>` : ''}
+        ${[hasFloor ? [g.floor, rkL('Plancher', 'Floor'), 'floor'] : null, [accountSize, rkL('Départ', 'Start'), 'start'], g.peak > g.eq + 0.5 ? [g.peak, rkL('Plus haut', 'Peak'), 'peak'] : null, [g.eq, rkL('Maintenant', 'Now'), 'now']].filter(Boolean).map(([v, l, k]) => html`<span class="${raw('rk-mark ' + k)}" style="${raw('left:' + pos(v) + '%')}"><i></i><small>${l}<br><b>${fmtEUR(v, false, 0)}</b></small></span>`)}</div>
       <div class="rk-cap-txt">
-        <p>${rkL('Marge avant le plancher : ', 'Room above the floor: ')}<b class="tone-${raw(g.marginFloor > 0 ? 'green' : 'red')}">${fmtEUR(g.marginFloor, false, 0)}</b> · ${rkL('baisse depuis le plus haut : ', 'drawdown from peak: ')}<b>${fmtNum(g.dd * 100, 1)} %</b></p>
+        <p>${hasFloor ? html`${rkL('Marge avant le plancher : ', 'Room above the floor: ')}<b class="tone-${raw(g.marginFloor > 0 ? 'green' : 'red')}">${fmtEUR(g.marginFloor, false, 0)}</b>` : rkL('Pas de plancher (0 %)', 'No floor (0 %)')} · ${rkL('baisse depuis le plus haut : ', 'drawdown from peak: ')}<b>${fmtNum(g.dd * 100, 1)} %</b></p>
         <p>${rkL('Risque conseillé maintenant : ', 'Suggested risk now: ')}<b>${fmtEUR(g.rec, false, 2)}</b> <small>= ${g.plan ? rkL('ton plan de Scaling', 'your Scaling plan') + ' (' + fmtEUR(g.base, false, 2) + ')' : rkL('1 % du capital', '1 % of capital')}, ${g.capPct == null ? rkL('sans plafond d’étape', 'no step cap') : rkL('plafonné par ton étape', 'capped by your step') + ' (' + fmtRate(g.capPct, 2) + ')'}${g.factor < 1 ? rkL(', réduit à ', ', cut to ') + Math.round(g.factor * 100) + ' %' : ''}</small></p>
       </div></div>
     <div class="rk-grid">
@@ -276,7 +318,7 @@ function renderRiskPage() {
       <div class="rk-path-act">
         ${!custom && st < RK_PATH_N - 1 ? html`<button class="btn-primary" ${raw(ready ? '' : 'disabled')} onclick="${raw('rkSetStage(' + (st + 1) + ')')}">${ready ? rkL('Passer à l’étape suivante →', 'Move to the next step →') : rkL('Étape suivante : critères à remplir', 'Next step: criteria to meet')}</button>` : ''}
         ${!custom && st > 0 ? html`<button class="btn-ghost" onclick="${raw('rkSetStage(' + (st - 1) + ')')}">← ${rkL('Revenir à l’étape précédente', 'Go back a step')}</button>` : ''}
-        <label class="rk-pick">${rkL('Déjà expérimenté ? Choisir mon étape :', 'Already experienced? Pick my step:')} <select onchange="${raw("rkSetStage(+this.value, '" + rkL('Changer d’étape à la main ? Les critères repartent d’aujourd’hui.', 'Change step manually? Criteria restart from today.').replace(/'/g, '’') + "')")}">${RK_STAGES.map((s, i) => html`<option value="${i}" ${raw(i === st ? 'selected' : '')}>${i + 1}. ${guideText(s.name)}</option>`)}</select></label>
+        <label class="rk-pick">${rkL('Déjà expérimenté ? Choisir mon étape :', 'Already experienced? Pick my step:')} <select onchange="rkPickStage(+this.value)">${RK_STAGES.map((s, i) => html`<option value="${i}" ${raw(i === st ? 'selected' : '')}>${i + 1}. ${guideText(s.name)}</option>`)}</select></label>
       </div></div>`);
   // 4) Discipline
   const lastDays = d.days.slice(-10).reverse();
