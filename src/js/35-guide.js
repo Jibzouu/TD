@@ -8,6 +8,7 @@ const GUIDE = [
     intro: ['Le journal fonctionne entièrement dans ton navigateur : rien n’est envoyé sur un serveur.', 'The journal runs entirely in your browser: nothing is sent to a server.'],
     items: [
       ['Trois comptes séparés : Live (trades réels), Backtest (stratégies testées, avec le Backtest replay) et Prop Firm (challenge). Change de compte avec le menu en haut à gauche.', 'Three separate accounts: Live (real trades), Backtest (tested strategies, with Backtest replay) and Prop Firm (challenge). Switch with the menu at the top left.'],
+      ['Tu débutes ? Garde coché « plan débutant » au premier lancement (ou applique-le depuis Gestion du risque) et choisis ton étape dans le parcours de progression : le journal t’arrêtera avant les erreurs classiques.', 'New to trading? Keep “beginner plan” ticked at first launch (or apply it from Risk management) and pick your step in the progression path: the journal will stop you before the classic mistakes.'],
       ['Ajouter un trade : bouton « Nouveau trade » (formulaire complet) ou touche N (saisie rapide : actif, résultat, P&L).', 'Add a trade: “New trade” button (full form) or the N key (quick entry: asset, result, P&L).'],
       ['Importer un historique : Export / Import → TradingView, MetaTrader 4/5 ou cTrader. Les doublons sont ignorés.', 'Import a history: Export / Import → TradingView, MetaTrader 4/5 or cTrader. Duplicates are skipped.'],
       ['Filtre global (en haut) : période, actif, session, setup et sens s’appliquent à toutes les pages d’analyse.', 'Global filter (top bar): period, asset, session, setup and direction apply to every analysis page.'],
@@ -19,6 +20,7 @@ const GUIDE = [
     items: [
       ['Win rate = gagnants ÷ (gagnants + perdants) : les break-even ne comptent ni comme gains ni comme pertes. Il est vert au-dessus de ton seuil de rentabilité (calculé avec ton gain moyen et ta perte moyenne).', 'Win rate = wins ÷ (wins + losses): break-evens count as neither. It turns green above your break-even threshold (computed from your average win and loss).'],
       ['Garde-fou du jour (sous la performance) : feu vert / orange / rouge, ce qu’il te reste à perdre aujourd’hui, risque conseillé, marge au-dessus du plancher et discipline. Clique dessus pour la page Gestion du risque.', 'Daily guard (below performance): green / orange / red light, what you can still lose today, suggested risk, room above the floor and discipline. Click it for the Risk management page.'],
+      ['Sous 100 trades, un rappel te dit qu’il est trop tôt pour juger ta stratégie : les chiffres d’un petit échantillon trompent.', 'Under 100 trades, a reminder tells you it is too early to judge your strategy: small-sample numbers are misleading.'],
       ['Routine du jour : préparer la séance → noter ses trades → faire le bilan ; les étapes se cochent toutes seules.', 'Daily routine: prepare the session → log trades → review; steps tick themselves.'],
       ['Clique sur le titre d’une section pour la replier. Glisse la poignée ⠿ d’un bloc pour réorganiser (Paramètres → réinitialiser la disposition).', 'Click a section title to collapse it. Drag a block’s ⠿ handle to rearrange (Settings → reset layout).'],
       ['Donuts : part de trades, journées et semaines gagnants — les neutres et break-even sont exclus.', 'Donuts: share of winning trades, days and weeks — flat ones and break-evens are excluded.']
@@ -67,7 +69,8 @@ const GUIDE = [
     items: [
       ['Réglages de base : capital de départ, risque par trade, pas des paliers, objectif.', 'Basic settings: starting capital, risk per trade, step size, goal.'],
       ['Coussin : le nombre de pertes que tu peux encaisser au premier palier — réglable à la main.', 'Cushion: how many losses you can absorb at the first step — set it manually.'],
-      ['La frise montre où tu en es (« Toi ») et le risque à utiliser maintenant.', 'The timeline shows where you are (“You”) and the risk to use now.']
+      ['La frise montre où tu en es (« Toi ») et le risque à utiliser maintenant.', 'The timeline shows where you are (“You”) and the risk to use now.'],
+      ['Ce risque sert de base au « risque conseillé » de la Gestion du risque, qui le plafonne selon ton étape et le réduit si ton compte baisse.', 'This risk is the base of the “suggested risk” in Risk management, which caps it by your step and reduces it if your account drops.']
     ] },
   { id: 'propfirm', page: 'propfirm', icon: '🏁', title: ['Prop Firm', 'Prop firm'],
     intro: ['Compte Prop Firm uniquement : suis les règles de ton challenge.', 'Prop Firm account only: track your challenge rules.'],
@@ -104,7 +107,8 @@ const GUIDE = [
     intro: ['Tes règles écrites, utilisées partout dans le journal.', 'Your written rules, used throughout the journal.'],
     items: [
       ['Checklist d’entrée (cochée dans chaque trade), filtres « ne pas trader si… », setups.', 'Entry checklist (ticked in each trade), “don’t trade if…” filters, setups.'],
-      ['Limites du jour (nombre max de TP / SL) : alertes quand tu les atteins ou les dépasses.', 'Daily limits (max number of TP / SL): alerts when you reach or exceed them.']
+      ['Limites du jour (nombre max de TP / SL) : reprises par le garde-fou du Dashboard quand tu les atteins ou les dépasses.', 'Daily limits (max number of TP / SL): picked up by the Dashboard guard when you reach or exceed them.'],
+      ['Le lien « Garde-fou, plancher du capital et plan débutant » mène à la page Gestion du risque.', 'The “Guard, capital floor and beginner plan” link leads to the Risk management page.']
     ] },
   { id: 'playbooks', page: 'playbooks', icon: '📘', title: ['Playbooks', 'Playbooks'],
     intro: ['Une fiche par setup : règles, exemples, statistiques réelles.', 'One sheet per setup: rules, examples, real statistics.'],
