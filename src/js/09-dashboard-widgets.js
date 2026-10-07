@@ -217,10 +217,19 @@ function renderUnderwater(E, daily) {
 function renderHeroSide(E, endBal, perf, curDD) {
   const side = document.getElementById('hero-side');
   if (!side) return;
+  // Solde du compte, mis en avant à gauche de la performance.
+  const bEl = document.getElementById('k-balance'), bSub = document.getElementById('k-balance-sub');
+  if (bEl) {
+    const bal = E.pts.length && E.useEur ? endBal : accountSize;
+    bEl.textContent = fmtEUR(bal, false, 2);
+    const diff = bal - accountSize;
+    if (bSub) bSub.innerHTML = '';
+    if (bSub) mount(bSub, html`${'départ ' + fmtEUR(accountSize, false, 0)}${E.pts.length && E.useEur && accountSize > 0 ? html` · <span class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${fmtPct(diff / accountSize * 100)}</span>` : ''}`);
+  }
   if (!E.pts.length) { mount(side, ''); return; }
   const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
   const dd = v => v ? (E.useEur ? fmtPct(v) : fmtR(v, 2)) : (E.useEur ? '0 %' : '0R');
-  mount(side, html`${it(E.useEur ? 'Solde' : 'R cumulé', E.fmt(endBal))}${perf !== null ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
+  mount(side, html`${!E.useEur ? it('R cumulé', E.fmt(endBal)) : ''}${perf !== null && !E.useEur ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
 }
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────

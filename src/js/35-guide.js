@@ -16,7 +16,7 @@ const GUIDE = [
       ['Sauvegarde : pense à exporter une sauvegarde régulièrement (Export / Import), surtout avant de changer de navigateur.', 'Backups: export a backup regularly (Export / Import), especially before switching browsers.']
     ] },
   { id: 'dashboard', page: 'dashboard', icon: '📊', title: ['Dashboard', 'Dashboard'],
-    intro: ['Ta vue d’ensemble : performance globale en haut, puis où tu gagnes et comment tu trades.', 'Your overview: overall performance at the top, then where you win and how you trade.'],
+    intro: ['Ta vue d’ensemble : solde du compte et performance globale en haut, puis où tu gagnes et comment tu trades.', 'Your overview: account balance and overall performance at the top, then where you win and how you trade.'],
     items: [
       ['Win rate = gagnants ÷ (gagnants + perdants) : les break-even ne comptent ni comme gains ni comme pertes. Il est vert au-dessus de ton seuil de rentabilité (calculé avec ton gain moyen et ta perte moyenne).', 'Win rate = wins ÷ (wins + losses): break-evens count as neither. It turns green above your break-even threshold (computed from your average win and loss).'],
       ['Garde-fou du jour (sous la performance) : feu vert / orange / rouge, ce qu’il te reste à perdre aujourd’hui, risque conseillé, marge au-dessus du plancher et discipline. Clique dessus pour la page Gestion du risque.', 'Daily guard (below performance): green / orange / red light, what you can still lose today, suggested risk, room above the floor and discipline. Click it for the Risk management page.'],

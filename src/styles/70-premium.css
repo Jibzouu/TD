@@ -740,3 +740,9 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .rk-rules{margin:0 0 14px;padding-left:18px;display:grid;gap:6px;color:var(--txt2);font-size:14px}
 @media (max-width:1100px){.guard-card{grid-template-columns:1fr}}
 @media (max-width:700px){.gc-chips{grid-template-columns:1fr 1fr}.rk-steps{grid-template-columns:1fr 1fr}.rk-crit-row{grid-template-columns:1fr}.rk-pick{margin-left:0}}
+/* Dashboard : solde du compte mis en avant à côté de la performance */
+.hero-metric{grid-template-columns:auto auto minmax(0,1fr)}
+.hero-bal{padding-right:28px;border-right:1px solid var(--border)}
+.hero-bal-value{color:var(--txt)}
+@media (max-width:1100px){.hero-metric{grid-template-columns:1fr 1fr}.hero-bal{border-right:0;padding-right:0}.hero-side{grid-column:1/-1;border-left:0;padding-left:0}}
+@media (max-width:700px){.hero-metric{grid-template-columns:1fr}}

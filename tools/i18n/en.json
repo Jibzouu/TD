@@ -1939,5 +1939,8 @@
  "Trade sans stop": "Trade without a stop",
  "jamais": "never",
  "Pertes d’affilée max": "Max losses in a row",
- "2 puis stop": "2 then stop"
+ "2 puis stop": "2 then stop",
+ "Solde du compte": "Account balance",
+ "capital de départ": "starting capital",
+ "départ {0} €": "start {0} €"
 }
