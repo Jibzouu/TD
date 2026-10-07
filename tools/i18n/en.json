@@ -1903,5 +1903,14 @@
  "Journée gagnante = résultat net du jour positif (journées neutres exclues)": "Winning day = positive net result for the day (flat days excluded)",
  "Semaine gagnante = résultat net de la semaine (lundi → dimanche) positif (semaines neutres exclues)": "Winning week = positive net result for the week (Monday → Sunday) (flat weeks excluded)",
  "les break-even ne comptent ni comme gains ni comme pertes": "break-evens count as neither wins nor losses",
- "win rate = gagnants ÷ (gagnants + perdants), les break-even ne comptent pas": "win rate = wins ÷ (wins + losses), break-evens don't count"
+ "win rate = gagnants ÷ (gagnants + perdants), les break-even ne comptent pas": "win rate = wins ÷ (wins + losses), break-evens don't count",
+ "⚙️ Réglages": "⚙️ Settings",
+ "📖 Guide d'utilisation": "📖 User guide",
+ "⌨️ Raccourcis clavier": "⌨️ Keyboard shortcuts",
+ "Comment utiliser le journal, page par page. Clique une section pour la déplier, ou cherche un mot.": "How to use the journal, page by page. Click a section to expand it, or search for a word.",
+ "Rechercher dans le guide…": "Search the guide…",
+ "Les raccourcis ne marchent pas pendant que tu écris dans un champ. Appuie sur ? n'importe où pour un aide-mémoire.": "Shortcuts don't work while you type in a field. Press ? anywhere for a cheat sheet.",
+ "Tous les raccourcis →": "All shortcuts →",
+ "Guide d'utilisation du journal": "Journal user guide",
+ "de win rate par rapport aux trades où tu as sauté des critères.": "of win rate compared with trades where you skipped criteria."
 }

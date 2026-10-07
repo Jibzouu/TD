@@ -1238,6 +1238,12 @@
       <div class="page-hdr">
         <div class="page-hdr-left"><h2 data-i18n="page.parametres.title">Paramètres</h2><p data-i18n="page.parametres.sub">Ton compte, puis l'apparence (commune aux trois journaux) — tout est sauvegardé localement</p></div>
       </div>
+      <div class="set-tabs" role="tablist" aria-label="Paramètres">
+        <button class="set-tab active" role="tab" data-set="settings" aria-selected="true" onclick="showSettingsTab('settings')">⚙️ Réglages</button>
+        <button class="set-tab" role="tab" data-set="guide" aria-selected="false" onclick="showSettingsTab('guide')">📖 Guide d'utilisation</button>
+        <button class="set-tab" role="tab" data-set="keys" aria-selected="false" onclick="showSettingsTab('keys')">⌨️ Raccourcis clavier</button>
+      </div>
+      <div class="set-pane" data-set="settings" role="tabpanel">
 
       <div class="panel mb-20" id="lang-card">
         <div class="panel-hdr"><span><span data-i18n="settings.lang.title">Langue</span><small class="panel-sub" data-i18n="settings.lang.sub">langue de l'interface — commune aux trois journaux</small></span></div>
@@ -1400,6 +1406,15 @@
           </div>
         </details>
       </div>
+      </div>
+      <div class="set-pane" data-set="guide" role="tabpanel" hidden>
+        <div class="gd-head"><p>Comment utiliser le journal, page par page. Clique une section pour la déplier, ou cherche un mot.</p><input type="search" id="guide-q" class="gd-q" placeholder="Rechercher dans le guide…" oninput="renderGuide()"></div>
+        <div id="guide-list" class="gd-list"></div>
+      </div>
+      <div class="set-pane" data-set="keys" role="tabpanel" hidden>
+        <p class="gd-head">Les raccourcis ne marchent pas pendant que tu écris dans un champ. Appuie sur ? n'importe où pour un aide-mémoire.</p>
+        <div id="keys-list" class="gd-keys-grid"></div>
+      </div>
     </div>
 
   </main>
@@ -1494,7 +1509,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sh-title">
     <h3 id="sh-title">Raccourcis clavier</h3>
     <div class="sh-grid" id="sh-grid"></div>
-    <div class="modal-btns"><button class="btn-primary" onclick="closeShortcutsHelp()">Compris</button></div>
+    <div class="modal-btns"><button class="btn-ghost" onclick="openShortcutsPage()">Tous les raccourcis →</button><button class="btn-primary" onclick="closeShortcutsHelp()">Compris</button></div>
   </div>
 </div>
 

@@ -1432,3 +1432,35 @@ test('journal des trades groupé par jour par défaut, choix gardé', async () =
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('Paramètres : guide d\'utilisation (une section par page du menu) et page des raccourcis', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: { bt_trades: [T({ id: 1 })] } });
+  await goto(page, 'parametres');
+  await page.click('.set-tab[data-set=guide]');
+  assert.equal(await page.locator('#accounts-card').isVisible(), false);
+  // Chaque page du menu (tous comptes confondus) a sa section dans le guide : à compléter à chaque nouvelle page.
+  const missing = await page.evaluate(() => [...document.querySelectorAll('.page[id^="page-"]')].map(p => p.id.slice(5)).filter(id => !GUIDE.some(s => s.page === id)));
+  assert.deepEqual(missing, [], 'pages sans section dans le guide');
+  assert.ok(await page.locator('.gd-sec').count() >= 15);
+  await page.fill('#guide-q', 'Fibonacci');
+  assert.equal(await page.locator('.gd-sec').count(), 1);
+  assert.match(await page.locator('.gd-sec').innerText(), /Backtest replay/);
+  await page.click('.gd-sec >> text=Ouvrir la page');
+  assert.equal(await page.evaluate(() => currentPage()), 'replay');
+  // Raccourcis : groupes, dont les outils de dessin lus dans RPD_TOOLS ; onglet gardé.
+  await goto(page, 'parametres');
+  await page.click('.set-tab[data-set=keys]');
+  const keys = await page.locator('#keys-list').innerText();
+  assert.match(keys, /Saisie rapide/); assert.match(keys, /Alt \+ F\s+Retracement de Fibonacci/); assert.match(keys, /Lecture \/ pause/);
+  await page.evaluate(() => DB.flush());
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await goto(page, 'parametres');
+  assert.equal(await page.locator('#keys-list').isVisible(), true);
+  // Depuis l'aide « ? » : lien vers la page complète.
+  await page.evaluate(() => showSettingsTab('settings'));
+  await page.keyboard.press('?');
+  await page.click('#shortcuts-help >> text=Tous les raccourcis');
+  assert.equal(await page.locator('#keys-list').isVisible(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

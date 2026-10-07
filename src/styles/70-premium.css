@@ -613,3 +613,30 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 /* Break-even visibles (calendrier, bilan) */
 .cal-be{color:var(--amber);font-weight:600}
 .cal-day.strong .cal-be{color:inherit}
+
+/* Paramètres : onglets Réglages / Guide / Raccourcis */
+.set-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);margin:0 0 20px}
+.set-tab{border:0;background:transparent;color:var(--txt3);font:500 14px var(--sans);padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.set-tab:hover{color:var(--txt)}
+.set-tab.active{color:var(--txt);border-bottom-color:var(--accent);font-weight:600}
+.set-pane[hidden]{display:none}
+.gd-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--txt2);font-size:13.5px;margin:0 0 14px}
+.gd-head p{margin:0}
+.gd-q{height:36px;min-width:260px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font:14px var(--sans);padding:0 12px}
+.gd-q:focus{border-color:var(--accent);outline:none}
+.gd-list{display:grid;gap:10px}
+.gd-sec{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);overflow:hidden}
+.gd-sec summary{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;list-style:none}
+.gd-sec summary::-webkit-details-marker{display:none}
+.gd-sec summary:hover{background:var(--bg3)}
+.gd-ic{font-size:20px;width:28px;text-align:center;flex:none}
+.gd-tt{flex:1;display:flex;flex-direction:column;gap:2px;font-weight:600;font-size:15px;color:var(--txt)}
+.gd-tt small{font-weight:400;font-size:13px;color:var(--txt3);line-height:1.45}
+.gd-sec[open] .cz-chev{transform:rotate(-135deg);margin-bottom:-4px}
+.gd-body{padding:0 18px 16px 60px}
+.gd-body ul{margin:0;padding-left:18px;display:grid;gap:7px;color:var(--txt2);font-size:14px;line-height:1.55}
+.gd-go{margin-top:12px}
+.gd-na{margin:10px 0 0;font-size:13px;color:var(--txt3)}
+.gd-keys-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
+.gd-keys .sh-grid{padding:4px 2px}
+@media (max-width:700px){.gd-body{padding:0 14px 14px 14px}.gd-q{min-width:0;width:100%}.gd-keys-grid{grid-template-columns:1fr}}
