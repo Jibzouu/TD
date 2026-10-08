@@ -889,7 +889,7 @@ test('charte premium : le thème personnel « 02 » devient « Néon », en têt
   assert.match(await first.innerText(), /Néon/);
   assert.match(await first.getAttribute('class'), /active/);
   await page.locator('#theme-preset-grid .theme-swatch', { hasText: 'Graphite' }).click();
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#3ee6a8');   // accent de la marque Untilt
+  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#3ee6a8');   // accent de la marque LockIn
   await first.click();
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()), '#ff2bd6');
   assert.deepEqual(errors, []);

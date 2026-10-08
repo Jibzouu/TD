@@ -85,7 +85,7 @@ function renderOnboarding() {
   const d = obData, dots = html`<div class="ob-dots" aria-label="Étape ${obStep + 1} sur 3">${[0, 1, 2].map(i => html`<span class="${raw(i === obStep ? 'on' : i < obStep ? 'done' : '')}"></span>`)}</div>`;
   const riskEur = d.capital * d.riskPct / 100;
   const steps = [
-    () => html`<div class="ob-brand">${raw(brandLogoSVG(null, 34))}</div><h2 id="ob-title">Bienvenue sur Untilt 👋</h2><p class="ob-lead">Trois questions pour régler ton journal. Tu pourras tout modifier ensuite.</p>
+    () => html`<div class="ob-brand">${raw(brandLogoSVG(null, 34))}</div><h2 id="ob-title">Bienvenue sur LockIn 👋</h2><p class="ob-lead">Trois questions pour régler ton journal. Tu pourras tout modifier ensuite.</p>
       <div class="ob-fields">
         <label class="field"><span>Nom du compte</span><input type="text" id="ob-name" maxlength="40" value="${d.name}" placeholder="ex. Compte perso, FTMO 100k…"></label>
         <label class="field"><span>Type de compte</span><select id="ob-type">${Object.entries(ACCOUNT_TYPES).map(([k, t]) => html`<option value="${k}"${raw(k === d.type ? ' selected' : '')}>${t.label} — ${t.sub}</option>`)}</select></label>

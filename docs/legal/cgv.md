@@ -1,14 +1,14 @@
-# Conditions générales de vente et d'utilisation
+# Conditions générales de vente et d'utilisation — LockIn
 
 *Modèle à compléter et à faire relire par un juriste avant la mise en vente. Dernière mise à jour : [DATE].*
 
 ## 1. Objet
 
-Les présentes conditions encadrent l'utilisation du logiciel [NOM DU PRODUIT] (le « Service ») et la souscription aux offres payantes, entre l'éditeur ([NOM, SIRET]) et l'utilisateur (« vous »).
+Les présentes conditions encadrent l'utilisation du logiciel LockIn (le « Service ») et la souscription aux offres payantes, entre l'éditeur ([NOM, SIRET]) et l'utilisateur (« vous »).
 
 ## 2. Le Service
 
-[NOM DU PRODUIT] est un journal de trading : enregistrement de vos trades, statistiques, gestion du risque, revue, backtest. **Il ne fournit aucun conseil en investissement** et ne passe aucun ordre sur un compte réel. Vous restez seul responsable de vos décisions de trading.
+LockIn est un journal de trading : enregistrement de vos trades, statistiques, gestion du risque, revue, backtest. **Il ne fournit aucun conseil en investissement** et ne passe aucun ordre sur un compte réel. Vous restez seul responsable de vos décisions de trading.
 
 ## 3. Offres et prix
 

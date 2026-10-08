@@ -1,4 +1,4 @@
-# Journal de trading — analyse, plan produit et plan de vente
+# LockIn (journal de trading) — analyse, plan produit et plan de vente
 
 *Note du 7 octobre 2026. Les prix des concurrents viennent de comparatifs 2026 qui se contredisent parfois : vérifier sur leurs sites avant de les citer en public.*
 
@@ -97,7 +97,7 @@ Le code est déjà prêt pour la synchro (identifiants universels, dates de modi
 
 ## 6. Ce qu'on peut faire dès maintenant, en restant en local
 
-> ✅ Les 10 points ci-dessous sont faits (octobre 2026). Le journal s'appelle désormais **Untilt** (logo et icônes dans `brand/`).
+> ✅ Les 10 points ci-dessous sont faits (octobre 2026). Le journal s'appelle désormais **LockIn** (logo et icônes dans `brand/`, régénérés par `node tools/make-brand.mjs`). Ancien nom provisoire : Untilt, abandonné (voir section 12 bis).
 
 Tout ce qui suit fonctionne sans serveur, dans le fichier actuel, et servira tel quel dans la future version en ligne. Par ordre de priorité :
 
@@ -231,24 +231,30 @@ Le message « protège ton capital » est exactement ce que les autorités veule
 
 ---
 
-## 12 bis. ⚠️ Alerte sur le nom « Untilt » (vérifié en octobre 2026)
+## 12 bis. Choix du nom : **LockIn** ✅ (octobre 2026)
+
+- **Nom retenu : LockIn** (« être lock-in » = concentré à fond, verrouillé sur son plan). Mot dessiné en minuscules « lockin » ; le point du « i » est la bulle verte.
+- **Logo** : un cadenas dont la serrure est la bulle d'un niveau → verrouillé ET à niveau (sans tilt). Fichiers dans `brand/`.
+- **Vérifié par recherche web** : aucune appli de trading nommée LockIn. Le plus proche : **LOCKR** (journal de trading avec IA) → bien écrire « LockIn », jamais « Lockr ».
+- **Encore à faire avant de dépenser en pub** : vérifier les domaines (lockin.app, lockin.trade, getlockin.com, lockinjournal.com…), les comptes réseaux (@lockin…) et déposer la marque à l'INPI / EUIPO (classes 9 et 42). « Lock in » est une expression courante : une marque figurative (logo + mot) se protège mieux que le mot seul.
+
+### Historique : pourquoi pas « Untilt »
 
 - **untilt.me — « Untilt, Behavioral Fitness for Traders »** : appli web pour traders discrétionnaires qui mesure la discipline sur 7 dimensions, signale revanche et FOMO, importe des CSV (Tradovate, TradingView), en bêta à 25–29 $/mois. **Même nom, même marché, même promesse** : risque de confusion et de conflit de marque.
 - untilt.app est déjà utilisé (outils de raisonnement) ; « Untilt » est aussi le nom d'une appli de partage de dépenses (Android) et d'un bloqueur de paris sportifs (iPhone).
-- **Décision à prendre avant toute dépense de pub ou de dépôt de marque** : changer de nom. Le logo (niveau à bulle) se garde ; seul le mot change.
+- Décision : changer de nom. Quatre lots de noms vérifiés ci-dessous ; LockIn retenu dans le 4e.
 - **10 noms sans appli de trading trouvée sous ce nom** (recherche web d'octobre 2026 ; domaine et INPI encore à vérifier) : Aplomb, Sangfroid, Niveo, Flegme, Ballast, Sereno, Kalme, Tenue, Zénit, Halto. Écartés car déjà pris dans la finance : Lucide (prop firm Lucid Trading), Keelo (journal Keelio), Ancrage (Anchorage, Anchr), Équilibre (protocole Équilibre Finance).
 - **Deuxième lot, plus « marque »** (aucune appli de trading trouvée) : Kata, NoFomo, ZeroTilt, Zanshin, Rempart, Palier, IceMind, Halte, Mushin, Cairn. Écarté : Dojo (prop firm DojoTraders, communautés « Trading Dojo »).
 - **Troisième lot, plus moderne et international** (aucune appli de trading trouvée) : Unfazed, Sillage, Stillo, Nerve, Grip, Unshaken, Ataraxia, Vigie (proche de Vigil, outil de conformité prop firm), Poise (marque d'hygiène Kimberly-Clark aux États-Unis), LockIn (proche du journal LOCKR). Écartés : Clutch (journal Clutch Investments sur Whop), Hindsight (offre « Hindsight Pro » de Tradeflect), Monk Mode (fonction de Traders Tracker), Coldblood (Discord Cold Blooded Traders), Blackbox (Blackboxstocks), Tiltproof (TiltGuard, Anti-Tilt), Redline (gestionnaire de risque MT5), Sobr (action Nasdaq SOBR), Tradr (journal Tradr.world), Debrief (nom de fonction chez EdgeLog et Journali).
 - Trio conseillé du 3e lot : **Unfazed** (« impassible », dit exactement la promesse), **Sillage** (français, élégant), **Stillo** (inventé, donc plus facile à protéger ; « still » = immobile, comme la bulle du logo).
 - **Quatrième lot, style « LockIn »** (expressions anglaises courtes ; aucune appli de trading trouvée) : LockIn, DialedIn, ZoneIn, ClockIn, Levelhead, Unbothered, StayFlat, SitTight, HoldTight, NoChase, OnPlan, ColdMind, IceCold, StaySharp, GameFace, Grounded, StaySteady (proche de SteadyTrader), Zoned (proche de Zone by Definedge). Écartés : CoolHead (extension TheCoolHead pour day traders), KeepCool (proche de KeepBit). Trio conseillé : **LockIn**, **DialedIn**, **Levelhead** (« level-headed » = calme ; le niveau à bulle du logo).
-- Piste n° 1 : **Aplomb** (« garder son aplomb » = son sang-froid ; un fil à plomb / niveau = le logo). Aucune appli de trading trouvée sous ce nom ; domaine et INPI à vérifier.
 
 ## 13. À faire plus tard
 
 ### Connecteur MetaTrader 5 (broker : Vantage) — au passage en compte réel
 
-- **But** : les trades arrivent tout seuls dans Untilt, sans export manuel.
-- **Comment** : un petit robot (Expert Advisor MQL5) installé une fois dans MT5 écrit chaque trade clôturé dans un fichier (dossier `MQL5/Files`) ; Untilt lit ce dossier à chaque ouverture (choisi une fois, Chrome ou Edge), sans doublon.
+- **But** : les trades arrivent tout seuls dans LockIn, sans export manuel.
+- **Comment** : un petit robot (Expert Advisor MQL5) installé une fois dans MT5 écrit chaque trade clôturé dans un fichier (dossier `MQL5/Files`) ; LockIn lit ce dossier à chaque ouverture (choisi une fois, Chrome ou Edge), sans doublon.
 - **Bonus** : le robot note le **stop loss d'origine** à l'entrée → R exact, même si le stop a été déplacé ensuite.
 - **Vantage** : MT4 et MT5 disponibles ; les trades pris sur l'appli Vantage ou ProTrader passent par le compte MT, donc récupérés aussi.
 - **À prévoir** : version MT4 si besoin, puis même principe pour cTrader (cBot) et NinjaTrader.

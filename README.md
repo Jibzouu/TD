@@ -1,4 +1,4 @@
-# Journal de trading
+# LockIn — journal de trading
 
 Journal de trading personnel, 100 % local : trades, statistiques, calendrier, prop firm, scaling, revue hebdomadaire.
 Les données restent sur l'appareil (IndexedDB) ; rien n'est envoyé nulle part.

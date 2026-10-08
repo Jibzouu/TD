@@ -1,4 +1,4 @@
-// ── COULEUR D'ACCENT : menthe Untilt ou violet ──────────────────────────
+// ── COULEUR D'ACCENT : menthe LockIn ou violet ──────────────────────────
 // Boutons, sélection, étapes… Par défaut le vert menthe de la marque (bien distinct du vert des gains, plus franc).
 // « Violet » remet l'accent classique sur les 4 thèmes de base. Réglage commun aux comptes (g_accent_choice) ;
 // un thème personnalisé (sans --preset-key) garde toujours son propre accent.
@@ -23,7 +23,7 @@ function renderAccentChoice() {
   const key = loadThemeObj()['--preset-key'], cur = accentChoice();
   if (!ACCENT_VIOLET[key]) { mount(el, ''); return; }
   const b = (v, label, color) => html`<button type="button" class="${raw('ac-btn' + (cur === v ? ' on' : ''))}" aria-pressed="${cur === v ? 'true' : 'false'}" onclick="${raw("setAccentChoice('" + v + "')")}"><i style="${raw('background:' + color)}"></i>${label}</button>`;
-  mount(el, html`<span>${acL('Couleur des boutons :', 'Button color:')}</span>${b('mint', acL('Menthe Untilt', 'Untilt mint'), THEME_PRESETS[key].colors['--accent'])}${b('violet', acL('Violet', 'Violet'), ACCENT_VIOLET[key][0])}`);
+  mount(el, html`<span>${acL('Couleur des boutons :', 'Button color:')}</span>${b('mint', acL('Menthe LockIn', 'LockIn mint'), THEME_PRESETS[key].colors['--accent'])}${b('violet', acL('Violet', 'Violet'), ACCENT_VIOLET[key][0])}`);
 }
 // Le choix suit chaque changement de thème (thème de base appliqué, thème restauré).
 (function () {

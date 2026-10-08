@@ -1,4 +1,4 @@
-# Politique de confidentialité
+# Politique de confidentialité — LockIn
 
 *Modèle à compléter et à faire relire avant la mise en ligne (RGPD). Dernière mise à jour : [DATE].*
 

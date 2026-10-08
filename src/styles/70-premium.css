@@ -840,15 +840,14 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .mk-rows{display:flex;flex-direction:column;gap:3px;border:1px solid #d1d5db;padding:4px;background:#fff}.mk-rows i{height:8px;background:#e5e7eb;border-radius:2px}
 .mk-btn{align-self:flex-start;padding:5px 9px;border-radius:6px;background:#6366f1;color:#fff;font-weight:600}.mk-ok{color:#047857;font-weight:600}
 
-/* ── Marque Untilt ── */
+/* ── Marque LockIn ── */
 :root{--brand-acc:#3EE6A8}
 .brand-row{display:flex;align-items:center;gap:10px;color:var(--txt);padding:2px 2px 0}
-.brand-mark{width:38px;height:18px;flex-shrink:0}
-.brand-word{height:29px;width:auto}
-.brand-tag{margin:3px 0 12px 50px!important;font-size:10.5px!important;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--txt3)}
+.brand-logo{height:30px;width:auto;flex-shrink:0}
+.brand-tag{margin:3px 0 12px 35px!important;font-size:10.5px!important;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--txt3)}
 .lk-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;color:var(--txt,#e8eaf0)}
-.lk-mark{width:52px;height:24px}.lk-word{height:40px;width:auto}
-.ob-brand{color:var(--txt);margin:0 0 10px}
+.lk-logo{height:44px;width:auto}
+.ob-brand{color:var(--txt);margin:14px 0 10px}
 .lk-auto{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--txt2)}.lk-auto .filter-select{width:auto}
 .accent-choice{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 4px;font-size:13px;color:var(--txt2)}
 .ac-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border2);background:var(--bg2);color:var(--txt);cursor:pointer;font-size:13px}

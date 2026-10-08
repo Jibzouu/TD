@@ -118,7 +118,7 @@ async function buildMentorReport(opts) {
   <section><h2>Trades</h2>${tbl(['Date', 'Actif', 'Sens', 'Setup', 'Rés.', 'Résultat', 'Notes'], list.map(t => [
     fmtDateNum(t.date) + (t.entry ? ' ' + t.entry : ''), t.asset || '—', t.dir || '—', t.setup || '—', t.res || '—', cell(hide ? null : t.pnlEur, S.rOf(t)),
     html`${t.desc || ''}${t.review ? html`<div class="rev">↳ ${t.review}</div>` : ''}${(t.mistakes || []).length ? html`<div class="mis">${t.mistakes.join(' · ')}</div>` : ''}${caps[t.id] ? html`<img src="${raw(safeImgSrc(caps[t.id]))}" alt="Capture">` : ''}`]), [5])}</section>
-  <footer>Rapport généré par Untilt, le journal de trading · les chiffres portent sur les trades de la période uniquement.</footer>`;
+  <footer>Rapport généré par LockIn, le journal de trading · les chiffres portent sur les trades de la période uniquement.</footer>`;
 
   const css = `*{box-sizing:border-box}body{font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1d2330;background:#fff;margin:0;padding:32px;max-width:1080px;margin:auto}
 h1{font-size:24px;margin:0 0 4px}.brand{margin:0 0 14px}h2{font-size:15px;margin:28px 0 10px;text-transform:uppercase;letter-spacing:.05em;color:#4a5263}header p{color:#6b7385;margin:0}

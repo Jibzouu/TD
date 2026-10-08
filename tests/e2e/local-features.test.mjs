@@ -187,14 +187,16 @@ test('synchronisation : un seul point d’entrée, deux appareils identiques apr
   await A.ctx.close(); await B.ctx.close();
 });
 
-test('marque Untilt : logo, titre, accent menthe (accent choisi à la main gardé), logo sur la carte et le rapport', async () => {
+test('marque LockIn : logo, titre, accent menthe (accent choisi à la main gardé), logo sur la carte et le rapport', async () => {
   let { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })], g_theme: JSON.stringify({ '--preset-key': 'default', '--accent': '#5d6cf6' }) } });
-  assert.equal(await page.locator('.brand-row').getAttribute('aria-label'), 'Untilt');
-  assert.match(await page.title(), /Untilt/);
+  assert.equal(await page.locator('.brand-row').getAttribute('aria-label'), 'LockIn');
+  assert.match(await page.title(), /LockIn/);
   const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
   assert.equal(await css('--accent'), '#3ee6a8');
   assert.equal(await css('--on-accent'), '#06281c');
-  assert.match(await page.evaluate(() => brandLogoSVG('#000')), /aria-label="Untilt"/);
+  assert.match(await page.evaluate(() => brandLogoSVG('#000')), /aria-label="LockIn"/);
+  // Logo du menu = même tracé que brandLogoSVG (cadenas + mot « lockin »).
+  assert.ok(await page.evaluate(() => document.querySelector('.brand-row svg g path').getAttribute('d') === BRAND_WORD_PATH));
   assert.equal(await page.evaluate(() => { const c = drawWeekCard(weekCardData()); return c.width; }), 1080);
   assert.deepEqual(errors, []);
   await ctx.close();
@@ -222,6 +224,7 @@ test('verrouillage automatique après inactivité (journal verrouillé)', async 
   // Inactivité simulée : on avance l'horloge de 5 minutes → écran de code.
   await page.evaluate(() => { clearTimeout(autoLockTimer); autoLockTimer = setTimeout(lockNow, 10); });
   await page.waitForSelector('#lock-screen');
+  assert.equal(await page.locator('#lock-screen .lk-brand').getAttribute('aria-label'), 'LockIn');
   await page.fill('#lock-code', '2468'); await page.click('#lock-go');
   await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   await page.waitForFunction(() => !DB.busy);   // les écritures chiffrées du démarrage se terminent
@@ -229,7 +232,7 @@ test('verrouillage automatique après inactivité (journal verrouillé)', async 
   await ctx.close();
 });
 
-test('couleur des boutons : menthe Untilt par défaut, violet au choix, vert des gains distinct', async () => {
+test('couleur des boutons : menthe LockIn par défaut, violet au choix, vert des gains distinct', async () => {
   const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--preset-key': 'default' }) } });
   const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
   assert.equal(await css('--accent'), '#3ee6a8');

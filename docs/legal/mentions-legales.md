@@ -1,4 +1,4 @@
-# Mentions légales
+# Mentions légales — LockIn
 
 *Modèle à compléter (les champs entre crochets) et à faire relire par un professionnel avant la mise en ligne. Obligatoire pour tout site édité à titre professionnel (loi n° 2004-575 du 21 juin 2004, article 6 III).*
 
@@ -24,11 +24,11 @@ Les abonnements sont vendus et encaissés par [Lemon Squeezy / Paddle], revendeu
 
 ## Propriété intellectuelle
 
-Le logiciel [NOM DU PRODUIT], son nom, son logo, ses textes et ses visuels sont la propriété de l'éditeur. Toute reproduction sans autorisation est interdite.
+Le logiciel LockIn, son nom, son logo, ses textes et ses visuels sont la propriété de l'éditeur. Toute reproduction sans autorisation est interdite.
 
 ## Avertissement sur les risques
 
-[NOM DU PRODUIT] est un outil d'organisation et d'analyse de ses propres trades. Ce n'est **ni un conseil en investissement, ni une recommandation, ni un service de gestion**. Le trading sur les marchés financiers (forex, CFD, indices, crypto-actifs…) comporte un **risque élevé de perte en capital**, pouvant dépasser le capital investi selon les produits. Les performances passées ne préjugent pas des performances futures.
+LockIn est un outil d'organisation et d'analyse de ses propres trades. Ce n'est **ni un conseil en investissement, ni une recommandation, ni un service de gestion**. Le trading sur les marchés financiers (forex, CFD, indices, crypto-actifs…) comporte un **risque élevé de perte en capital**, pouvant dépasser le capital investi selon les produits. Les performances passées ne préjugent pas des performances futures.
 
 ## Contact
 

@@ -1,7 +1,7 @@
 {
-  "name": "Untilt — journal de trading",
-  "short_name": "Untilt",
-  "description": "Untilt : le journal de trading qui protège ton capital — trades, statistiques, garde-fou du jour, revue hebdomadaire. Données stockées sur l'appareil.",
+  "name": "LockIn — journal de trading",
+  "short_name": "LockIn",
+  "description": "LockIn : le journal de trading qui protège ton capital — trades, statistiques, garde-fou du jour, revue hebdomadaire. Données stockées sur l'appareil.",
   "lang": "fr",
   "id": "./journal.html",
   "start_url": "./journal.html",

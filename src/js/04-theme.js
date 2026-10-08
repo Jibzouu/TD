@@ -42,9 +42,9 @@ const THEME_PRESETS = {
 };
 // Anciens réglages : un journal resté sur l'ancien thème « Sombre » par défaut bascule sur la nouvelle charte « Terminal pro ».
 // Un thème personnalisé (couleur modifiée à la main → plus de --preset-key) n'est jamais touché.
-// Marque Untilt : les 4 thèmes de base passent de l'accent violet au vert menthe de la marque (texte sombre sur les
+// Marque LockIn : les 4 thèmes de base passent de l'accent violet au vert menthe de la marque (texte sombre sur les
 // boutons pour rester lisible). Seulement si l'accent est encore celui d'origine : un accent choisi à la main est gardé.
-(function migrateToUntiltAccent() {
+(function migrateToBrandAccent() {
   try {
     if (DB.getItem('g_brand_v1')) return;
     const OLD = { default: '#5d6cf6', proclair: '#4f5fe8', midnight: '#7aa2ff', contrast: '#8c9bff' };
@@ -117,7 +117,7 @@ const THEME_PRESETS = {
 // Un thème personnel (Néon, ou couleurs modifiées à la main) n'est jamais touché.
 (function refreshPresetColors() {
   try {
-    const VER = '5';   // 5 : marque Untilt (accent menthe, vert des gains distinct)
+    const VER = '5';   // 5 : marque LockIn (accent menthe, vert des gains distinct)
     if (DB.getItem('g_preset_colors_ver') === VER) return;
     const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
     const p = th['--preset-key'] && THEME_PRESETS[th['--preset-key']];
