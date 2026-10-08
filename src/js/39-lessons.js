@@ -70,13 +70,25 @@ function showLesson(id, auto) {
   document.querySelectorAll('.lesson-pop').forEach(e => e.remove());
   if (auto) { const s = lessonsSeen(); if (!s.includes(id)) { s.push(id); DB.setItem(GP + 'lessons_seen', JSON.stringify(s)); } }
   const el = document.createElement('aside');
-  el.className = 'lesson-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', guideText(l.title));
-  mount(el, html`<div class="lp-hdr"><span class="lp-ic" aria-hidden="true">${l.icon}</span><div><small>${lsL('Mini-leçon · 2 min', 'Mini-lesson · 2 min')}</small><b>${guideText(l.title)}</b></div><button type="button" class="lp-x" aria-label="${lsL('Fermer', 'Close')}" onclick="closeLesson()">×</button></div>
+  el.className = 'lesson-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'false'); el.setAttribute('aria-labelledby', 'lp-title');
+  lessonPrevFocus = document.activeElement;
+  mount(el, html`<div class="lp-hdr"><span class="lp-ic" aria-hidden="true">${l.icon}</span><div><small>${lsL('Mini-leçon · 2 min', 'Mini-lesson · 2 min')}</small><b id="lp-title">${guideText(l.title)}</b></div><button type="button" class="lp-x" aria-label="${lsL('Fermer', 'Close')}" onclick="closeLesson()">×</button></div>
     ${l.body.map(p => html`<p>${guideText(p)}</p>`)}
     <div class="lp-act"><button type="button" class="btn-primary" onclick="closeLesson()">${lsL('Compris', 'Got it')}</button><button type="button" class="btn-ghost" onclick="closeLesson();showPage('guide', document.querySelector('.nav-item[data-page=guide]'));setTimeout(() => guideJump('gd-lessons-sec'), 50)">${lsL('Toutes les leçons', 'All lessons')}</button></div>`);
   document.body.appendChild(el);
+  // Le focus va sur « Compris » (clavier, lecteur d'écran)… sauf si l'utilisateur est en train d'écrire dans un champ.
+  const a = document.activeElement;
+  if (!a || a === document.body || !a.matches('input, textarea, select, [contenteditable]')) el.querySelector('.btn-primary').focus();
 }
-function closeLesson() { document.querySelectorAll('.lesson-pop').forEach(e => e.remove()); }
+let lessonPrevFocus = null;
+function closeLesson() {
+  const had = document.querySelector('.lesson-pop');
+  document.querySelectorAll('.lesson-pop').forEach(e => e.remove());
+  if (had && lessonPrevFocus && document.contains(lessonPrevFocus) && typeof lessonPrevFocus.focus === 'function') lessonPrevFocus.focus();
+  lessonPrevFocus = null;
+}
+// Échap ferme la mini-leçon.
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.lesson-pop')) { e.stopPropagation(); closeLesson(); } }, true);
 function setLessonsAuto(on) { DB.setItem(GP + 'lessons_off', on ? '0' : '1'); renderLessonsList(); }
 // Guide → Mini-leçons : toutes les leçons, relisibles à tout moment.
 function renderLessonsList() {

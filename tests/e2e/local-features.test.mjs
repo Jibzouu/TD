@@ -85,10 +85,12 @@ test('sauvegarde protégée par mot de passe et sauvegarde automatique restaurab
   assert.ok(!sealed.includes('GOLD'), 'rien de lisible dans le fichier protégé');
   await page.evaluate(() => { TradeStore.replaceAll([]); renderAll(); });
   const importFile = j => page.evaluate(j => importData({ files: [new File([j], 'b.json')], value: '' }), j);
-  await importFile(sealed);
+  const passModal = () => page.waitForFunction(() => document.getElementById('modal').classList.contains('open') && /protégé/.test(document.getElementById('modal-title').textContent));
+  await importFile(sealed); await passModal();
   await page.fill('#bk-pass-in', 'faux'); await page.click('#modal-confirm');
   await page.waitForFunction(() => /incorrect/.test(document.getElementById('toast').textContent));
-  await importFile(sealed);
+  await page.waitForFunction(() => !document.getElementById('modal').classList.contains('open'));
+  await importFile(sealed); await passModal();
   await page.fill('#bk-pass-in', 'motdepasse1'); await page.click('#modal-confirm');
   await page.waitForFunction(() => document.getElementById('modal-title').textContent === 'Importer ce backup ?');
   await page.click('#modal-confirm');
@@ -206,6 +208,42 @@ test('bilan journalier : le menu de date n’est pas coupé (texte centré, pas 
   await goto(page, 'bilan');
   const r = await page.evaluate(() => { const s = document.getElementById('bilan-date-select'), cs = getComputedStyle(s); return { pt: cs.paddingTop, pb: cs.paddingBottom, fits: s.scrollHeight <= s.clientHeight + 1 }; });
   assert.deepEqual(r, { pt: '0px', pb: '0px', fits: true });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('verrouillage automatique après inactivité (journal verrouillé)', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  await page.evaluate(async () => { await DB.enableLock('2468'); armAutoLock(); });
+  await goto(page, 'parametres');
+  assert.equal(await page.inputValue('#lk-auto-sel'), '15', '15 minutes par défaut');
+  await page.selectOption('#lk-auto-sel', '5');
+  assert.equal(await page.evaluate(() => autoLockMinutes()), 5);
+  // Inactivité simulée : on avance l'horloge de 5 minutes → écran de code.
+  await page.evaluate(() => { clearTimeout(autoLockTimer); autoLockTimer = setTimeout(lockNow, 10); });
+  await page.waitForSelector('#lock-screen');
+  await page.fill('#lock-code', '2468'); await page.click('#lock-go');
+  await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await page.waitForFunction(() => !DB.busy);   // les écritures chiffrées du démarrage se terminent
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('couleur des boutons : menthe Untilt par défaut, violet au choix, vert des gains distinct', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--preset-key': 'default' }) } });
+  const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
+  assert.equal(await css('--accent'), '#3ee6a8');
+  assert.equal(await css('--green'), '#22c55e');
+  await goto(page, 'parametres');
+  await page.click('.ac-btn >> text=Violet');
+  assert.equal(await css('--accent'), '#5d6cf6');
+  assert.equal(await css('--on-accent'), '#ffffff');
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  assert.equal(await css('--accent'), '#5d6cf6', 'choix gardé');
+  await page.evaluate(() => applyPreset('proclair'));
+  assert.equal(await css('--accent'), '#4f5fe8');
+  await page.evaluate(() => setAccentChoice('mint'));
+  assert.equal(await css('--accent'), '#0f766e');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

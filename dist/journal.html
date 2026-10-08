@@ -1743,7 +1743,7 @@ tr.more-row .btn-ghost{margin-right:8px}
   --txt2:#c0c5cf;
   --txt3:#99a0ad;
   --accent:#3ee6a8;--accent-d:rgba(62,230,168,.14);--on-accent:#06281c;
-  --green:#3ecf8e;--green-d:rgba(62,207,142,.13);--green-dd:rgba(62,207,142,.06);
+  --green:#22c55e;--green-d:rgba(34,197,94,.13);--green-dd:rgba(34,197,94,.06);
   --red:#f2555a;--red-d:rgba(242,85,90,.13);--red-dd:rgba(242,85,90,.06);
   --amber:#e8a53a;--amber-d:rgba(232,165,58,.14);
   --blue:#5aa9ff;--blue-d:rgba(90,169,255,.14);
@@ -2578,6 +2578,42 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .lk-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;color:var(--txt,#e8eaf0)}
 .lk-mark{width:52px;height:24px}.lk-word{height:40px;width:auto}
 .ob-brand{color:var(--txt);margin:0 0 10px}
+.lk-auto{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--txt2)}.lk-auto .filter-select{width:auto}
+.accent-choice{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 4px;font-size:13px;color:var(--txt2)}
+.ac-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border2);background:var(--bg2);color:var(--txt);cursor:pointer;font-size:13px}
+.ac-btn i{width:12px;height:12px;border-radius:50%}.ac-btn.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+
+/* Hero du Dashboard : sur écran moyen (1100–1440 px), les chiffres de baisse passent sous le solde et la
+   performance au lieu de chevaucher le montant ; taille du montant fluide. */
+.hero-metric-value{font-size:clamp(34px,3.3vw,48px)}
+@media (min-width:1101px) and (max-width:1440px){.hero-metric{grid-template-columns:auto minmax(0,1fr)}.hero-side{grid-column:1/-1;justify-self:start;border-left:0;padding-left:0;border-top:1px solid var(--border);padding-top:14px}}
+/* Mini-leçon : en haut à droite sur ordinateur, pour ne pas être cachée par les notifications (en bas). */
+@media (min-width:601px){.lesson-pop{top:84px;bottom:auto}}
+
+/* ── Téléphone : calendrier compact (7 colonnes sans défilement) et discipline en cartes ── */
+@media (max-width:600px){
+  #cal-grid{overflow:visible}
+  #cal-grid > div{min-width:0}
+  .cal-row{grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin-bottom:3px}
+  .cal-row > div:empty{display:none}
+  .cal-dow{font-size:11px;padding:2px 0}
+  .cal-day{min-height:50px;padding:4px 3px;text-align:center}
+  .cal-dnum{font-size:12px}
+  .cal-eur,.cal-win,.cal-badge.streak{display:none}
+  .cal-r{font-size:10.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:clip}
+  .cal-badge{font-size:9px;top:1px;right:2px}
+  .cal-week{grid-column:1/-1;flex-direction:row;align-items:baseline;gap:10px;padding:5px 10px;margin-bottom:6px}
+  .cal-week-val{margin:0;font-size:13.5px}.cal-week-sub{margin:0 0 0 auto}
+  .rk-table thead{display:none}
+  .rk-table,.rk-table tbody{display:block}
+  .rk-table tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg)}
+  .rk-table td{display:block;border:0!important;padding:0!important}
+  .rk-td-day{font-weight:600}.rk-td-score{grid-row:1;grid-column:2;text-align:right}
+  .rk-td-n{grid-column:1;color:var(--txt3);font-size:12.5px}.rk-td-n::after{content:' ' attr(data-l)}
+  .rk-td-fix{grid-column:1/-1;font-size:12.5px;margin-top:4px}.rk-td-fix::before{content:attr(data-l);color:var(--txt2);font-weight:500}
+}
+/* Focus clavier bien visible sur les nouveaux boutons */
+.qa-chip:focus-visible,.ac-btn:focus-visible,.gd-lesson:focus-visible,.lp-x:focus-visible,.fab-add:focus-visible,.nav-simple-foot button:focus-visible,.lk-box button:focus-visible,.lk-box input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 </style>
 </head>
@@ -3935,6 +3971,7 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
           <button class="btn-ghost btn-sm-danger" onclick="resetTheme()">Réinitialiser tout</button>
         </div>
         <div id="theme-preset-grid"></div>
+        <div class="accent-choice" id="accent-choice"></div>
 
         <details class="cz" id="settings-adv">
           <summary class="cz-summary"><span class="cz-ic" aria-hidden="true">🎨</span><span class="cz-tt">Personnaliser mon thème<small>couleurs, ambiance, formes, polices, graphiques — chaque changement s'applique tout de suite</small></span><span class="cz-chev" aria-hidden="true"></span></summary>
@@ -4232,7 +4269,7 @@ const DB = (() => {
   const NAME = 'journal-trading', STORE = 'kv', MIGRATED = '__migrated_from_localstorage', LOCK = '__lock', CHECK = 'journal-ok';
   const mem = new Map();
   let idb = null, mode = 'memory', pending = new Map(), flushScheduled = false, lastError = null;
-  let lockKey = null, lockMeta = null, flushChain = Promise.resolve();
+  let lockKey = null, lockMeta = null, flushChain = Promise.resolve(), inFlight = 0;
   const isBox = v => !!(v && typeof v === 'object' && typeof v.ct === 'string' && typeof v.iv === 'string');
   const listeners = [];
 
@@ -4305,6 +4342,10 @@ const DB = (() => {
     return flushChain;
   }
   async function writeBatch(batch) {
+    inFlight++;
+    try { return await writeBatchNow(batch); } finally { inFlight--; }
+  }
+  async function writeBatchNow(batch) {
     const key = lockKey, rows = [];
     for (const [k, v] of batch) rows.push([k, v === null || !key ? v : await JTC.encrypt(key, v)]);
     return new Promise(resolve => {
@@ -4393,6 +4434,7 @@ const DB = (() => {
   return {
     init, flush, refreshEstimate, enableLock, disableLock, sealWithLock,
     get locked() { return !!lockMeta; },
+    get busy() { return pending.size > 0 || inFlight > 0; },   // une écriture n'est pas encore sur le disque
     async checkCode(code) { return !!(lockMeta && await verify(lockMeta, code)); },
     get mode() { return mode; },
     get usage() { return usage; },
@@ -4432,6 +4474,9 @@ async function __bootJournal() {
   document.documentElement.classList.add('app-ready');
 }
 window.addEventListener('pagehide', () => { DB.flush(); });
+// Fermeture pendant une écriture (chiffrement en cours, quelques millisecondes) : le navigateur demande confirmation,
+// ce qui laisse le temps de finir au lieu de perdre la dernière modification.
+window.addEventListener('beforeunload', e => { if (DB.locked && DB.busy) { DB.flush(); e.preventDefault(); e.returnValue = ''; } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') DB.flush(); });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', __bootJournal); else __bootJournal();
 
@@ -6778,7 +6823,7 @@ const PAGE_RENDERERS = {
   watchlist: () => [renderWatchlist],
   playbooks: () => [renderPlaybooks],
   replay: () => [renderReplay],
-  parametres: () => [renderAccountsCard, renderLockSettings, applySimpleMode],
+  parametres: () => [renderAccountsCard, renderLockSettings, applySimpleMode, renderAccentChoice],
   guide: () => [renderGuide, renderShortcutsPage, renderLessonsList],
   risque: () => [applyChartDefaults, renderRiskPage, renderChallenge],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
@@ -6828,10 +6873,10 @@ const THEME_VARS = [
 ];
 
 const THEME_PRESETS = {
-  default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#c0c5cf','--txt3':'#99a0ad','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#99a0ad','--nav-text-color':'#c0c5cf','--logo-color':'#3ee6a8'} },
-  proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#3f4554','--txt3':'#5f6676','--accent':'#0b8a5f','--on-accent':'#ffffff','--green':'#11975f','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#5f6676','--nav-text-color':'#3f4554','--logo-color':'#0b8a5f'} },
-  midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#bcc3d8','--txt3':'#959db6','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#3ecf8e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#959db6','--nav-text-color':'#bcc3d8','--logo-color':'#3ee6a8'} },
-  contrast: { name:'Contraste', emoji:'●', colors:{'--bg':'#000000','--bg2':'#0b0b0c','--bg3':'#151517','--bg4':'#202023','--border':'#3a3a3f','--border2':'#55555c','--txt':'#ffffff','--txt2':'#d0d0d6','--txt3':'#a5a5ad','--accent':'#4befb6','--on-accent':'#04140d','--green':'#4be3a0','--red':'#ff6b70','--amber':'#ffc04d','--blue':'#6fb8ff','--purple':'#c4adff','--nav-icon-color':'#a5a5ad','--nav-text-color':'#d0d0d6','--logo-color':'#4befb6'} },
+  default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#c0c5cf','--txt3':'#99a0ad','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#99a0ad','--nav-text-color':'#c0c5cf','--logo-color':'#3ee6a8'} },
+  proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#3f4554','--txt3':'#5f6676','--accent':'#0f766e','--on-accent':'#ffffff','--green':'#15803d','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#5f6676','--nav-text-color':'#3f4554','--logo-color':'#0f766e'} },
+  midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#bcc3d8','--txt3':'#959db6','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#959db6','--nav-text-color':'#bcc3d8','--logo-color':'#3ee6a8'} },
+  contrast: { name:'Contraste', emoji:'●', colors:{'--bg':'#000000','--bg2':'#0b0b0c','--bg3':'#151517','--bg4':'#202023','--border':'#3a3a3f','--border2':'#55555c','--txt':'#ffffff','--txt2':'#d0d0d6','--txt3':'#a5a5ad','--accent':'#4befb6','--on-accent':'#04140d','--green':'#4ade80','--red':'#ff6b70','--amber':'#ffc04d','--blue':'#6fb8ff','--purple':'#c4adff','--nav-icon-color':'#a5a5ad','--nav-text-color':'#d0d0d6','--logo-color':'#4befb6'} },
 };
 // Anciens réglages : un journal resté sur l'ancien thème « Sombre » par défaut bascule sur la nouvelle charte « Terminal pro ».
 // Un thème personnalisé (couleur modifiée à la main → plus de --preset-key) n'est jamais touché.
@@ -6910,7 +6955,7 @@ const THEME_PRESETS = {
 // Un thème personnel (Néon, ou couleurs modifiées à la main) n'est jamais touché.
 (function refreshPresetColors() {
   try {
-    const VER = '4';
+    const VER = '5';   // 5 : marque Untilt (accent menthe, vert des gains distinct)
     if (DB.getItem('g_preset_colors_ver') === VER) return;
     const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
     const p = th['--preset-key'] && THEME_PRESETS[th['--preset-key']];
@@ -10572,7 +10617,11 @@ function openModal(title, msg, onConfirm, opts = {}) {
   btn.onclick = () => { if (opts.validate && !opts.validate()) return; closeModal(); onConfirm(); };
   rememberFocus();
   document.getElementById('modal').classList.add('open');
-  setTimeout(() => { const f = opts.body && document.querySelector('#modal-body input, #modal-body select'); const c = f || document.querySelector('#modal .btn-cancel'); if (c) c.focus(); }, 30);
+  // Focus sur le premier champ… sauf si l'utilisateur est déjà dans la fenêtre (saisie rapide : on ne lui vole pas le curseur).
+  setTimeout(() => {
+    if (document.getElementById('modal').contains(document.activeElement)) return;
+    const f = opts.body && document.querySelector('#modal-body input, #modal-body select'); const c = f || document.querySelector('#modal .btn-cancel'); if (c) c.focus();
+  }, 30);
 }
 function closeModal() {
   const m = document.getElementById('modal');
@@ -12734,7 +12783,7 @@ function openQuickAdd() {
   if (trades[0] && trades[0].asset) document.getElementById('qa-asset').value = trades[0].asset;
   // Actifs récents en boutons : un toucher suffit sur téléphone.
   const recent = [...new Set(trades.map(t => t.asset).filter(Boolean))].slice(0, 5);
-  mount('qa-asset-chips', html`${recent.map((a, i) => html`<button type="button" class="qa-chip" onclick="${raw('qaPickAsset(' + i + ')')}">${a}</button>`)}`);
+  mount('qa-asset-chips', html`${recent.map((a, i) => html`<button type="button" class="qa-chip" aria-pressed="false" onclick="${raw('qaPickAsset(' + i + ')')}">${a}</button>`)}`);
   qaRecent = recent; qaImgs = []; renderQaThumbs();
   setQuickRes('');
   rememberFocus();
@@ -12743,7 +12792,7 @@ function openQuickAdd() {
   if (!window.matchMedia('(max-width: 860px)').matches) setTimeout(() => { const a = document.getElementById('qa-asset'); a.focus(); a.select(); }, 30);
 }
 let qaRecent = [], qaImgs = [];
-function qaPickAsset(i) { const a = qaRecent[+i]; if (a) document.getElementById('qa-asset').value = a; document.querySelectorAll('.qa-chip').forEach((b, j) => b.classList.toggle('on', j === +i)); }
+function qaPickAsset(i) { const a = qaRecent[+i]; if (a) document.getElementById('qa-asset').value = a; document.querySelectorAll('.qa-chip').forEach((b, j) => { b.classList.toggle('on', j === +i); b.setAttribute('aria-pressed', j === +i ? 'true' : 'false'); }); }
 function qaAddPhoto(input) {
   const f = input.files && input.files[0];
   input.value = '';
@@ -16511,7 +16560,7 @@ function renderRiskPage() {
       <div class="rk-kpi"><span>${rkL('Série de jours propres', 'Clean-day streak')}</span><b>🔥 ${d.streak}</b><small>${rkL('jours d’affilée — c’est ça qui compte, pas le P&L', 'days in a row — this is what matters, not P&L')}</small></div>
       <div class="rk-kpi"><span>${rkL('Repères à surveiller', 'Warning signs')}</span><b class="tone-${raw(d.flags.length ? 'amber' : 'green')}">${d.flags.length}</b><small>${rkL('tailles anormales et trades de revanche', 'unusual sizes and revenge trades')}</small></div>
     </div>
-    ${lastDays.length ? html`<table class="rk-table"><thead><tr><th>${rkL('Jour', 'Day')}</th><th>${rkL('Trades', 'Trades')}</th><th>Score</th><th>${rkL('À corriger', 'To fix')}</th></tr></thead><tbody>${lastDays.map(x => html`<tr><td>${fmtDateFR(x.date, true)}</td><td>${x.n}</td><td><b class="tone-${raw(x.clean ? 'green' : x.score >= 0.6 ? 'amber' : 'red')}">${Math.round(x.score * 100)} %</b></td><td class="tone-muted">${x.checks.filter(c => !c[1]).map(c => c[0]).join(' · ') || '✓'}</td></tr>`)}</tbody></table>`
+    ${lastDays.length ? html`<table class="rk-table"><thead><tr><th>${rkL('Jour', 'Day')}</th><th>${rkL('Trades', 'Trades')}</th><th>Score</th><th>${rkL('À corriger', 'To fix')}</th></tr></thead><tbody>${lastDays.map(x => html`<tr><td class="rk-td-day">${fmtDateFR(x.date, true)}</td><td class="rk-td-n" data-l="${rkL('trade(s)', 'trade(s)')}">${x.n}</td><td class="rk-td-score"><b class="tone-${raw(x.clean ? 'green' : x.score >= 0.6 ? 'amber' : 'red')}">${Math.round(x.score * 100)} %</b></td><td class="tone-muted rk-td-fix" data-l="${rkL('À corriger : ', 'To fix: ')}">${x.checks.filter(c => !c[1]).map(c => c[0]).join(' · ') || '✓'}</td></tr>`)}</tbody></table>`
       : html`<p class="empty-note">${rkL('Ton score de discipline apparaîtra dès tes premiers trades.', 'Your discipline score will appear with your first trades.')}</p>`}
     ${d.flags.length ? html`<div class="rk-flags">${d.flags.slice(-6).reverse().map(f => html`<button class="rk-flag" onclick="${raw('openTradeDetail(' + f.t.id + ')')}">${f.kind === 'revenge' ? '😤 ' + rkL('Revanche', 'Revenge') : '📏 ' + rkL('Taille anormale', 'Unusual size')} · ${fmtDateNum(f.t.date)} ${f.t.entry || ''} · ${f.t.asset || ''} · ${rkL('risque', 'risk')} ${fmtEUR(f.risk, false, 0)} (${rkL('habituel', 'usual')} ${fmtEUR(f.ref, false, 0)})</button>`)}</div>` : ''}`);
   // 6) Plan de l'étape (ou résumé de mes règles en « Personnalisé »)
@@ -16674,7 +16723,7 @@ function coachOpts(period) {
 function coachCardHtml(title, sub, items, more) {
   const ic = { warn: '⚠️', good: '✅', info: '💡' };
   return html`<div class="coach-hdr"><b>🧭 ${title}</b><small>${sub}</small></div>
-    <ul class="coach-list">${items.slice(0, 3).map(x => html`<li class="${raw('co-' + x.tone)}"><span aria-hidden="true">${ic[x.tone]}</span><span>${LANG === 'en' ? x.en : x.fr}</span></li>`)}</ul>
+    <ul class="coach-list" aria-label="${coL('Constats du coach', 'Coach findings')}">${items.slice(0, 3).map(x => html`<li class="${raw('co-' + x.tone)}"><span aria-hidden="true">${ic[x.tone]}</span><span>${LANG === 'en' ? x.en : x.fr}</span></li>`)}</ul>
     ${more ? html`<p class="coach-more">${more}</p>` : ''}`;
 }
 function coachMount(id, title, sub, list, period, emptyMsg) {
@@ -16781,13 +16830,25 @@ function showLesson(id, auto) {
   document.querySelectorAll('.lesson-pop').forEach(e => e.remove());
   if (auto) { const s = lessonsSeen(); if (!s.includes(id)) { s.push(id); DB.setItem(GP + 'lessons_seen', JSON.stringify(s)); } }
   const el = document.createElement('aside');
-  el.className = 'lesson-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', guideText(l.title));
-  mount(el, html`<div class="lp-hdr"><span class="lp-ic" aria-hidden="true">${l.icon}</span><div><small>${lsL('Mini-leçon · 2 min', 'Mini-lesson · 2 min')}</small><b>${guideText(l.title)}</b></div><button type="button" class="lp-x" aria-label="${lsL('Fermer', 'Close')}" onclick="closeLesson()">×</button></div>
+  el.className = 'lesson-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'false'); el.setAttribute('aria-labelledby', 'lp-title');
+  lessonPrevFocus = document.activeElement;
+  mount(el, html`<div class="lp-hdr"><span class="lp-ic" aria-hidden="true">${l.icon}</span><div><small>${lsL('Mini-leçon · 2 min', 'Mini-lesson · 2 min')}</small><b id="lp-title">${guideText(l.title)}</b></div><button type="button" class="lp-x" aria-label="${lsL('Fermer', 'Close')}" onclick="closeLesson()">×</button></div>
     ${l.body.map(p => html`<p>${guideText(p)}</p>`)}
     <div class="lp-act"><button type="button" class="btn-primary" onclick="closeLesson()">${lsL('Compris', 'Got it')}</button><button type="button" class="btn-ghost" onclick="closeLesson();showPage('guide', document.querySelector('.nav-item[data-page=guide]'));setTimeout(() => guideJump('gd-lessons-sec'), 50)">${lsL('Toutes les leçons', 'All lessons')}</button></div>`);
   document.body.appendChild(el);
+  // Le focus va sur « Compris » (clavier, lecteur d'écran)… sauf si l'utilisateur est en train d'écrire dans un champ.
+  const a = document.activeElement;
+  if (!a || a === document.body || !a.matches('input, textarea, select, [contenteditable]')) el.querySelector('.btn-primary').focus();
 }
-function closeLesson() { document.querySelectorAll('.lesson-pop').forEach(e => e.remove()); }
+let lessonPrevFocus = null;
+function closeLesson() {
+  const had = document.querySelector('.lesson-pop');
+  document.querySelectorAll('.lesson-pop').forEach(e => e.remove());
+  if (had && lessonPrevFocus && document.contains(lessonPrevFocus) && typeof lessonPrevFocus.focus === 'function') lessonPrevFocus.focus();
+  lessonPrevFocus = null;
+}
+// Échap ferme la mini-leçon.
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.lesson-pop')) { e.stopPropagation(); closeLesson(); } }, true);
 function setLessonsAuto(on) { DB.setItem(GP + 'lessons_off', on ? '0' : '1'); renderLessonsList(); }
 // Guide → Mini-leçons : toutes les leçons, relisibles à tout moment.
 function renderLessonsList() {
@@ -16913,7 +16974,8 @@ function renderLockSettings() {
   if (DB.mode !== 'indexeddb' || !JTC.ok()) { mount(el, html`<p class="ui-muted">🔒 ${lkL('Le code de verrouillage n’est pas disponible dans ce navigateur (stockage ou chiffrement indisponible).', 'The lock code is not available in this browser (storage or encryption unavailable).')}</p>`); return; }
   mount(el, DB.locked
     ? html`<div class="lk-set"><span class="tone-green">🔒 ${lkL('Code de verrouillage activé : tes données sont chiffrées sur cet appareil.', 'Lock code on: your data is encrypted on this device.')}</span>
-        <span class="lk-btns"><button type="button" class="btn-ghost" onclick="location.reload()">${lkL('Verrouiller maintenant', 'Lock now')}</button><button type="button" class="btn-ghost" onclick="lockChange()">${lkL('Changer le code', 'Change code')}</button><button type="button" class="btn-ghost" onclick="lockDisable()">${lkL('Désactiver', 'Turn off')}</button></span></div>`
+        <label class="lk-auto">${lkL('Verrouillage automatique après', 'Auto-lock after')} <select class="filter-select" id="lk-auto-sel" onchange="setAutoLock(this.value)">${[0, 5, 15, 30, 60].map(n => html`<option value="${n}" ${raw(n === autoLockMinutes() ? 'selected' : '')}>${n ? n + ' min' : lkL('jamais', 'never')}</option>`)}</select> ${lkL('sans activité', 'of inactivity')}</label>
+        <span class="lk-btns"><button type="button" class="btn-ghost" onclick="lockNow()">${lkL('Verrouiller maintenant', 'Lock now')}</button><button type="button" class="btn-ghost" onclick="lockChange()">${lkL('Changer le code', 'Change code')}</button><button type="button" class="btn-ghost" onclick="lockDisable()">${lkL('Désactiver', 'Turn off')}</button></span></div>`
     : html`<div class="lk-set"><span>🔓 <b>${lkL('Code de verrouillage', 'Lock code')}</b> : ${lkL('demande un code à l’ouverture et chiffre tes données sur cet appareil (utile sur un ordinateur partagé).', 'asks for a code when opening and encrypts your data on this device (useful on a shared computer).')}</span>
         <span class="lk-btns"><button type="button" class="btn-primary" onclick="lockEnable()">${lkL('Activer un code', 'Set a code')}</button></span></div>`);
 }
@@ -16931,7 +16993,7 @@ function readNewCode() {
 function lockEnable() {
   let code = null;
   openModal(lkL('Activer le code de verrouillage', 'Set a lock code'), lkL('Important : si tu oublies ce code, tes données ne pourront plus être lues (pas de récupération possible). Fais d’abord une sauvegarde et note ton code.', 'Important: if you forget this code, your data can no longer be read (no recovery possible). Make a backup first and write your code down.'), async () => {
-    try { await DB.enableLock(code); showToast(lkL('Code activé : données chiffrées ✓', 'Code set: data encrypted ✓'), 'success'); }
+    try { await DB.enableLock(code); armAutoLock(); showToast(lkL('Code activé : données chiffrées ✓', 'Code set: data encrypted ✓'), 'success'); }
     catch (e) { showToast(lkL('Impossible d’activer le code : ', 'Could not set the code: ') + e.message, 'error'); }
     renderLockSettings();
   }, { body: lockCodeForm(false), confirmLabel: lkL('Activer et chiffrer', 'Set and encrypt'), validate: () => !!(code = readNewCode()) });
@@ -16955,6 +17017,29 @@ function lockChange() {
   }, { body: lockCodeForm(true), confirmLabel: lkL('Changer', 'Change'),
     validate: () => { old = (document.getElementById('lk-old') || {}).value || ''; return old.length > 0 && !!(code = readNewCode()); } });
 }
+
+// ── Verrouillage automatique après inactivité (journal verrouillé seulement) ──
+// Aucune action (souris, clavier, toucher, défilement) pendant N minutes, ou onglet caché plus longtemps que ça :
+// le journal enregistre tout puis se recharge sur l'écran de code. N = 0 : jamais.
+const LOCK_AUTO_KEY = 'g_autolock_min';
+function autoLockMinutes() { const n = parseInt(DB.getItem(LOCK_AUTO_KEY) || '15', 10); return isFinite(n) && n >= 0 ? n : 15; }
+function setAutoLock(v) { DB.setItem(LOCK_AUTO_KEY, String(parseInt(v, 10) || 0)); armAutoLock(); renderLockSettings(); }
+let autoLockTimer = null, hiddenAt = 0;
+async function lockNow() { try { await DB.flush(); } catch (e) {} location.reload(); }
+function armAutoLock() {
+  clearTimeout(autoLockTimer);
+  const min = autoLockMinutes();
+  if (!DB.locked || !min) return;
+  autoLockTimer = setTimeout(lockNow, min * 60000);
+}
+['pointerdown', 'keydown', 'wheel', 'touchstart', 'mousemove'].forEach(ev => document.addEventListener(ev, () => { if (autoLockTimer) armAutoLock(); }, { passive: true }));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+  const min = autoLockMinutes();
+  if (DB.locked && min && hiddenAt && Date.now() - hiddenAt >= min * 60000) lockNow();
+  hiddenAt = 0;
+});
+onReady(armAutoLock);
 
 /* ═══ js/44-challenge.js ═══ */
 // ── DÉFI « 30 JOURS DE DISCIPLINE » et CARTE « MA SEMAINE » ───────────────
@@ -17000,7 +17085,7 @@ function renderChallenge() {
     : s.fail ? html`<b class="tone-red">${chL('Défi interrompu le ', 'Challenge broken on ')}${fmtDateFR(s.fail, true)}</b> <span class="tone-muted">${chL('— ce n’est pas grave : relance-le et vise un jour de plus.', '— no big deal: restart it and aim for one more day.')}</span>`
     : html`<b>${chL('Jour ', 'Day ')}${s.done} / ${CH_DAYS}</b> <span class="tone-muted">· ${s.clean} ${chL('journée(s) propre(s) tradée(s)', 'clean traded day(s)')}</span>`;
   mount(el, html`<div class="ch-head">${head}</div>
-    <div class="ch-grid" role="img" aria-label="${chL('Progression du défi', 'Challenge progress')}">${s.cells.map((c, i) => html`<span class="${raw('ch-cell ch-' + c.st)}" title="${fmtDateFR(c.d, true) + ' · ' + lbl[c.st] + (c.score != null ? ' (' + Math.round(c.score * 100) + ' %)' : '')}">${i + 1}</span>`)}</div>
+    <div class="ch-grid" role="img" aria-label="${chL('Progression du défi : jour ', 'Challenge progress: day ') + s.done + ' / ' + CH_DAYS + ', ' + s.clean + chL(' journée(s) propre(s)', ' clean day(s)') + (s.fail ? chL(', interrompu', ', broken') : '')}">${s.cells.map((c, i) => html`<span class="${raw('ch-cell ch-' + c.st)}" title="${fmtDateFR(c.d, true) + ' · ' + lbl[c.st] + (c.score != null ? ' (' + Math.round(c.score * 100) + ' %)' : '')}">${i + 1}</span>`)}</div>
     <div class="ch-legend"><span class="ch-cell ch-clean"></span>${lbl.clean}<span class="ch-cell ch-rest"></span>${lbl.rest}<span class="ch-cell ch-bad"></span>${lbl.bad}</div>
     <div class="ch-act">${s.fail || s.won ? html`<button type="button" class="btn-primary" onclick="startChallenge()">${chL('Relancer le défi', 'Restart the challenge')}</button>` : ''}<button type="button" class="btn-ghost" onclick="shareWeekCard()">📤 ${chL('Carte de ma semaine', 'My week card')}</button><button type="button" class="btn-ghost" onclick="stopChallenge()">${chL('Arrêter le défi', 'Stop the challenge')}</button></div>`);
 }
@@ -17098,6 +17183,42 @@ function memorySyncAdapter(store) {
     async save(journalId, snap) { store[journalId] = JSON.stringify(snap); }
   };
 }
+
+/* ═══ js/46-accent.js ═══ */
+// ── COULEUR D'ACCENT : menthe Untilt ou violet ──────────────────────────
+// Boutons, sélection, étapes… Par défaut le vert menthe de la marque (bien distinct du vert des gains, plus franc).
+// « Violet » remet l'accent classique sur les 4 thèmes de base. Réglage commun aux comptes (g_accent_choice) ;
+// un thème personnalisé (sans --preset-key) garde toujours son propre accent.
+const ACCENT_VIOLET = { default: ['#5d6cf6', '#ffffff'], proclair: ['#4f5fe8', '#ffffff'], midnight: ['#7aa2ff', '#0a0d16'], contrast: ['#8c9bff', '#000000'] };
+const acL = (fr, en) => LANG === 'en' ? en : fr;
+function accentChoice() { return DB.getItem('g_accent_choice') === 'violet' ? 'violet' : 'mint'; }
+function applyAccentChoice() {
+  const key = loadThemeObj()['--preset-key'], root = document.documentElement.style;
+  if (!ACCENT_VIOLET[key]) return;
+  const [acc, on] = accentChoice() === 'violet' ? ACCENT_VIOLET[key] : [THEME_PRESETS[key].colors['--accent'], THEME_PRESETS[key].colors['--on-accent']];
+  root.setProperty('--accent', acc); root.setProperty('--on-accent', on); root.setProperty('--logo-color', acc);
+  root.setProperty('--accent-d', hexToRgba(acc, .13));
+}
+function setAccentChoice(v) {
+  DB.setItem('g_accent_choice', v === 'violet' ? 'violet' : 'mint');
+  applyAccentChoice(); renderAccentChoice();
+  if (typeof renderAll === 'function') renderAll();
+}
+function renderAccentChoice() {
+  const el = document.getElementById('accent-choice');
+  if (!el) return;
+  const key = loadThemeObj()['--preset-key'], cur = accentChoice();
+  if (!ACCENT_VIOLET[key]) { mount(el, ''); return; }
+  const b = (v, label, color) => html`<button type="button" class="${raw('ac-btn' + (cur === v ? ' on' : ''))}" aria-pressed="${cur === v ? 'true' : 'false'}" onclick="${raw("setAccentChoice('" + v + "')")}"><i style="${raw('background:' + color)}"></i>${label}</button>`;
+  mount(el, html`<span>${acL('Couleur des boutons :', 'Button color:')}</span>${b('mint', acL('Menthe Untilt', 'Untilt mint'), THEME_PRESETS[key].colors['--accent'])}${b('violet', acL('Violet', 'Violet'), ACCENT_VIOLET[key][0])}`);
+}
+// Le choix suit chaque changement de thème (thème de base appliqué, thème restauré).
+(function () {
+  const ap = applyPreset, as = applySavedTheme;
+  applyPreset = function () { const r = ap.apply(this, arguments); applyAccentChoice(); renderAccentChoice(); return r; };
+  applySavedTheme = function () { const r = as.apply(this, arguments); applyAccentChoice(); return r; };
+})();
+onReady(() => { applyAccentChoice(); renderAccentChoice(); });
 
 </script>
 </body>

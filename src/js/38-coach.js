@@ -12,7 +12,7 @@ function coachOpts(period) {
 function coachCardHtml(title, sub, items, more) {
   const ic = { warn: '⚠️', good: '✅', info: '💡' };
   return html`<div class="coach-hdr"><b>🧭 ${title}</b><small>${sub}</small></div>
-    <ul class="coach-list">${items.slice(0, 3).map(x => html`<li class="${raw('co-' + x.tone)}"><span aria-hidden="true">${ic[x.tone]}</span><span>${LANG === 'en' ? x.en : x.fr}</span></li>`)}</ul>
+    <ul class="coach-list" aria-label="${coL('Constats du coach', 'Coach findings')}">${items.slice(0, 3).map(x => html`<li class="${raw('co-' + x.tone)}"><span aria-hidden="true">${ic[x.tone]}</span><span>${LANG === 'en' ? x.en : x.fr}</span></li>`)}</ul>
     ${more ? html`<p class="coach-more">${more}</p>` : ''}`;
 }
 function coachMount(id, title, sub, list, period, emptyMsg) {

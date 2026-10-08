@@ -14,7 +14,11 @@ function openModal(title, msg, onConfirm, opts = {}) {
   btn.onclick = () => { if (opts.validate && !opts.validate()) return; closeModal(); onConfirm(); };
   rememberFocus();
   document.getElementById('modal').classList.add('open');
-  setTimeout(() => { const f = opts.body && document.querySelector('#modal-body input, #modal-body select'); const c = f || document.querySelector('#modal .btn-cancel'); if (c) c.focus(); }, 30);
+  // Focus sur le premier champ… sauf si l'utilisateur est déjà dans la fenêtre (saisie rapide : on ne lui vole pas le curseur).
+  setTimeout(() => {
+    if (document.getElementById('modal').contains(document.activeElement)) return;
+    const f = opts.body && document.querySelector('#modal-body input, #modal-body select'); const c = f || document.querySelector('#modal .btn-cancel'); if (c) c.focus();
+  }, 30);
 }
 function closeModal() {
   const m = document.getElementById('modal');

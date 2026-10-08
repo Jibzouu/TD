@@ -34,7 +34,7 @@ function openQuickAdd() {
   if (trades[0] && trades[0].asset) document.getElementById('qa-asset').value = trades[0].asset;
   // Actifs récents en boutons : un toucher suffit sur téléphone.
   const recent = [...new Set(trades.map(t => t.asset).filter(Boolean))].slice(0, 5);
-  mount('qa-asset-chips', html`${recent.map((a, i) => html`<button type="button" class="qa-chip" onclick="${raw('qaPickAsset(' + i + ')')}">${a}</button>`)}`);
+  mount('qa-asset-chips', html`${recent.map((a, i) => html`<button type="button" class="qa-chip" aria-pressed="false" onclick="${raw('qaPickAsset(' + i + ')')}">${a}</button>`)}`);
   qaRecent = recent; qaImgs = []; renderQaThumbs();
   setQuickRes('');
   rememberFocus();
@@ -43,7 +43,7 @@ function openQuickAdd() {
   if (!window.matchMedia('(max-width: 860px)').matches) setTimeout(() => { const a = document.getElementById('qa-asset'); a.focus(); a.select(); }, 30);
 }
 let qaRecent = [], qaImgs = [];
-function qaPickAsset(i) { const a = qaRecent[+i]; if (a) document.getElementById('qa-asset').value = a; document.querySelectorAll('.qa-chip').forEach((b, j) => b.classList.toggle('on', j === +i)); }
+function qaPickAsset(i) { const a = qaRecent[+i]; if (a) document.getElementById('qa-asset').value = a; document.querySelectorAll('.qa-chip').forEach((b, j) => { b.classList.toggle('on', j === +i); b.setAttribute('aria-pressed', j === +i ? 'true' : 'false'); }); }
 function qaAddPhoto(input) {
   const f = input.files && input.files[0];
   input.value = '';

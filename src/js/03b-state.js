@@ -110,7 +110,7 @@ const PAGE_RENDERERS = {
   watchlist: () => [renderWatchlist],
   playbooks: () => [renderPlaybooks],
   replay: () => [renderReplay],
-  parametres: () => [renderAccountsCard, renderLockSettings, applySimpleMode],
+  parametres: () => [renderAccountsCard, renderLockSettings, applySimpleMode, renderAccentChoice],
   guide: () => [renderGuide, renderShortcutsPage, renderLessonsList],
   risque: () => [applyChartDefaults, renderRiskPage, renderChallenge],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],

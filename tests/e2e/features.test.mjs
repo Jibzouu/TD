@@ -621,20 +621,23 @@ test('comptes multiples : migration, création, type prop firm, renommage, suppr
 test('premier lancement : assistant 3 étapes, réglages appliqués, démo effaçable, écrans vides', async () => {
   const { page, ctx, errors } = await openJournal({ time: NOW, seed: { tj_onboarded: '' } });
   const ob = page.locator('#onboard');
-  assert.equal(await ob.isVisible(), true, 'assistant ouvert sur un compte vide');
+  // Attentes « jusqu'à ce que » plutôt que des lectures immédiates : le test reste fiable quand la machine est chargée.
+  await ob.waitFor({ state: 'visible' });   // assistant ouvert sur un compte vide
   // Étape 1 : compte.
   await page.fill('#ob-name', 'Compte perso');
   await page.fill('#ob-capital', '2000');
   await ob.getByText('Suivant').click();
   // Étape 2 : risque et règles.
   await page.fill('#ob-risk', '2');
-  assert.match(await page.locator('#ob-risk-eur').textContent(), /40,00/);
+  await page.waitForFunction(() => /40,00/.test(document.getElementById('ob-risk-eur').textContent));
   await page.fill('#ob-tp', '1'); await page.fill('#ob-sl', '2');
   await ob.getByText('Suivant').click();
+  await ob.getByText('Explorer avec une démo').waitFor();
   assert.match(await ob.innerText(), /Compte perso · 2\s000\s€ · 2 % par trade \(40,00\s€\)/);
   // Étape 3 : démo.
   await ob.getByText('Explorer avec une démo').click();
-  assert.equal(await ob.isVisible(), false);
+  await ob.waitFor({ state: 'hidden' });
+  await page.waitForFunction(() => trades.length === 60);
   const st = await page.evaluate(() => ({ acc: accountSize, name: ACCOUNTS[0].name, sc: getScalingState(), tp: planData.maxTP, sl: planData.maxSL, n: trades.length, demo: trades.every(t => t.demo), onb: DB.getItem(JP + 'onboarded') }));
   assert.equal(st.acc, 2000); assert.equal(st.name, 'Compte perso');
   assert.equal(st.sc.start, 2000); assert.equal(st.sc.riskPct, 2);
@@ -645,7 +648,7 @@ test('premier lancement : assistant 3 étapes, réglages appliqués, démo effa�
   assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 0);
   // Effacer la démo : pas de trace de suppression (rien à synchroniser), retour à l'écran vide.
   await page.locator('#demo-banner').getByText('Effacer la démo').click();
-  assert.equal(await page.evaluate(() => trades.length), 0);
+  await page.waitForFunction(() => trades.length === 0);
   assert.equal(await page.evaluate(() => TradeStore.tombstones().length), 0);
   assert.equal(await page.locator('#demo-banner').isVisible(), false);
   assert.equal(await page.locator('#welcome-card').isVisible(), true);
@@ -654,7 +657,7 @@ test('premier lancement : assistant 3 étapes, réglages appliqués, démo effa�
   assert.equal(await page.locator('#edge-finder-body').isVisible(), false);
   // Un premier vrai trade : les pages se remplissent.
   await page.evaluate(() => TradeStore.add({ date: '2026-06-16', asset: 'EUR/USD', res: 'TP', pnl: 2, pnlEur: 80 }));
-  assert.equal(await page.locator('#page-stats > .page-empty').isVisible(), false);
+  await page.locator('#page-stats > .page-empty').waitFor({ state: 'hidden' });
   // L'assistant ne revient pas au rechargement.
   await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   assert.equal(await page.locator('#onboard').isVisible(), false);

@@ -12,7 +12,7 @@ const DB = (() => {
   const NAME = 'journal-trading', STORE = 'kv', MIGRATED = '__migrated_from_localstorage', LOCK = '__lock', CHECK = 'journal-ok';
   const mem = new Map();
   let idb = null, mode = 'memory', pending = new Map(), flushScheduled = false, lastError = null;
-  let lockKey = null, lockMeta = null, flushChain = Promise.resolve();
+  let lockKey = null, lockMeta = null, flushChain = Promise.resolve(), inFlight = 0;
   const isBox = v => !!(v && typeof v === 'object' && typeof v.ct === 'string' && typeof v.iv === 'string');
   const listeners = [];
 
@@ -85,6 +85,10 @@ const DB = (() => {
     return flushChain;
   }
   async function writeBatch(batch) {
+    inFlight++;
+    try { return await writeBatchNow(batch); } finally { inFlight--; }
+  }
+  async function writeBatchNow(batch) {
     const key = lockKey, rows = [];
     for (const [k, v] of batch) rows.push([k, v === null || !key ? v : await JTC.encrypt(key, v)]);
     return new Promise(resolve => {
@@ -173,6 +177,7 @@ const DB = (() => {
   return {
     init, flush, refreshEstimate, enableLock, disableLock, sealWithLock,
     get locked() { return !!lockMeta; },
+    get busy() { return pending.size > 0 || inFlight > 0; },   // une écriture n'est pas encore sur le disque
     async checkCode(code) { return !!(lockMeta && await verify(lockMeta, code)); },
     get mode() { return mode; },
     get usage() { return usage; },
@@ -212,5 +217,8 @@ async function __bootJournal() {
   document.documentElement.classList.add('app-ready');
 }
 window.addEventListener('pagehide', () => { DB.flush(); });
+// Fermeture pendant une écriture (chiffrement en cours, quelques millisecondes) : le navigateur demande confirmation,
+// ce qui laisse le temps de finir au lieu de perdre la dernière modification.
+window.addEventListener('beforeunload', e => { if (DB.locked && DB.busy) { DB.flush(); e.preventDefault(); e.returnValue = ''; } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') DB.flush(); });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', __bootJournal); else __bootJournal();
