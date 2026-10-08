@@ -19,6 +19,7 @@ const SEARCH_PAGES = [
 ].map(p => Object.assign(p, { label: t(p.key || 'nav.' + p.page) }));
 const SEARCH_ACTIONS = [
   { icon:'⚡', label:'Saisie rapide d\'un trade (N)', run: () => { closeGlobalSearch(); openQuickAdd(); } },
+  { icon:'🔒', label:'Mode Lock-in : concentration sur ta séance (L)', run: () => { closeGlobalSearch(); fxLockinEnter(); } },
   { icon:'⌨️', label:'Raccourcis clavier (?)', run: () => { closeGlobalSearch(); openShortcutsHelp(); } },
   { icon:'📖', label:'Guide d\'utilisation du journal', run: () => { closeGlobalSearch(); openGuide(); } },
   { icon:'➕', label:'Ajouter un trade complet', run: () => { closeGlobalSearch(); openTradePanel(); } },
@@ -49,6 +50,7 @@ function closeGlobalSearch() {
   if (!overlay || !overlay.classList.contains('show')) return;
   overlay.classList.remove('show');
   restoreFocus();
+  if (overlay.contains(document.activeElement)) document.activeElement.blur();   // sinon les raccourcis tapent dans le champ caché
 }
 function toggleGlobalSearch() {
   const overlay = document.getElementById('search-overlay');

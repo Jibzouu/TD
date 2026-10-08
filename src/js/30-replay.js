@@ -163,7 +163,7 @@ async function rpStart(fromSaved) {
   const msg = document.getElementById('rp-setup-msg');
   try {
     RP_LOADING = true; RP_END = false;
-    if (msg) mount(msg, html`<span class="tone-muted">Chargement des bougies…</span>`);
+    if (msg) mount(msg, html`<span class="fx-skel-chart" aria-hidden="true">${[38, 62, 45, 80, 55, 70, 40, 88, 60, 75, 50, 66].map(h => html`<i style="${raw('height:' + h + '%')}"></i>`)}</span><span class="tone-muted">Chargement des bougies…</span>`);
     if (RP.source === 'file') {
       if (!RP_FILE) throw new Error('Réimporte ton fichier de bougies pour reprendre cette séance.');
       const base = RP_FILE.candles, tfs = rpTfSec(RP.interval);

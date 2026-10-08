@@ -21,6 +21,7 @@
         <div class="acc-menu" id="acc-menu" role="listbox" aria-label="Mes comptes" hidden></div>
       </div>
     </div>
+    <button class="fx-lockin-btn" id="fx-lockin-btn" onclick="fxLockinEnter()" title="Mode Lock-in : concentration sur ta séance (touche L)"><svg viewBox="0 0 104 92" aria-hidden="true"><path d="M30 46 V34 A22 22 0 0 1 74 34 V46" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><rect x="6" y="46" width="92" height="34" rx="17" fill="none" stroke="currentColor" stroke-width="9"/><circle cx="52" cy="63" r="9.5" fill="var(--accent)"/></svg><span>Mode Lock-in</span><kbd class="kbd">L</kbd></button>
     <button class="sidebar-search-btn" onclick="openGlobalSearch()">
       <span class="op-60">🔍</span><span class="flex-1">Rechercher…</span><kbd class="kbd">⌘K</kbd>
     </button>
@@ -845,6 +846,7 @@
       <div class="panel mb-20"><div class="panel-hdr"><span>🪜 Parcours de progression<small class="panel-sub">augmente ton risque seulement quand tes résultats le prouvent</small></span></div><div id="rk-path"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🎯 Discipline<small class="panel-sub">ton process compte plus que ton P&amp;L</small></span></div><div id="rk-disc"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🏁 Défi « 30 jours de discipline »<small class="panel-sub">30 jours d'affilée sans journée « pas propre » : le meilleur entraînement pour un débutant</small></span></div><div id="rk-challenge"></div></div>
+      <div class="panel mb-20"><div class="panel-hdr"><span>🏅 Mes médailles<small class="panel-sub">gagnées par ta discipline, pas par ton P&amp;L</small></span></div><div id="fx-medals" class="fx-medals"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span>🎲 Simulateur de risque de ruine<small class="panel-sub">des milliers de suites de trades possibles avec tes chiffres : combien risquer sans te mettre en danger</small></span></div><div id="rk-sim"></div></div>
       <div class="panel mb-20"><div class="panel-hdr"><span id="rk-plan-hdr">🌱 Plan débutant<small class="panel-sub">de bonnes règles de départ, modifiables ensuite</small></span></div><div id="rk-beginner"></div></div>
     </div>
@@ -1401,6 +1403,10 @@
             <input type="checkbox" id="fx-toggle" onchange="setFx(this.checked)">
             <label class="check-label-plain" for="fx-toggle">Animations : ouverture, chiffres qui défilent, célébrations (coupées aussi si ton appareil demande moins d’animations)</label>
           </div>
+          <div class="span2-row">
+            <input type="checkbox" id="fx-sound-toggle" onchange="setFxSound(this.checked)">
+            <label class="check-label-plain" for="fx-sound-toggle">Sons et vibrations : clic du cadenas, « Locked in », STOP, trade enregistré (vibrations sur téléphone)</label>
+          </div>
         </div>
             </div>
             <div class="cz-pane" data-cz="shape" role="tabpanel">
@@ -1593,7 +1599,8 @@
       <input type="text" id="search-input" placeholder="Rechercher une page, une action, un trade…" oninput="renderGlobalSearchResults(this.value)" autocomplete="off">
       <kbd>Échap</kbd>
     </div>
-    <div id="search-results"></div>
+    <div class="search-body"><div id="search-results"></div><aside id="search-preview" class="search-preview" hidden></aside></div>
+    <div class="search-foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>Échap</kbd> fermer</span></div>
   </div>
 </div>
 

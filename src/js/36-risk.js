@@ -255,6 +255,7 @@ function renderGuardCard() {
   const chip = (lbl, val, sub, tone) => html`<div class="gc-chip"><span>${lbl}</span><b class="${raw(tone ? 'tone-' + tone : '')}">${val}</b>${sub ? html`<small>${sub}</small>` : ''}</div>`;
   el.className = 'guard-card g-' + g.level;
   el.hidden = false;
+  if (typeof fxAfterGuard === 'function') safeRun(() => fxAfterGuard(g, d), 'fxAfterGuard');   // ambiance, icône d'onglet, médailles
   mount(el, html`<button class="gc-main" onclick="showPage('risque', document.querySelector('.nav-item[data-page=risque]'))" title="${rkL('Ouvrir la gestion du risque', 'Open risk management')}">
       ${rkLevelGauge(g)}
       <span class="gc-txt"><b>${rkHeadline(g)}</b>${d.streak >= 2 ? html`<span class="fx-streak">🔒 ${d.streak} ${rkL('jours lock-in d’affilée', 'lock-in days in a row')}</span>` : ''}<span>${rkSentence(g)}</span>${(g.level === 'stop' ? g.stops.slice(1) : g.warns).slice(0, 2).map(w => html`<small>• ${w}</small>`)}</span>

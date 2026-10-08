@@ -516,6 +516,8 @@ function renderSettingsPage() {
   if (textureToggle) textureToggle.checked = DB.getItem((GP + 'theme_texture')) !== '0';
   const fxToggle = document.getElementById('fx-toggle');
   if (fxToggle) fxToggle.checked = fxOn();
+  const fxSnd = document.getElementById('fx-sound-toggle');
+  if (fxSnd) fxSnd.checked = DB.getItem('g_fx_sound') === '1';
   const autoThemeToggle = document.getElementById('autotheme-toggle');
   if (autoThemeToggle) autoThemeToggle.checked = DB.getItem((GP + 'theme_autosystem')) === '1';
 }

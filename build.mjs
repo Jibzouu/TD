@@ -24,6 +24,7 @@ function fontFaces() {
   const faces = [
     ['Inter', '@fontsource/inter/files/inter-latin-%w-normal.woff2', [400, 500, 600, 700]],
     ['JetBrains Mono', '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-%w-normal.woff2', [400, 500, 600]],
+    ['Geist Mono', '@fontsource/geist-mono/files/geist-mono-latin-%w-normal.woff2', [500, 600, 700]],   // chiffres (OFL)
   ];
   return faces.flatMap(([family, pattern, weights]) => weights.map(w => {
     const b64 = readFileSync(join(NM, pattern.replace('%w', w))).toString('base64');

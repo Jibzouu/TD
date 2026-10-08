@@ -112,7 +112,7 @@ const PAGE_RENDERERS = {
   replay: () => [renderReplay],
   parametres: () => [renderAccountsCard, renderLockSettings, applySimpleMode, renderAccentChoice],
   guide: () => [renderGuide, renderShortcutsPage, renderLessonsList],
-  risque: () => [applyChartDefaults, renderRiskPage, renderChallenge],
+  risque: () => [applyChartDefaults, renderRiskPage, renderChallenge, renderMedals],
   revue: () => typeof renderWeeklyReview === 'function' ? [applyChartDefaults, renderWeeklyReview] : [],
 };
 function currentPage() { const p = document.querySelector('.page.active'); return p ? p.id.replace('page-', '') : 'dashboard'; }

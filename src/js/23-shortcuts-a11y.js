@@ -89,7 +89,7 @@ document.addEventListener('keydown', e => {
 const SHORTCUTS = [
   ['N', 'Saisie rapide d\'un trade'], ['Maj + N', 'Nouveau trade (formulaire complet)'], ['/', 'Recherche (pages, actions, trades)'], ['Ctrl/⌘ + K', 'Recherche'],
   ['1 … 9', 'Aller à la page n° 1 à 9 du menu'], ['F', 'Aller au filtre global'], ['← / →', 'Trade précédent / suivant (fiche ouverte) · capture précédente / suivante'],
-  ['E', 'Modifier le trade ouvert'], ['Échap', 'Fermer la fenêtre ouverte'], ['?', 'Afficher cette aide']
+  ['E', 'Modifier le trade ouvert'], ['L', 'Mode Lock-in (concentration ; maintenir le bouton 2 s pour sortir)'], ['Échap', 'Fermer la fenêtre ouverte'], ['?', 'Afficher cette aide']
 ];
 function openShortcutsHelp() {
   mount('sh-grid', html`${SHORTCUTS.map(([k, d]) => html`<kbd>${k}</kbd><span>${d}</span>`)}`);
@@ -113,10 +113,12 @@ document.addEventListener('keydown', e => {
     if (e.key === 'e' || e.key === 'E') { e.preventDefault(); if (drawerTradeId !== null) startEditTrade(drawerTradeId); return; }
   }
   if (isTyping(e) || openDialogEl()) return;
+  if (document.getElementById('fx-lockin') && e.key !== 'n' && e.key !== 'N') return;   // mode Lock-in : seule la saisie rapide
   if (e.key === 'N' && e.shiftKey) { e.preventDefault(); openTradePanel(); }
   else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openQuickAdd(); }
   else if (e.key === '/') { e.preventDefault(); openGlobalSearch(); }
   else if (e.key === '?') { e.preventDefault(); openShortcutsHelp(); }
+  else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); fxLockinEnter(); }
   else if (e.key === 'f' || e.key === 'F') { const s = document.getElementById('gf-period'); if (s && s.offsetParent) { e.preventDefault(); s.focus(); } }
   else if (/^[1-9]$/.test(e.key)) {
     const items = [...document.querySelectorAll('.nav > .nav-item')];   // dans l'ordre du menu (personnalisable par glisser-déposer)

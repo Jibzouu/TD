@@ -24,20 +24,25 @@ function fxSplash() {
 }
 
 // 2) Chiffres qui défilent (0 → valeur) : garde le texte exact à la fin ; s'arrête si la page réécrit le chiffre entre-temps.
-function fxCountUp(el, ms) {
+const FX_NUM_RE = /([+\-−]?)(\d{1,3}(?:[\s  ]\d{3})+|\d+)(?:,(\d+))?/;
+const fxNumOf = m => parseFloat(m[2].replace(/[\s  ]/g, '') + (m[3] ? '.' + m[3] : ''));
+// from (facultatif) : texte de départ (ancienne valeur, chiffres qui roulent après un trade) — sinon on part de 0.
+function fxCountUp(el, ms, from) {
   if (!el || !fxMotion()) return;
-  const final = el.textContent, m = /([+\-−]?)(\d{1,3}(?:[\s  ]\d{3})+|\d+)(?:,(\d+))?/.exec(final);
+  const final = el.textContent, m = FX_NUM_RE.exec(final);
   if (!m) return;
   const sep = (m[2].match(/[\s  ]/) || [' '])[0], dec = m[3] ? m[3].length : 0;
-  const target = parseFloat(m[2].replace(/[\s  ]/g, '') + (dec ? '.' + m[3] : ''));
-  if (!(target > 0)) return;
+  const target = fxNumOf(m), fm = from != null ? FX_NUM_RE.exec(from) : null;
+  if (from != null && (!fm || fm[1] !== m[1])) return;          // signe différent : pas de défilement
+  const start = fm ? fxNumOf(fm) : 0;
+  if (!(target > 0) || start === target) return;
   const pre = final.slice(0, m.index) + m[1], post = final.slice(m.index + m[0].length);
   const fmt = v => { const [i, f] = v.toFixed(dec).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, sep) + (dec ? ',' + f : ''); };
   const t0 = performance.now(); let last = null;
   const step = now => {
     if (last !== null && el.textContent !== last) return;          // la page a redessiné ce chiffre : on la laisse faire
     const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3);
-    last = k < 1 ? pre + fmt(target * e) + post : final;
+    last = k < 1 ? pre + fmt(start + (target - start) * e) + post : final;
     el.textContent = last;
     if (k < 1) requestAnimationFrame(step);
   };

@@ -215,6 +215,7 @@ test('thème LockIn : couleurs du logo, touches propres seulement sur ce thème,
   assert.ok(await page.evaluate(() => document.body.classList.contains('theme-lockin')));
   // Page active : le petit niveau remplace la poignée de déplacement.
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.nav-item.active .nav-grip')).borderRadius), '99px');
+  await page.evaluate(() => DB.flush());
   await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   assert.ok(await page.evaluate(() => document.body.classList.contains('theme-lockin')), 'gardé au rechargement');
   await page.evaluate(() => applyPreset('default', true));
@@ -262,6 +263,53 @@ test('effets : célébration « Locked in » une fois par jour, chiffres qui dé
   await ctx.close();
 });
 
+test('magie : mode Lock-in (touche L, survit au rechargement, sortie en maintenant 2 s), saisie rapide par-dessus', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  await page.keyboard.press('l');
+  await page.waitForSelector('#fx-lockin .fx-lk-hold');
+  assert.ok(await page.evaluate(() => document.querySelector('.app').inert), 'le journal derrière est inactif');
+  await page.keyboard.press('2');   // les raccourcis de page sont coupés
+  assert.equal(await page.evaluate(() => currentPage()), 'dashboard');
+  await page.keyboard.press('n');
+  await page.waitForSelector('#quick-add.open, #quick-add[style*="flex"]', { timeout: 3000 }).catch(() => {});
+  assert.ok(await page.evaluate(() => getComputedStyle(document.getElementById('quick-add')).display !== 'none'), 'saisie rapide ouverte en mode Lock-in');
+  await page.evaluate(() => closeQuickAdd());
+  await page.evaluate(() => DB.flush());
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  await page.waitForSelector('#fx-lockin', { timeout: 3000 });
+  await page.evaluate(() => fxHoldStart());
+  await page.waitForTimeout(700);
+  await page.evaluate(() => fxHoldEnd());   // relâché trop tôt : on reste
+  assert.ok(await page.evaluate(() => !!document.getElementById('fx-lockin')));
+  await page.evaluate(() => fxHoldStart());
+  await page.waitForFunction(() => !document.getElementById('fx-lockin'), null, { timeout: 4000 });
+  assert.equal(await page.evaluate(() => document.querySelector('.app').inert), false);
+  assert.equal(await page.evaluate(() => DB.getItem(JP + 'lockin_since')), null);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('magie : ambiance et icône d’onglet selon le garde-fou, médailles, passage d’étape, aperçu ⌘K', async () => {
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  const { page, ctx, errors } = await openJournal({ seed: { g_fx_off: '0', tj_trades: [T({ id: 1, res: 'SL', pnl: -1, pnlEur: -60, date: today }), T({ id: 2, asset: 'GBP/JPY', date: '2026-09-02' })] } });
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.mood), 'warn');
+  assert.match(await page.evaluate(() => document.querySelector('link[rel="icon"]').href), /e8a53a/, 'bulle orange dans l’icône d’onglet');
+  assert.ok(await page.evaluate(() => (fxMedals() || {}).first), 'médaille « premier trade » (rattrapage silencieux)');
+  await goto(page, 'risque');
+  assert.equal(await page.locator('#fx-medals .fx-medal').count(), await page.evaluate(() => FX_MEDALS.length));
+  await page.evaluate(() => rkSetStage(1));
+  await page.waitForSelector('.fx-levelup .fx-lu-card');
+  assert.ok(await page.evaluate(() => (fxMedals() || {}).stage1));
+  await page.evaluate(() => document.querySelector('.fx-levelup').remove());
+  await page.keyboard.press('Control+k'); await page.waitForTimeout(120); await page.keyboard.type('GBP/JPY'); await page.waitForTimeout(150);
+  await page.waitForSelector('#search-preview:not([hidden])');
+  assert.match(await page.locator('#search-preview').innerText(), /GBP\/JPY/);
+  await page.keyboard.press('Escape');
+  assert.notEqual(await page.evaluate(() => document.activeElement && document.activeElement.id), 'search-input', 'la recherche fermée rend le clavier');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('bilan journalier : le menu de date n’est pas coupé (texte centré, pas de marge verticale en trop)', async () => {
   const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--font-sans': "'Space Mono',monospace" }) } });
   await goto(page, 'bilan');
@@ -298,6 +346,7 @@ test('couleur des boutons : menthe LockIn par défaut, violet au choix, vert des
   await page.click('.ac-btn >> text=Violet');
   assert.equal(await css('--accent'), '#5d6cf6');
   assert.equal(await css('--on-accent'), '#ffffff');
+  await page.evaluate(() => DB.flush());   // écriture terminée avant le rechargement
   await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
   assert.equal(await css('--accent'), '#5d6cf6', 'choix gardé');
   await page.evaluate(() => applyPreset('proclair'));
