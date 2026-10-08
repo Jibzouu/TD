@@ -980,12 +980,6 @@ body.bgstyle-aurora #fx-aurora{display:block}
 @keyframes fxDrift{0%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(3%,2%,0) rotate(4deg) scale(1.05)}100%{transform:translate3d(-2%,3%,0) rotate(-3deg) scale(1.02)}}
 html[data-mood=stop] .main::before{content:'';position:fixed;inset:0 0 auto 0;height:3px;z-index:60;pointer-events:none;background:linear-gradient(90deg,transparent,var(--red),transparent)}
 html[data-mood=warn] .main::before{content:'';position:fixed;inset:0 0 auto 0;height:2px;z-index:60;pointer-events:none;background:linear-gradient(90deg,transparent,var(--amber),transparent)}
-/* Projecteur sous la souris : lumière d'accent qui suit le curseur sur la carte survolée. */
-@media (hover:hover) and (pointer:fine){
-  .fx-spot{background-image:radial-gradient(380px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 9%,transparent),transparent 45%);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
-  .hero-metric.fx-spot{background-image:radial-gradient(460px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 11%,transparent),transparent 45%),linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg2)),color-mix(in srgb,var(--bg2) 92%,transparent) 60%)}
-  .guard-card.g-warn.fx-spot,.guard-card.g-stop.fx-spot{background-image:radial-gradient(380px circle at var(--mx) var(--my),color-mix(in srgb,var(--mood) 9%,transparent),transparent 45%)}
-}
 /* Relief 3D de la carte du solde (angles posés par le script). */
 .hero-metric{transition:transform .3s cubic-bezier(.2,.8,.3,1),border-color .2s}
 .fx-motion .hero-metric.fx-spot{transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}

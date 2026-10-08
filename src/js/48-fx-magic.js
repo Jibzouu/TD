@@ -1,5 +1,5 @@
 // ── EFFETS « MAGIQUES » (tous les thèmes) ───────────────────────────────
-// Projecteur sous la souris et relief 3D de la carte du solde, aurore vivante, zoom entre les pages, ambiance qui suit
+// Relief 3D de la carte du solde, aurore vivante, zoom entre les pages, ambiance qui suit
 // le garde-fou (et l'icône d'onglet), chiffres qui roulent après un trade, mode Lock-in, passage d'étape et médailles,
 // sons et vibrations (désactivés par défaut), aperçu dans la recherche ⌘K. Styles : 70-premium.css (EFFETS 2).
 // Mouvement : fxMotion() (réglage « Animations » + « réduire les animations » du système).
@@ -44,8 +44,8 @@ function fxBuzz(p) { if (fxSoundOn() && navigator.vibrate) try { navigator.vibra
   document.body.insertBefore(a, document.body.firstChild);
 })();
 
-// ── Projecteur sous la souris (cartes) et relief 3D de la carte du solde : ordinateur seulement ──
-const FX_SPOT_SEL = '.kpi,.gc-chip,.hero-metric,.guard-card,.export-card,.panel,.stat-section,.ui-card,.tbl-card,.theme-swatch,.fx-medal,.plan-card,.routine';
+// ── Relief 3D de la carte du solde sous la souris : ordinateur seulement ──
+const FX_SPOT_SEL = '.hero-metric';
 let fxSpotEl = null, fxSpotRaf = 0, fxSpotEv = null;
 function fxSpotClear() {
   if (!fxSpotEl) return;
@@ -61,7 +61,6 @@ function fxSpotFrame() {
   if (!el) return;
   fxSpotEl = el;
   const r = el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-  el.style.setProperty('--mx', x.toFixed(0) + 'px'); el.style.setProperty('--my', y.toFixed(0) + 'px');
   el.classList.add('fx-spot');
   if (el.classList.contains('hero-metric') && fxMotion()) {
     el.style.setProperty('--ry', ((x / r.width - .5) * 4).toFixed(2) + 'deg');

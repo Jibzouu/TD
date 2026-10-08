@@ -2712,12 +2712,6 @@ body.bgstyle-aurora #fx-aurora{display:block}
 @keyframes fxDrift{0%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(3%,2%,0) rotate(4deg) scale(1.05)}100%{transform:translate3d(-2%,3%,0) rotate(-3deg) scale(1.02)}}
 html[data-mood=stop] .main::before{content:'';position:fixed;inset:0 0 auto 0;height:3px;z-index:60;pointer-events:none;background:linear-gradient(90deg,transparent,var(--red),transparent)}
 html[data-mood=warn] .main::before{content:'';position:fixed;inset:0 0 auto 0;height:2px;z-index:60;pointer-events:none;background:linear-gradient(90deg,transparent,var(--amber),transparent)}
-/* Projecteur sous la souris : lumière d'accent qui suit le curseur sur la carte survolée. */
-@media (hover:hover) and (pointer:fine){
-  .fx-spot{background-image:radial-gradient(380px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 9%,transparent),transparent 45%);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
-  .hero-metric.fx-spot{background-image:radial-gradient(460px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 11%,transparent),transparent 45%),linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg2)),color-mix(in srgb,var(--bg2) 92%,transparent) 60%)}
-  .guard-card.g-warn.fx-spot,.guard-card.g-stop.fx-spot{background-image:radial-gradient(380px circle at var(--mx) var(--my),color-mix(in srgb,var(--mood) 9%,transparent),transparent 45%)}
-}
 /* Relief 3D de la carte du solde (angles posés par le script). */
 .hero-metric{transition:transform .3s cubic-bezier(.2,.8,.3,1),border-color .2s}
 .fx-motion .hero-metric.fx-spot{transform:perspective(1000px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
@@ -16465,7 +16459,7 @@ const GUIDE = [
       ['Mode et sécurité : mode simple (débutant) et code de verrouillage. Avec un code, tes données sont chiffrées sur l’appareil et le journal demande le code à l’ouverture ; sans le code, personne ne peut les lire (garde une sauvegarde, un code oublié ne se récupère pas).', 'Mode and security: simple mode (beginner) and lock code. With a code, your data is encrypted on the device and the journal asks for the code when opening; without the code nobody can read it (keep a backup, a forgotten code cannot be recovered).'],
       ['Langue, comptes, solde de départ, perte journalière max, disposition du Dashboard.', 'Language, accounts, starting balance, daily max loss, Dashboard layout.'],
       ['Thème « LockIn » (par défaut) : les couleurs du logo (bleu nuit, blanc, menthe). Sur tous les thèmes : ambiance « Aurore » (halos, quadrillage fin, grain), carte du solde à bordure animée, boutons arrondis, fenêtres en verre dépoli, page active marquée par un petit niveau à bulle.', '“LockIn” theme (default): the logo colors (night blue, white, mint). On every theme: “Aurora” mood (glows, fine grid, grain), balance card with an animated border, rounded buttons, frosted-glass windows, active page marked by a small spirit level.'],
-      ['Sons et vibrations (Thème → Ambiance, désactivés par défaut) : clic du cadenas, « Locked in », STOP, trade enregistré ; vibrations sur téléphone. Sur ordinateur, une lumière suit la souris sur les cartes et la carte du solde s’incline légèrement ; les chiffres utilisent la police Geist Mono.', 'Sounds and vibrations (Theme → Mood, off by default): padlock click, “Locked in”, STOP, trade saved; vibrations on phones. On desktop, a light follows the mouse over cards and the balance card tilts slightly; numbers use the Geist Mono font.'],
+      ['Sons et vibrations (Thème → Ambiance, désactivés par défaut) : clic du cadenas, « Locked in », STOP, trade enregistré ; vibrations sur téléphone. Sur ordinateur, la carte du solde s’incline légèrement sous la souris ; les chiffres utilisent la police Geist Mono.', 'Sounds and vibrations (Theme → Mood, off by default): padlock click, “Locked in”, STOP, trade saved; vibrations on phones. On desktop, the balance card tilts slightly under the mouse; numbers use the Geist Mono font.'],
       ['Animations (Thème → Ambiance) : ouverture animée du logo, chiffres qui défilent, célébrations. Décoche pour les couper ; elles sont aussi coupées si ton appareil demande de réduire les animations.', 'Animations (Theme → Mood): animated logo on opening, counting numbers, celebrations. Untick to turn them off; they are also off if your device asks for reduced motion.'],
       ['Thèmes (dont Néon) et « Personnaliser mon thème » : couleurs, ambiance, formes et polices, graphiques, mes thèmes.', 'Themes (including Neon) and “Customize my theme”: colors, mood, shapes and fonts, charts, my themes.']
     ] },
@@ -17667,7 +17661,7 @@ if (window.matchMedia) window.matchMedia('(prefers-reduced-motion: reduce)').add
 
 /* ═══ js/48-fx-magic.js ═══ */
 // ── EFFETS « MAGIQUES » (tous les thèmes) ───────────────────────────────
-// Projecteur sous la souris et relief 3D de la carte du solde, aurore vivante, zoom entre les pages, ambiance qui suit
+// Relief 3D de la carte du solde, aurore vivante, zoom entre les pages, ambiance qui suit
 // le garde-fou (et l'icône d'onglet), chiffres qui roulent après un trade, mode Lock-in, passage d'étape et médailles,
 // sons et vibrations (désactivés par défaut), aperçu dans la recherche ⌘K. Styles : 70-premium.css (EFFETS 2).
 // Mouvement : fxMotion() (réglage « Animations » + « réduire les animations » du système).
@@ -17712,8 +17706,8 @@ function fxBuzz(p) { if (fxSoundOn() && navigator.vibrate) try { navigator.vibra
   document.body.insertBefore(a, document.body.firstChild);
 })();
 
-// ── Projecteur sous la souris (cartes) et relief 3D de la carte du solde : ordinateur seulement ──
-const FX_SPOT_SEL = '.kpi,.gc-chip,.hero-metric,.guard-card,.export-card,.panel,.stat-section,.ui-card,.tbl-card,.theme-swatch,.fx-medal,.plan-card,.routine';
+// ── Relief 3D de la carte du solde sous la souris : ordinateur seulement ──
+const FX_SPOT_SEL = '.hero-metric';
 let fxSpotEl = null, fxSpotRaf = 0, fxSpotEv = null;
 function fxSpotClear() {
   if (!fxSpotEl) return;
@@ -17729,7 +17723,6 @@ function fxSpotFrame() {
   if (!el) return;
   fxSpotEl = el;
   const r = el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-  el.style.setProperty('--mx', x.toFixed(0) + 'px'); el.style.setProperty('--my', y.toFixed(0) + 'px');
   el.classList.add('fx-spot');
   if (el.classList.contains('hero-metric') && fxMotion()) {
     el.style.setProperty('--ry', ((x / r.width - .5) * 4).toFixed(2) + 'deg');
