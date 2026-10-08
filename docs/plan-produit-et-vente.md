@@ -237,6 +237,7 @@ Le message « protège ton capital » est exactement ce que les autorités veule
 - untilt.app est déjà utilisé (outils de raisonnement) ; « Untilt » est aussi le nom d'une appli de partage de dépenses (Android) et d'un bloqueur de paris sportifs (iPhone).
 - **Décision à prendre avant toute dépense de pub ou de dépôt de marque** : changer de nom. Le logo (niveau à bulle) se garde ; seul le mot change.
 - **10 noms sans appli de trading trouvée sous ce nom** (recherche web d'octobre 2026 ; domaine et INPI encore à vérifier) : Aplomb, Sangfroid, Niveo, Flegme, Ballast, Sereno, Kalme, Tenue, Zénit, Halto. Écartés car déjà pris dans la finance : Lucide (prop firm Lucid Trading), Keelo (journal Keelio), Ancrage (Anchorage, Anchr), Équilibre (protocole Équilibre Finance).
+- **Deuxième lot, plus « marque »** (aucune appli de trading trouvée) : Kata, NoFomo, ZeroTilt, Zanshin, Rempart, Palier, IceMind, Halte, Mushin, Cairn. Écarté : Dojo (prop firm DojoTraders, communautés « Trading Dojo »).
 - Piste n° 1 : **Aplomb** (« garder son aplomb » = son sang-froid ; un fil à plomb / niveau = le logo). Aucune appli de trading trouvée sous ce nom ; domaine et INPI à vérifier.
 
 ## 13. À faire plus tard
