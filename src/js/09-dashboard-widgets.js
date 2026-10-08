@@ -172,7 +172,7 @@ function renderYearProgress() {
       type: 'line',
       data: { labels, datasets: [{
         data, borderColor: t.accent, borderWidth: chartBorderW(2), borderDash: currentLineDash(), tension: 0, borderJoinStyle: 'round', borderCapStyle: 'round',
-        fill: { target: { value: E.start }, above: withAlpha(t.green, chartFillAlpha(.12)), below: withAlpha(t.red, chartFillAlpha(.14)) },
+        fill: { target: { value: E.start }, above: fxFadeFill(ctx, t.green, chartFillAlpha(.22), false), below: fxFadeFill(ctx, t.red, chartFillAlpha(.22), true) },
         pointRadius: data.map((_, i) => i === peakI || i === data.length - 1 ? 4 : 0), pointBackgroundColor: t.accent, pointBorderColor: t.bg2, pointBorderWidth: 2,
         pointHoverRadius: 5, pointHoverBackgroundColor: t.accent, pointHoverBorderColor: t.bg2, pointHoverBorderWidth: 2, pointHitRadius: 12
       }] },
@@ -187,7 +187,7 @@ function renderYearProgress() {
       },
       plugins: [refLinePlugin('startLine', E.start, E.useEur ? (filterDateRange().from ? 'Début de période ' : 'Départ ') + fmtEUR(E.start) : '0R'), {
         id: 'peakLabel', afterDatasetsDraw(ch) { if (peakI > 0) drawPointLabel(ch, 0, peakI, 'Plus haut ' + E.fmt(data[peakI]), t.accent, true); }
-      }]
+      }, fxGlowPlugin(t.accent), fxPeakPulsePlugin(peakI === data.length - 1 ? peakI : -1)]
     });
   }
   renderUnderwater(E, daily);

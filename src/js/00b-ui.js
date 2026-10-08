@@ -14,6 +14,17 @@ function html(strings, ...vals) {
   return new SafeHTML(out);
 }
 
+// Illustration des écrans vides : le cadenas-niveau du logo posé sur une courbe en pointillés, bulles qui flottent
+// (même trait que le logo, couleurs du thème). L'emoji de l'écran reste en petit, en bas à droite du cadenas.
+function fxEmptyArt(icon) {
+  const sh = typeof BRAND_SHACKLE_PATH === 'string' ? BRAND_SHACKLE_PATH : '';
+  const ic = String(icon || '').replace(/[<>&"']/g, '');
+  return '<svg class="ui-empty-art" viewBox="0 0 160 112" aria-hidden="true">'
+    + '<polyline points="8,96 36,82 58,88 86,64 112,70 152,40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 6" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<g transform="translate(51 8) scale(.56)"><path d="' + sh + '" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><rect x="6" y="52" width="92" height="34" rx="17" fill="none" stroke="currentColor" stroke-width="9"/><circle class="fx-a" cx="52" cy="69" r="9.5"/></g>'
+    + '<circle class="fx-a fx-float" cx="26" cy="34" r="4.5" opacity=".75"/><circle class="fx-a fx-float d2" cx="134" cy="20" r="3.2" opacity=".6"/><circle class="fx-a fx-float d3" cx="122" cy="96" r="2.6" opacity=".5"/>'
+    + (ic ? '<text x="112" y="64" font-size="20" text-anchor="middle">' + ic + '</text>' : '') + '</svg>';
+}
 const UI = {
   // Tuile chiffre : libellé discret, valeur nette, sous-texte optionnel.
   stat(label, value, opts = {}) {
@@ -61,7 +72,7 @@ const UI = {
   chips(list, cls) { return html`${(list || []).map(x => html`<span class="chip ${raw(cls || '')}">${x}</span>`)}`; },
   // État vide illustré : icône, titre, explication, action optionnelle.
   empty(icon, title, text, action) {
-    return html`<div class="ui-empty"><div class="ui-empty-icon" aria-hidden="true">${icon}</div><div class="ui-empty-title">${title}</div>${text ? html`<div class="ui-empty-text">${text}</div>` : ''}${action ? html`<button class="btn-primary" onclick="${raw(action.onclick)}">${action.label}</button>` : ''}</div>`;
+    return html`<div class="ui-empty">${raw(fxEmptyArt(icon))}<div class="ui-empty-title">${title}</div>${text ? html`<div class="ui-empty-text">${text}</div>` : ''}${action ? html`<button class="btn-primary" onclick="${raw(action.onclick)}">${action.label}</button>` : ''}</div>`;
   },
   // Tableau simple : en-têtes + lignes (chaque cellule = texte ou SafeHTML). align: tableau de 'l'/'r'.
   table(headers, rows, opts = {}) {

@@ -118,6 +118,16 @@ const THEME_PRESETS = {
 
 // Thème prédéfini appliqué : ses couleurs suivent les retouches de la charte (ex. textes secondaires plus lisibles).
 // Un thème personnel (Néon, ou couleurs modifiées à la main) n'est jamais touché.
+// LockIn devient le thème par défaut : un journal resté sur Graphite (l'ancien thème de départ) passe une fois sur
+// LockIn ; les réglages d'ambiance (fond, cartes, police…) sont gardés. Un thème personnalisé n'est jamais touché.
+(function migrateToLockinDefault() {
+  try {
+    if (DB.getItem('g_lockin_default_v1')) return;
+    const th = JSON.parse(DB.getItem('g_theme') || '{}') || {};
+    if (th['--preset-key'] === 'default') DB.setItem('g_theme', JSON.stringify(Object.assign(th, lockinThemeObj())));
+    DB.setItem('g_lockin_default_v1', '1');
+  } catch (e) {}
+})();
 (function refreshPresetColors() {
   try {
     const VER = '5';   // 5 : marque LockIn (accent menthe, vert des gains distinct)
@@ -163,9 +173,10 @@ function loadThemeObj() {
 function saveThemeObj(theme) { DB.setItem((GP + 'theme'), JSON.stringify(theme)); }
 
 function applyBodyStyleClasses(theme) {
-  document.body.classList.remove('bgstyle-gradient','bgstyle-grid','cardstyle-glass','cardstyle-elevated','glow-on');
+  document.body.classList.remove('bgstyle-aurora','bgstyle-gradient','bgstyle-grid','cardstyle-glass','cardstyle-elevated','glow-on');
   const bg = theme['--bg-style'];
-  if (bg === 'gradient') document.body.classList.add('bgstyle-gradient');
+  if (!bg || bg === 'aurora') document.body.classList.add('bgstyle-aurora');   // ambiance par défaut : halos, grille fine, grain
+  else if (bg === 'gradient') document.body.classList.add('bgstyle-gradient');
   else if (bg === 'grid') document.body.classList.add('bgstyle-grid');
   const card = theme['--card-style'];
   if (card === 'glass') document.body.classList.add('cardstyle-glass');
@@ -174,8 +185,19 @@ function applyBodyStyleClasses(theme) {
   document.body.classList.toggle('theme-lockin', theme['--preset-key'] === 'lockin');
 }
 
+// Thème de la marque, appliqué au premier lancement (aucun thème enregistré) et après « Réinitialiser ».
+function lockinThemeObj() {
+  const th = { '--preset-key': 'lockin' };
+  Object.entries(THEME_PRESETS.lockin.colors).forEach(([k, v]) => {
+    th[k] = v;
+    if (['--green', '--red', '--amber', '--blue', '--purple', '--accent'].includes(k)) th[k + '-d'] = hexToRgba(v, .13);
+    if (k === '--green' || k === '--red') th[k + '-dd'] = hexToRgba(v, .06);
+  });
+  return th;
+}
 function applySavedTheme() {
-  const theme = loadThemeObj();
+  let theme = loadThemeObj();
+  if (!Object.keys(theme).length) { theme = lockinThemeObj(); saveThemeObj(theme); }
   Object.entries(theme).forEach(([k,v]) => {
     if (k.startsWith('--') ) document.documentElement.style.setProperty(k, v);
   });
@@ -290,7 +312,7 @@ function onTextureChange(checked) {
 }
 function applySystemTheme() {
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyPreset(prefersDark ? 'default' : 'proclair');
+  applyPreset(prefersDark ? 'lockin' : 'proclair');
 }
 function onAutoThemeChange(checked) {
   DB.setItem((GP + 'theme_autosystem'), checked ? '1' : '0');
@@ -483,7 +505,7 @@ function renderSettingsPage() {
   });
 
   document.querySelectorAll('.bg-style-btn').forEach(b => {
-    b.classList.toggle('style-btn-active', (theme['--bg-style'] || 'solid') === b.dataset.val);
+    b.classList.toggle('style-btn-active', (theme['--bg-style'] || 'aurora') === b.dataset.val);
   });
   document.querySelectorAll('.card-style-btn').forEach(b => {
     b.classList.toggle('style-btn-active', (theme['--card-style'] || 'flat') === b.dataset.val);
@@ -491,7 +513,9 @@ function renderSettingsPage() {
   const glowToggle = document.getElementById('glow-toggle');
   if (glowToggle) glowToggle.checked = !!theme['--glow'];
   const textureToggle = document.getElementById('texture-toggle');
-  if (textureToggle) textureToggle.checked = DB.getItem((GP + 'theme_texture')) === '1';
+  if (textureToggle) textureToggle.checked = DB.getItem((GP + 'theme_texture')) !== '0';
+  const fxToggle = document.getElementById('fx-toggle');
+  if (fxToggle) fxToggle.checked = fxOn();
   const autoThemeToggle = document.getElementById('autotheme-toggle');
   if (autoThemeToggle) autoThemeToggle.checked = DB.getItem((GP + 'theme_autosystem')) === '1';
 }

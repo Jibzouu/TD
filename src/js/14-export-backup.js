@@ -243,7 +243,7 @@ function importData(input) {
 // Recharge en mémoire et à l'écran tout ce qu'un backup (restauré ou fusionné) a pu changer.
 function applyRestoredSettings() {
   applySavedTheme();
-  if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+  if (DB.getItem((GP + 'theme_texture')) !== '0') document.body.classList.add('texture-on');   // grain fin actif par défaut
   else document.body.classList.remove('texture-on');
   applyNavOrder();
   accountSize = parseFloat(DB.getItem((JP + 'account'))) || accountSize;

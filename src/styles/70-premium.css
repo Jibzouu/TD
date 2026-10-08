@@ -651,11 +651,14 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 .guard-card.g-stop{border-color:color-mix(in srgb,var(--red) 55%,var(--border));background:color-mix(in srgb,var(--red) 6%,var(--bg2))}
 .gc-main{display:flex;gap:14px;align-items:flex-start;text-align:left;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:4px;border-radius:var(--r)}
 .gc-main:hover{background:color-mix(in srgb,var(--bg3) 60%,transparent)}
-.gc-light{display:flex;flex-direction:column;gap:4px;padding:6px 5px;border-radius:10px;background:#0b0d11;flex:none}
-.gc-light i{width:12px;height:12px;border-radius:50%;background:#2a2e36;display:block}
-.g-stop .gc-light i:nth-child(1){background:#f23645;box-shadow:0 0 10px #f23645}
-.g-warn .gc-light i:nth-child(2){background:#f5a623;box-shadow:0 0 10px #f5a623}
-.g-ok .gc-light i:nth-child(3){background:#22c55e;box-shadow:0 0 10px #22c55e}
+/* Jauge « niveau à bulle » (remplace le feu tricolore) : --tilt de 0 (centre, calme) à 1 (bord droit, stop). */
+.gc-level{--bubble:var(--accent);position:relative;flex:none;width:64px;height:26px;margin-top:1px;border-radius:99px;border:3px solid color-mix(in srgb,var(--txt) 55%,transparent);background:color-mix(in srgb,var(--bubble) 6%,transparent)}
+.gc-level::before,.gc-level::after{content:'';position:absolute;top:5px;bottom:5px;width:2px;border-radius:2px;background:color-mix(in srgb,var(--txt) 28%,transparent);left:calc(50% - 10px)}
+.gc-level::after{left:calc(50% + 8px)}
+.gc-level i{position:absolute;top:50%;left:calc(50% + var(--tilt,0) * 36%);width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);background:var(--bubble);box-shadow:0 0 12px color-mix(in srgb,var(--bubble) 75%,transparent);z-index:1}
+.g-warn .gc-level{--bubble:var(--amber)}.g-stop .gc-level{--bubble:var(--red)}
+.fx-intro .gc-level i{animation:fxBubbleIn .9s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes fxBubbleIn{from{left:50%}}
 .gc-txt{display:flex;flex-direction:column;gap:4px;min-width:0}
 .gc-txt b{font-size:16px}
 .g-stop .gc-txt b{color:var(--red)}.g-warn .gc-txt b{color:var(--amber)}.g-ok .gc-txt b{color:var(--green)}
@@ -885,18 +888,81 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 /* Focus clavier bien visible sur les nouveaux boutons */
 .qa-chip:focus-visible,.ac-btn:focus-visible,.gd-lesson:focus-visible,.lp-x:focus-visible,.fab-add:focus-visible,.nav-simple-foot button:focus-visible,.lk-box button:focus-visible,.lk-box input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* ── Thème « LockIn » (couleurs dans THEME_PRESETS.lockin, classe posée par applyBodyStyleClasses) ──
-   Fond en dégradé comme l'icône (#151935 → #0E1020) avec un halo menthe discret derrière le logo ; panneaux bleu nuit
-   légèrement translucides ; boutons en pilule (la forme du niveau) ; page active marquée par un petit niveau à bulle. */
-body.theme-lockin{background:radial-gradient(520px 320px at 0 0,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%),linear-gradient(135deg,#151935 0%,var(--bg) 60%) fixed;background-color:var(--bg)}
-body.theme-lockin .sidebar{background:color-mix(in srgb,var(--bg) 72%,transparent);border-right-color:color-mix(in srgb,var(--border) 80%,transparent);backdrop-filter:blur(6px)}
-body.theme-lockin .panel,body.theme-lockin .stat-section,body.theme-lockin .plan-card,body.theme-lockin .export-card,body.theme-lockin .kpi,
-body.theme-lockin .day-strip,body.theme-lockin .ui-card,body.theme-lockin .tbl-card,body.theme-lockin .routine,body.theme-lockin .rp-chart-card{background:color-mix(in srgb,var(--bg2) 90%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--txt) 6%,transparent),0 12px 28px -22px rgba(0,0,0,.7)}
-body.theme-lockin .hero-metric{background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg2)),color-mix(in srgb,var(--bg2) 92%,transparent) 60%);border-color:color-mix(in srgb,var(--accent) 18%,var(--border))}
-body.theme-lockin .btn-primary,body.theme-lockin button.btn-primary,body.theme-lockin .btn-ghost,body.theme-lockin .acc-current,body.theme-lockin .lk-box button{border-radius:999px}
-body.theme-lockin .btn-primary,body.theme-lockin button.btn-primary{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),0 8px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent)}
-body.theme-lockin .nav-item.active{background:color-mix(in srgb,var(--accent) 9%,var(--bg3));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent)}
-body.theme-lockin .nav-item.active .nav-grip{opacity:1;width:13px;height:7px;margin:0 -1px 0 -5px;border-radius:99px;border:1.4px solid color-mix(in srgb,var(--txt) 50%,transparent);background:radial-gradient(circle,var(--accent) 0 1.9px,transparent 2.4px)}
-body.theme-lockin .nav-item.active .nav-grip>*{display:none}
-body.theme-lockin .brand-row{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--accent) 22%,transparent))}
-body.theme-lockin ::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+/* ── EFFETS (tous les thèmes : tout passe par les variables --accent, --purple, --txt, --bg…) ──────────────
+   Thème LockIn : seul son fond de base lui est propre (dégradé bleu nuit de l'icône, #151935 → #0E1020). */
+@property --fx-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+body.theme-lockin{--fx-base:linear-gradient(135deg,#151935 0%,var(--bg) 60%)}
+body.theme-lockin:not(.bgstyle-aurora):not(.bgstyle-gradient):not(.bgstyle-grid){background:var(--fx-base) fixed;background-color:var(--bg)}
+/* Ambiance « Aurore » (par défaut) : deux halos (accent, violet), quadrillage très fin façon graphique, fond du thème. */
+body.bgstyle-aurora{background:radial-gradient(720px 440px at 0 0,color-mix(in srgb,var(--accent) 10%,transparent),transparent 70%),radial-gradient(820px 520px at 100% 0,color-mix(in srgb,var(--purple) 8%,transparent),transparent 70%),linear-gradient(color-mix(in srgb,var(--txt) 2.4%,transparent) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,color-mix(in srgb,var(--txt) 2.4%,transparent) 1px,transparent 1px) 0 0/44px 44px,var(--fx-base,var(--bg));background-attachment:fixed;background-color:var(--bg)}
+@media (min-width:861px){.sidebar{background:color-mix(in srgb,var(--bg) 74%,transparent);border-right-color:color-mix(in srgb,var(--border) 80%,transparent);backdrop-filter:blur(8px)}}
+.panel,.stat-section,.plan-card,.export-card,.kpi,.day-strip,.ui-card,.tbl-card,.routine,.rp-chart-card,.guard-card{background:color-mix(in srgb,var(--bg2) 90%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--txt) 6%,transparent),0 12px 28px -22px rgba(0,0,0,.55)}
+/* Carte du solde : bordure dégradée accent → violet qui tourne lentement. */
+.hero-metric{background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg2)),color-mix(in srgb,var(--bg2) 92%,transparent) 60%);border-color:color-mix(in srgb,var(--accent) 16%,var(--border));isolation:isolate}
+.hero-metric::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1.5px;pointer-events:none;z-index:-1;background:conic-gradient(from var(--fx-angle),transparent 0 18%,var(--accent) 32%,var(--purple) 46%,transparent 62% 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.85}
+.fx-motion .hero-metric::before{animation:fxSpin 14s linear infinite}
+@keyframes fxSpin{to{--fx-angle:360deg}}
+/* Boutons en pilule (la forme du niveau), lueur sur le bouton principal. */
+.btn-primary,button.btn-primary,.btn-ghost,.acc-current,.lk-box button{border-radius:999px}
+.btn-primary,button.btn-primary{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),0 8px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent)}
+.btn-primary:hover,button.btn-primary:hover{filter:brightness(1.06);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent),0 10px 28px -8px color-mix(in srgb,var(--accent) 85%,transparent)}
+.btn-ghost:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border2))}
+/* Page active : teinte accent et petit niveau à bulle à la place de la poignée. */
+.nav-item.active{background:color-mix(in srgb,var(--accent) 9%,var(--bg3));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent)}
+.nav-item.active .nav-grip{opacity:1;width:13px;height:7px;margin:0 -1px 0 -5px;border-radius:99px;border:1.4px solid color-mix(in srgb,var(--txt) 50%,transparent);background:radial-gradient(circle,var(--accent) 0 1.9px,transparent 2.4px)}
+.nav-item.active .nav-grip>*{display:none}
+.brand-row{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--accent) 22%,transparent))}
+::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+/* Micro-animations : les petites cartes se soulèvent, les boutons s'illuminent. */
+.kpi,.gc-chip,.theme-swatch,.export-card,.cal-day.has,.ui-card{transition:transform .18s cubic-bezier(.2,.8,.3,1),box-shadow .18s,border-color .18s}
+.kpi:hover,.gc-chip:hover,.theme-swatch:hover,.export-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 30%,var(--border));box-shadow:0 14px 30px -18px color-mix(in srgb,var(--accent) 45%,rgba(0,0,0,.6))}
+/* Fenêtres, notifications et menus en verre dépoli, liseré accent ; barres de défilement fines. */
+.modal{background:color-mix(in srgb,var(--bg2) 86%,transparent);backdrop-filter:blur(18px) saturate(1.2);border-color:color-mix(in srgb,var(--accent) 22%,var(--border2));box-shadow:inset 0 1px 0 color-mix(in srgb,var(--txt) 8%,transparent),0 30px 80px -20px rgba(0,0,0,.65)}
+.modal-overlay{backdrop-filter:blur(3px)}
+.toast{background:color-mix(in srgb,var(--bg3) 82%,transparent);backdrop-filter:blur(14px);border-color:color-mix(in srgb,var(--accent) 28%,var(--border2))}
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--accent) 35%,var(--border2)) transparent}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 30%,var(--border2));border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 55%,var(--border2));background-clip:padding-box;border:2px solid transparent}
+/* Calendrier : cases en dégradé (intensité = résultat du jour), lueur sur les grosses journées, aujourd'hui en accent. */
+.cal-day.has{background:linear-gradient(160deg,var(--c-bg,var(--bg3)),color-mix(in srgb,var(--c-bg,var(--bg3)) 45%,var(--bg2)))}
+.cal-day.strong{box-shadow:0 0 22px -8px var(--c-bd),inset 0 1px 0 color-mix(in srgb,#fff 12%,transparent)}
+.cal-day.today{border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.cal-day.today .cal-dnum{color:var(--accent)}
+.cal-day.has:hover{transform:translateY(-2px)}
+/* Courbe d'équité : point qui pulse sur un nouveau plus haut. */
+#wrap-year-progress{position:relative}
+.fx-pulse{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);pointer-events:none;z-index:2}
+.fx-pulse::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent)}
+.fx-motion .fx-pulse::after{animation:fxPing 1.8s cubic-bezier(0,0,.2,1) infinite}
+@keyframes fxPing{0%{transform:scale(1);opacity:.9}80%,100%{transform:scale(3.2);opacity:0}}
+/* Série de journées propres (carte du garde-fou). */
+.fx-streak{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:2px 0;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+/* Écrans vides illustrés (même trait que le logo). */
+.ui-empty-art{width:150px;height:auto;color:color-mix(in srgb,var(--txt) 40%,transparent);margin-bottom:4px}
+.ui-empty-art .fx-a{fill:var(--accent)}.ui-empty-art .fx-s{stroke:var(--accent)}
+.fx-motion .ui-empty-art .fx-float{animation:fxFloat 3.2s ease-in-out infinite}
+.fx-motion .ui-empty-art .fx-float.d2{animation-delay:-1.1s}.fx-motion .ui-empty-art .fx-float.d3{animation-delay:-2.2s}
+@keyframes fxFloat{50%{transform:translateY(-5px)}}
+.eq-empty .ui-empty-art{margin:0 auto 6px}
+/* Animation d'ouverture : le cadenas se ferme, la bulle glisse au centre, puis le journal apparaît. */
+#fx-splash{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;pointer-events:none;background:var(--fx-base,var(--bg));background-color:var(--bg);color:var(--txt);animation:fxSplashOut .45s ease .95s forwards}
+#fx-splash svg{width:min(300px,62vw);height:auto;overflow:visible;filter:drop-shadow(0 0 24px color-mix(in srgb,var(--accent) 30%,transparent))}
+#fx-splash .fx-shackle{animation:fxShackle .5s cubic-bezier(.5,1.8,.6,1) .12s both}
+#fx-splash .fx-bubble{animation:fxBubbleSlide .55s cubic-bezier(.3,1.5,.5,1) .38s both}
+#fx-splash .fx-word{animation:fxWord .45s ease .5s both}
+@keyframes fxShackle{from{transform:translateY(-16px)}}
+@keyframes fxBubbleSlide{from{transform:translateX(-30px);opacity:.4}}
+@keyframes fxWord{from{opacity:0;transform:translateX(-8px)}}
+@keyframes fxSplashOut{to{opacity:0;visibility:hidden}}
+/* Célébration « Locked in ✓ » : des bulles accent montent, une carte s'affiche au centre. */
+.fx-party{position:fixed;inset:0;z-index:9500;pointer-events:none;overflow:hidden}
+.fx-party i{position:absolute;bottom:-30px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px color-mix(in srgb,var(--accent) 70%,transparent);opacity:.9;animation:fxRise var(--d,2.2s) cubic-bezier(.2,.6,.4,1) var(--w,0s) forwards}
+.fx-party i:nth-child(3n){background:var(--purple);box-shadow:0 0 14px color-mix(in srgb,var(--purple) 70%,transparent)}
+@keyframes fxRise{to{transform:translate(var(--x,0),-105vh);opacity:0}}
+.fx-party-card{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);padding:22px 30px;border-radius:22px;text-align:center;background:color-mix(in srgb,var(--bg2) 88%,transparent);backdrop-filter:blur(16px);border:1px solid color-mix(in srgb,var(--accent) 40%,var(--border2));box-shadow:0 0 60px -10px color-mix(in srgb,var(--accent) 55%,transparent),0 30px 80px -20px rgba(0,0,0,.6);animation:fxPop .5s cubic-bezier(.3,1.6,.5,1) both,fxSplashOut .5s ease 2.6s forwards}
+.fx-party-card b{display:block;font-size:26px;letter-spacing:-.01em;color:var(--txt)}
+.fx-party-card b span{color:var(--accent)}
+.fx-party-card small{display:block;margin-top:6px;font-size:13.5px;color:var(--txt2)}
+@keyframes fxPop{from{opacity:0;transform:translate(-50%,-40%) scale(.85)}}
+@media (prefers-reduced-motion:reduce){#fx-splash,.fx-party{display:none}.hero-metric::before{animation:none}}

@@ -4,7 +4,7 @@ onReady(() => {
   initSidebarState();
   initDashboardLayout();
   applySavedTheme();
-  if (DB.getItem((GP + 'theme_texture')) === '1') document.body.classList.add('texture-on');
+  if (DB.getItem((GP + 'theme_texture')) !== '0') document.body.classList.add('texture-on');   // grain fin actif par défaut
   if (DB.getItem((GP + 'theme_autosystem')) === '1') applySystemTheme();
   applyNavOrder();
   initNavDragDrop();

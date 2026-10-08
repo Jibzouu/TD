@@ -88,6 +88,21 @@ function rkGuard(day) {
   const level = stops.length ? 'stop' : warns.length ? 'warn' : 'ok';
   return { level, stops, warns, cfg, lim, pnl, capPct, streakCap, byStreak, remaining, remainDay: left('day'), floor, marginFloor, eq: eqI.eq, peak: eqI.peak, dd: eqI.dd, factor, rec, base, plan, stage, prog, streak, nToday: todays.length, flags };
 }
+// Jauge « niveau à bulle » (le logo) : bulle au centre = calme ; elle glisse vers la droite à mesure que la journée
+// consomme sa marge (perte du jour, pertes d'affilée, nombre de trades) et vire à l'orange puis au rouge.
+function rkTilt(g) {
+  if (g.level === 'stop') return 1;
+  const day = g.lim && isFinite(g.lim.day) && g.lim.day > 0 ? Math.max(0, (g.lim.day - g.remaining) / g.lim.day) : 0;
+  const streak = g.cfg.maxConsec > 0 ? g.streak / g.cfg.maxConsec : 0;
+  const count = g.cfg.maxTrades > 0 ? g.nToday / g.cfg.maxTrades * 0.8 : 0;
+  let t = Math.max(day, streak, count);
+  if (g.level === 'warn') t = Math.max(t, 0.45);
+  return Math.min(0.9, Math.max(0, t));
+}
+function rkLevelGauge(g) {
+  const t = rkTilt(g);
+  return html`<span class="gc-level" style="${raw('--tilt:' + t.toFixed(2))}" role="img" aria-label="${rkL('Niveau de tilt : ', 'Tilt level: ') + Math.round(t * 100) + ' %'}"><i></i></span>`;
+}
 function rkHeadline(g) {
   if (g.level === 'stop') return rkL('STOP pour aujourd’hui', 'STOP for today');
   if (g.level === 'warn') return rkL('Prudence', 'Be careful');
@@ -241,8 +256,8 @@ function renderGuardCard() {
   el.className = 'guard-card g-' + g.level;
   el.hidden = false;
   mount(el, html`<button class="gc-main" onclick="showPage('risque', document.querySelector('.nav-item[data-page=risque]'))" title="${rkL('Ouvrir la gestion du risque', 'Open risk management')}">
-      <span class="gc-light" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span class="gc-txt"><b>${rkHeadline(g)}</b><span>${rkSentence(g)}</span>${(g.level === 'stop' ? g.stops.slice(1) : g.warns).slice(0, 2).map(w => html`<small>• ${w}</small>`)}</span>
+      ${rkLevelGauge(g)}
+      <span class="gc-txt"><b>${rkHeadline(g)}</b>${d.streak >= 2 ? html`<span class="fx-streak">🔒 ${d.streak} ${rkL('jours lock-in d’affilée', 'lock-in days in a row')}</span>` : ''}<span>${rkSentence(g)}</span>${(g.level === 'stop' ? g.stops.slice(1) : g.warns).slice(0, 2).map(w => html`<small>• ${w}</small>`)}</span>
     </button>
     <div class="gc-chips">
       ${chip(rkL('Reste aujourd’hui', 'Left today'), fmtEUR(g.remaining, false, 0), rkL('avant ta limite', 'before your limit'), g.remaining <= 0 ? 'red' : null)}
@@ -300,7 +315,7 @@ function renderRiskPage() {
   const go = p => "showPage('" + p + "', document.querySelector('.nav-item[data-page=" + p + "]'))";
   const num = (k, label, hint, unit, step) => html`<label class="rk-f"><span>${label}<small>${hint}</small></span><span class="rk-in"><input type="number" min="0" step="${step || 1}" value="${c[k]}" onchange="${raw("rkSetCfg('" + k + "', this.value)")}"><em>${unit}</em></span></label>`;
   // 1) Garde-fou
-  mount('rk-guard', html`<div class="rk-status g-${raw(g.level)}"><span class="gc-light" aria-hidden="true"><i></i><i></i><i></i></span><div><b>${rkHeadline(g)}</b><p>${rkSentence(g)}</p>
+  mount('rk-guard', html`<div class="rk-status g-${raw(g.level)}">${rkLevelGauge(g)}<div><b>${rkHeadline(g)}</b><p>${rkSentence(g)}</p>
       ${(g.level === 'stop' ? g.stops.slice(1) : []).concat(g.warns).length ? html`<ul>${(g.level === 'stop' ? g.stops.slice(1) : []).concat(g.warns).map(x => html`<li>${x}</li>`)}</ul>` : ''}</div></div>
     <div class="rk-kpis">
       ${[[rkL('Aujourd’hui', 'Today'), g.pnl.day, g.lim.day], [rkL('Cette semaine', 'This week'), g.pnl.week, g.lim.week], [rkL('Ce mois-ci', 'This month'), g.pnl.month, g.lim.month]].map(([l, p, lim]) => {

@@ -46,6 +46,34 @@ function chartFillAlpha(base) { return Math.min(base * chartIntensity(), 0.9); }
 function chartBorderW(base) { return Math.max(1, Math.min(base * Math.sqrt(chartIntensity()), base * 2)); }
 // Couleur avec transparence ; accepte #rgb / #rrggbb (les sélecteurs de couleur), sinon renvoie la couleur telle quelle.
 function withAlpha(color, a) { return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(color || '').trim()) ? hexToRgba(color.trim(), a) : color; }
+// Effets de la courbe d'équité (tous les thèmes) : remplissage qui s'estompe vers la ligne de départ, lueur de la
+// couleur d'accent sous la ligne, point qui pulse (élément HTML, voir .fx-pulse) quand le dernier point est un plus haut.
+function fxFadeFill(ctx, color, a, reverse) {
+  const h = ctx.canvas.clientHeight || ctx.canvas.height || 300, g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, withAlpha(color, reverse ? 0.01 : a)); g.addColorStop(1, withAlpha(color, reverse ? a : 0.01));
+  return g;
+}
+function fxGlowPlugin(color) {
+  return {
+    id: 'fxGlow',
+    beforeDatasetDraw(ch, args) { if (args.index !== 0) return; const c = ch.ctx; c.save(); c.shadowColor = withAlpha(color, .55); c.shadowBlur = 14; c.shadowOffsetY = 3; },
+    afterDatasetDraw(ch, args) { if (args.index === 0) ch.ctx.restore(); }
+  };
+}
+function fxPeakPulsePlugin(idx) {
+  const drop = ch => { const el = ch.canvas.parentNode && ch.canvas.parentNode.querySelector('.fx-pulse'); if (el) el.remove(); };
+  return {
+    id: 'fxPeakPulse',
+    afterDraw(ch) {
+      const wrap = ch.canvas.parentNode, pt = idx >= 0 && ch.getDatasetMeta(0).data[idx];
+      if (!wrap || !pt || typeof fxOn !== 'function' || !fxOn()) { drop(ch); return; }
+      let el = wrap.querySelector('.fx-pulse');
+      if (!el) { el = document.createElement('span'); el.className = 'fx-pulse'; el.setAttribute('aria-hidden', 'true'); wrap.appendChild(el); }
+      el.style.left = (ch.canvas.offsetLeft + pt.x) + 'px'; el.style.top = (ch.canvas.offsetTop + pt.y) + 'px';
+    },
+    beforeDestroy: drop
+  };
+}
 function chartTokens() {
   return {
     accent: cssVar('--accent', '#4c8dff'), green: cssVar('--green', '#26a69a'), red: cssVar('--red', '#ef5350'),

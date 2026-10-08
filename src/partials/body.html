@@ -462,7 +462,7 @@
                 <span class="widget-grip" title="Glisser pour déplacer">⠿</span>
               </span>
             </div>
-            <div class="eq-empty" id="eq-empty" hidden><b>Ta courbe d'équité apparaîtra ici</b><span>Ajoute un trade avec son P&amp;L (touche N pour une saisie rapide) ou importe un CSV depuis Export / Import.</span></div>
+            <div class="eq-empty" id="eq-empty" hidden><span class="eq-art" data-fx-art="📈"></span><b>Ta courbe d'équité apparaîtra ici</b><span>Ajoute un trade avec son P&amp;L (touche N pour une saisie rapide) ou importe un CSV depuis Export / Import.</span></div>
             <div class="chart-wrap" id="wrap-year-progress"><canvas id="yearProgressChart"></canvas></div>
             <div class="uw-head"><span>Drawdown depuis le plus haut</span><span id="drawdown-sub"></span></div>
             <div class="chart-wrap" id="wrap-underwater"><canvas id="underwaterChart"></canvas></div>
@@ -1371,6 +1371,7 @@
           <div>
             <label class="lbl-mono">Style d'arrière-plan</label>
             <div class="row-wrap8">
+              <button class="btn-ghost bg-style-btn" data-val="aurora" onclick="onBgStyleChange('aurora')">Aurore</button>
               <button class="btn-ghost bg-style-btn" data-val="solid" onclick="onBgStyleChange('solid')">Uni</button>
               <button class="btn-ghost bg-style-btn" data-val="gradient" onclick="onBgStyleChange('gradient')">Dégradé</button>
               <button class="btn-ghost bg-style-btn" data-val="grid" onclick="onBgStyleChange('grid')">Grille</button>
@@ -1395,6 +1396,10 @@
           <div class="span2-row">
             <input type="checkbox" id="autotheme-toggle" onchange="onAutoThemeChange(this.checked)">
             <label class="check-label-plain" for="autotheme-toggle">Suivre automatiquement le thème clair/sombre du système</label>
+          </div>
+          <div class="span2-row">
+            <input type="checkbox" id="fx-toggle" onchange="setFx(this.checked)">
+            <label class="check-label-plain" for="fx-toggle">Animations : ouverture, chiffres qui défilent, célébrations (coupées aussi si ton appareil demande moins d’animations)</label>
           </div>
         </div>
             </div>

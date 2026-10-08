@@ -223,6 +223,45 @@ test('thème LockIn : couleurs du logo, touches propres seulement sur ce thème,
   await ctx.close();
 });
 
+test('effets : LockIn par défaut (et Graphite basculé), ambiance Aurore, jauge niveau à bulle, écrans vides illustrés', async () => {
+  let { page, ctx, errors } = await openJournal({ seed: { g_fx_off: '0' } });
+  const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
+  assert.equal(await css('--bg'), '#0e1020', 'thème LockIn au premier lancement');
+  assert.deepEqual(await page.evaluate(() => ['theme-lockin', 'bgstyle-aurora', 'texture-on'].map(c => document.body.classList.contains(c))), [true, true, true]);
+  assert.ok(await page.evaluate(() => document.documentElement.classList.contains('fx-motion')));
+  await goto(page, 'trades');
+  assert.equal(await page.locator('#page-trades .ui-empty .ui-empty-art').count(), 1, 'écran vide illustré');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+  ({ page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--preset-key': 'default', '--bg': '#0c0d10', '--bg-style': 'solid' }), g_charter_v3: '1', tj_trades: [T({ id: 1, res: 'SL', pnl: -1, pnlEur: -100, date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }) })] } }));
+  assert.equal(await page.evaluate(() => loadThemeObj()['--preset-key']), 'lockin', 'Graphite (ancien thème de départ) → LockIn');
+  assert.equal(await page.evaluate(() => loadThemeObj()['--bg-style']), 'solid', 'ambiance choisie gardée');
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains('fx-motion')), false, 'animations coupées (réglage)');
+  const tilt = await page.evaluate(() => parseFloat(document.querySelector('#guard-card .gc-level').style.getPropertyValue('--tilt')));
+  assert.ok(tilt > 0, 'une perte aujourd’hui décale la bulle (' + tilt + ')');
+  assert.match(await page.locator('#guard-card .gc-level').getAttribute('aria-label'), /Niveau de tilt : \d+ %/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('effets : célébration « Locked in » une fois par jour, chiffres qui défilent jusqu’à la valeur exacte', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { g_fx_off: '0', tj_trades: [T({ id: 1, date: '2026-09-01' })] } });
+  await page.waitForTimeout(1800);   // fin de l'ouverture et des chiffres qui défilent
+  const bal = await page.locator('#k-balance').innerText();
+  await page.evaluate(() => renderAll());
+  assert.equal(await page.locator('#k-balance').innerText(), bal, 'valeur finale exacte');
+  await page.evaluate(() => { planData = Object.assign(planData || {}, { maxTP: 1 }); });
+  await page.evaluate(() => TradeStore.add({ date: localDateStr(), asset: 'DAX 40', dir: 'Long', res: 'TP', rr: 2, pnl: 2, pnlEur: 50 }));
+  await page.waitForSelector('.fx-party .fx-party-card');
+  assert.match(await page.locator('.fx-party-card').innerText(), /Locked in/);
+  assert.equal(await page.evaluate(() => DB.getItem(JP + 'fx_lockedin')), await page.evaluate(() => localDateStr()));
+  assert.equal(await page.evaluate(() => fxCheckLockedIn('trade')), false, 'une seule fois par jour');
+  await page.evaluate(() => setFx(false));
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains('fx-motion')), false);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('bilan journalier : le menu de date n’est pas coupé (texte centré, pas de marge verticale en trop)', async () => {
   const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--font-sans': "'Space Mono',monospace" }) } });
   await goto(page, 'bilan');
@@ -251,7 +290,7 @@ test('verrouillage automatique après inactivité (journal verrouillé)', async 
 });
 
 test('couleur des boutons : menthe LockIn par défaut, violet au choix, vert des gains distinct', async () => {
-  const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--preset-key': 'default' }) } });
+  const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--preset-key': 'default' }), g_lockin_default_v1: '1' } });   // Graphite gardé
   const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
   assert.equal(await css('--accent'), '#3ee6a8');
   assert.equal(await css('--green'), '#22c55e');

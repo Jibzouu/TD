@@ -39,6 +39,7 @@ export async function openJournal({ journal = 'tj', seed = {}, time = null, view
     localStorage.setItem('journal_active', journal);
     localStorage.setItem(journal + '_onboarded', '1');   // assistant de premier lancement déjà passé (sauf test dédié)
     localStorage.setItem('g_lessons_off', '1');           // pas de mini-leçon automatique (sauf test dédié, qui la réactive)
+    localStorage.setItem('g_fx_off', '1');                // pas d'animation (ouverture, chiffres qui défilent) : chiffres stables pour les tests
     Object.entries(seed).forEach(([k, v]) => localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)));
   }, { journal, seed });
   await page.goto(APP_URL);
