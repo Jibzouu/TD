@@ -48,6 +48,17 @@ await shot(icon(512, 116, 3.6), 512, join(PWA, 'icon-512.png'), true);
 await shot(icon(512, 0, 2.9), 512, join(PWA, 'icon-maskable-512.png'));
 await shot(icon(180, 0, 3.3), 180, join(PWA, 'apple-touch-icon.png'));
 for (const s of [512, 192, 32]) await shot(icon(s, 116, 3.6), s, join(BRAND, `lockin-icon-${s}.png`), true);
+// Logos en PNG haute définition (×3), pour les outils qui n'ouvrent pas le SVG (Canva, Word, réseaux sociaux…).
+async function png(name, w, h) {
+  await page.setViewportSize({ width: w * 3, height: h * 3 });
+  const svg = readFileSync(join(BRAND, name + '.svg'), 'utf8').replace(/width="\d+" height="\d+"/, `width="${w * 3}" height="${h * 3}"`);
+  await page.setContent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`);
+  writeFileSync(join(BRAND, name + '.png'), await page.screenshot({ omitBackground: true }));
+  console.log('✓', 'brand/' + name + '.png');
+}
+for (const n of ['lockin-logo-dark', 'lockin-logo-light', 'lockin-logo-transparent']) await png(n, 480, 140);
+await png('lockin-mark', 160, 128);
+await png('lockin-wordmark', 312, 118);
 // Planche d'aperçu : logos sombre / clair, icône à 3 tailles, mot seul.
 const f = n => readFileSync(join(BRAND, n), 'utf8');
 await page.setViewportSize({ width: 1200, height: 760 });
