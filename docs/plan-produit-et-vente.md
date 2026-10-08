@@ -96,6 +96,8 @@ Le code est déjà prêt pour la synchro (identifiants universels, dates de modi
 
 ## 6. Ce qu'on peut faire dès maintenant, en restant en local
 
+> ✅ Les 10 points ci-dessous sont faits (octobre 2026). Le journal s'appelle désormais **Untilt** (logo et icônes dans `brand/`).
+
 Tout ce qui suit fonctionne sans serveur, dans le fichier actuel, et servira tel quel dans la future version en ligne. Par ordre de priorité :
 
 1. **Mode simple pour débutant.** Au premier lancement, 4 pages visibles (Dashboard, Journal, Gestion du risque, Guide) ; les autres se débloquent avec le parcours de progression ou un bouton « tout afficher ». C'est le changement qui aide le plus les débutants.
@@ -228,7 +230,24 @@ Le message « protège ton capital » est exactement ce que les autorités veule
 
 ---
 
-## 13. Sources
+## 13. À faire plus tard
+
+### Connecteur MetaTrader 5 (broker : Vantage) — au passage en compte réel
+
+- **But** : les trades arrivent tout seuls dans Untilt, sans export manuel.
+- **Comment** : un petit robot (Expert Advisor MQL5) installé une fois dans MT5 écrit chaque trade clôturé dans un fichier (dossier `MQL5/Files`) ; Untilt lit ce dossier à chaque ouverture (choisi une fois, Chrome ou Edge), sans doublon.
+- **Bonus** : le robot note le **stop loss d'origine** à l'entrée → R exact, même si le stop a été déplacé ensuite.
+- **Vantage** : MT4 et MT5 disponibles ; les trades pris sur l'appli Vantage ou ProTrader passent par le compte MT, donc récupérés aussi.
+- **À prévoir** : version MT4 si besoin, puis même principe pour cTrader (cBot) et NinjaTrader.
+- **Test** : sur le PC, d'abord sur un compte démo Vantage.
+- **En attendant** : import manuel du rapport MT5 (Historique → clic droit → Rapport, HTML ou Excel).
+
+### Avec la version en ligne
+
+- Connexion directe cTrader Open API (autorisation sécurisée) et exchanges crypto (clés en lecture seule via un serveur).
+- Tradovate / TopstepX / Rithmic : seulement via partenariats, si des clients futures le demandent.
+
+## 14. Sources
 
 - TradeZella — nouvelle grille tarifaire 2026 : https://www.tradezella.com/blog/tradezella-pricing
 - Comparatif des journaux 2026 : https://newyorkcityservers.com/blog/best-trading-journal-apps
