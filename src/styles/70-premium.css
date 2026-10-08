@@ -884,3 +884,19 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 }
 /* Focus clavier bien visible sur les nouveaux boutons */
 .qa-chip:focus-visible,.ac-btn:focus-visible,.gd-lesson:focus-visible,.lp-x:focus-visible,.fab-add:focus-visible,.nav-simple-foot button:focus-visible,.lk-box button:focus-visible,.lk-box input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── Thème « LockIn » (couleurs dans THEME_PRESETS.lockin, classe posée par applyBodyStyleClasses) ──
+   Fond en dégradé comme l'icône (#151935 → #0E1020) avec un halo menthe discret derrière le logo ; panneaux bleu nuit
+   légèrement translucides ; boutons en pilule (la forme du niveau) ; page active marquée par un petit niveau à bulle. */
+body.theme-lockin{background:radial-gradient(520px 320px at 0 0,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%),linear-gradient(135deg,#151935 0%,var(--bg) 60%) fixed;background-color:var(--bg)}
+body.theme-lockin .sidebar{background:color-mix(in srgb,var(--bg) 72%,transparent);border-right-color:color-mix(in srgb,var(--border) 80%,transparent);backdrop-filter:blur(6px)}
+body.theme-lockin .panel,body.theme-lockin .stat-section,body.theme-lockin .plan-card,body.theme-lockin .export-card,body.theme-lockin .kpi,
+body.theme-lockin .day-strip,body.theme-lockin .ui-card,body.theme-lockin .tbl-card,body.theme-lockin .routine,body.theme-lockin .rp-chart-card{background:color-mix(in srgb,var(--bg2) 90%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--txt) 6%,transparent),0 12px 28px -22px rgba(0,0,0,.7)}
+body.theme-lockin .hero-metric{background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg2)),color-mix(in srgb,var(--bg2) 92%,transparent) 60%);border-color:color-mix(in srgb,var(--accent) 18%,var(--border))}
+body.theme-lockin .btn-primary,body.theme-lockin button.btn-primary,body.theme-lockin .btn-ghost,body.theme-lockin .acc-current,body.theme-lockin .lk-box button{border-radius:999px}
+body.theme-lockin .btn-primary,body.theme-lockin button.btn-primary{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),0 8px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent)}
+body.theme-lockin .nav-item.active{background:color-mix(in srgb,var(--accent) 9%,var(--bg3));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent)}
+body.theme-lockin .nav-item.active .nav-grip{opacity:1;width:13px;height:7px;margin:0 -1px 0 -5px;border-radius:99px;border:1.4px solid color-mix(in srgb,var(--txt) 50%,transparent);background:radial-gradient(circle,var(--accent) 0 1.9px,transparent 2.4px)}
+body.theme-lockin .nav-item.active .nav-grip>*{display:none}
+body.theme-lockin .brand-row{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--accent) 22%,transparent))}
+body.theme-lockin ::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}

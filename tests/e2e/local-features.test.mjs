@@ -205,6 +205,24 @@ test('marque LockIn : logo, titre, accent menthe (accent choisi à la main gard�
   await ctx.close();
 });
 
+test('thème LockIn : couleurs du logo, touches propres seulement sur ce thème, gardé au rechargement', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1 })] } });
+  const css = v => page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), v);
+  await goto(page, 'parametres');
+  await page.locator('#theme-preset-grid .theme-swatch', { hasText: 'LockIn' }).click();
+  assert.equal(await css('--bg'), '#0e1020');
+  assert.equal(await css('--accent'), '#3ee6a8');
+  assert.ok(await page.evaluate(() => document.body.classList.contains('theme-lockin')));
+  // Page active : le petit niveau remplace la poignée de déplacement.
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.nav-item.active .nav-grip')).borderRadius), '99px');
+  await page.reload(); await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+  assert.ok(await page.evaluate(() => document.body.classList.contains('theme-lockin')), 'gardé au rechargement');
+  await page.evaluate(() => applyPreset('default', true));
+  assert.equal(await page.evaluate(() => document.body.classList.contains('theme-lockin')), false, 'retiré sur un autre thème');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('bilan journalier : le menu de date n’est pas coupé (texte centré, pas de marge verticale en trop)', async () => {
   const { page, ctx, errors } = await openJournal({ seed: { g_theme: JSON.stringify({ '--font-sans': "'Space Mono',monospace" }) } });
   await goto(page, 'bilan');

@@ -39,7 +39,7 @@ test('dates locales, semaine ISO et thèmes', async () => {
   await goto(page, 'calendrier');
   assert.match(await page.locator('#rr-week-table').innerText(), /S40 · dès le 28\/09/);
   await goto(page, 'parametres');
-  assert.equal(await page.locator('#theme-preset-grid .theme-swatch').count(), 4, 'Graphite, Porcelaine, Minuit, Contraste');
+  assert.equal(await page.locator('#theme-preset-grid .theme-swatch').count(), 5, 'LockIn, Graphite, Porcelaine, Minuit, Contraste');
   await page.keyboard.press('Escape');
   assert.ok(await page.evaluate(() => document.body.classList.contains('sidebar-open')), 'Échap ne ferme pas la sidebar sur ordinateur');
   assert.deepEqual(errors, []);

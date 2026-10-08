@@ -2614,6 +2614,22 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
 /* Focus clavier bien visible sur les nouveaux boutons */
 .qa-chip:focus-visible,.ac-btn:focus-visible,.gd-lesson:focus-visible,.lp-x:focus-visible,.fab-add:focus-visible,.nav-simple-foot button:focus-visible,.lk-box button:focus-visible,.lk-box input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+/* ── Thème « LockIn » (couleurs dans THEME_PRESETS.lockin, classe posée par applyBodyStyleClasses) ──
+   Fond en dégradé comme l'icône (#151935 → #0E1020) avec un halo menthe discret derrière le logo ; panneaux bleu nuit
+   légèrement translucides ; boutons en pilule (la forme du niveau) ; page active marquée par un petit niveau à bulle. */
+body.theme-lockin{background:radial-gradient(520px 320px at 0 0,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%),linear-gradient(135deg,#151935 0%,var(--bg) 60%) fixed;background-color:var(--bg)}
+body.theme-lockin .sidebar{background:color-mix(in srgb,var(--bg) 72%,transparent);border-right-color:color-mix(in srgb,var(--border) 80%,transparent);backdrop-filter:blur(6px)}
+body.theme-lockin .panel,body.theme-lockin .stat-section,body.theme-lockin .plan-card,body.theme-lockin .export-card,body.theme-lockin .kpi,
+body.theme-lockin .day-strip,body.theme-lockin .ui-card,body.theme-lockin .tbl-card,body.theme-lockin .routine,body.theme-lockin .rp-chart-card{background:color-mix(in srgb,var(--bg2) 90%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--txt) 6%,transparent),0 12px 28px -22px rgba(0,0,0,.7)}
+body.theme-lockin .hero-metric{background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 7%,var(--bg2)),color-mix(in srgb,var(--bg2) 92%,transparent) 60%);border-color:color-mix(in srgb,var(--accent) 18%,var(--border))}
+body.theme-lockin .btn-primary,body.theme-lockin button.btn-primary,body.theme-lockin .btn-ghost,body.theme-lockin .acc-current,body.theme-lockin .lk-box button{border-radius:999px}
+body.theme-lockin .btn-primary,body.theme-lockin button.btn-primary{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),0 8px 22px -10px color-mix(in srgb,var(--accent) 70%,transparent)}
+body.theme-lockin .nav-item.active{background:color-mix(in srgb,var(--accent) 9%,var(--bg3));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent)}
+body.theme-lockin .nav-item.active .nav-grip{opacity:1;width:13px;height:7px;margin:0 -1px 0 -5px;border-radius:99px;border:1.4px solid color-mix(in srgb,var(--txt) 50%,transparent);background:radial-gradient(circle,var(--accent) 0 1.9px,transparent 2.4px)}
+body.theme-lockin .nav-item.active .nav-grip>*{display:none}
+body.theme-lockin .brand-row{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--accent) 22%,transparent))}
+body.theme-lockin ::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+
 </style>
 </head>
 <body>
@@ -6875,6 +6891,9 @@ const THEME_VARS = [
 ];
 
 const THEME_PRESETS = {
+  // Thème de la marque : bleu nuit de l'icône (dégradé #151935 → #0E1020), blanc et menthe du logo. Touches propres
+  // (classe body.theme-lockin, 70-premium.css) : fond en dégradé, boutons en pilule, page active marquée par un petit niveau.
+  lockin:   { name:'LockIn', emoji:'◉', colors:{'--bg':'#0e1020','--bg2':'#13162a','--bg3':'#1a1e36','--bg4':'#232844','--border':'#22273f','--border2':'#2f3553','--txt':'#f5f7fb','--txt2':'#c4c9db','--txt3':'#9da4bc','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#6ea8ff','--purple':'#a78bfa','--nav-icon-color':'#9da4bc','--nav-text-color':'#c4c9db','--logo-color':'#3ee6a8'} },
   default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#c0c5cf','--txt3':'#99a0ad','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#99a0ad','--nav-text-color':'#c0c5cf','--logo-color':'#3ee6a8'} },
   proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#3f4554','--txt3':'#5f6676','--accent':'#0f766e','--on-accent':'#ffffff','--green':'#15803d','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#5f6676','--nav-text-color':'#3f4554','--logo-color':'#0f766e'} },
   midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#bcc3d8','--txt3':'#959db6','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#959db6','--nav-text-color':'#bcc3d8','--logo-color':'#3ee6a8'} },
@@ -7008,6 +7027,7 @@ function applyBodyStyleClasses(theme) {
   if (card === 'glass') document.body.classList.add('cardstyle-glass');
   else if (card === 'elevated') document.body.classList.add('cardstyle-elevated');
   if (theme['--glow']) document.body.classList.add('glow-on');
+  document.body.classList.toggle('theme-lockin', theme['--preset-key'] === 'lockin');
 }
 
 function applySavedTheme() {
@@ -7064,6 +7084,7 @@ function onColorPick(key, hex, derive) {
     }
   }
   saveThemeObj(theme);
+  applyBodyStyleClasses(theme);
 }
 
 function onRadiusChange(val) {
@@ -7159,6 +7180,7 @@ function applyPreset(key, silent) {
   });
   theme['--preset-key'] = key;
   saveThemeObj(theme);
+  applyBodyStyleClasses(theme);
   renderSettingsPage();
   if (typeof renderAll === 'function') renderAll();
   if (!silent) showToast(preset.emoji + ' Thème "' + preset.name + '" appliqué ✓', 'success');
@@ -16155,6 +16177,7 @@ const GUIDE = [
     items: [
       ['Mode et sécurité : mode simple (débutant) et code de verrouillage. Avec un code, tes données sont chiffrées sur l’appareil et le journal demande le code à l’ouverture ; sans le code, personne ne peut les lire (garde une sauvegarde, un code oublié ne se récupère pas).', 'Mode and security: simple mode (beginner) and lock code. With a code, your data is encrypted on the device and the journal asks for the code when opening; without the code nobody can read it (keep a backup, a forgotten code cannot be recovered).'],
       ['Langue, comptes, solde de départ, perte journalière max, disposition du Dashboard.', 'Language, accounts, starting balance, daily max loss, Dashboard layout.'],
+      ['Thème « LockIn » : les couleurs du logo (bleu nuit, blanc, menthe), fond en dégradé, boutons arrondis et la page active marquée par un petit niveau à bulle.', '“LockIn” theme: the logo colors (night blue, white, mint), gradient background, rounded buttons and the active page marked by a small spirit level.'],
       ['Thèmes (dont Néon) et « Personnaliser mon thème » : couleurs, ambiance, formes et polices, graphiques, mes thèmes.', 'Themes (including Neon) and “Customize my theme”: colors, mood, shapes and fonts, charts, my themes.']
     ] },
   { id: 'guide', page: 'guide', icon: '📖', title: ['Guide', 'Guide'],
@@ -17191,7 +17214,7 @@ function memorySyncAdapter(store) {
 // Boutons, sélection, étapes… Par défaut le vert menthe de la marque (bien distinct du vert des gains, plus franc).
 // « Violet » remet l'accent classique sur les 4 thèmes de base. Réglage commun aux comptes (g_accent_choice) ;
 // un thème personnalisé (sans --preset-key) garde toujours son propre accent.
-const ACCENT_VIOLET = { default: ['#5d6cf6', '#ffffff'], proclair: ['#4f5fe8', '#ffffff'], midnight: ['#7aa2ff', '#0a0d16'], contrast: ['#8c9bff', '#000000'] };
+const ACCENT_VIOLET = { lockin: ['#8c94ff', '#0e1020'], default: ['#5d6cf6', '#ffffff'], proclair: ['#4f5fe8', '#ffffff'], midnight: ['#7aa2ff', '#0a0d16'], contrast: ['#8c9bff', '#000000'] };
 const acL = (fr, en) => LANG === 'en' ? en : fr;
 function accentChoice() { return DB.getItem('g_accent_choice') === 'violet' ? 'violet' : 'mint'; }
 function applyAccentChoice() {

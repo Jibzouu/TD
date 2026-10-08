@@ -35,6 +35,9 @@ const THEME_VARS = [
 ];
 
 const THEME_PRESETS = {
+  // Thème de la marque : bleu nuit de l'icône (dégradé #151935 → #0E1020), blanc et menthe du logo. Touches propres
+  // (classe body.theme-lockin, 70-premium.css) : fond en dégradé, boutons en pilule, page active marquée par un petit niveau.
+  lockin:   { name:'LockIn', emoji:'◉', colors:{'--bg':'#0e1020','--bg2':'#13162a','--bg3':'#1a1e36','--bg4':'#232844','--border':'#22273f','--border2':'#2f3553','--txt':'#f5f7fb','--txt2':'#c4c9db','--txt3':'#9da4bc','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#6ea8ff','--purple':'#a78bfa','--nav-icon-color':'#9da4bc','--nav-text-color':'#c4c9db','--logo-color':'#3ee6a8'} },
   default:  { name:'Graphite', emoji:'◐', colors:{'--bg':'#0c0d10','--bg2':'#121418','--bg3':'#181b21','--bg4':'#20242c','--border':'#22262e','--border2':'#2e333d','--txt':'#eceef2','--txt2':'#c0c5cf','--txt3':'#99a0ad','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#5aa9ff','--purple':'#a78bfa','--nav-icon-color':'#99a0ad','--nav-text-color':'#c0c5cf','--logo-color':'#3ee6a8'} },
   proclair: { name:'Porcelaine', emoji:'○', colors:{'--bg':'#f6f7f9','--bg2':'#ffffff','--bg3':'#f2f3f6','--bg4':'#e9ebf0','--border':'#e4e6eb','--border2':'#d5d8df','--txt':'#111318','--txt2':'#3f4554','--txt3':'#5f6676','--accent':'#0f766e','--on-accent':'#ffffff','--green':'#15803d','--red':'#d93a47','--amber':'#b9770e','--blue':'#2f7fdb','--purple':'#7a5ae0','--nav-icon-color':'#5f6676','--nav-text-color':'#3f4554','--logo-color':'#0f766e'} },
   midnight: { name:'Minuit', emoji:'◑', colors:{'--bg':'#0a0d16','--bg2':'#0f1320','--bg3':'#151a2b','--bg4':'#1c2236','--border':'#1f2639','--border2':'#2a3249','--txt':'#e8ebf5','--txt2':'#bcc3d8','--txt3':'#959db6','--accent':'#3ee6a8','--on-accent':'#06281c','--green':'#22c55e','--red':'#f2555a','--amber':'#e8a53a','--blue':'#7aa2ff','--purple':'#b49cff','--nav-icon-color':'#959db6','--nav-text-color':'#bcc3d8','--logo-color':'#3ee6a8'} },
@@ -168,6 +171,7 @@ function applyBodyStyleClasses(theme) {
   if (card === 'glass') document.body.classList.add('cardstyle-glass');
   else if (card === 'elevated') document.body.classList.add('cardstyle-elevated');
   if (theme['--glow']) document.body.classList.add('glow-on');
+  document.body.classList.toggle('theme-lockin', theme['--preset-key'] === 'lockin');
 }
 
 function applySavedTheme() {
@@ -224,6 +228,7 @@ function onColorPick(key, hex, derive) {
     }
   }
   saveThemeObj(theme);
+  applyBodyStyleClasses(theme);
 }
 
 function onRadiusChange(val) {
@@ -319,6 +324,7 @@ function applyPreset(key, silent) {
   });
   theme['--preset-key'] = key;
   saveThemeObj(theme);
+  applyBodyStyleClasses(theme);
   renderSettingsPage();
   if (typeof renderAll === 'function') renderAll();
   if (!silent) showToast(preset.emoji + ' Thème "' + preset.name + '" appliqué ✓', 'success');

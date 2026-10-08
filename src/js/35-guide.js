@@ -143,6 +143,7 @@ const GUIDE = [
     items: [
       ['Mode et sécurité : mode simple (débutant) et code de verrouillage. Avec un code, tes données sont chiffrées sur l’appareil et le journal demande le code à l’ouverture ; sans le code, personne ne peut les lire (garde une sauvegarde, un code oublié ne se récupère pas).', 'Mode and security: simple mode (beginner) and lock code. With a code, your data is encrypted on the device and the journal asks for the code when opening; without the code nobody can read it (keep a backup, a forgotten code cannot be recovered).'],
       ['Langue, comptes, solde de départ, perte journalière max, disposition du Dashboard.', 'Language, accounts, starting balance, daily max loss, Dashboard layout.'],
+      ['Thème « LockIn » : les couleurs du logo (bleu nuit, blanc, menthe), fond en dégradé, boutons arrondis et la page active marquée par un petit niveau à bulle.', '“LockIn” theme: the logo colors (night blue, white, mint), gradient background, rounded buttons and the active page marked by a small spirit level.'],
       ['Thèmes (dont Néon) et « Personnaliser mon thème » : couleurs, ambiance, formes et polices, graphiques, mes thèmes.', 'Themes (including Neon) and “Customize my theme”: colors, mood, shapes and fonts, charts, my themes.']
     ] },
   { id: 'guide', page: 'guide', icon: '📖', title: ['Guide', 'Guide'],

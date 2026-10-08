@@ -2,7 +2,7 @@
 // Boutons, sélection, étapes… Par défaut le vert menthe de la marque (bien distinct du vert des gains, plus franc).
 // « Violet » remet l'accent classique sur les 4 thèmes de base. Réglage commun aux comptes (g_accent_choice) ;
 // un thème personnalisé (sans --preset-key) garde toujours son propre accent.
-const ACCENT_VIOLET = { default: ['#5d6cf6', '#ffffff'], proclair: ['#4f5fe8', '#ffffff'], midnight: ['#7aa2ff', '#0a0d16'], contrast: ['#8c9bff', '#000000'] };
+const ACCENT_VIOLET = { lockin: ['#8c94ff', '#0e1020'], default: ['#5d6cf6', '#ffffff'], proclair: ['#4f5fe8', '#ffffff'], midnight: ['#7aa2ff', '#0a0d16'], contrast: ['#8c9bff', '#000000'] };
 const acL = (fr, en) => LANG === 'en' ? en : fr;
 function accentChoice() { return DB.getItem('g_accent_choice') === 'violet' ? 'violet' : 'mint'; }
 function applyAccentChoice() {
