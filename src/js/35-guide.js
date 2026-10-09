@@ -36,7 +36,7 @@ const GUIDE = [
     intro: ['Tous tes trades, groupés par jour par défaut (bouton « Grouper par jour » pour changer, choix gardé).', 'All your trades, grouped by day by default (“Group by day” button to change, remembered).'],
     items: [
       ['Chaque jour affiche ses trades, TP / SL / BE et son résultat en R et en €.', 'Each day shows its trades, TP / SL / BE and its result in R and €.'],
-      ['Filtres : recherche, résultat, actif, session, dates. Clique un en-tête de colonne pour trier.', 'Filters: search, result, asset, session, dates. Click a column header to sort.'],
+      ['Filtres : recherche (actif, setup, notes, erreurs, #tags), résultat, actif, session, dates. Clique un en-tête de colonne pour trier.', 'Filters: search (asset, setup, notes, mistakes, #tags), result, asset, session, dates. Click a column header to sort.'],
       ['Clique une ligne pour ouvrir la fiche : captures (annotables), notes, tags, erreurs, checklist, MAE / MFE. ← / → passe au trade précédent / suivant, E pour modifier.', 'Click a row to open the trade sheet: screenshots (annotatable), notes, tags, mistakes, checklist, MAE / MFE. ← / → for previous / next, E to edit.'],
       ['Le R est calculé depuis les prix (entrée, stop, sortie) quand ils sont renseignés ; sinon depuis ton P&L et ton risque.', 'R is computed from prices (entry, stop, exit) when available; otherwise from your P&L and risk.']
     ] },
@@ -85,7 +85,8 @@ const GUIDE = [
     intro: ['Compte Prop Firm uniquement : suis les règles de ton challenge.', 'Prop Firm account only: track your challenge rules.'],
     items: [
       ['Règles pré-remplies : choisis ta prop firm (FTMO, The5ers, FundedNext, Topstep, Apex) et l’étape : objectif, pertes max, type de drawdown, jours minimum et perte max du jour sont réglés en un clic. Vérifie toujours les règles exactes de ton offre.', 'Pre-filled rules: pick your prop firm (FTMO, The5ers, FundedNext, Topstep, Apex) and the step: target, max losses, drawdown type, minimum days and daily max loss are set in one click. Always check your plan’s exact rules.'],
-      ['Objectif de profit, perte maximale journalière et totale, jours minimum : avancement et marge restante.', 'Profit target, daily and total max loss, minimum days: progress and remaining margin.']
+      ['Objectif de profit, perte maximale journalière et totale, jours minimum : avancement et marge restante.', 'Profit target, daily and total max loss, minimum days: progress and remaining margin.'],
+      ['Perte maximale totale : tout l’historique est rejoué — si l’équité a touché le seuil un jour, le challenge reste en échec même si le compte est remonté depuis (la date est indiquée).', 'Total max loss: the whole history is replayed — if equity ever touched the floor, the challenge stays failed even if the account recovered since (the date is shown).']
     ] },
   { id: 'replay', page: 'replay', icon: '⏯️', title: ['Backtest replay', 'Backtest replay'],
     intro: ['Compte Backtest uniquement : rejoue le marché bougie par bougie, sans voir le futur, et trade comme en réel. Chaque trade fermé part dans ton journal avec une capture.', 'Backtest account only: replay the market bar by bar, without seeing the future, and trade as if live. Every closed trade goes to your journal with a screenshot.'],
@@ -137,6 +138,7 @@ const GUIDE = [
       ['Les fichiers de la sauvegarde automatique hebdomadaire (tous les comptes) se restaurent avec « Restaurer » ; un rappel apparaît si aucune sauvegarde n’a été faite depuis 7 jours.', 'Weekly automatic backup files (all accounts) are restored with “Restore”; a reminder shows up if no backup was made for 7 days.'],
       ['Import MetaTrader 5 : rapport d’historique en HTML ou en Excel (.xlsx), avec un pas à pas illustré sous le bouton d’import.', 'MetaTrader 5 import: history report as HTML or Excel (.xlsx), with an illustrated step-by-step under the import button.'],
       ['Sauvegarde complète (fichier) et restauration ; synchronisation entre appareils par fichier (fusion sans doublons).', 'Full backup (file) and restore; sync between devices by file (merge without duplicates).'],
+      ['« Annuler la dernière importation » remet les trades d’avant l’import ou la fusion, captures comprises. « Recalculer les sessions » n’agit que sur les trades importés d’un fichier (pas sur ceux saisis à la main ou venus du Replay).', '“Undo last import” brings back the trades from before the import or merge, screenshots included. “Recalculate sessions” only affects trades imported from a file (not those entered by hand or from Replay).'],
       ['Export CSV de tes trades ; import TradingView, MetaTrader 4/5, cTrader.', 'CSV export of your trades; TradingView, MetaTrader 4/5, cTrader import.'],
       ['Rapport mentor : un fichier à partager avec ton mentor sur la période choisie.', 'Mentor report: a file to share with your mentor for the chosen period.'],
       ['La sauvegarde inclut aussi tes réglages de Gestion du risque (garde-fou, étape du parcours, mode Personnalisé).', 'The backup also includes your Risk management settings (guard, path step, Custom mode).'],

@@ -289,7 +289,7 @@ function renderKpiSparklines() {
   const wrAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP').length, l = b.filter(t => t.res === 'SL').length; return w + l ? w / (w + l) * 100 : 0; };
   const cum = []; closed.reduce((c, t, i) => (cum[i + 1] = c + (t.pnl || 0)), 0); cum[0] = 0;
   const payoffAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : null; };
-  const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.filter(t => t.res === 'TP').reduce((s, t) => s + eurOf(t), 0), gl = Math.abs(b.filter(t => t.res === 'SL').reduce((s, t) => s + eurOf(t), 0)); return gl > 0 ? Math.min(gw / gl, 5) : null; };
+  const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.reduce((s, t) => s + Math.max(0, eurOf(t)), 0), gl = -b.reduce((s, t) => s + Math.min(0, eurOf(t)), 0); return gl > 0 ? Math.min(gw / gl, 5) : null; };
   // Au plus ~30 points, régulièrement espacés, du KPI_WINDOW-ième trade au dernier.
   const n = closed.length, steps = Math.min(30, n - KPI_WINDOW + 1);
   const at = [...new Set(Array.from({ length: steps }, (_, j) => Math.round(KPI_WINDOW + (n - KPI_WINDOW) * j / Math.max(1, steps - 1))))];

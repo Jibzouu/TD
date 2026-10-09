@@ -152,9 +152,12 @@ function saveTZOffset() {
   DB.setItem((JP + 'tz_offset_hours'), TZ_OFFSET_HOURS);
 }
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
+// Les trades saisis à la main ou venus du Replay sont en heure locale : le décalage d'export ne les concerne pas
+// (et la session choisie dans le formulaire ne doit pas être écrasée).
+function isFileImportedTrade(t) { return !!((t.tvKey && !/^replay:/.test(t.tvKey)) || (t.importSource && t.importSource !== 'Replay')); }
 function recalcSessions() {
   const touched = TradeStore.mutate(list => list.filter(t => {
-    if (!t.entry) return false;
+    if (!t.entry || !isFileImportedTrade(t)) return false;
     const h = parseInt(t.entry.split(':')[0], 10);
     if (isNaN(h)) return false;
     const ns = sessionFromHour(h);

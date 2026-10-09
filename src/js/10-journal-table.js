@@ -23,7 +23,7 @@ function filterTrades() {
     if (dateFrom && t.date && t.date < dateFrom) return false;
     if (dateTo && t.date && t.date > dateTo) return false;
     if (search) {
-      const hay = [t.asset, t.desc, t.dir, t.session, ...(Array.isArray(t.mistakes) ? t.mistakes : [])].filter(Boolean).join(' ').toLowerCase();
+      const hay = [t.asset, t.desc, t.dir, t.session, t.setup, t.review, ...(Array.isArray(t.mistakes) ? t.mistakes : []), ...(Array.isArray(t.tags) ? t.tags.map(x => '#' + x) : [])].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
