@@ -57,7 +57,17 @@ function computePropFirmStatus() {
     floor = peak - ddAmount;
   }
   const distanceToFloor = currentEquity - floor;
-  const breached = currentEquity <= floor;
+  // Le challenge est perdu dès que l'équité touche le seuil, même si elle est remontée depuis : on rejoue l'historique
+  // avec le seuil en vigueur à chaque instant (plus haut atteint jusque-là, ou en fin des journées précédentes en EOD).
+  let breachDate = null, runPeak = startBalance, eodPeak = startBalance, curDay = null, dayEnd = startBalance;
+  points.forEach(p => {
+    if (p.date !== curDay) { eodPeak = Math.max(eodPeak, dayEnd); curDay = p.date; }
+    runPeak = Math.max(runPeak, p.equity);
+    const f = ddType === 'static' ? startBalance - ddAmount : (ddType === 'trailing_intraday' ? runPeak : eodPeak) - ddAmount;
+    if (breachDate === null && p.equity <= f) breachDate = p.date;
+    dayEnd = p.equity;
+  });
+  const breached = currentEquity <= floor || breachDate !== null;
 
   const totalPnl = currentEquity - startBalance;
   const targetAmount = startBalance * (profitTargetPct/100);
@@ -87,7 +97,7 @@ function computePropFirmStatus() {
   const dailyOk = dailyBreaches.length === 0;
 
   return { startBalance, maxDDPct, ddType, profitTargetPct, minDays, consistencyOn, consistencyPct, dailyLimitPct,
-    currentEquity, floor, distanceToFloor, breached, totalPnl, targetAmount, targetProgress, targetReached,
+    currentEquity, floor, distanceToFloor, breached, breachDate, totalPnl, targetAmount, targetProgress, targetReached,
     tradingDays, daysOk, bestDayPnl, bestDayPct, consistencyOk,
     dailyLimitAmount, dailyBreaches, dailyOk, worstDayDate: worstDay ? worstDay[0] : null, worstDayPnl: worstDay ? worstDay[1] : 0 };
 }
@@ -114,7 +124,7 @@ function renderPropFirm() {
   const allOk = !s.breached && s.dailyOk && s.consistencyOk;
   const readyToPass = allOk && s.targetReached && s.daysOk;
   let verdictText, verdictTone, verdictIcon;
-  if (s.breached) { verdictText = 'Drawdown maximum dépassé — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
+  if (s.breached) { verdictText = s.breachDate ? 'Drawdown maximum dépassé (' + fmtDateNum(s.breachDate) + ') — challenge en échec' : 'Drawdown maximum dépassé — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
   else if (!s.dailyOk) { verdictText = 'Perte journalière max dépassée (' + s.dailyBreaches.join(', ') + ') — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
   else if (readyToPass) { verdictText = 'Toutes les conditions sont réunies'; verdictTone = 'green'; verdictIcon = '✅'; }
   else if (!s.consistencyOk) { verdictText = 'Règle de consistance non respectée sur le profit actuel'; verdictTone = 'amber'; verdictIcon = '⚠️'; }

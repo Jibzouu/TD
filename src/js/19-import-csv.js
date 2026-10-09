@@ -242,7 +242,7 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
       date, asset, tf: '', dir, session: sessionFromHour(entryDT.hour),
       entry: entryDT.time, exit: exitDT.time, emotion: null,
       res, rr: finalR, pnl: finalR, rSrc: distRPlausible ? 'prix' : rmSrc.src, pnlEur: pnl, ccy: srcCcy || '', fxRate: fx, size: null, cap: '',
-      mfe, mae, tvKey, entryPrice, slPrice: finalSlPrice, tpPrice: levels.tpPrice, exitPrice,
+      mfe, mae, tvKey, importSource: 'TradingView', entryPrice, slPrice: finalSlPrice, tpPrice: levels.tpPrice, exitPrice,
       desc: signalName,
       setup: signalName.slice(0, 60)   // le « signal » TradingView = nom de la stratégie → sert de setup pour le filtre et le Détecteur d'edge
     });

@@ -91,11 +91,21 @@ const TradeStore = (() => {
     return true;
   }
   function removeImages(ids) { ids.forEach(id => ImageStore.remove(id)); }
-  function referencedImages() { const s = playbookImageIds(); trades.forEach(t => (t.imgs || []).forEach(id => s.add(id))); return s; }
+  // Captures encore utilisées : trades, playbooks, corbeille et copie de sécurité (« Annuler la dernière importation »
+  // doit retrouver les captures des trades qu'un import a remplacés).
+  function referencedImages() {
+    const s = playbookImageIds();
+    trades.forEach(t => (t.imgs || []).forEach(id => s.add(id)));
+    trashImageIds().forEach(id => s.add(id));
+    snapshotImageIds().forEach(id => s.add(id));
+    return s;
+  }
+  function pruneImages() { const ref = referencedImages(); ImageStore.allIds().forEach(id => { if (!ref.has(id)) ImageStore.remove(id); }); }
 
   return {
     onChange(fn) { listeners.push(fn); },
     tombstones,
+    pruneImages,
     // Ajoute un trade (champs du formulaire, captures en data URL dans images).
     add(fields, images) {
       const prev = trades.slice();
@@ -171,35 +181,43 @@ const TradeStore = (() => {
       trades = next;
       if (!commit(prev, 'replace', next, () => {
         addTombstones(removed);
-        const ref = referencedImages();
-        ImageStore.allIds().forEach(id => { if (!ref.has(id) && !trashImageIds().has(id)) ImageStore.remove(id); });
+        pruneImages();
       })) return false;
       return true;
     },
     // Fusionne un backup venant d'un autre appareil : le trade modifié le plus récemment gagne, les suppressions
     // (traces) sont appliquées des deux côtés. Un même trade importé sur deux appareils (même clé broker ou mêmes
-    // date / actif / sens / P&L) n'est pas doublé. Renvoie { added, updated, deleted, skipped } ou null.
+    // date / heures / actif / sens / P&L) n'est pas doublé. Renvoie { added, updated, deleted, skipped } ou null.
     merge(list, imagesById, remoteTombs) {
       const prev = trades.slice(), now = Date.now(), stats = { added: 0, updated: 0, deleted: 0, skipped: 0 };
       const tomb = new Map();
       tombstones().concat(Array.isArray(remoteTombs) ? remoteTombs : []).forEach(x => {
         if (x && typeof x.uid === 'string') tomb.set(x.uid, Math.max(tomb.get(x.uid) || 0, +x.deletedAt || 0));
       });
-      const sig = t => [t.date, t.asset, t.dir, Math.round((+t.pnlEur || 0) * 100), +t.entryPrice || 0].join('|');
-      const byUid = new Map(), byTv = new Map(), bySig = new Map();
-      trades.forEach(t => { byUid.set(t.uid, t); if (t.tvKey) byTv.set(t.tvKey, t); bySig.set(sig(t), t); });
+      const sig = t => [t.date, t.entry || '', t.exit || '', t.asset, t.dir, Math.round((+t.pnlEur || 0) * 100), +t.entryPrice || 0].join('|');
+      // Rapprochement sans uid commun (clé broker ou signature) : seulement avec un trade local que le fichier ne
+      // contient pas déjà sous son propre uid, et une seule fois — deux trades distincts du fichier qui se ressemblent
+      // (deux pertes de −100 € le même jour) ne sont pas fondus en un seul, et un trade local n'est jamais écrasé par un autre.
+      const list2 = Array.isArray(list) ? list : [];
+      const remoteUids = new Set(list2.map(r => r && typeof r.uid === 'string' ? r.uid : '').filter(Boolean));
+      const byUid = new Map(), byTv = new Map(), bySig = new Map(), claimed = new Set();
+      const push = (m, k, t) => { if (!m.has(k)) m.set(k, []); m.get(k).push(t); };
+      trades.forEach(t => { byUid.set(t.uid, t); if (remoteUids.has(t.uid)) return; if (t.tvKey) push(byTv, t.tvKey, t); push(bySig, sig(t), t); });
+      const unclaimed = arr => (arr || []).find(t => !claimed.has(t));
       const dropped = [], touched = [];
       try {
-        (Array.isArray(list) ? list : []).forEach(raw => {
+        list2.forEach(raw => {
           const clean = sanitizeTrade(raw);
           if (!clean) return;
           const ruid = clean.uid, rUpd = +raw.updatedAt || +raw.createdAt || 0;
           if (ruid && tomb.has(ruid) && tomb.get(ruid) >= rUpd) { stats.skipped++; return; }
-          const local = (ruid && byUid.get(ruid)) || (clean.tvKey && byTv.get(clean.tvKey)) || bySig.get(sig(clean));
+          const local = (ruid && byUid.get(ruid)) || (clean.tvKey && unclaimed(byTv.get(clean.tvKey))) || unclaimed(bySig.get(sig(clean)));
+          if (local && claimed.has(local)) { stats.skipped++; return; }   // doublon d'uid dans le fichier
+          if (local) claimed.add(local);
           if (!local) {
             const t = prepareIncomingTrade(Object.assign({}, raw, { id: newLocalTradeId() }), imagesById, now);
             if (!t) return;
-            trades.push(t); byUid.set(t.uid, t); if (t.tvKey) byTv.set(t.tvKey, t); bySig.set(sig(t), t);
+            trades.push(t); byUid.set(t.uid, t); claimed.add(t);
             touched.push(t); stats.added++;
             return;
           }
@@ -209,7 +227,7 @@ const TradeStore = (() => {
             const t = prepareIncomingTrade(Object.assign({}, raw, { id: local.id, uid, createdAt: Math.min(local.createdAt || rUpd, +raw.createdAt || rUpd), updatedAt: rUpd }), imagesById, now);
             if (!t) return;
             trades[trades.indexOf(local)] = t;
-            byUid.set(t.uid, t);
+            byUid.set(t.uid, t); claimed.add(t);
             local.imgs.forEach(i => { if (!t.imgs.includes(i)) dropped.push(i); });
             touched.push(t); stats.updated++;
           } else if (uid !== local.uid) { local.uid = uid; byUid.set(uid, local); }
@@ -223,8 +241,8 @@ const TradeStore = (() => {
         const alive = new Set(trades.map(t => t.uid));
         const all = [...tomb].filter(([u]) => !alive.has(u)).map(([uid, deletedAt]) => ({ uid, deletedAt }));
         try { DB.setItem(TOMB_KEY(), JSON.stringify(all.slice(-20000))); } catch (e) { console.error(e); }
-        const ref = referencedImages(), trash = trashImageIds();
-        dropped.forEach(id => { if (!ref.has(id) && !trash.has(id)) ImageStore.remove(id); });
+        const ref = referencedImages();
+        dropped.forEach(id => { if (!ref.has(id)) ImageStore.remove(id); });
       })) return null;
       return stats;
     },
@@ -241,6 +259,7 @@ const TradeStore = (() => {
     }
   };
 })();
+function snapshotImageIds() { const s = new Set(); try { const snap = JSON.parse(DB.getItem(JP + 'safety_snapshot') || 'null'); ((snap && snap.trades) || []).forEach(t => ((t && t.imgs) || []).forEach(id => s.add(id))); } catch (e) {} return s; }
 function trashImageIds() { const s = new Set(); try { (JSON.parse(DB.getItem(JP + 'trash') || '[]') || []).forEach(e => ((e && e.trade && e.trade.imgs) || []).forEach(id => s.add(id))); } catch (e) {} return s; }
 
 // ── Réglages : registre unique + date de dernière modification de chaque réglage ──

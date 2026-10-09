@@ -2,8 +2,6 @@
 function renderKPIs() {
   const trades = analysisTrades();
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
-  const wins = trades.filter(t => t.res === 'TP');
-  const losses = trades.filter(t => t.res === 'SL');
   const n = closed.length;
 
   // Win Rate
@@ -72,10 +70,12 @@ function renderKPIs() {
   const rrSub = document.getElementById('k-rr-sub');
   if (rrSub) rrSub.textContent = (avgWinE !== null && avgLossE) ? fmtEUR(avgWinE, false, 0) + ' gagné / ' + fmtEUR(avgLossE, false, 0) + ' perdu' : 'gain moyen ÷ perte moyenne';
 
-  // Profit factor : en € (exact) ; en R utilisable seulement si le journal n'a aucun montant en €
+  // Profit factor = somme des gains ÷ somme des pertes (selon le signe du montant, comme la revue hebdo et le rapport mentor :
+  // un BE à −3 € de frais est une perte) ; en € (exact), en R seulement si le journal n'a aucun montant en €.
   const useEurPF = eurArr.length > 0;
-  const gw = useEurPF ? eurArr.filter(t => t.res === 'TP').reduce((s, t) => s + t.pnlEur, 0) : wins.reduce((s, t) => s + (t.pnl || 0), 0);
-  const gl = Math.abs(useEurPF ? eurArr.filter(t => t.res === 'SL').reduce((s, t) => s + t.pnlEur, 0) : losses.reduce((s, t) => s + (t.pnl || 0), 0));
+  const pfVals = useEurPF ? eurArr.map(t => t.pnlEur) : pnlArr.map(t => t.pnl);
+  const gw = pfVals.filter(v => v > 0).reduce((s, v) => s + v, 0);
+  const gl = Math.abs(pfVals.filter(v => v < 0).reduce((s, v) => s + v, 0));
   const pfEl = document.getElementById('k-pf');
   if (gl > 0) { pfEl.textContent = fmtNum(gw / gl, 2); pfEl.className = 'kpi-val '+(gw/gl>=1?'pos':'neg'); }
   else if (gw > 0) { pfEl.textContent = '∞'; pfEl.className = 'kpi-val pos'; }
