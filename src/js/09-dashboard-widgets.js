@@ -208,8 +208,8 @@ function renderUnderwater(E, daily) {
     data: { labels, datasets: [{ data, borderColor: t.red, borderWidth: chartBorderW(1.5), tension: 0, fill: 'origin', backgroundColor: withAlpha(t.red, chartFillAlpha(.16)), pointRadius: data.map((_, i) => i === troughI ? 3.5 : 0), pointBackgroundColor: t.red, pointBorderColor: t.bg2, pointBorderWidth: 2, pointHoverRadius: 4, pointHitRadius: 10 }] },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { tooltip: proTooltip({ callbacks: { title: items => { const l = items[0] ? items[0].label : ''; return l === 'Départ' ? 'Départ' : fmtDateFR(l, true); }, label: c => 'Drawdown  ' + (E.useEur ? fmtPct(c.raw) : c.raw + 'R') } }) },
-      scales: proScales({ x: { display: false }, y: { max: 0, ticks: { maxTicksLimit: 3, callback: v => E.useEur ? Math.round(v * 10) / 10 + ' %' : v + 'R' } } })
+      plugins: { tooltip: proTooltip({ callbacks: { title: items => { const l = items[0] ? items[0].label : ''; return l === 'Départ' ? 'Départ' : fmtDateFR(l, true); }, label: c => 'Drawdown  ' + (E.useEur ? fmtPct(c.raw) : fmtR(c.raw, 2)) } }) },
+      scales: proScales({ x: { display: false }, y: { max: 0, ticks: { maxTicksLimit: 3, callback: v => E.useEur ? fmtNum(Math.round(v * 10) / 10, Number.isInteger(Math.round(v * 10) / 10) ? 0 : 1) + ' %' : fmtNum(v, Number.isInteger(v) ? 0 : 1) + 'R' } } })
     }
   });
 }
@@ -229,7 +229,7 @@ function renderHeroSide(E, endBal, perf, curDD) {
   if (!E.pts.length) { mount(side, ''); return; }
   const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
   const dd = v => v ? (E.useEur ? fmtPct(v) : fmtR(v, 2)) : (E.useEur ? '0 %' : '0R');
-  mount(side, html`${!E.useEur ? it('R cumulé', E.fmt(endBal)) : ''}${perf !== null && !E.useEur ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
+  mount(side, html`${!E.useEur ? it('R cumulé', E.fmt(endBal)) : ''}${perf !== null && !E.useEur ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', dd(E.maxDD ? E.maxDD.v : 0), E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
 }
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────
@@ -277,7 +277,10 @@ function renderRDistribution() {
   }
   const t = chartTokens();
   const rValues = closed.map(t => t.pnl);
-  const bw = 0.5;
+  // Classes de 0,5R, élargies si l'étendue est grande : un R aberrant (faute de frappe) ne doit pas créer des millions
+  // de barres (le journal ne s'ouvrait plus).
+  let bw = 0.5;
+  while ((Math.max(...rValues) - Math.min(...rValues)) / bw > 60) bw *= 2;
   const b0 = Math.floor(Math.min(...rValues) / bw) * bw, b1 = Math.ceil(Math.max(...rValues) / bw) * bw;
   const nb = Math.max(1, Math.round((b1 - b0) / bw));
   const buckets = new Array(nb).fill(0);
@@ -291,7 +294,7 @@ function renderRDistribution() {
   const exp = rValues.reduce((a, b) => a + b, 0) / rValues.length;
   // Les trois repères verticaux du graphique sont nommés ici (légende), plus au-dessus des barres où ils se chevauchaient.
   const mark = (cls, label, v) => html`<div class="es-item"><span class="es-label"><i class="rd-key ${raw(cls)}" aria-hidden="true"></i>${label}</span><span class="es-val">${v}</span></div>`;
-  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + 'R / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
+  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + ' / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) : '—')}${esItem('Trades', String(closed.length))}`);
   if (!chartsAvailable('rDistChart')) return;
   const idxOf = v => Math.max(0, Math.min(nb - 1, (v - b0) / bw - .5));   // position continue (au centre des classes)
   rDistChartInst = new Chart(canvas.getContext('2d'), {
@@ -299,7 +302,7 @@ function renderRDistribution() {
     data: { labels, datasets: [{ data: buckets, backgroundColor: colors, hoverBackgroundColor: colors.map(c => withAlpha(c, .8)), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 24, barPercentage: .92, categoryPercentage: .92 }] },
     options: {
       responsive: true, maintainAspectRatio: false, layout: { padding: { top: 6 } },
-      plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: items => items[0] ? 'De ' + items[0].label + 'R à ' + fmtR(b0 + (items[0].dataIndex + 1) * bw) + 'R' : '', label: c => c.raw + ' trade' + (c.raw !== 1 ? 's' : '') + ' · ' + Math.round(c.raw / closed.length * 100) + ' %' } }) },
+      plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: items => items[0] ? 'De ' + items[0].label + 'R à ' + fmtR(b0 + (items[0].dataIndex + 1) * bw, 1) : '', label: c => c.raw + ' trade' + (c.raw !== 1 ? 's' : '') + ' · ' + Math.round(c.raw / closed.length * 100) + ' %' } }) },
       scales: proScales({ xTicks: 12, yWidth: 40, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + 'R'; } } }, y: { ticks: { precision: 0 } } })
     },
     plugins: [{
@@ -328,7 +331,7 @@ function renderMonthlyReturnsTable() {
   const keys = Object.keys(byMonth).sort();
   if (!keys.length) { mount(cont, html`<p class="empty-note">Pas encore de données mensuelles (il faut des P&amp;L en €).</p>`); return; }
   // Solde au début de chaque mois = solde de départ + P&L des mois précédents.
-  const startBal = {}; let bal = accountSize || 0;
+  const startBal = {}; let bal = balanceBeforeFilter();   // avec une période filtrée : solde réel au début de la période
   keys.forEach(k => { startBal[k] = bal; bal += byMonth[k]; });
   const years = [...new Set(keys.map(k => k.slice(0, 4)))];
   const yearStart = {}; years.forEach(y => { yearStart[y] = startBal[keys.find(k => k.startsWith(y))]; });

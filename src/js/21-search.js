@@ -68,7 +68,7 @@ function renderGlobalSearchResults(query) {
   let tradeMatches = [];
   if (q.length >= 2) {
     tradeMatches = trades.filter(t => {
-      const hay = [t.asset, t.desc, t.date, t.session, t.dir].filter(Boolean).join(' ').toLowerCase();
+      const hay = [t.asset, t.desc, t.date, t.session, t.dir, t.setup, t.review, ...(Array.isArray(t.tags) ? t.tags.map(x => '#' + x) : [])].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     }).slice(0, 8);
   }

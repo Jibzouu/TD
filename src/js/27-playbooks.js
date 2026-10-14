@@ -165,7 +165,7 @@ function removePlaybookImage(i) {
   const p = ensurePlaybook(PB_SELECTED), id = p.imgs[i];
   if (!id) return;
   p.imgs.splice(i, 1); savePlaybooks();
-  if (!trades.some(t => (t.imgs || []).includes(id)) && !trashImageIds().has(id)) ImageStore.remove(id);
+  if (!trades.some(t => (t.imgs || []).includes(id)) && !trashImageIds().has(id) && !snapshotImageIds().has(id)) ImageStore.remove(id);
   renderPlaybookDetail();
 }
 function openPlaybookGallery(i) {

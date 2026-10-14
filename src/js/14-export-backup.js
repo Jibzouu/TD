@@ -3,9 +3,11 @@ const BACKUP_SETTINGS_KEYS = [
   (GP + 'theme'), (GP + 'custom_themes'), (GP + 'lang'), (JP + 'nav_order'), (JP + 'account'), (JP + 'calc'),
   (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
-  (JP + 'pf_enabled'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
+  (JP + 'pf_enabled'), (JP + 'pf_daily_on'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
   (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate'), (JP + 'daily'),
-  (JP + 'guard'), (JP + 'guard_custom'), (JP + 'prog')
+  (JP + 'guard'), (JP + 'guard_custom'), (JP + 'prog'),
+  // Réponses de la revue hebdo, défi 30 jours, médailles, règles prop firm choisies, mode simple : ils manquaient au backup.
+  (JP + 'weekly_reviews'), (JP + 'challenge'), (JP + 'medals'), (JP + 'pf_preset'), (JP + 'simple')
 ];
 function collectAllSettings() {
   const out = {};
@@ -284,10 +286,18 @@ function mergeSettingsMeta(meta) {
       if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra)), Math.max(+e.t, mt[key] || 0)); n++; }
       return;
     }
-    if (name === 'daily') {   // journal de séance : fusion jour par jour
+    if (name === 'daily' || name === 'weekly_reviews') {   // journal de séance / revue hebdo : fusion jour par jour, semaine par semaine
       let theirs; try { theirs = JSON.parse(e.v); } catch (x) { return; }
-      const mine = loadDaily(), next = JSON.stringify(mergeDailyValues(mine, theirs));
+      const mine = name === 'daily' ? loadDaily() : loadReviews(), next = JSON.stringify(mergeDailyValues(mine, theirs));
       if (next !== JSON.stringify(mine)) { DB.setItemAt(key, next, Math.max(+e.t, mt[key] || 0)); n++; }
+      return;
+    }
+    if (name === 'medals') {   // médailles : on garde celles des deux appareils (date la plus ancienne)
+      let theirs, mine; try { theirs = JSON.parse(e.v); mine = JSON.parse(DB.getItem(key) || '{}') || {}; } catch (x) { return; }
+      if (!theirs || typeof theirs !== 'object' || Array.isArray(theirs) || typeof mine !== 'object' || Array.isArray(mine)) return;
+      const out = Object.assign({}, mine);
+      Object.entries(theirs).forEach(([id, d]) => { if (/^\d{4}-\d{2}-\d{2}$/.test(d) && (!out[id] || d < out[id])) out[id] = d; });
+      if (JSON.stringify(out) !== JSON.stringify(mine)) { DB.setItemAt(key, JSON.stringify(out), Math.max(+e.t, mt[key] || 0)); n++; }
       return;
     }
     if (+e.t <= (mt[key] || 0) || DB.getItem(key) === e.v) return;

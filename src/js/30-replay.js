@@ -327,7 +327,8 @@ function rpOnClosed(p) {
   const fields = rpToJournalTrade(p, { asset: rpAsset(RP.symbol), tf: rpTf(RP.interval)[2], fx: rpFx(), desc: 'Backtest replay · ' + rpAsset(RP.symbol) + ' ' + rpTf(RP.interval)[2] });
   if (trades.some(t => t.tvKey === fields.tvKey)) return;
   let imgs = [];
-  if (RP.capture && RP_CHART) { try { imgs = [RP_CHART.takeScreenshot().toDataURL('image/png')]; } catch (e) {} }
+  // Capture en JPEG (comme les captures du formulaire) : un PNG du graphique pesait plusieurs fois plus lourd à chaque trade.
+  if (RP.capture && RP_CHART) { try { imgs = [RP_CHART.takeScreenshot().toDataURL('image/jpeg', IMG_QUALITY)]; } catch (e) {} }
   const t = TradeStore.add(fields, imgs);
   if (t) p.journalId = t.id;
 }

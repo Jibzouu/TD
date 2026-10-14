@@ -16,6 +16,8 @@ function initPropFirmSettings() {
   const consOn = loadPfSetting('consistency_on', '1');
   document.getElementById('pf-consistency-on').checked = consOn === '1' || consOn === 1;
   document.getElementById('pf-consistency-pct').value = loadPfSetting('consistency_pct', '50');
+  const dailyOn = document.getElementById('pf-daily-on');
+  if (dailyOn) dailyOn.checked = String(loadPfSetting('daily_on', '1')) === '1';
 }
 
 // ── PROP FIRM : moteur de conformité ─────────────────────────────────
@@ -87,7 +89,9 @@ function computePropFirmStatus() {
 
   // Perte journalière max (réglée dans Paramètres) : une seule journée au-delà = challenge échoué.
   // Les montants saisis à la main dans la barre « Aujourd'hui » remplacent le calcul automatique pour le jour concerné.
-  const dailyLimitAmount = startBalance * (dailyLimitPct / 100);
+  // Certaines prop firms n'ont pas de perte max journalière (ex. Apex) : la règle peut être retirée du challenge.
+  const dailyOn = String(loadPfSetting('daily_on', '1')) === '1';
+  const dailyLimitAmount = dailyOn ? startBalance * (dailyLimitPct / 100) : 0;
   const manualDD = loadDDManualMap();
   const dailyNet = Object.assign({}, byDay);
   Object.entries(manualDD).forEach(([d, v]) => { if (typeof v === 'number' && isFinite(v)) dailyNet[d] = v; });
@@ -96,7 +100,7 @@ function computePropFirmStatus() {
   const worstDay = dailyEntries.reduce((w, e) => (w === null || e[1] < w[1]) ? e : w, null);
   const dailyOk = dailyBreaches.length === 0;
 
-  return { startBalance, maxDDPct, ddType, profitTargetPct, minDays, consistencyOn, consistencyPct, dailyLimitPct,
+  return { startBalance, maxDDPct, ddType, profitTargetPct, minDays, consistencyOn, consistencyPct, dailyLimitPct, dailyOn,
     currentEquity, floor, distanceToFloor, breached, breachDate, totalPnl, targetAmount, targetProgress, targetReached,
     tradingDays, daysOk, bestDayPnl, bestDayPct, consistencyOk,
     dailyLimitAmount, dailyBreaches, dailyOk, worstDayDate: worstDay ? worstDay[0] : null, worstDayPnl: worstDay ? worstDay[1] : 0 };
@@ -125,7 +129,7 @@ function renderPropFirm() {
   const readyToPass = allOk && s.targetReached && s.daysOk;
   let verdictText, verdictTone, verdictIcon;
   if (s.breached) { verdictText = s.breachDate ? 'Drawdown maximum dépassé (' + fmtDateNum(s.breachDate) + ') — challenge en échec' : 'Drawdown maximum dépassé — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
-  else if (!s.dailyOk) { verdictText = 'Perte journalière max dépassée (' + s.dailyBreaches.join(', ') + ') — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
+  else if (!s.dailyOk) { verdictText = 'Perte journalière max dépassée (' + s.dailyBreaches.map(fmtDateNum).join(', ') + ') — challenge en échec'; verdictTone = 'red'; verdictIcon = '🚨'; }
   else if (readyToPass) { verdictText = 'Toutes les conditions sont réunies'; verdictTone = 'green'; verdictIcon = '✅'; }
   else if (!s.consistencyOk) { verdictText = 'Règle de consistance non respectée sur le profit actuel'; verdictTone = 'amber'; verdictIcon = '⚠️'; }
   else { verdictText = 'En cours — conditions pas encore toutes réunies'; verdictTone = 'blue'; verdictIcon = '⏳'; }
@@ -161,9 +165,9 @@ function renderPropFirm() {
         <div class="panel-hdr">Perte journalière max</div>
         <div class="pf-line wrap">
           <span class="pf-big tone-${raw(ok(s.dailyOk, 'green', 'red'))}">${s.worstDayDate && s.worstDayPnl < 0 ? fmtEUR(s.worstDayPnl) : '0 €'}</span>
-          <span class="pf-sub">pire journée${s.worstDayDate && s.worstDayPnl < 0 ? ' (' + s.worstDayDate + ')' : ''} · limite −${fmtEUR(s.dailyLimitAmount)} (${s.dailyLimitPct} %) ${s.dailyOk ? '✓' : '✗'}</span>
+          <span class="pf-sub">pire journée${s.worstDayDate && s.worstDayPnl < 0 ? ' (' + fmtDateNum(s.worstDayDate) + ')' : ''} · ${s.dailyOn ? html`limite −${fmtEUR(s.dailyLimitAmount)} (${s.dailyLimitPct} %) ${s.dailyOk ? '✓' : '✗'}` : 'pas de limite journalière dans ce challenge'}</span>
         </div>
-        ${s.dailyOk ? '' : html`<p class="pf-breach">${s.dailyBreaches.length} journée(s) au-delà de la limite : ${s.dailyBreaches.join(', ')}</p>`}
+        ${s.dailyOk ? '' : html`<p class="pf-breach">${s.dailyBreaches.length} journée(s) au-delà de la limite : ${s.dailyBreaches.map(fmtDateNum).join(', ')}</p>`}
       </div>
       <div class="panel">
         <div class="panel-hdr">Jours de trading</div>
@@ -228,8 +232,9 @@ function renderStats() {
   const n = closed.length;
   const pnlArr = trades.filter(t => t.pnl != null);
   const totalPnl = pnlArr.reduce((s,t)=>s+t.pnl,0);
-  const gw = wins.reduce((s,t)=>s+(t.pnl||0),0);
-  const gl = Math.abs(losses.reduce((s,t)=>s+(t.pnl||0),0));
+  // Gains / pertes bruts et profit factor selon le signe du R (même définition que le Dashboard et la revue hebdo).
+  const gw = pnlArr.filter(t => t.pnl > 0).reduce((s,t)=>s+t.pnl,0);
+  const gl = Math.abs(pnlArr.filter(t => t.pnl < 0).reduce((s,t)=>s+t.pnl,0));
   const rrArr = trades.filter(t=>t.rr);
 
   function statRow(label, val, cls='') {
@@ -255,7 +260,7 @@ function renderStats() {
     statRow('P&L Moyen/trade', pnlArr.length>0?fmtR(totalPnl/pnlArr.length, 2):'—'),
     statRow('Gains bruts', gw>0?fmtR(gw, 2):'—', 'pnl-p'),
     statRow('Pertes brutes', gl>0?fmtR(-gl, 2):'—', 'pnl-n'),
-    statRow('Profit Factor', gl>0?fmtNum(gw/gl, 2):wins.length>0?'∞':'—', gl>0&&gw/gl>=1?'pnl-p':''),
+    statRow('Profit Factor', gl>0?fmtNum(gw/gl, 2):gw>0?'∞':'—', gl>0&&gw/gl>=1?'pnl-p':''),
     statRow('Max gain', wins.length>0?fmtR(Math.max(...wins.map(t=>t.pnl||0)), 2):'—', 'pnl-p'),
     statRow('Max perte', losses.length>0?fmtR(-Math.abs(Math.min(...losses.map(t=>t.pnl||0))), 2):'—', 'pnl-n'),
   ]}`);

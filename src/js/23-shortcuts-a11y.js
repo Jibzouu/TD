@@ -121,7 +121,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); fxLockinEnter(); }
   else if (e.key === 'f' || e.key === 'F') { const s = document.getElementById('gf-period'); if (s && s.offsetParent) { e.preventDefault(); s.focus(); } }
   else if (/^[1-9]$/.test(e.key)) {
-    const items = [...document.querySelectorAll('.nav > .nav-item')];   // dans l'ordre du menu (personnalisable par glisser-déposer)
+    const items = [...document.querySelectorAll('.nav > .nav-item:not(.nav-simple-hidden)')];   // pages visibles, dans l'ordre du menu (personnalisable par glisser-déposer)
     const b = items[parseInt(e.key, 10) - 1];
     if (b) { e.preventDefault(); showPage(b.dataset.page, b); }
   }

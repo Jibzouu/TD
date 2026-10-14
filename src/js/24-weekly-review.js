@@ -18,8 +18,9 @@ function weekTrades(monday, base) {
   return (base || revueBaseTrades()).filter(t => t.date && t.date >= from && t.date <= to);
 }
 function loadReviews() { return loadJSON(JP + 'weekly_reviews', {}) || {}; }
-function saveReviewAnswer(key, value) {
-  const all = loadReviews(), k = localDateStr(revueMonday);
+function saveReviewAnswer(key, value, week) {
+  const all = loadReviews(), k = /^\d{4}-\d{2}-\d{2}$/.test(week || '') ? week : localDateStr(revueMonday);
+  if (((all[k] || {})[key] || '') === String(value).slice(0, 4000)) return;   // rien de changé (sortie du champ)
   all[k] = Object.assign({}, all[k], { [key]: String(value).slice(0, 4000), updatedAt: Date.now() });
   try { DB.setItem(JP + 'weekly_reviews', JSON.stringify(all)); } catch (e) { reportStorageError(e); }
   const st = document.getElementById('revue-saved'); if (st) st.textContent = 'Enregistré ✓';
@@ -52,7 +53,8 @@ function renderWeeklyReview() {
   if (!revueMonday) {
     // Par défaut : cette semaine, ou la dernière semaine tradée si rien cette semaine.
     const cur = mondayOf(new Date());
-    revueMonday = weekTrades(cur, base).length || !base.length ? cur : mondayOf(new Date(base[0].date + 'T00:00:00'));
+    const lastDated = base.find(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date || ''));
+    revueMonday = weekTrades(cur, base).length || !lastDated ? cur : mondayOf(new Date(lastDated.date + 'T00:00:00'));
   }
   const mon = revueMonday, sun = addDays(mon, 6), prevMon = addDays(mon, -7);
   const label = document.getElementById('revue-week-label');
@@ -65,7 +67,7 @@ function renderWeeklyReview() {
   const t = chartTokens();
 
   if (!list.length) {
-    mount(cont, html`${UI.empty('🗓️', 'Aucun trade cette semaine', 'Change de semaine avec les flèches, ou réponds quand même aux questions : une semaine sans trade est aussi une décision.', null)}${reviewQuestionsHtml(answers)}`);
+    mount(cont, html`${UI.empty('🗓️', 'Aucun trade cette semaine', 'Change de semaine avec les flèches, ou réponds quand même aux questions : une semaine sans trade est aussi une décision.', null)}${reviewQuestionsHtml(answers, localDateStr(mon))}`);
     if (revueDaysChartInst) { revueDaysChartInst.destroy(); revueDaysChartInst = null; }
     return;
   }
@@ -102,7 +104,7 @@ function renderWeeklyReview() {
     </div>
     ${UI.card('Erreurs récurrentes', 'fréquence et coût cette semaine, tendance vs semaine précédente', mistRows.length ? UI.table(['Erreur', 'Fois', 'Coût', 'Sem. préc.'], mistRows.map(([m, g]) => [m, String(g.n), UI.pnl(g.cost, '€'), prevMist[m] ? String(prevMist[m]) + (g.n < prevMist[m] ? ' ↓' : g.n > prevMist[m] ? ' ↑' : '') : '—']), { align: ['l', 'r', 'r', 'r'] }) : html`<p class="ui-muted">Aucune erreur taguée cette semaine${list.some(x => Array.isArray(x.mistakes)) ? ' 👏' : ' — tague tes erreurs dans le formulaire pour les suivre ici'}.</p>`)}
     ${weekLessonsCard(mon)}
-    ${reviewQuestionsHtml(answers)}`);
+    ${reviewQuestionsHtml(answers, localDateStr(mon))}`);
 
   // Graphique P&L par jour (lun → dim).
   if (revueDaysChartInst) { revueDaysChartInst.destroy(); revueDaysChartInst = null; }
@@ -123,9 +125,10 @@ function mountSetups(setups) {
   const rows = Object.entries(setups).sort((a, b) => b[1].pnl - a[1].pnl);
   return UI.table(['Setup', 'Trades', 'Win rate', 'Résultat'], rows.map(([k, g]) => [k, String(g.n), g.w + g.l ? Math.round(g.w / (g.w + g.l) * 100) + ' %' : '—', UI.pnl(g.pnl, '€')]), { align: ['l', 'r', 'r', 'r'] });
 }
-function reviewQuestionsHtml(answers) {
+// La semaine est figée dans chaque champ : une réponse tapée juste avant de changer de semaine reste dans la sienne.
+function reviewQuestionsHtml(answers, week) {
   return UI.card('Questions de revue', 'tes réponses sont enregistrées pour cette semaine', html`<div class="rv-questions">
-    ${REVUE_QUESTIONS.map(([k, q, ph]) => html`<div class="field"><label for="rv-${raw(k)}">${q}</label><textarea id="rv-${raw(k)}" placeholder="${ph}" oninput="clearTimeout(window.__rvT);window.__rvT=setTimeout(()=>saveReviewAnswer('${raw(k)}', this.value),400)">${answers[k] || ''}</textarea><div class="print-answer">${answers[k] || '—'}</div></div>`)}
+    ${REVUE_QUESTIONS.map(([k, q, ph]) => html`<div class="field"><label for="rv-${raw(k)}">${q}</label><textarea id="rv-${raw(k)}" placeholder="${ph}" oninput="${raw(`clearTimeout(window.__rvT_${k});window.__rvT_${k}=setTimeout(()=>saveReviewAnswer('${k}', this.value, '${week}'),400)`)}" onblur="${raw(`clearTimeout(window.__rvT_${k});saveReviewAnswer('${k}', this.value, '${week}')`)}">${answers[k] || ''}</textarea><div class="print-answer">${answers[k] || '—'}</div></div>`)}
     <div class="ui-muted" id="revue-saved">${answers.updatedAt ? 'Dernière modification : ' + fmtDateTime(answers.updatedAt) : 'Enregistrement automatique pendant que tu écris.'}</div>
   </div>`);
 }

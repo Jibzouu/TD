@@ -202,7 +202,7 @@ function tryParseTVPairsForJournal(headers, rows, filename, ordersLookup) {
     const anyRow = entryRow || exitRow;
     if (!anyRow) return;
     const typeVal = ((entryRow||exitRow)[col.type] || '').toLowerCase();
-    const dir = typeVal.indexOf('short') > -1 ? 'Short' : 'Long';
+    const dir = /short|court|sell|vente/.test(typeVal) ? 'Short' : 'Long';
 
     const entryDT = entryRow ? extractDateTime(entryRow[col.date]) : { date:'',hour:null,time:'' };
     const exitDT = exitRow ? extractDateTime(exitRow[col.date]) : { date:'',hour:null,time:'' };
@@ -262,10 +262,25 @@ function tryGenericSingleRowImport(headers, rows) {
     asset: findCol(['asset','symbol','symbole','actif','instrument','pair']),
     dir: findCol(['direction','side','sens']),
     res: findCol(['result','resultat']),
-    rr: findCol(['rr','riskreward']),
-    pnleur: findCol(['pnleur','profiteur','gaineur','pnlnet','netpnl','pnleuros']),
+    // RR visé : nom exact (« rr » est contenu dans « Erreurs », « Currency », « R réalisé »…).
+    rr: nh.findIndex(h => /^(rr|rvise|rrvise|rrcible|rrprevu|plannedr|targetr)$/.test(h) || h.indexOf('riskreward') > -1),
+    pnleur: findCol(['pnleur','profiteur','gaineur','pnlnet','netpnl','pnleuros','plnet','pleur']),
     pnl: findCol(['pnlr','rmultiple','pnlinr','resultr','rrealise'])
   };
+  // Colonnes facultatives (dont celles de l'export CSV du journal, pour qu'il se réimporte sans rien perdre) : noms exacts.
+  const exact = re => nh.findIndex(h => re.test(h));
+  const opt = {
+    entry: exact(/^(entree|heuredentree|entry|entrytime|opentime|heureouverture)$/), exit: exact(/^(sortie|heuredesortie|exit|exittime|closetime|heurecloture)$/),
+    session: exact(/^session$/), tf: exact(/^(ut|tf|timeframe|unitedetemps)$/), setup: exact(/^(setup|strategie|strategy|signal)$/),
+    desc: exact(/^(notes?|description|desc|commentaires?|comments?)$/), review: exact(/^(revue|review)$/),
+    fees: exact(/^(fraiseur|frais|fees|commissions?)$/), size: exact(/^(taille|size|volume|lots?|quantite|quantity)$/),
+    entryPrice: exact(/^(prixdentree|entryprice|openprice|prixouverture)$/), slPrice: exact(/^(stop|sl|stoploss|prixstop)$/),
+    tpPrice: exact(/^(objectif|tp|takeprofit|target|prixobjectif)$/), exitPrice: exact(/^(prixdesortie|exitprice|closeprice|prixcloture)$/),
+    mistakes: exact(/^(erreurs|mistakes)$/), tags: exact(/^tags?$/)
+  };
+  const optStr = (r, k) => opt[k] > -1 ? String(r[opt[k]] || '').trim() : '';
+  const optNum = (r, k) => { if (opt[k] < 0) return null; const v = parseNumCSV(r[opt[k]]); return isNaN(v) ? null : v; };
+  const optList = (r, k) => optStr(r, k).split(/[,;]/).map(x => x.trim()).filter(Boolean);
   // Colonne « pnl / profit / net » sans unité : si une colonne en € existe déjà, celle-ci est du R ;
   // sinon on décide sur les valeurs (un R dépasse rarement ±20, un montant en € oui). Avant, « pnl_eur » était lue à la fois comme € ET comme R.
   const ambIdx = nh.findIndex((h, i) => i !== col.pnleur && i !== col.rr && /^(pnl|profit|net|gain|gains|pl)$/.test(h));
@@ -286,9 +301,9 @@ function tryGenericSingleRowImport(headers, rows) {
     let date = (r[col.date] || '').trim();
     if (!date) return;
     // ISO en premier ("2026-09-01") — sinon le motif jour/mois numérique ci-dessous la confondrait avec une date D-M-Y à tirets.
-    const isoM = date.match(/(\d{4})-(\d{2})-(\d{2})/);
+    const isoM = date.match(/(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
     if (isoM) {
-      date = isoM[0];
+      date = isoM[1] + '-' + isoM[2].padStart(2, '0') + '-' + isoM[3].padStart(2, '0');
     } else {
       // Numérique, séparateur / ou . (le tiret est réservé à l'ISO ci-dessus) : lève l'ambiguïté jour/mois si l'un des deux dépasse 12.
       const m = date.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/);
@@ -352,10 +367,15 @@ function tryGenericSingleRowImport(headers, rows) {
       if (rr === null) rr = pnl;
     }
 
+    const hhmm = v => { const m = /^(\d{1,2}):(\d{2})/.exec(v); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; };
+    const fees = optNum(r, 'fees');
     out.push({
       id: Date.now() + Math.floor(Math.random()*100000),
-      date, asset, tf:'', dir, session:'', entry:'', exit:'', emotion:null,
-      res, rr, pnl, rSrc, pnlEur, ccy: srcCcy || '', fxRate: fx, size:null, cap:'', desc:''
+      date, asset, tf: optStr(r, 'tf'), dir, session: optStr(r, 'session'), entry: hhmm(optStr(r, 'entry')), exit: hhmm(optStr(r, 'exit')), emotion:null,
+      res, rr, pnl, rSrc, pnlEur, ccy: srcCcy || '', fxRate: fx, size: optNum(r, 'size'), cap:'', desc: optStr(r, 'desc'),
+      setup: optStr(r, 'setup').slice(0, 60) || undefined, review: optStr(r, 'review') || undefined, fees: fees !== null ? Math.round(fees * fx * 100) / 100 : null,
+      entryPrice: optNum(r, 'entryPrice'), slPrice: optNum(r, 'slPrice'), tpPrice: optNum(r, 'tpPrice'), exitPrice: optNum(r, 'exitPrice'),
+      mistakes: optList(r, 'mistakes').length ? optList(r, 'mistakes') : undefined, tags: optList(r, 'tags').length ? optList(r, 'tags').map(x => x.replace(/^#/, '')) : undefined
     });
   });
   return out;
@@ -445,7 +465,10 @@ async function handleCsvImport(input) {
   return [t.date||'', (t.asset||'').toLowerCase(), t.res||'', t.entry||'', (amt===null||amt===undefined||isNaN(amt))?'':Number(amt).toFixed(2)].join('|');
 }
 const existingKeys = new Set(trades.map(t => t.tvKey).filter(Boolean));
-const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTradeKey));
+// Sans identifiant broker, un doublon se reconnaît par son nombre d'occurrences : un fichier qui contient 2 trades identiques
+// (deux pertes de −100 € le même jour, sans heure) en ajoute 2 au journal, et le réimporter n'en ajoute aucun.
+const knownSynth = new Map();
+trades.filter(t => !t.tvKey).forEach(t => { const k = syntheticTradeKey(t); knownSynth.set(k, (knownSynth.get(k) || 0) + 1); });
   const allNew = [];
   let dupCount = 0, tradesFilesCount = 0, secondaryFilesCount = 0, emptyFilesCount = 0, slEnrichedCount = 0, unconvertedCount = 0, foreignCcy = '';
 
@@ -467,14 +490,18 @@ const existingSynthKeys = new Set(trades.filter(t => !t.tvKey).map(syntheticTrad
     if (!imported || imported.length === 0) return;
 
     tradesFilesCount++;
+    const inFile = new Map();
+    imported.forEach(t => { if (!t.tvKey) { const k = syntheticTradeKey(t); inFile.set(k, (inFile.get(k) || 0) + 1); } });
+    const seenInFile = new Map();
     imported.forEach(t => {
       if (t.tvKey) {
         if (existingKeys.has(t.tvKey)) { dupCount++; return; }
         existingKeys.add(t.tvKey);
       } else {
-        const sk = syntheticTradeKey(t);
-        if (existingSynthKeys.has(sk)) { dupCount++; return; }
-        existingSynthKeys.add(sk);
+        const sk = syntheticTradeKey(t), i = (seenInFile.get(sk) || 0) + 1;
+        seenInFile.set(sk, i);
+        if (i <= (knownSynth.get(sk) || 0)) { dupCount++; return; }   // déjà présent (autant de fois que dans ce fichier)
+        if (i === inFile.get(sk)) knownSynth.set(sk, i);
       }
       if (t.slPrice !== null && t.slPrice !== undefined) slEnrichedCount++;
       if (t.ccy && t.ccy !== 'EUR' && t.fxRate === 1) { unconvertedCount++; foreignCcy = t.ccy; }

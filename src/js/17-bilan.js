@@ -43,17 +43,18 @@ function renderBilan() {
   const pnlEur = eurDay.reduce((s,t)=>s+t.pnlEur,0);
   const wr = (tp+sl)>0 ? fmtRate(tp/(tp+sl)*100, 0) : '—';
   const withEmo = dayTrades.filter(t=>t.emotion);
-  const avgEmotion = withEmo.length ? fmtNum(withEmo.reduce((s,t)=>s+t.emotion,0)/withEmo.length, 1) : '—';
+  const emoAvg = withEmo.length ? withEmo.reduce((s,t)=>s+t.emotion,0)/withEmo.length : null;   // nombre (la couleur se décide sur lui, pas sur « 3,5 »)
+  const avgEmotion = emoAvg !== null ? fmtNum(emoAvg, 1) : '—';
   const emoTone = e => e >= 4 ? 'green' : e >= 3 ? 'amber' : 'red';
   const kpis = [
     ['Trades', dayTrades.length, ''],
     ['TP', tp, 'green'],
     ['SL', sl, 'red'],
     ['BE', be, be ? 'amber' : 'muted'],
-    ['Win Rate', wr, tp/(tp+sl||1) >= .5 ? 'green' : 'red'],
+    ['Win Rate', wr, tp + sl === 0 ? 'muted' : tp/(tp+sl) >= .5 ? 'green' : 'red'],
     ['P&L (€)', eurDay.length ? fmtEUR(pnlEur,true) : '—', !eurDay.length ? 'muted' : pnlEur >= 0 ? 'green' : 'red'],
     ['P&L (R)', fmtR(pnlR, 2), pnlR >= 0 ? 'green' : 'red'],
-    ['Humeur moy.', avgEmotion+'/5', avgEmotion !== '—' ? emoTone(avgEmotion) : 'muted'],
+    ['Humeur moy.', avgEmotion+'/5', emoAvg !== null ? emoTone(emoAvg) : 'muted'],
   ];
   const HEAD = ['Asset', 'TF', 'Session', 'Entrée', 'Sortie', 'Dir.', 'Résultat', 'RR', 'P&L', 'Humeur', 'Capture'];
   const row = t => {
@@ -62,7 +63,7 @@ function renderBilan() {
       <td class="strong">${t.asset}</td><td class="c2">${t.tf}</td><td class="c3">${t.session || '—'}</td>
       <td class="c2">${t.entry || '—'}</td><td class="c2">${t.exit || '—'}</td><td>${t.dir || '—'}</td>
       <td><span class="bl-res res-${raw(['TP','SL','BE'].includes(t.res) ? t.res : 'OPEN')}">${t.res}</span></td>
-      <td class="c2">${t.rr ? t.rr + 'R' : '—'}</td>
+      <td class="c2">${t.rr ? fmtR(t.rr, Number.isInteger(t.rr) ? 0 : 2, true) : '—'}</td>
       <td class="strong tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? fmtR(t.pnl, 1) : '—'}</td>
       <td class="tone-${raw(t.emotion ? emoTone(t.emotion) : 'muted')}">${t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—'}</td>
       <td>${src ? html`<img class="bl-cap" src="${src}" alt="Capture" onclick="openLightboxById(${raw(t.id)})">` : '—'}</td>

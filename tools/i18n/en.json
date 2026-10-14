@@ -1999,5 +1999,13 @@
  "Mode Lock-in": "Lock-in mode",
  "naviguer": "navigate",
  "ouvrir": "open",
- "fermer": "close"
+ "fermer": "close",
+ "Perte journalière max comptée dans le challenge (réglée dans Paramètres :": "Daily max loss counted in the challenge (set in Settings:",
+ "pas de limite journalière dans ce challenge": "no daily limit in this challenge",
+ "Aucun segment gagnant": "No winning segment",
+ "aucun segment d'au moins 3 trades n'a un R moyen positif pour l'instant": "no segment of at least 3 trades has a positive average R yet",
+ "Le journal a été modifié dans un autre onglet ou une autre fenêtre. Recharge cette page pour continuer ici sans écraser ces modifications.": "The journal was changed in another tab or window. Reload this page to continue here without overwriting those changes.",
+ "Recharger": "Reload",
+ "Impossible de changer le code : ": "Could not change the code: ",
+ "Impossible de désactiver le code : ": "Could not turn the code off: "
 }

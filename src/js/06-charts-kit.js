@@ -201,7 +201,11 @@ function wrBarCell(rate, thr, n) {
 }
 // Formats FR uniques : virgule décimale, espace avant % (« 53,3 % »), R signé (« +1,80R »).
 function fmtNum(v, d) { return Number(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
-function fmtR(v, d, noSign) { if (v === null || v === undefined || isNaN(v)) return '—'; return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R'; }
+function fmtR(v, d, noSign) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  const k = Math.pow(10, d ?? 2); v = Math.round(v * k) / k;   // arrondi d'abord : −0,001 s'affiche « 0,00R », pas « −0,00R »
+  return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R';
+}
 // Date numérique FR : « 15/06/2026 ».
 function fmtDateNum(iso) { const d = new Date(String(iso) + 'T00:00:00'); return isNaN(d) ? String(iso || '—') : d.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' }); }
 function fmtRate(v, d) { return (v === null || v === undefined || isNaN(v)) ? '—' : fmtNum(v, d ?? 0) + ' %'; }
@@ -235,6 +239,7 @@ function showHtmlTip(e, title, rows) {
 function fmtEUR(n, showPlus, decimals) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   decimals = decimals || 0;
+  const k = Math.pow(10, decimals); n = Math.round(n * k) / k;   // arrondi d'abord : −0,4 € s'affiche « 0 € », pas « -0 € »
   const sign = n < 0 ? '-' : (showPlus ? '+' : '');
   return sign + Math.abs(n).toLocaleString(UI_LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €';
 }

@@ -81,6 +81,8 @@ function setupNavDraggable(item, nav, isClickable) {
 
   item.addEventListener('pointerdown', e => {
     if (e.button !== undefined && e.button !== 0) return; // left click / primary touch only
+    // Au doigt, on déplace une page seulement par sa poignée : ailleurs, le glissé fait défiler le menu (avant, il le réordonnait).
+    if (e.pointerType === 'touch' && !(e.target.closest && e.target.closest('.nav-grip'))) return;
     startX = e.clientX; startY = e.clientY;
     dragging = false; moved = false;
 

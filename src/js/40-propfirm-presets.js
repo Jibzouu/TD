@@ -33,6 +33,7 @@ function applyPfPreset(id) {
   savePfSetting('enabled', 1); savePfSetting('target_pct', p.target); savePfSetting('maxdd_pct', p.maxdd);
   savePfSetting('dd_type', p.dd); savePfSetting('min_days', p.days);
   savePfSetting('consistency_on', p.cons ? 1 : 0); if (p.cons) savePfSetting('consistency_pct', p.cons);
+  savePfSetting('daily_on', p.daily > 0 ? 1 : 0);   // pas de perte max journalière chez cette prop firm : la règle ne fait pas échouer le challenge
   // Pas de limite journalière chez cette prop firm : on garde la tienne (le garde-fou reste utile).
   if (p.daily > 0) { DB.setItem(JP + 'dd_limit_pct', String(p.daily)); const dd = document.getElementById('dd-limit-pct'); if (dd) dd.value = p.daily; }
   DB.setItem(JP + 'pf_preset', id);

@@ -52,7 +52,7 @@ test('prop firm : perte journalière dans le verdict, actifs dynamiques, bilan e
   const { page, ctx, errors } = await openJournal({ journal: 'pf', seed: { pf_trades: trades, pf_account: '10000', pf_dd_limit_pct: '1', pf_pf_consistency_on: '0' } });
   await goto(page, 'propfirm');
   const txt = await page.locator('#propfirm-status').innerText();
-  assert.match(txt, /Perte journalière max dépassée/); assert.match(txt, /2026-09-02/);
+  assert.match(txt, /Perte journalière max dépassée/); assert.match(txt, /02\/09\/2026/);   // date affichée au format du journal
   assert.ok(await page.evaluate(() => !!pfEquityChartInst), 'graphique de progression du challenge');
   await goto(page, 'stats');
   assert.match(await page.locator('#stats-assets-tbody').innerText(), /BTCUSD/);

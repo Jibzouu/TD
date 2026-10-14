@@ -50,7 +50,7 @@ function applyDashLayout(layout) {
   });
   Object.entries(legacy ? {} : (layout.widths || {})).forEach(([id, cls]) => {
     const el = grid.querySelector(`.dash-widget[data-widget="${id}"]`);
-    if (!el) return;
+    if (!el || !['w-third', 'w-half', 'w-full'].includes(cls)) return;   // valeur d'un backup / d'une synchro : jamais une classe arbitraire
     el.classList.remove('w-third','w-half','w-full');
     el.classList.add(cls);
     const sel = el.querySelector('.widget-width-select');

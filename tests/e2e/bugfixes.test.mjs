@@ -3,7 +3,7 @@
 // sessions des trades manuels décalées, checklist effacée à la modification, R d'un short sans sens choisi.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { openJournal, closeBrowser, goto, T } from './helpers.mjs';
+import { openJournal, closeBrowser, goto, T, getBrowser, APP_URL } from './helpers.mjs';
 
 after(closeBrowser);
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
@@ -137,5 +137,171 @@ test('recherche du tableau : setup, notes et #tags', async () => {
   assert.equal(await count('#news'), '1 trade');
   assert.equal(await count('retest'), '1 trade');
   assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+// ── Deuxième passe ──────────────────────────────────────────────────────────────────────────────────
+
+test('un R aberrant (faute de frappe) ne bloque plus l’ouverture du journal, et l’unité R n’est plus doublée', async () => {
+  const seed = { tj_trades: [T({ id: 1, pnl: 1e9 }), T({ id: 2, pnl: -1 }), T({ id: 3, pnl: 2 }), T({ id: 4, pnl: 1 }), T({ id: 5, pnl: -1 })] };
+  const { page, ctx, errors } = await openJournal({ seed });
+  const stats = await page.locator('#r-distribution-stats').innerText();
+  assert.doesNotMatch(stats, /RR/);
+  assert.ok(await page.evaluate(() => rDistChartInst.data.labels.length <= 61));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('import : deux trades identiques d’un même fichier sont gardés, le réimport n’ajoute rien, dates AAAA/MM/JJ', async () => {
+  const { page, ctx, errors } = await openJournal();
+  const csv = '﻿Date;Symbole;Sens;PnL EUR\n2026/09/01;EURUSD;Achat;-100\n2026/09/01;EURUSD;Achat;-100\n2026/09/02;EURUSD;Vente;150\n';
+  const file = { name: 'backtest.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) };
+  await page.setInputFiles('#csv-import-file', file);
+  await page.waitForFunction(() => trades.length === 3);
+  assert.deepEqual(await page.evaluate(() => trades.map(t => t.date).sort()), ['2026-09-01', '2026-09-01', '2026-09-02']);
+  await page.setInputFiles('#csv-import-file', file);
+  await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => trades.length), 3, 'réimport : aucun doublon');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('export CSV du journal → réimport : montants en €, R visé / réalisé, heures, setup, frais et notes gardés', async () => {
+  const seed = { tj_trades: [T({ id: 1, res: 'SL', pnl: -1, rr: 2, pnlEur: -100, setup: 'Break; retest', fees: 3.5, desc: 'note "x"', tags: ['news'], mistakes: ['Entrée trop tôt'], entryPrice: 1.1, slPrice: 1.099 })] };
+  const { page, ctx, errors } = await openJournal({ seed });
+  const csv = await page.evaluate(() => tradesToCSV(trades));
+  await page.evaluate(() => TradeStore.replaceAll([]));
+  await page.setInputFiles('#csv-import-file', { name: 'journal-trades.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await page.waitForFunction(() => trades.length === 1);
+  const t = await page.evaluate(() => { const t = trades[0]; return [t.date, t.entry, t.exit, t.res, t.rr, t.pnl, t.pnlEur, t.fees, t.setup, t.desc, t.tags, t.mistakes, t.entryPrice, t.slPrice]; });
+  assert.deepEqual(t, ['2026-09-01', '10:00', '10:30', 'SL', 2, -1, -100, 3.5, 'Break; retest', 'note "x"', ['news'], ['Entrée trop tôt'], 1.1, 1.099]);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('journal ouvert dans deux onglets : l’onglet resté en arrière est figé et n’écrase rien', async () => {
+  const b = await getBrowser(), ctx = await b.newContext();
+  await ctx.addInitScript(() => { if (!localStorage.getItem('tj_onboarded')) { localStorage.setItem('journal_active', 'tj'); localStorage.setItem('tj_onboarded', '1'); localStorage.setItem('g_lessons_off', '1'); localStorage.setItem('g_fx_off', '1'); } });
+  const open = async () => { const p = await ctx.newPage(); await p.route('https://fonts.googleapis.com/**', r => r.abort()); await p.goto(APP_URL); await p.waitForFunction(() => document.documentElement.classList.contains('app-ready')); return p; };
+  const a = await open(), c = await open();
+  assert.equal(await a.evaluate(() => !!document.getElementById('db-stale')), false, 'ouvrir un 2e onglet ne fige pas le 1er');
+  await a.evaluate(() => { TradeStore.add({ date: '2026-09-01', asset: 'A', res: 'TP', pnlEur: 1 }, []); return DB.flush(); });
+  await c.waitForSelector('#db-stale');
+  await c.evaluate(() => { TradeStore.add({ date: '2026-09-02', asset: 'B', res: 'TP', pnlEur: 1 }, []); return DB.flush(); });
+  const d = await open();
+  assert.deepEqual(await d.evaluate(() => trades.map(t => t.asset)), ['A'], 'le trade de l’onglet A n’a pas été écrasé');
+  await ctx.close();
+});
+
+test('revue hebdo : une réponse tapée juste avant de changer de semaine reste dans sa semaine', async () => {
+  const { page, ctx, errors } = await openJournal({ seed: { tj_trades: [T({ id: 1, date: '2026-06-15' })] }, time: new Date('2026-06-17T12:00:00') });
+  await goto(page, 'revue');
+  await page.fill('#rv-good', 'patience');
+  await page.evaluate(() => revueStep(-1));   // changement de semaine avant la fin du délai d'enregistrement
+  await page.waitForTimeout(600);
+  const r = await page.evaluate(() => loadReviews());
+  assert.equal(r['2026-06-15'].good, 'patience');
+  assert.equal(r['2026-06-08'], undefined);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('backup et synchro : revue hebdo, défi 30 jours, médailles et règles prop firm sont inclus et fusionnés', async () => {
+  const seed = { tj_weekly_reviews: { '2026-06-08': { good: 'A', updatedAt: 10 } }, tj_challenge: { start: '2026-06-01' }, tj_medals: { first: '2026-06-02' } };
+  const { page, ctx, errors } = await openJournal({ seed });
+  const s = await page.evaluate(() => backupData().settings);
+  assert.ok(s.tj_weekly_reviews && s.tj_challenge && s.tj_medals);
+  const n = await page.evaluate(() => mergeSettingsMeta({
+    tj_weekly_reviews: { v: JSON.stringify({ '2026-06-15': { goal: 'B', updatedAt: 20 } }), t: 5 },
+    tj_medals: { v: JSON.stringify({ first: '2026-05-01', trades100: '2026-06-10' }), t: 5 }
+  }));
+  assert.equal(n, 2);
+  const after = await page.evaluate(() => [loadReviews(), JSON.parse(DB.getItem('tj_medals'))]);
+  assert.deepEqual(Object.keys(after[0]).sort(), ['2026-06-08', '2026-06-15'], 'semaines des deux appareils');
+  assert.deepEqual(after[1], { first: '2026-05-01', trades100: '2026-06-10' });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('prop firm sans perte max journalière (Apex) : une journée rouge ne fait pas échouer le challenge', async () => {
+  const seed = { pf_account: '50000', pf_dd_limit_pct: '1', pf_trades: [T({ id: 1, date: '2026-06-10', res: 'SL', pnlEur: -900 }), T({ id: 2, date: '2026-06-11', res: 'TP', pnlEur: 1200 })] };
+  const { page, ctx, errors } = await openJournal({ journal: 'pf', seed: Object.assign({ g_journals: [{ id: 'tj', name: 'Live', type: 'live' }, { id: 'pf', name: 'PF', type: 'propfirm' }] }, seed) });
+  await page.evaluate(() => { window.confirm = () => true; });
+  assert.equal(await page.evaluate(() => computePropFirmStatus().dailyOk), false, 'avec la règle : 900 € > 1 % de 50 000');
+  await goto(page, 'propfirm');
+  await page.evaluate(() => applyPfPreset('apex50'));
+  assert.equal(await page.evaluate(() => computePropFirmStatus().dailyOk), true);
+  assert.equal(await page.locator('#pf-daily-on').isChecked(), false);
+  assert.match(await page.locator('#propfirm-status').innerText(), /pas de limite journalière/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('calendrier d’un journal en R : totaux en R, meilleur jour signalé', async () => {
+  const seed = { tj_trades: [T({ id: 1, date: '2026-06-02', pnlEur: null, pnl: 2 }), T({ id: 2, date: '2026-06-03', pnlEur: null, pnl: -1, res: 'SL' })] };
+  const { page, ctx, errors } = await openJournal({ seed, time: new Date('2026-06-17T12:00:00') });
+  await goto(page, 'calendrier');
+  const txt = await page.locator('#cal-monthly-stats').innerText();
+  assert.match(txt, /\+1,0R/);
+  assert.doesNotMatch(await page.locator('#cal-grid').innerText(), /0 €/);
+  assert.equal(await page.locator('#cal-grid .cal-badge[title="Meilleur jour du mois"]').count(), 1);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('bilan : humeur moyenne 4,5 en vert, RR lisible', async () => {
+  const seed = { tj_trades: [T({ id: 1, date: '2026-06-17', emotion: 4, rr: 1.6666667 }), T({ id: 2, date: '2026-06-17', emotion: 5 })] };
+  const { page, ctx, errors } = await openJournal({ seed, time: new Date('2026-06-17T12:00:00') });
+  await goto(page, 'bilan');
+  const cls = await page.locator('.bl-kpis .kpi', { hasText: 'Humeur' }).locator('.kpi-val').getAttribute('class');
+  assert.match(cls, /tone-green/);
+  assert.match(await page.locator('.bl-table').innerText(), /1,67R/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('watchlist : un actif avec apostrophe se modifie et se retire', async () => {
+  const { page, ctx, errors } = await openJournal();
+  await goto(page, 'watchlist');
+  await page.evaluate(() => addWatchAsset("L'Oréal"));
+  const row = page.locator('.watch-table tr', { hasText: "L'Oréal" });
+  await row.locator('select').selectOption('Bullish');
+  assert.equal(await page.evaluate(() => watchData.entries["L'Oréal"].biais), 'Bullish');
+  await page.locator('.watch-table tr', { hasText: "L'Oréal" }).locator('.del-btn').click();
+  assert.equal(await page.evaluate(() => watchData.assets.some(a => a.name === "L'Oréal")), false);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('détecteur d’edge : pas d’« edge le plus fort » quand tous les segments perdent', async () => {
+  const seed = { tj_trades: Array.from({ length: 12 }, (_, i) => T({ id: i + 1, res: 'SL', pnl: -1, pnlEur: -50, date: '2026-06-' + String(2 + i).padStart(2, '0') })) };
+  const { page, ctx, errors } = await openJournal({ seed });
+  await page.evaluate(() => { showPage('stats', document.querySelector('.nav-item[data-page=stats]')); showStatsSubtab('analyses'); });
+  await page.evaluate(() => renderEdgeFinder());
+  assert.match(await page.locator('#edge-finder-body').innerText(), /Aucun segment gagnant/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('formats : pas de « -0 € » ni de « −0,00R » pour un montant minuscule', async () => {
+  const { page, ctx } = await openJournal();
+  assert.deepEqual(await page.evaluate(() => [fmtEUR(-0.4), fmtEUR(-0.004, false, 2), fmtR(-0.001), fmtR(-0.04, 1)]), ['0 €', '0,00 €', '0,00R', '0,0R']);
+  await ctx.close();
+});
+
+test('journal groupé par jour : les totaux d’une journée coupée par la pagination restent complets', async () => {
+  const seed = { tj_trades: Array.from({ length: 30 }, (_, i) => T({ id: i + 1, date: i < 20 ? '2026-06-10' : '2026-06-09', entry: '10:' + String(i).padStart(2, '0'), exit: '', pnlEur: 10 })) };
+  const { page, ctx, errors } = await openJournal({ seed });
+  await goto(page, 'trades');
+  const rows = await page.locator('.day-group-row').allInnerTexts();
+  assert.match(rows.find(r => /9 juin/.test(r)), /10 trade\(s\).*\+100 €/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('menu sur téléphone : glisser une page fait défiler le menu (seule la poignée déplace)', async () => {
+  const { page, ctx } = await openJournal({ viewport: { width: 390, height: 844 } });
+  const ta = await page.evaluate(() => [getComputedStyle(document.querySelector('.nav-item')).touchAction, getComputedStyle(document.querySelector('.nav-item .nav-grip')).touchAction]);
+  assert.deepEqual(ta, ['pan-y', 'none']);
   await ctx.close();
 });
