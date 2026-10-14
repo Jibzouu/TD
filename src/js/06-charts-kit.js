@@ -201,7 +201,11 @@ function wrBarCell(rate, thr, n) {
 }
 // Formats FR uniques : virgule décimale, espace avant % (« 53,3 % »), R signé (« +1,80R »).
 function fmtNum(v, d) { return Number(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
-function fmtR(v, d, noSign) { if (v === null || v === undefined || isNaN(v)) return '—'; return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R'; }
+function fmtR(v, d, noSign) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  const k = Math.pow(10, d ?? 2); v = Math.round(v * k) / k;   // arrondi d'abord : −0,001 s'affiche « 0,00R », pas « −0,00R »
+  return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R';
+}
 // Graduations d'axe : virgule décimale et juste ce qu'il faut de décimales (« 0,5R », « −1R », « −1,5 % »).
 function tickDecimals(v) { const a = Math.abs(v); return Math.abs(a - Math.round(a)) < 1e-9 ? 0 : Math.abs(a * 10 - Math.round(a * 10)) < 1e-6 ? 1 : 2; }
 function fmtRTick(v) { return fmtR(v, tickDecimals(v), true); }
@@ -239,6 +243,7 @@ function showHtmlTip(e, title, rows) {
 function fmtEUR(n, showPlus, decimals) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   decimals = decimals || 0;
+  const k = Math.pow(10, decimals); n = Math.round(n * k) / k;   // arrondi d'abord : −0,4 € s'affiche « 0 € », pas « -0 € »
   const sign = n < 0 ? '-' : (showPlus ? '+' : '');
   return sign + Math.abs(n).toLocaleString(UI_LOCALE, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €';
 }
@@ -293,7 +298,7 @@ function renderKpiSparklines() {
   const wrAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP').length, l = b.filter(t => t.res === 'SL').length; return w + l ? w / (w + l) * 100 : 0; };
   const cum = []; closed.reduce((c, t, i) => (cum[i + 1] = c + (t.pnl || 0)), 0); cum[0] = 0;
   const payoffAt = i => { const b = win(i, KPI_WINDOW * 2), w = b.filter(t => t.res === 'TP'), l = b.filter(t => t.res === 'SL'); const aw = w.length ? w.reduce((s, t) => s + eurOf(t), 0) / w.length : 0, al = l.length ? Math.abs(l.reduce((s, t) => s + eurOf(t), 0) / l.length) : 0; return al > 0 ? Math.min(aw / al, 6) : null; };
-  const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.filter(t => t.res === 'TP').reduce((s, t) => s + eurOf(t), 0), gl = Math.abs(b.filter(t => t.res === 'SL').reduce((s, t) => s + eurOf(t), 0)); return gl > 0 ? Math.min(gw / gl, 5) : null; };
+  const pfAt = i => { const b = win(i, KPI_WINDOW * 2), gw = b.reduce((s, t) => s + Math.max(0, eurOf(t)), 0), gl = -b.reduce((s, t) => s + Math.min(0, eurOf(t)), 0); return gl > 0 ? Math.min(gw / gl, 5) : null; };
   // Au plus ~30 points, régulièrement espacés, du KPI_WINDOW-ième trade au dernier.
   const n = closed.length, steps = Math.min(30, n - KPI_WINDOW + 1);
   const at = [...new Set(Array.from({ length: steps }, (_, j) => Math.round(KPI_WINDOW + (n - KPI_WINDOW) * j / Math.max(1, steps - 1))))];

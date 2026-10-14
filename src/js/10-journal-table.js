@@ -23,7 +23,7 @@ function filterTrades() {
     if (dateFrom && t.date && t.date < dateFrom) return false;
     if (dateTo && t.date && t.date > dateTo) return false;
     if (search) {
-      const hay = [t.asset, t.desc, t.dir, t.session, ...(Array.isArray(t.mistakes) ? t.mistakes : [])].filter(Boolean).join(' ').toLowerCase();
+      const hay = [t.asset, t.desc, t.dir, t.session, t.setup, t.review, ...(Array.isArray(t.mistakes) ? t.mistakes : []), ...(Array.isArray(t.tags) ? t.tags.map(x => '#' + x) : [])].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
@@ -143,11 +143,15 @@ function renderTable(opts) {
     const byDay = {};
     filtered.forEach(t => { const d = t.date || 'Sans date'; (byDay[d] = byDay[d] || []).push(t); });
     const dayKeys = Object.keys(byDay).sort((a,b) => b.localeCompare(a));
+    // Totaux du jour sur TOUTE la sélection (une journée coupée par « Afficher plus » garde ses vrais chiffres).
+    const allByDay = {};
+    all.forEach(t => { const d = t.date || 'Sans date'; (allByDay[d] = allByDay[d] || []).push(t); });
     mount(tbody, html`${dayKeys.map(day => {
-      const dayTrades = byDay[day];
+      const dayTrades = allByDay[day];
       const dayR = dayTrades.reduce((s,t) => s+(t.pnl||0), 0);
-      const dayEur = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined).reduce((s,t)=>s+t.pnlEur, 0);
-      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(dayR >= 0 ? 'green' : 'red')}">${day === 'Sans date' ? day : fmtDateFR(day, true)} — ${dayTrades.length} trade(s) · ${dayTrades.filter(t => t.res === 'TP').length}✓ ${dayTrades.filter(t => t.res === 'SL').length}✗${dayTrades.some(t => t.res === 'BE') ? html` <span class="cal-be">${dayTrades.filter(t => t.res === 'BE').length} BE</span>` : ''} · ${fmtR(dayR, 1)} · ${fmtEUR(dayEur, true)}</td></tr>${dayTrades.map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
+      const eurDay = dayTrades.filter(t=>t.pnlEur!==null&&t.pnlEur!==undefined), dayEur = eurDay.reduce((s,t)=>s+t.pnlEur, 0);
+      const net = eurDay.length ? dayEur : dayR;   // couleur : selon le résultat en € s'il existe, sinon en R
+      return html`<tr class="day-group-row"><td colspan="10" class="tone-${raw(net >= 0 ? 'green' : 'red')}">${day === 'Sans date' ? day : fmtDateFR(day, true)} — ${dayTrades.length} trade(s) · ${dayTrades.filter(t => t.res === 'TP').length}✓ ${dayTrades.filter(t => t.res === 'SL').length}✗${dayTrades.some(t => t.res === 'BE') ? html` <span class="cal-be">${dayTrades.filter(t => t.res === 'BE').length} BE</span>` : ''} · ${fmtR(dayR, 1)}${eurDay.length ? ' · ' + fmtEUR(dayEur, true) : ''}</td></tr>${byDay[day].map(t => tradeRowHtml(t, numberMap.get(t.id)))}`;
     })}${moreRow}`);
   } else {
     mount(tbody, html`${filtered.map(t => tradeRowHtml(t, numberMap.get(t.id)))}${moreRow}`);
@@ -237,7 +241,7 @@ function openTradeDetail(id) {
     <div class="dw-stats">
       ${UI.stat('P&L net', UI.pnl(t.pnlEur, '€'), t.fees ? { sub: 'brut ' + fmtEUR(t.pnlEur + t.fees, true, 2) + ' · frais ' + fmtEUR(t.fees, false, 2) } : {})}
       ${UI.stat('Résultat en R', UI.pnl(t.pnl, 'R'))}
-      ${UI.stat('Qualité (RR)', t.rr ? quality + ' · ' + t.rr + 'R' : '—')}
+      ${UI.stat('Qualité (RR)', t.rr ? quality + ' · ' + fmtR(t.rr, Number.isInteger(t.rr) ? 0 : 2, true) : '—')}
       ${UI.stat('Humeur', t.emotion ? '★'.repeat(t.emotion) + '☆'.repeat(5 - t.emotion) : '—')}
     </div>
     ${UI.section('Profil du trade', tradeProfileHtml(t))}

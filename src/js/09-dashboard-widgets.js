@@ -2,8 +2,6 @@
 function renderKPIs() {
   const trades = analysisTrades();
   const closed = trades.filter(t => ['TP','SL','BE'].includes(t.res));
-  const wins = trades.filter(t => t.res === 'TP');
-  const losses = trades.filter(t => t.res === 'SL');
   const n = closed.length;
 
   // Win Rate
@@ -72,10 +70,12 @@ function renderKPIs() {
   const rrSub = document.getElementById('k-rr-sub');
   if (rrSub) rrSub.textContent = (avgWinE !== null && avgLossE) ? fmtEUR(avgWinE, false, 0) + ' gagné / ' + fmtEUR(avgLossE, false, 0) + ' perdu' : 'gain moyen ÷ perte moyenne';
 
-  // Profit factor : en € (exact) ; en R utilisable seulement si le journal n'a aucun montant en €
+  // Profit factor = somme des gains ÷ somme des pertes (selon le signe du montant, comme la revue hebdo et le rapport mentor :
+  // un BE à −3 € de frais est une perte) ; en € (exact), en R seulement si le journal n'a aucun montant en €.
   const useEurPF = eurArr.length > 0;
-  const gw = useEurPF ? eurArr.filter(t => t.res === 'TP').reduce((s, t) => s + t.pnlEur, 0) : wins.reduce((s, t) => s + (t.pnl || 0), 0);
-  const gl = Math.abs(useEurPF ? eurArr.filter(t => t.res === 'SL').reduce((s, t) => s + t.pnlEur, 0) : losses.reduce((s, t) => s + (t.pnl || 0), 0));
+  const pfVals = useEurPF ? eurArr.map(t => t.pnlEur) : pnlArr.map(t => t.pnl);
+  const gw = pfVals.filter(v => v > 0).reduce((s, v) => s + v, 0);
+  const gl = Math.abs(pfVals.filter(v => v < 0).reduce((s, v) => s + v, 0));
   const pfEl = document.getElementById('k-pf');
   if (gl > 0) { pfEl.textContent = fmtNum(gw / gl, 2); pfEl.className = 'kpi-val '+(gw/gl>=1?'pos':'neg'); }
   else if (gw > 0) { pfEl.textContent = '∞'; pfEl.className = 'kpi-val pos'; }
@@ -229,7 +229,7 @@ function renderHeroSide(E, endBal, perf, curDD) {
   if (!E.pts.length) { mount(side, ''); return; }
   const it = (l, v, tone, title) => html`<div class="hs-item"${raw(title ? ` title="${esc(title)}"` : '')}><span class="hs-label">${l}</span><span class="hs-val${raw(tone ? ' tone-' + tone : '')}">${v}</span></div>`;
   const dd = v => v ? (E.useEur ? fmtPct(v) : fmtR(v, 2)) : (E.useEur ? '0 %' : '0R');
-  mount(side, html`${!E.useEur ? it('R cumulé', E.fmt(endBal)) : ''}${perf !== null && !E.useEur ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', E.maxDD ? dd(E.maxDD.v) : '0 %', E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
+  mount(side, html`${!E.useEur ? it('R cumulé', E.fmt(endBal)) : ''}${perf !== null && !E.useEur ? it('Rendement', fmtPct(perf), perf >= 0 ? 'green' : 'red') : ''}${it('Drawdown max', dd(E.maxDD ? E.maxDD.v : 0), E.maxDD ? 'red' : null, E.maxDD ? 'le ' + fmtDateFR(E.maxDD.date, true) : '')}${it('Drawdown actuel', dd(curDD), curDD ? 'amber' : null, 'écart avec le plus haut du compte')}`);
 }
 
 // ── TAUX DE RÉUSSITE : jauges comparées au seuil de rentabilité ─────
@@ -277,7 +277,10 @@ function renderRDistribution() {
   }
   const t = chartTokens();
   const rValues = closed.map(t => t.pnl);
-  const bw = 0.5;
+  // Classes de 0,5R, élargies si l'étendue est grande : un R aberrant (faute de frappe) ne doit pas créer des millions
+  // de barres (le journal ne s'ouvrait plus).
+  let bw = 0.5;
+  while ((Math.max(...rValues) - Math.min(...rValues)) / bw > 60) bw *= 2;
   const b0 = Math.floor(Math.min(...rValues) / bw) * bw, b1 = Math.ceil(Math.max(...rValues) / bw) * bw;
   const nb = Math.max(1, Math.round((b1 - b0) / bw));
   const buckets = new Array(nb).fill(0);
@@ -299,7 +302,7 @@ function renderRDistribution() {
     data: { labels, datasets: [{ data: buckets, backgroundColor: colors, hoverBackgroundColor: colors.map(c => withAlpha(c, .8)), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 24, barPercentage: .92, categoryPercentage: .92 }] },
     options: {
       responsive: true, maintainAspectRatio: false, layout: { padding: { top: 6 } },
-      plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: items => items[0] ? 'De ' + items[0].label + 'R à ' + fmtR(b0 + (items[0].dataIndex + 1) * bw) + 'R' : '', label: c => c.raw + ' trade' + (c.raw !== 1 ? 's' : '') + ' · ' + Math.round(c.raw / closed.length * 100) + ' %' } }) },
+      plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: items => items[0] ? 'De ' + items[0].label + 'R à ' + fmtR(b0 + (items[0].dataIndex + 1) * bw, 1) : '', label: c => c.raw + ' trade' + (c.raw !== 1 ? 's' : '') + ' · ' + Math.round(c.raw / closed.length * 100) + ' %' } }) },
       scales: proScales({ xTicks: 12, yWidth: 40, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + 'R'; } } }, y: { ticks: { precision: 0 } } })
     },
     plugins: [{
@@ -328,7 +331,7 @@ function renderMonthlyReturnsTable() {
   const keys = Object.keys(byMonth).sort();
   if (!keys.length) { mount(cont, html`<p class="empty-note">Pas encore de données mensuelles (il faut des P&amp;L en €).</p>`); return; }
   // Solde au début de chaque mois = solde de départ + P&L des mois précédents.
-  const startBal = {}; let bal = accountSize || 0;
+  const startBal = {}; let bal = balanceBeforeFilter();   // avec une période filtrée : solde réel au début de la période
   keys.forEach(k => { startBal[k] = bal; bal += byMonth[k]; });
   const years = [...new Set(keys.map(k => k.slice(0, 4)))];
   const yearStart = {}; years.forEach(y => { yearStart[y] = startBal[keys.find(k => k.startsWith(y))]; });

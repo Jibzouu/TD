@@ -119,7 +119,8 @@ const RPI_DEFS = {
         let nlb = hl2 - p.factor * a[i], nub = hl2 + p.factor * a[i];
         if (lb != null && (nlb < lb && pc > lb)) nlb = lb;
         if (ub != null && (nub > ub && pc < ub)) nub = ub;
-        if (lb != null) dir = dir === -1 && b[i].close > ub ? 1 : dir === 1 && b[i].close < lb ? -1 : dir;
+        // Changement de tendance jugé sur les bandes de CETTE bougie (comme ta.supertrend de TradingView), pas sur celles d'avant.
+        if (lb != null) dir = dir === -1 && b[i].close > nub ? 1 : dir === 1 && b[i].close < nlb ? -1 : dir;
         lb = nlb; ub = nub;
         if (dir === 1) up[i] = lb; else dn[i] = ub;
       }

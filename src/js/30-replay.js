@@ -32,12 +32,33 @@ function rpPip() { return /JPY$/.test(RP.symbol) ? 0.01 : 0.0001; }
 function rpBase(sym) { return rpAsset(sym).split('/')[0]; }
 function rpCur() { return RPC[RP ? RP.cursor : 0]; }
 function rpFx() { return typeof IMPORT_FX_RATE === 'number' && IMPORT_FX_RATE > 0 ? IMPORT_FX_RATE : 1; }
-function rpMoney(v, d) { if (v == null || isNaN(v)) return '—'; const s = Math.abs(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 2, maximumFractionDigits: d ?? 2 }); return (v < 0 ? '−' : '') + s + ' $'; }
+// Devise du compte de la séance. Les gains se calculent dans la devise de COTATION de la paire (yens pour USD/JPY) :
+// le compte est tenu en dollars quand la paire est cotée en dollars ou en euros quand elle l'est en euros ; pour une paire
+// cotée dans une autre devise, dans sa devise de BASE (USD/JPY → $, EUR/JPY ou EUR/GBP → €, GBP/JPY → £). Avant, des yens
+// étaient affichés en « $ » et convertis en € comme des dollars (montants ≈ 150 fois trop grands dans le journal).
+const RP_USDLIKE = ['USD', 'USDT', 'USDC', 'BUSD', 'FDUSD'];
+function rpPair() { const [b, q] = rpAsset(RP && RP.symbol).split('/'); return { b: b || '', q: q || '' }; }
+function rpAccIsQuote() { const { b, q } = rpPair(); return RP_USDLIKE.includes(q) || q === 'EUR' || !RP_FIAT.includes(q) || !(RP_FIAT.includes(b) || /^X(AU|AG)$/.test(b)); }
+function rpAccCcy() { const { b, q } = rpPair(); const c = rpAccIsQuote() ? q : b; return RP_USDLIKE.includes(c) ? 'USD' : c; }
+// Unités de devise de cotation pour 1 unité du compte, au prix px (1 si le compte est dans la devise de cotation).
+function rpK(px) { return rpAccIsQuote() || !(px > 0) ? 1 : px; }
+// € pour 1 unité du compte : 1 en euros, sinon le taux de conversion réglé dans Export / Import (le même que pour les imports).
+function rpEurPerAcc() { return rpAccCcy() === 'EUR' ? 1 : rpFx(); }
+function rpMoney(v, d) {
+  if (v == null || isNaN(v)) return '—';
+  const s = Math.abs(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 2, maximumFractionDigits: d ?? 2 }), c = RP ? rpAccCcy() : 'USD';
+  return (v < 0 ? '−' : '') + s + ' ' + ({ USD: '$', EUR: '€', GBP: '£', JPY: '¥', CHF: 'CHF' }[c] || c);
+}
+// Résultat net d'une position dans la devise du compte (chaque sortie convertie à son prix).
+function rpNetAcc(p) { return (p.fills || []).reduce((s, f) => s + f.pnl / rpK(f.price), 0) - p.fees / rpK(p.entry); }
 // Décimales selon le prix : crypto chère 2, JPY / indices 3, forex 5, petits prix 6.
 function rpDecimals(b) { return b >= 1000 ? 2 : b >= 20 ? 3 : b >= 0.5 ? 5 : 6; }
 function rpPrice(v, ref) { if (v == null || isNaN(v)) return '—'; const d = rpDecimals(ref || v); return (+v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d, maximumFractionDigits: d }); }
 function rpQtyFmt(q) { return (+q).toLocaleString(UI_LOCALE, { maximumFractionDigits: 6 }); }
-function rpLocalShift(t) { return t - new Date(t * 1000).getTimezoneOffset() * 60; }   // le graphique affiche l'heure locale
+// Le graphique affiche l'heure locale, avec un décalage FIXE pour toute la séance (celui de sa date de départ) : un décalage
+// calculé bougie par bougie faisait revenir l'heure en arrière au passage à l'heure d'hiver, et le graphique refusait
+// ses données (bougies en double, « Value is null »).
+function rpLocalShift(t) { const ref = RP && RP.startTime ? RP.startTime : t; return t - new Date(ref * 1000).getTimezoneOffset() * 60; }
 function rpDateLabel(t) { const d = new Date(t * 1000); return d.toLocaleDateString(UI_LOCALE, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '') + ' ' + d.toLocaleTimeString(UI_LOCALE, { hour: '2-digit', minute: '2-digit' }); }
 
 // ── Données ──
@@ -156,11 +177,13 @@ function rpNewSession(o) {
     startBalance: o.balance, feeRate: o.feeRate, autosave: o.autosave !== false, capture: o.capture !== false, speed: 2,
     positions: [], orders: [], history: [], drawings: [], seq: 0, showHist: true, magnet: true };
 }
-function rpBalance() { return RP.startBalance + RP.history.reduce((s, p) => s + p.realized - p.fees, 0) + RP.positions.reduce((s, p) => s + p.realized - p.fees, 0); }
-function rpEquity() { const c = rpCur(); return rpBalance() + (c ? RP.positions.reduce((s, p) => s + rpOpenPnl(p, c.close), 0) : 0); }
+function rpBalance() { return RP.startBalance + RP.history.reduce((s, p) => s + rpNetAcc(p), 0) + RP.positions.reduce((s, p) => s + rpNetAcc(p), 0); }
+function rpEquity() { const c = rpCur(); return rpBalance() + (c ? RP.positions.reduce((s, p) => s + rpOpenPnl(p, c.close) / rpK(c.close), 0) : 0); }
 
 async function rpStart(fromSaved) {
   const msg = document.getElementById('rp-setup-msg');
+  // Nouvelle séance (ou reprise) : l'historique « Annuler » des dessins ne doit pas ramener ceux d'une autre séance.
+  if (typeof RPD !== 'undefined') Object.assign(RPD, { undo: [], sel: null, draft: null, drag: null });
   try {
     RP_LOADING = true; RP_END = false;
     if (msg) mount(msg, html`<span class="fx-skel-chart" aria-hidden="true">${[38, 62, 45, 80, 55, 70, 40, 88, 60, 75, 50, 66].map(h => html`<i style="${raw('height:' + h + '%')}"></i>`)}</span><span class="tone-muted">Chargement des bougies…</span>`);
@@ -250,15 +273,15 @@ function rpTicketCalc() {
   if (tp != null && T.tpMode === 'rr') tp = sl != null ? entry + sgn * Math.abs(entry - sl) * tp : null;
   if (tp != null && T.tpMode === 'dist') tp = entry + sgn * tp;
   if (sl == null) return { error: 'stop', entry, tp };
-  const r = rpSizePosition({ side: T.side, entry, sl, tp, balance: rpBalance(), riskMode: T.riskMode, riskValue: +T.riskValue || 0, qty: T.manualQty ? T.qty : null });
-  return Object.assign(r, { entry, sl, tp });
+  const k = rpK(entry), r = rpSizePosition({ side: T.side, entry, sl, tp, balance: rpBalance() * k, riskMode: T.riskMode, riskValue: (+T.riskValue || 0) * (T.riskMode === 'amount' ? k : 1), qty: T.manualQty ? T.qty : null });
+  return Object.assign(r, { entry, sl, tp, k });
 }
 // Envoi d'un ordre (ticket, graphique, outil position) : taille calculée selon le risque du ticket.
 // o = { side, type: market | limit | stop, entry, sl, tp } — renvoie true si l'ordre est passé.
 function rpSubmit(o) {
   const c = rpCur(); if (!RP || !c) return false;
   const entry = o.type === 'market' ? c.close : +o.entry;
-  const r = rpSizePosition({ side: o.side, entry, sl: o.sl, tp: o.tp, balance: rpBalance(), riskMode: RP_TICKET.riskMode, riskValue: +RP_TICKET.riskValue || 0, qty: o.qty });
+  const k = rpK(entry), r = rpSizePosition({ side: o.side, entry, sl: o.sl, tp: o.tp, balance: rpBalance() * k, riskMode: RP_TICKET.riskMode, riskValue: (+RP_TICKET.riskValue || 0) * (RP_TICKET.riskMode === 'amount' ? k : 1), qty: o.qty });
   if (r.error) { showToast(r.error === 'stop' ? 'Place un stop loss : il sert à calculer ta taille et ton R' : r.error === 'side' ? 'Le stop doit être sous l’entrée pour un achat, au-dessus pour une vente' : 'Ordre incomplet', 'error'); return false; }
   if (o.tp != null && !(o.side === 'short' ? o.tp < entry : o.tp > entry)) o.tp = null;
   const id = 'r' + Date.now().toString(36) + (++RP.seq), setup = RP_TICKET.setup || '';
@@ -324,10 +347,13 @@ function rpOnClosed(p) {
   rpMarker(p, 'close');
   if (!RP.history.some(h => h.id === p.id)) RP.history.push(p);
   if (!RP.autosave) return;
-  const fields = rpToJournalTrade(p, { asset: rpAsset(RP.symbol), tf: rpTf(RP.interval)[2], fx: rpFx(), desc: 'Backtest replay · ' + rpAsset(RP.symbol) + ' ' + rpTf(RP.interval)[2] });
+  const exitPx = rpExitPrice(p) || p.entry;
+  const fields = rpToJournalTrade(p, { asset: rpAsset(RP.symbol), tf: rpTf(RP.interval)[2], fx: rpEurPerAcc() / rpK(exitPx), desc: 'Backtest replay · ' + rpAsset(RP.symbol) + ' ' + rpTf(RP.interval)[2] });
+  fields.ccy = rpAccCcy(); fields.fxRate = rpEurPerAcc();   // « Appliquer ce taux » reconvertit sans doubler
   if (trades.some(t => t.tvKey === fields.tvKey)) return;
   let imgs = [];
-  if (RP.capture && RP_CHART) { try { imgs = [RP_CHART.takeScreenshot().toDataURL('image/png')]; } catch (e) {} }
+  // Capture en JPEG (comme les captures du formulaire) : un PNG du graphique pesait plusieurs fois plus lourd à chaque trade.
+  if (RP.capture && RP_CHART) { try { imgs = [RP_CHART.takeScreenshot().toDataURL('image/jpeg', IMG_QUALITY)]; } catch (e) {} }
   const t = TradeStore.add(fields, imgs);
   if (t) p.journalId = t.id;
 }
@@ -481,6 +507,8 @@ async function rpImportFile(input) {
 }
 async function rpChangeInterval(v) {
   if (!RP || v === RP.interval) return;
+  // Fichier de bougies : impossible de descendre sous son unité (les bougies plus fines n'existent pas).
+  if (RP.source === 'file' && RP_FILE && rpTfSec(v) < RP_FILE.tfSec) { showToast('Ton fichier est en ' + rpTf(Object.keys(Object.fromEntries(RP_TF.map(t => [t[0], 1]))).find(k => rpTfSec(k) === RP_FILE.tfSec) || RP.interval)[2] + ' : choisis une unité égale ou plus grande', 'error'); return; }
   rpPause();
   const cur = rpCur(), oldSec = rpTfSec(RP.interval), newSec = rpTfSec(v);
   const nowEnd = cur.time + oldSec;   // instant atteint : aucune bougie de la nouvelle unité ne doit le dépasser
@@ -502,9 +530,9 @@ function rpSessionStats() {
   const h = RP ? RP.history : [];
   const rs = h.map(p => p.risk0 > 0 ? (p.realized - p.fees) / p.risk0 : 0);
   const wins = rs.filter(r => r >= 0.1).length;
-  const net = h.reduce((s, p) => s + p.realized - p.fees, 0);
+  const net = h.reduce((s, p) => s + rpNetAcc(p), 0);
   let peak = RP ? RP.startBalance : 0, bal = peak, dd = 0;
-  h.forEach(p => { bal += p.realized - p.fees; peak = Math.max(peak, bal); dd = Math.min(dd, bal - peak); });
+  h.forEach(p => { bal += rpNetAcc(p); peak = Math.max(peak, bal); dd = Math.min(dd, bal - peak); });
   const losses = rs.filter(r => r <= -0.1).length;   // break-even (|R| < 0,1) exclus du win rate
   return { n: h.length, wins, wr: wins + losses ? wins / (wins + losses) * 100 : null, r: rs.reduce((a, b) => a + b, 0), net, dd };
 }
@@ -518,7 +546,7 @@ function rpRefreshUi() {
   const info = document.getElementById('rp-info');
   if (info && c) mount(info, html`<b>${rpAsset(RP.symbol)}</b> <span class="rp-chip">${rpTf(RP.interval)[2]}</span> <span class="rp-date">${rpDateLabel(c.time)}</span> <span class="rp-last tone-${raw(c.close >= c.open ? 'green' : 'red')}">${rpPrice(c.close)}</span>`);
   const tfs = document.getElementById('rp-tfs');
-  if (tfs) mount(tfs, html`${RP_TF.map(t => html`<button type="button" class="rp-tf${raw(t[0] === RP.interval ? ' on' : '')}" aria-pressed="${t[0] === RP.interval ? 'true' : 'false'}" onclick="${raw("rpChangeInterval('" + t[0] + "')")}">${rpTfShort(t)}</button>`)}`);
+  if (tfs) mount(tfs, html`${RP_TF.map(t => html`<button type="button" class="rp-tf${raw(t[0] === RP.interval ? ' on' : '')}" aria-pressed="${t[0] === RP.interval ? 'true' : 'false'}" onclick="${raw("rpChangeInterval('" + t[0] + "')")}"${raw(RP.source === 'file' && RP_FILE && t[1] < RP_FILE.tfSec ? ' disabled title="Plus fin que ton fichier de bougies"' : '')}>${rpTfShort(t)}</button>`)}`);
   const sp = document.getElementById('rp-speed'); if (sp && !sp.options.length) mount(sp, html`${RP_SPEEDS.map(s => html`<option value="${s}">${s} bougie${s > 1 ? 's' : ''}/s</option>`)}`);
   if (sp) sp.value = RP.speed || 2;
   rpRefreshControls();
@@ -534,7 +562,7 @@ function rpRefreshUi() {
   // Positions / ordres / historique
   const pos = document.getElementById('rp-positions');
   if (pos) mount(pos, RP.positions.length ? html`<table class="rp-table"><thead><tr><th>Sens</th><th>Quantité</th><th>Entrée</th><th>Stop</th><th>Objectif</th><th>Latent</th><th></th></tr></thead><tbody>${RP.positions.map(p => {
-      const u = c ? rpOpenPnl(p, c.close) : 0, R = p.risk0 > 0 ? (u + p.realized - p.fees) / p.risk0 : null;
+      const uq = c ? rpOpenPnl(p, c.close) : 0, u = uq / rpK(c ? c.close : p.entry), R = p.risk0 > 0 ? (uq + p.realized - p.fees) / p.risk0 : null;
       return html`<tr><td><span class="badge ${raw(p.side === 'short' ? 'b-sl' : 'b-tp')}">${p.side === 'short' ? 'Vente' : 'Achat'}</span></td><td>${rpQtyFmt(p.qty)}</td><td>${rpPrice(p.entry)}</td><td>${p.sl != null ? rpPrice(p.sl) : '—'}</td><td>${p.tp != null ? rpPrice(p.tp) : '—'}</td>
         <td class="tone-${raw(u >= 0 ? 'green' : 'red')} fw-700">${rpMoney(u)}${R != null ? html` <small>${fmtR(R, 2)}</small>` : ''}</td>
         <td class="rp-acts"><button class="btn-ghost" onclick="rpMoveToBE('${raw(p.id)}')" title="Stop au prix d'entrée">BE</button><button class="btn-ghost" onclick="rpClosePos('${raw(p.id)}', 0.5)">50 %</button><button class="btn-ghost" onclick="rpClosePos('${raw(p.id)}', 1)">Fermer</button></td></tr>`;
@@ -543,7 +571,7 @@ function rpRefreshUi() {
   if (ord) mount(ord, RP.orders.length ? html`<table class="rp-table"><thead><tr><th>Type</th><th>Sens</th><th>Prix</th><th>Quantité</th><th>Stop</th><th>Objectif</th><th></th></tr></thead><tbody>${RP.orders.map(o => html`<tr><td>${o.type === 'limit' ? 'Limite' : 'Stop'}</td><td>${o.side === 'short' ? 'Vente' : 'Achat'}</td><td>${rpPrice(o.price)}</td><td>${rpQtyFmt(o.qty)}</td><td>${o.sl != null ? rpPrice(o.sl) : '—'}</td><td>${o.tp != null ? rpPrice(o.tp) : '—'}</td><td class="rp-acts"><button class="btn-ghost" onclick="rpCancelOrder('${raw(o.id)}')">Annuler</button></td></tr>`)}</tbody></table>` : html`<p class="rp-empty">Aucun ordre en attente.</p>`);
   const hist = document.getElementById('rp-history');
   if (hist) mount(hist, RP.history.length ? html`<table class="rp-table"><thead><tr><th>Ouverture</th><th>Sens</th><th>Entrée</th><th>Sortie</th><th>Résultat</th><th>R</th><th></th></tr></thead><tbody>${RP.history.slice().reverse().map(p => {
-      const net = p.realized - p.fees, R = p.risk0 > 0 ? net / p.risk0 : null;
+      const net = rpNetAcc(p), R = p.risk0 > 0 ? (p.realized - p.fees) / p.risk0 : null;
       return html`<tr><td>${rpDateLabel(p.openTime)}</td><td>${p.side === 'short' ? 'Vente' : 'Achat'}</td><td>${rpPrice(p.entry)}</td><td>${rpPrice(rpExitPrice(p))}</td><td class="tone-${raw(net >= 0 ? 'green' : 'red')}">${rpMoney(net)}</td><td>${R != null ? fmtR(R, 2) : '—'}</td>
         <td>${p.journalId ? html`<button class="link-btn" onclick="openTradeDetail(${raw(p.journalId)})">Fiche →</button>` : ''}</td></tr>`;
     })}</tbody></table>` : html`<p class="rp-empty">Les trades clôturés de la séance apparaîtront ici${RP.autosave ? ' — et dans ton journal' : ''}.</p>`);
@@ -613,18 +641,18 @@ function renderReplayTicket() {
 function renderReplayTicketSummary() {
   const el = document.getElementById('rp-ticket-sum'), go = document.getElementById('rp-go');
   if (!el || !RP) return;
-  const r = rpTicketCalc(), fx = rpFx(), base = rpBase(RP.symbol);
+  const r = rpTicketCalc(), fx = rpEurPerAcc(), base = rpBase(RP.symbol);
   if (r.error) {
     mount(el, html`<p class="rp-hint">${r.error === 'stop' ? 'Place un stop (ou « proposer ») : la quantité se calcule selon ton risque.' : r.error === 'side' ? '⚠️ Stop du mauvais côté de l’entrée.' : 'Renseigne le prix de l’ordre.'}</p>`);
     if (go) { go.textContent = (RP_TICKET.side === 'short' ? 'Vendre' : 'Acheter'); go.disabled = true; }
   } else {
     mount(el, html`
       <div class="rp-kv"><span>Quantité</span><b>${rpQtyFmt(r.qty)} ${base}${RP_FIAT.includes(base) ? html` <small>· ${fmtNum(r.qty / 100000, 2)} lot</small>` : ''}</b></div>
-      <div class="rp-kv"><span>Valeur</span><b>${rpMoney(r.notional, 0)}</b></div>
+      <div class="rp-kv"><span>Valeur</span><b>${rpMoney(r.notional / r.k, 0)}</b></div>
       <div class="rp-kv"><span>Levier</span><b class="${raw(r.leverage > 10 ? 'tone-red' : r.leverage > 3 ? 'tone-amber' : '')}">×${fmtNum(r.leverage || 0, 1)}</b></div>
       <div class="rp-kv"><span>Distance au stop</span><b>${rpPrice(r.distance, r.entry)} · ${rpIsFx() ? fmtNum(r.distance / rpPip(), 1) + ' pips' : fmtNum(r.distancePct, 2) + ' %'}</b></div>
-      <div class="rp-kv"><span>Risque</span><b class="tone-red">−${rpMoney(r.risk)} · ${fmtNum(r.riskPct || 0, 2)} %${fx !== 1 ? html` <small>≈ ${fmtEUR(r.risk * fx, false, 2)}</small>` : ''}</b></div>
-      <div class="rp-kv"><span>Gain visé</span><b class="tone-green">${r.reward != null ? '+' + rpMoney(r.reward) : '—'}${r.rr != null ? html` · RR ${fmtNum(r.rr, 2)}` : ''}</b></div>`);
+      <div class="rp-kv"><span>Risque</span><b class="tone-red">−${rpMoney(r.risk / r.k)} · ${fmtNum(r.riskPct || 0, 2)} %${fx !== 1 ? html` <small>≈ ${fmtEUR(r.risk / r.k * fx, false, 2)}</small>` : ''}</b></div>
+      <div class="rp-kv"><span>Gain visé</span><b class="tone-green">${r.reward != null ? '+' + rpMoney(r.reward / r.k) : '—'}${r.rr != null ? html` · RR ${fmtNum(r.rr, 2)}` : ''}</b></div>`);
     if (go) { go.disabled = false; go.textContent = (RP_TICKET.side === 'short' ? 'Vendre ' : 'Acheter ') + rpQtyFmt(r.qty) + ' ' + base + (RP_TICKET.type === 'market' ? '' : RP_TICKET.type === 'limit' ? ' (limite)' : ' (stop)'); }
   }
   rpSyncLines();

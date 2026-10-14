@@ -133,12 +133,14 @@ function closeAllFormSections() {
   document.querySelectorAll('.form-section.open').forEach(s => s.classList.remove('open'));
 }
 
+// Sens non choisi : déduit de la position du stop (stop au-dessus de l'entrée = vente), sinon le R d'un short serait inversé.
+function dirFromStop(entryPrice, slPrice) { return entryPrice != null && slPrice != null && !isNaN(entryPrice) && !isNaN(slPrice) && slPrice > entryPrice ? 'Short' : 'Long'; }
 function updateDistanceRPreview() {
   const entryPrice = parseFloat(document.getElementById('f-entry-price').value);
   const slPrice = parseFloat(document.getElementById('f-sl-price').value);
   const tpPrice = parseFloat(document.getElementById('f-tp-price').value);
   const exitPrice = parseFloat(document.getElementById('f-exit-price').value);
-  const dir = document.getElementById('f-dir').value || 'Long';
+  const dir = document.getElementById('f-dir').value || dirFromStop(entryPrice, slPrice);
   const preview = document.getElementById('distance-r-preview');
   if (!preview) return;
 
@@ -203,9 +205,19 @@ function addTrade() {
   const review = document.getElementById('f-review').value.trim();
   const entryItemsNow = getEntryItems();
   const checklist = Array.from(document.querySelectorAll('.f-checklist-item:checked')).map(el => parseInt(el.dataset.idx, 10));
-  const checklistLabels = checklist.map(i => entryItemsNow[i]).filter(v => v !== undefined);
-  const checklistTotal = entryItemsNow.length;
-  const mistakes = Array.from(document.querySelectorAll('.f-mistake-item:checked')).map(el => el.value);
+  let checklistLabels = checklist.map(i => entryItemsNow[i]).filter(v => v !== undefined);
+  let checklistTotal = entryItemsNow.length;
+  let mistakes = Array.from(document.querySelectorAll('.f-mistake-item:checked')).map(el => el.value);
+  // Modification : un critère ou une erreur retiré du Plan depuis la saisie n'a plus de case dans le formulaire,
+  // mais reste dans l'historique du trade (sinon corriger une note effaçait silencieusement sa checklist).
+  const editedTrade = editingTradeId !== null ? trades.find(x => x.id === editingTradeId) : null;
+  if (editedTrade) {
+    const mistakeChoices = Array.from(document.querySelectorAll('.f-mistake-item')).map(el => el.value);
+    const oldLabels = tradeHasChecklist(editedTrade) ? tradeChecklistLabels(editedTrade) : [];
+    checklistLabels = oldLabels.filter(l => !entryItemsNow.includes(l)).concat(checklistLabels);
+    if (typeof editedTrade.checklistTotal === 'number' && editedTrade.checklistTotal > 0) checklistTotal = editedTrade.checklistTotal;
+    mistakes = (Array.isArray(editedTrade.mistakes) ? editedTrade.mistakes : []).filter(m => !mistakeChoices.includes(m)).concat(mistakes);
+  }
 
   const entryPriceRaw = document.getElementById('f-entry-price').value;
   const slPriceRaw = document.getElementById('f-sl-price').value;
@@ -217,7 +229,7 @@ function addTrade() {
   const exitPrice = exitPriceRaw !== '' ? parseFloat(exitPriceRaw) : null;
   // Prix disponibles → recalcul autoritaire du R par distance, quoi qu'il y ait dans les champs RR/P&L ci-dessus.
   let rSrc = pnl !== null ? 'manuel' : undefined;
-  const distR = computeDistanceR(entryPrice, slPrice, exitPrice, dir || 'Long');
+  const distR = computeDistanceR(entryPrice, slPrice, exitPrice, dir || dirFromStop(entryPrice, slPrice));
   if (distR !== null) { pnl = distR; rr = Math.abs(distR) || rr; rSrc = 'prix'; }
   // Ni prix ni R saisi : un BE vaut 0R ; sinon pas de R (le P&L € reste compté dans toutes les statistiques).
   if (pnl === null && ['TP','SL','BE'].includes(res)) {
@@ -328,8 +340,7 @@ function renderDDBanner() {
   const dayPnlEur = isManual ? manualMap[date] : dayTrades.reduce((s, t) => s + t.pnlEur, 0);
   const hasData = isManual || dayTrades.length > 0;
   // Limite calculée sur le solde en DÉBUT de journée (solde de départ + tous les trades des jours précédents).
-  const dayStartBal = accountSize + trades.reduce((sum, t) => sum + (t.date && t.date < date && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
-  const ddLimit = Math.max(0, dayStartBal) * (limitPct / 100);
+  const lim = dayLossLimit(date), ddLimit = lim.amount;   // % du palier du Scaling en début de journée (voir dayLossLimit)
   const ddLoss = dayPnlEur < 0 ? Math.abs(dayPnlEur) : 0;
   const ddPct = ddLimit > 0 ? (ddLoss / ddLimit * 100) : 0;
   const level = !hasData ? 'none' : ddPct >= 100 ? 'crit' : ddPct >= 75 ? 'warn' : 'ok';
@@ -349,7 +360,7 @@ function renderDDBanner() {
   set('dd-bar', el => { el.style.width = Math.min(ddPct, 100) + '%'; el.className = 'fill-' + ({ none: 'muted', ok: 'green', warn: 'amber', crit: 'red' })[level]; });
   set('dd-bar-wrap', el => el.setAttribute('aria-label', 'Perte du jour : ' + Math.round(ddPct) + ' % de la limite de ' + fmtEUR(ddLimit)));
   set('dd-pct-label', el => { el.textContent = !hasData ? '—' : dayPnlEur >= 0 ? 'Aucune perte' : fmtRate(ddPct, 0) + ' de la limite utilisée'; });
-  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; el.title = limitPct + ' % du solde en début de journée (' + fmtEUR(dayStartBal) + ')'; });
+  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; el.title = limitPct + ' % du ' + lim.label + ' (' + fmtEUR(lim.base) + ')'; });
   set('dd-status-badge', el => {
     el.textContent = ({ none: 'Pas de trade', ok: '✓ Dans les clous', warn: '⚡ Attention', crit: '🚨 Limite dépassée' })[level];
     el.className = 'st-chip ' + level;

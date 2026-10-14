@@ -220,7 +220,7 @@ function renderScalingTiles(st, model, current, L) {
   const left = Math.max(0, pts.length - 1 - L);
   const tiles = [
     { label: 'Risque par trade maintenant', val: fmtEUR(cur.risk, false, 2), tone: 'blue',
-      sub: `${scPct(cur.pct)} de ${fmtEUR(cur.bal)} · ${L === 0 ? 'taille de départ' : 'palier P' + L}${inCush ? ' · tu fais ton coussin, garde cette taille' : ''}` },
+      sub: `${scPct(cur.pct)} de ${fmtEUR(cur.bal)} · ${L === 0 ? 'taille de départ' : 'palier P' + L}${inCush ? ' · tu fais ton coussin, garde cette taille' : ''} · perte max du jour ${fmtEUR(dayLossLimit().amount, false, 0)}` },
     { label: 'Tu augmentes à', val: next ? fmtEUR(next.trigger) : 'Objectif atteint', tone: inCush ? 'green' : 'amber',
       sub: next ? `palier ${fmtEUR(next.bal)} + coussin ${fmtEUR(next.cushionEur)} · encore ${fmtEUR(Math.max(0, next.trigger - current))} → risque ${fmtEUR(next.risk, false, 2)}` : '' },
     { label: 'Marge avant de redescendre', val: L === 0 ? '—' : scNum1(margin) + ' pertes', tone: L === 0 ? 'txt' : (margin < 2 ? 'red' : margin < 5 ? 'amber' : 'green'),
@@ -328,6 +328,36 @@ window.addEventListener('resize', () => {
 // ── Suivi du plan : alerte de palier (Dashboard) et respect du risque prévu ──
 const SCALING_SEEN_KEY = (JP + 'scaling_seen');
 function scalingConfigured() { return DB.getItem(SCALING_KEY) != null; }
+// ── Perte max du jour : une seule règle pour tout le journal ──
+// % (Paramètres) du capital du palier du Scaling atteint en DÉBUT de journée : le risque par trade étant un % du même
+// palier, la limite suit la taille (2 % de perte max = 2 pertes à 1 %), monte et redescend avec les paliers.
+// Sans plan de Scaling réglé : % du solde en début de journée. Utilisée par la barre « Aujourd'hui », le garde-fou,
+// les règles du jour et la Discipline (le challenge Prop Firm garde la règle de sa prop firm : % du capital de départ).
+function dayLossLimit(date) {
+  date = date || localDateStr();
+  const pct = loadDDLimitPct(), key = [pct, accountSize, DB.getItem(SCALING_KEY) || ''].join('|');
+  if (!_dayLimitCache || _dayLimitCache.key !== key) _dayLimitCache = { key, byDate: {} };
+  if (_dayLimitCache.byDate[date]) return _dayLimitCache.byDate[date];
+  let out = null;
+  if (scalingConfigured()) {
+    const st = getScalingState(), current = scalingCurrent(st), model = computeScalingPaliers(st, current);
+    if (!model.error) {
+      let L;
+      if (st.auto) {
+        const base = accountSize > 0 ? accountSize : 0;
+        let bal = base; L = scLevelFrom(model.pts, base);
+        scChronoTrades().forEach(t => { if (t.date && t.date >= date) return; const e = scEur(t); if (e !== null) { bal += e; L = scStepLevel(model.pts, L, bal); } });
+      } else L = scLevelFrom(model.pts, current);
+      const p = model.pts[L];
+      out = { pct, base: p.bal, amount: p.bal * pct / 100, palier: L, label: L === 0 ? 'capital de départ du Scaling' : 'palier P' + L + ' du Scaling' };
+    }
+  }
+  if (!out) {
+    const bal = Math.max(0, (accountSize || 0) + trades.reduce((s, t) => s + (t.date && t.date < date && typeof t.pnlEur === 'number' && isFinite(t.pnlEur) ? t.pnlEur : 0), 0));
+    out = { pct, base: bal, amount: bal * pct / 100, palier: null, label: 'solde en début de journée' };
+  }
+  return (_dayLimitCache.byDate[date] = out);
+}
 function scalingNow() {
   const st = getScalingState(), current = scalingCurrent(st), model = computeScalingPaliers(st, current);
   if (model.error) return null;

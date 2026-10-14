@@ -79,8 +79,10 @@ function rpiFilter(q) {
   document.querySelectorAll('#rp-modal .rp-pick-grp').forEach(g => { g.hidden = !!q; });
 }
 // Réglages d'un indicateur : onglets « Paramètres » et « Style », boutons Par défaut / Annuler / OK.
-function rpiSettings(uid) {
-  const inst = rpiByUid(uid); if (!inst) return;
+// preview : valeurs à afficher sans toucher à l'indicateur (« Par défaut » ne change rien tant qu'on n'a pas cliqué OK).
+function rpiSettings(uid, preview) {
+  const inst0 = rpiByUid(uid); if (!inst0) return;
+  const inst = preview || inst0;
   const d = RPI_DEFS[inst.id];
   const inputs = d.inputs.length ? d.inputs.map(x => '<label class="rp-set-row"><span>' + escHtmlAttr(tr(x.label)) + '</span>' + (x.type === 'src'
     ? '<select data-in="' + x.k + '">' + RPI_SRC.map(([v, l]) => '<option value="' + v + '"' + (inst.p[x.k] === v ? ' selected' : '') + '>' + escHtmlAttr(tr(l)) + '</option>').join('') + '</select>'
@@ -102,9 +104,7 @@ function rpiSetTab(t) {
 }
 function rpiDefaults(uid) {
   const inst = rpiByUid(uid); if (!inst) return;
-  const fresh = rpiNew(inst.id);
-  Object.assign(inst, { p: fresh.p, st: fresh.st, lv: fresh.lv });
-  rpiSettings(uid);
+  rpiSettings(uid, Object.assign(rpiNew(inst.id), { uid }));
 }
 function rpiApply(uid) {
   const inst = rpiByUid(uid), m = document.getElementById('rp-modal');

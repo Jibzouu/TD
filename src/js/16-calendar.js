@@ -97,7 +97,7 @@ function showCalTooltip(e, dateStr) {
   const data = calDayDataCache[dateStr];
   if (!tip || !data || !data.dayTrades.length) return;
   const rows = data.dayTrades.slice(0, 5).map(t => html`<div class="ct-row"><span>${t.asset || '—'} ${t.res || ''}</span><span class="tone-${raw(t.pnl > 0 ? 'green' : t.pnl < 0 ? 'red' : 'muted')}">${t.pnl != null ? ((rSource(t) === 'defaut' || rSource(t) === 'risque') ? '≈' : '') + fmtR(t.pnl, 1) : '—'}</span></div>`);
-  mount(tip, html`<div class="ct-head">${fmtDateFR(dateStr, true)} · ${fmtEUR(data.pnlEurSum, true)}</div>${rows}${data.dayTrades.length > 5 ? html`<div class="ct-more">+ ${data.dayTrades.length - 5} autre(s)</div>` : ''}`);
+  mount(tip, html`<div class="ct-head">${fmtDateFR(dateStr, true)} · ${data.hasEur ? fmtEUR(data.pnlEurSum, true) : fmtR(data.pnlSum, 1)}</div>${rows}${data.dayTrades.length > 5 ? html`<div class="ct-more">+ ${data.dayTrades.length - 5} autre(s)</div>` : ''}`);
   tip.classList.add('show');
   positionCalTooltip(e);
 }
@@ -146,6 +146,11 @@ function computeMonthTotalEur(year, month, filteredTrades) {
   return total;
 }
 
+function computeMonthTotalR(year, month, filteredTrades) {
+  const k = year + '-' + String(month + 1).padStart(2, '0');
+  return filteredTrades.filter(t => t.pnl != null && (t.date || '').slice(0, 7) === k).reduce((s, t) => s + t.pnl, 0);
+}
+
 function renderCalendrier() {
   const lbl = document.getElementById('cal-month-label');
   if (!lbl) return;
@@ -179,13 +184,16 @@ function renderCalendrier() {
     if (data.dayTrades.length > 0) {
       if (data.hasEur) { if (Math.abs(data.pnlEurSum) > maxAbs) maxAbs = Math.abs(data.pnlEurSum); }
       else if (Math.abs(data.pnlSum) > maxAbsR) maxAbsR = Math.abs(data.pnlSum);
-      if (data.pnlEurSum > bestVal) { bestVal = data.pnlEurSum; bestDate = dateStr; }
-      if (data.pnlEurSum < worstVal) { worstVal = data.pnlEurSum; worstDate = dateStr; }
+      if (data.net > bestVal) { bestVal = data.net; bestDate = dateStr; }
+      if (data.net < worstVal) { worstVal = data.net; worstDate = dateStr; }
       chronoEntries.push({ date: dateStr, pnlSum: data.net });
     }
   });
   const streakMap = computeCalStreaks(chronoEntries);
   const hasBestWorst = monthDates.filter(d => calDayDataCache[d].dayTrades.length > 0).length >= 2;
+  // Totaux de semaine et du mois en € ; en R si le mois n'a aucun montant en € (journal tenu en R).
+  const monthEur = monthDates.some(d => calDayDataCache[d].hasEur);
+  const totOf = data => monthEur ? data.pnlEurSum : data.pnlSum, fmtTot = v => monthEur ? fmtEUR(v, true) : fmtR(v, 1);
 
   let monthTotalEur = 0, monthTradingDays = 0;
   const weeks = [];
@@ -205,7 +213,7 @@ function renderCalendrier() {
       let vars = '', strong = false;
       if (has) {
         weekDays++; monthTradingDays++;
-        weekEur += data.pnlEurSum; monthTotalEur += data.pnlEurSum;
+        weekEur += totOf(data); monthTotalEur += totOf(data);
         const hc = heatColors(data.net, data.hasEur ? maxAbs : maxAbsR);
         strong = hc.strong;
         vars = `--c-bg:${hc.bg};--c-bd:${hc.border};--c-tx:${hc.txt}` + (strong ? `;--c-on:${hc.onFill}` : '');
@@ -221,10 +229,10 @@ function renderCalendrier() {
     }
     // Semaine à venir : rien à totaliser, on n'affiche que son numéro (et rien du tout sur téléphone).
     const week = weekDays > 0
-      ? html`<div class="cal-week"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-${raw(weekEur > 0 ? 'green' : weekEur < 0 ? 'red' : 'txt2')}">${fmtEUR(weekEur, true)}</div><div class="cal-week-sub">${weekDays} jour(s)</div></div>`
+      ? html`<div class="cal-week"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-${raw(weekEur > 0 ? 'green' : weekEur < 0 ? 'red' : 'txt2')}">${fmtTot(weekEur)}</div><div class="cal-week-sub">${weekDays} jour(s)</div></div>`
       : rowDate && rowDate > todayStr
         ? html`<div class="cal-week empty future"><div class="cal-week-lbl">${wkLbl}</div></div>`
-        : html`<div class="cal-week empty"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-muted">0 €</div><div class="cal-week-sub">0 jour</div></div>`;
+        : html`<div class="cal-week empty"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-muted">${monthEur ? '0 €' : '0R'}</div><div class="cal-week-sub">0 jour</div></div>`;
     weeks.push(html`<div class="cal-row">${days}${week}</div>`);
   }
   mount('cal-grid', html`<div class="cal-row">${DAYS_FR.map(d => html`<div class="cal-dow">${d}</div>`)}<div></div></div>${weeks}`);
@@ -235,10 +243,10 @@ function renderCalendrier() {
     if (monthTradingDays > 0) {
       let prevMonth = calMonth - 1, prevYear = calYear;
       if (prevMonth < 0) { prevMonth = 11; prevYear--; }
-      const prevTotal = computeMonthTotalEur(prevYear, prevMonth, filteredTrades);
+      const prevTotal = monthEur ? computeMonthTotalEur(prevYear, prevMonth, filteredTrades) : computeMonthTotalR(prevYear, prevMonth, filteredTrades);
       const diff = monthTotalEur - prevTotal;
-      const trend = Math.abs(diff) < 0.005 ? '' : html` <span class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${diff >= 0 ? '▲' : '▼'} ${fmtEUR(Math.abs(diff))} vs mois dernier</span>`;
-      mount(statsBadge, html`Ce mois : <span class="fw-600 tone-${raw(tone)}">${fmtEUR(monthTotalEur, true)}</span> · ${monthTradingDays} jour(s) tradé(s)${trend}`);
+      const trend = Math.abs(diff) < 0.005 ? '' : html` <span class="tone-${raw(diff >= 0 ? 'green' : 'red')}">${diff >= 0 ? '▲' : '▼'} ${monthEur ? fmtEUR(Math.abs(diff)) : fmtR(Math.abs(diff), 1, true)} vs mois dernier</span>`;
+      mount(statsBadge, html`Ce mois : <span class="fw-600 tone-${raw(tone)}">${fmtTot(monthTotalEur)}</span> · ${monthTradingDays} jour(s) tradé(s)${trend}`);
     } else {
       statsBadge.textContent = 'Aucun trade ce mois-ci';
     }
@@ -264,6 +272,7 @@ function renderYearlyCalendar() {
   });
 
   let yearTotal = 0, yearDays = 0;
+  const yearEur = Object.keys(dayMap).some(d => d.startsWith(String(calYear)) && calDayDataCache[d] && calDayDataCache[d].hasEur);
   const months = MONTHS_FR.map((name, m) => {
     let startDow = new Date(calYear, m, 1).getDay(); startDow = startDow === 0 ? 6 : startDow - 1;
     const last = new Date(calYear, m + 1, 0).getDate();
@@ -276,7 +285,7 @@ function renderYearlyCalendar() {
       const has = !!(data && data.dayTrades.length);
       let bg = '';
       if (has) {
-        yearTotal += data.pnlEurSum; yearDays++;
+        yearTotal += yearEur ? data.pnlEurSum : data.pnlSum; yearDays++;
         mEur += data.pnlEurSum; mR += data.pnlSum; mDays++; if (data.hasEur) mHasEur = true;
         bg = heatColors(data.net, data.hasEur ? yearMaxAbs : yearMaxAbsR).bg;
       }
@@ -294,7 +303,7 @@ function renderYearlyCalendar() {
   const statsEl = document.getElementById('cal-year-stats');
   if (statsEl) {
     statsEl.textContent = yearDays > 0
-      ? `${calYear} : ${fmtEUR(yearTotal, true)} sur ${yearDays} jour(s) tradé(s)`
+      ? `${calYear} : ${yearEur ? fmtEUR(yearTotal, true) : fmtR(yearTotal, 1)} sur ${yearDays} jour(s) tradé(s)`
       : `Aucun trade en ${calYear}`;
   }
 }
@@ -303,7 +312,8 @@ function renderYearlyCalendar() {
 // (getISOWeek : voir 00a-calc.js)
 
 function renderRRTables() {
-  const trades = analysisTrades();
+  const calAsset = document.getElementById('cal-filter-asset')?.value || '', calSession = document.getElementById('cal-filter-session')?.value || '';
+  const trades = analysisTrades().filter(t => (!calAsset || t.asset === calAsset) && (!calSession || t.session === calSession));
   const weekMap = {};
   const monthMap = {};
 

@@ -771,7 +771,14 @@
           <input type="number" id="pf-consistency-pct" step="1" min="1" max="100" oninput="savePfSetting('consistency_pct', this.value); renderPropFirm()">
           <span class="txt2-12">% du profit total</span>
           <span class="flex-1"></span>
-          <span class="mono-muted">Perte journalière max : réglée dans Paramètres (<span id="pf-daily-limit-echo">1</span>%)</span>
+          <label class="check-label">
+            <input type="checkbox" id="pf-dd-lock" onchange="savePfSetting('dd_lock', this.checked?1:0); renderPropFirm()">
+            Seuil trailing plafonné : il ne monte pas au-dessus du capital de départ (Topstep, Apex)
+          </label>
+          <label class="check-label">
+            <input type="checkbox" id="pf-daily-on" onchange="savePfSetting('daily_on', this.checked?1:0); renderPropFirm()">
+            Perte journalière max comptée dans le challenge (réglée dans Paramètres : <span id="pf-daily-limit-echo">1</span> %)
+          </label>
         </div>
       </div>
 
@@ -868,7 +875,7 @@
               <button type="button" class="rp-dp-btn" id="rp-start-btn" aria-haspopup="dialog" aria-labelledby="rp-start-lbl" onclick="rpDpToggle()"><span id="rp-start-txt"></span><span class="rp-dp-ico" aria-hidden="true">📅</span></button>
               <div class="rp-dp" id="rp-dp" role="dialog" aria-label="Choisir la date de départ" hidden></div>
             </div>
-            <label class="field"><span class="rp-lbl">Solde de départ ($)</span><input type="number" id="rp-balance" min="1" step="100"></label>
+            <label class="field"><span class="rp-lbl" title="En dollars ; pour une paire sans dollar, dans sa devise de base (€ pour EUR/JPY ou EUR/GBP, £ pour GBP/JPY)">Solde de départ ($ ou devise de base)</span><input type="number" id="rp-balance" min="1" step="100"></label>
             <label class="field"><span class="rp-lbl">Frais par ordre (%)</span><input type="number" id="rp-fee" min="0" step="0.01" value="0.04"></label>
           </div>
           <div class="rp-td" id="rp-td" hidden>
@@ -1336,8 +1343,8 @@
             <small>Base de la courbe d'équité, du rendement et de la limite de perte.</small>
           </label>
           <label class="acct-field"><span>Perte journalière max</span>
-            <span class="acct-input"><input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()"><span>% du solde du jour</span></span>
-            <small>Calculée sur ton solde en début de journée. Jauge « Perte max du jour » du Dashboard et critère de Discipline.</small>
+            <span class="acct-input"><input type="number" id="dd-limit-pct" value="1" step="0.1" min="0.1" oninput="saveDDLimitPct()"><span>% du palier du jour</span></span>
+            <small>Calculée sur le capital de ton palier du Scaling atteint en début de journée (sans plan de Scaling : sur ton solde en début de journée). Jauge « Perte max du jour » du Dashboard, garde-fou, règles du jour et critère de Discipline. Le challenge Prop Firm garde la règle de ta prop firm (% du capital de départ).</small>
           </label>
           <div class="acct-field"><span>Disposition du Dashboard</span>
             <button class="btn-ghost" onclick="resetDashboardLayout()">↺ Réinitialiser la disposition</button>

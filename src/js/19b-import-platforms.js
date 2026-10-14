@@ -107,7 +107,7 @@ function tryParsePlatformStatement(rows, text) {
   const { col, headers } = hdr;
   const platform = guessPlatform(text, headers);
   const ccy = detectStatementCcy(text, headers, col), fx = fxForCcy(ccy);
-  const num = (r, j) => { if (j < 0) return null; const v = parseNumCSV(r[j]); return isNaN(v) ? null : v; };
+  const num = (r, j) => { if (j < 0) return null; const v = pn(r[j]); return isNaN(v) ? null : v; };
   const out = [];
   for (let i = hdr.index + 1; i < rows.length; i++) {
     const r = rows[i];

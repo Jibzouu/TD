@@ -122,7 +122,7 @@ function restoreSafetySnapshot() {
     showToast('Importation annulée — ' + trades.length + ' trades restaurés', 'success');
   });
 }
-function dismissSafetySnapshot() { DB.removeItem((JP + 'safety_snapshot')); renderTrashUI(); }
+function dismissSafetySnapshot() { DB.removeItem((JP + 'safety_snapshot')); TradeStore.pruneImages(); renderTrashUI(); }
 function renderStorageCard() {
   const el = document.getElementById('storage-card-body');
   if (!el) return;
@@ -134,7 +134,7 @@ function renderStorageCard() {
 }
 
 // ── STATISTIQUES : définitions uniques pour tout le journal ──────────────────────────
-// Win rate = gagnants ÷ trades clos (les break-even comptent au dénominateur). Intervalle de Wilson à 95 %.
+// Win rate = gagnants ÷ (gagnants + perdants) : les break-even ne comptent pas. Intervalle de Wilson à 95 %.
 // (wilsonCI et winStats : voir 00a-calc.js)
 function fmtWinLine(w) { return w.wins + ' G · ' + w.losses + ' P' + (w.be ? ' · ' + w.be + ' BE' : ''); }
 function fmtCI(w) { return w.n ? 'IC 95 % : ' + Math.round(w.lo * 100) + '–' + Math.round(w.hi * 100) + ' %' : ''; }
