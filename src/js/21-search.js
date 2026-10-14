@@ -86,7 +86,7 @@ function renderGlobalSearchResults(query) {
   }
 
   const idx = pred => searchCurrentItems.findIndex(pred);
-  mount(cont, html`${pageMatches.length ? html`<div class="search-group-label">Pages</div>${pageMatches.map(p => searchItemHtml(idx(x => x.type === 'page' && x.page === p.page), p.icon, p.label, ''))}` : ''}${actionMatches.length ? html`<div class="search-group-label">Actions</div>${actionMatches.map(a => searchItemHtml(idx(x => x.type === 'action' && x.label === a.label), a.icon, a.label, ''))}` : ''}${tradeMatches.length ? html`<div class="search-group-label">Trades</div>${tradeMatches.map(t => searchItemHtml(idx(x => x.type === 'trade' && x.trade.id === t.id), '📈', t.asset || '—', `${t.date || ''} · ${t.res || ''} ${t.pnl != null ? (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : ''}`))}` : ''}`);
+  mount(cont, html`${pageMatches.length ? html`<div class="search-group-label">Pages</div>${pageMatches.map(p => searchItemHtml(idx(x => x.type === 'page' && x.page === p.page), p.icon, p.label, ''))}` : ''}${actionMatches.length ? html`<div class="search-group-label">Actions</div>${actionMatches.map(a => searchItemHtml(idx(x => x.type === 'action' && x.label === a.label), a.icon, a.label, ''))}` : ''}${tradeMatches.length ? html`<div class="search-group-label">Trades</div>${tradeMatches.map(t => searchItemHtml(idx(x => x.type === 'trade' && x.trade.id === t.id), '📈', t.asset || '—', `${t.date || ''} · ${t.res || ''} ${t.pnl != null ? fmtR(t.pnl, 1) : ''}`))}` : ''}`);
   updateSearchSelection();
 }
 function searchItemHtml(index, icon, label, sub) {

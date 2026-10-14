@@ -481,7 +481,7 @@ function rpEndSession() {
     RP.orders = [];
     rpSave();
     const st = rpSessionStats();
-    showToast('Séance terminée — ' + st.n + ' trade(s), ' + (st.r >= 0 ? '+' : '') + st.r.toFixed(2) + 'R', 'success');
+    showToast('Séance terminée — ' + st.n + ' trade(s), ' + fmtR(st.r, 2), 'success');
     DB.removeItem(RP_KEY()); RP = null; RPC = []; if (RP_CHART) { RP_CHART.remove(); RP_CHART = null; RP_SERIES = null; }
     renderReplay();
   }, { confirmLabel: 'Terminer' });

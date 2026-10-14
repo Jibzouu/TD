@@ -87,10 +87,10 @@ function renderWeeklyReview() {
 
   mount(cont, html`
     <div class="rv-kpis">
-      ${UI.stat('Résultat de la semaine', M.hasEur ? fmtEUR(M.pnl, true) : fmtR(M.r, 2), { tone: (M.hasEur ? M.pnl : M.r) >= 0 ? 'green' : 'red', sub: deltaChip(M.hasEur ? M.pnl : M.r, prevList.length ? (M.hasEur ? P.pnl : P.r) : null, v => M.hasEur ? fmtE(v) : v.toFixed(2) + 'R') })}
+      ${UI.stat('Résultat de la semaine', M.hasEur ? fmtEUR(M.pnl, true) : fmtR(M.r, 2), { tone: (M.hasEur ? M.pnl : M.r) >= 0 ? 'green' : 'red', sub: deltaChip(M.hasEur ? M.pnl : M.r, prevList.length ? (M.hasEur ? P.pnl : P.r) : null, v => M.hasEur ? fmtE(v) : fmtR(v, 2, true)) })}
       ${UI.stat('Trades', String(M.n), { sub: deltaChip(M.n, prevList.length ? P.n : null, v => String(v), false) })}
       ${UI.stat('Win rate', M.W.n ? fmtRate(M.W.rate * 100, 0) : '—', { tone: M.W.n && be !== null ? (M.W.rate >= be ? 'green' : 'red') : null, sub: be !== null ? 'seuil de rentabilité ' + Math.round(be * 100) + ' %' : '' })}
-      ${UI.stat('Profit factor', M.pf === null ? '—' : (M.pf === Infinity ? '∞' : fmtNum(M.pf, 2)), { sub: deltaChip(M.pf === Infinity ? null : M.pf, prevList.length && P.pf !== Infinity ? P.pf : null, v => v.toFixed(2)) })}
+      ${UI.stat('Profit factor', M.pf === null ? '—' : (M.pf === Infinity ? '∞' : fmtNum(M.pf, 2)), { sub: deltaChip(M.pf === Infinity ? null : M.pf, prevList.length && P.pf !== Infinity ? P.pf : null, v => fmtNum(v, 2)) })}
       ${UI.stat('Checklist complète', M.checklistOk === null ? 'non suivie' : Math.round(M.checklistOk * 100) + ' %', { sub: deltaChip(M.checklistOk === null ? null : M.checklistOk * 100, prevList.length && P.checklistOk !== null ? P.checklistOk * 100 : null, v => Math.round(v) + ' pts') })}
       ${UI.stat('Erreurs taguées', String(M.mistakes), { tone: M.mistakes ? 'amber' : null, sub: deltaChip(M.mistakes, prevList.length ? P.mistakes : null, v => String(v), false) })}
     </div>
@@ -116,7 +116,7 @@ function renderWeeklyReview() {
       type: 'bar',
       data: { labels: days.map(d => d.toLocaleDateString(UI_LOCALE, { weekday: 'short', day: 'numeric' })), datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 0 ? t.green : t.red), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 32 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { label: c => (useEur ? fmtEUR(c.raw, true) : (c.raw >= 0 ? '+' : '') + c.raw + 'R') + ' · ' + counts[c.dataIndex] + ' trade(s)' } }) },
-        scales: proScales({ yWidth: 64, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } }) },
+        scales: proScales({ yWidth: 64, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : fmtRTick(v) } } }) },
       plugins: [refLinePlugin('rvZero', 0, '')]
     });
   }

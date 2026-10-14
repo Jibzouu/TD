@@ -48,7 +48,6 @@
 .hm-cell.dim{opacity:.6}
 .hm-legend-note{margin-left:12px}
 .dc-item{margin-bottom:11px}
-.dc-item.off{opacity:.6}
 .dc-top{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:5px}
 .dc-label{color:var(--txt2)}
 .dc-val{font-family:var(--mono);color:var(--txt)}
@@ -71,6 +70,8 @@
 .cal-r{font-size:12.5px;margin-top:2px;font-family:var(--mono);color:var(--c-tx,var(--txt3))}
 .cal-win{font-size:12.5px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
 .cal-day.strong .cal-win{color:var(--c-on);opacity:.8}
+/* Les groupes de la ligne (« 1 BE », « · 100 % ») passent à la ligne d'un bloc, jamais au milieu (« 100 » puis « % »). */
+.cal-win .cal-be,.cal-win .cal-wr{white-space:nowrap}
 .cal-badge{position:absolute;top:4px;right:5px;font-size:12.5px}
 .cal-badge.streak{top:auto;bottom:4px;font-family:var(--mono);color:var(--txt3)}
 .cal-week{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;justify-content:center}
@@ -80,6 +81,9 @@
 .cal-week-sub{font-size:12.5px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
 .cal-year-months{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px}
 .cal-year-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-year-month-label{display:block;width:100%;background:none;border:0;padding:2px 0;margin-bottom:2px;cursor:pointer;border-radius:6px}
+.cal-year-month-label:hover,.cal-year-month-label:focus-visible{color:var(--accent)}
+.cal-year-month-sum{display:flex;justify-content:center;gap:8px;font-size:12px;font-family:var(--mono);margin-bottom:8px;min-height:16px}
 .cal-year-sq{background:var(--bg4);cursor:default}
 .cal-year-sq.has{cursor:pointer}
 .ct-head{font-weight:600;color:var(--txt);margin-bottom:6px}
@@ -91,6 +95,9 @@
 .rr-table .r{text-align:right}
 .rr-table td.c2{color:var(--txt2)}
 .rr-table td.strong{font-weight:600}
+.rr-table .rr-sub{white-space:nowrap}
+/* Téléphone : le détail passe sous le chiffre (« S25 » / « dès le 15/06 », « 15 » / « (9✓ 6✗) ») au lieu de se couper n'importe où. */
+@media (max-width:600px){.rr-table th,.rr-table td,.rr-table tr:last-child td{padding:8px 8px}.rr-table td:first-child{white-space:nowrap}.rr-table .rr-sep{display:none}.rr-table .rr-sub{display:block;font-size:12px}}
 .rr-table td.rr-empty,.rr-table tr:last-child td.rr-empty{padding:16px;color:var(--txt3);font-size:13px;font-family:inherit;border-bottom:none}
 
 /* Kit graphiques (mini-courbes, barres de tableau) */

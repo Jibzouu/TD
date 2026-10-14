@@ -106,7 +106,7 @@ function renderHeatmap() {
         label: c => 'Résultat net  ' + fmtV(c.raw),
         afterLabel: c => { const g = hMap[hours[c.dataIndex]]; return g ? [g.n + ' trade(s)' + (g.w + g.l ? ' · win rate ' + Math.round(g.w / (g.w + g.l) * 100) + ' %' : '')] : ['aucun trade']; }
       } }) },
-      scales: proScales({ xTicks: 24, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } })
+      scales: proScales({ xTicks: 24, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
     },
     plugins: [refLinePlugin('hourZero', 0, '')]
   });

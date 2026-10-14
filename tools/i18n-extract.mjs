@@ -1,9 +1,10 @@
 // Relève tous les textes français de l'interface pour le dictionnaire de traduction.
-//   node tools/i18n-extract.mjs            → tools/i18n/strings-fr.json (+ liste des textes non traduits)
+//   node tools/i18n-extract.mjs            → tools/i18n/strings-fr.json (+ missing-en.json : textes à vérifier)
 //   node tools/i18n-extract.mjs --check en → parcourt l'application en anglais : tools/i18n/leftover-en.json = textes restés en français
 // 1) L'application est ouverte en français et parcourue (pages, onglets, fenêtres, messages, états vides, comptes
 //    Live / PropFirm / vide) : chaque texte affiché, même un instant (toast), est enregistré.
-// 2) Les textes écrits dans le code (chaînes JS contenant du français) sont ajoutés, pour les messages rares.
+// 2) Les textes écrits dans le code (chaînes JS contenant du français) sont ajoutés, pour les messages rares — sauf ceux
+//    déjà bilingues dans le code (rkL('…', '…'), ['…', '…'], { fr, en }).
 // Chaque texte est normalisé comme à l'affichage (nombres et noms de jours / mois → {0}, {1}…).
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
@@ -123,7 +124,6 @@ await crawl('tj', tr.concat(today), { tj_last_export: String(Date.parse('2026-04
 await crawl('tj', [], { ...L });                          // compte vide : états vides
 await crawl('pf', tr.slice(0, 40), { pf_pf_enabled: '1', ...L });   // Prop Firm
 await crawl('bt', tr.slice(0, 10), { ...L });            // Backtest
-await b.close();
 
 // Normalisation identique à l'application (src/js/00d-i18n.js).
 const DATE_WORDS = '(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|lun\\.|mar\\.|mer\\.|jeu\\.|ven\\.|sam\\.|dim\\.|janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre|janv\\.|févr\\.|avr\\.|juil\\.|sept\\.|oct\\.|nov\\.|déc\\.|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun|January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept|Sep|Oct|Nov|Dec)';
@@ -140,6 +140,7 @@ if (CHECK) {
   const frSet = new Set(frKeys.filter(k => !(k in dict) && !ignore.includes(k) && /\p{L}{3,}/u.test(k.replace(/\{\d+\}/g, ' '))));
   [...raw].forEach(x => { const t = x.trim().replace(/[ \t\r\n]+/g, ' '); if (frSet.has(norm(t))) left.push(t); });
   const uniq = [...new Set(left)].filter(x => !ignore.includes(norm(x))).sort();
+  await b.close();
   writeFileSync(join(OUT, 'leftover-' + CHECK + '.json'), JSON.stringify(uniq, null, 1));
   console.log(raw.size + ' textes affichés en ' + CHECK + ', ' + uniq.length + ' semblent encore en français → tools/i18n/leftover-' + CHECK + '.json');
   process.exit(0);
@@ -149,9 +150,41 @@ const FR_HINT = /[àâçéèêëîïôûùüÿœ]|\b(le|la|les|des|du|de|un|une|
 const JS = readdirSync(join(ROOT, 'src', 'js')).filter(f => f.endsWith('.js') && !f.startsWith('00d')).map(f => readFileSync(join(ROOT, 'src', 'js', f), 'utf8')).join('\n');
 const lits = new Set();
 // Lecture des chaînes du code (sans les commentaires) : '…', "…" et `…${expr}…` (l'expression devient un repère).
+// Chaque chaîne est marquée « bilingue » quand sa traduction est écrite juste à côté dans le code : les deux textes
+// d'une paire rkL('…', '…') (et des autres helpers xxL), d'un tableau de deux textes ['…', '…'] (Guide, leçons, étapes)
+// ou d'un objet { fr: '…', en: '…' } (médailles).
+const LIT = String.raw`(?:'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|\`(?:\\.|[^\`\\])*\`)`;
+const PAIR_NEXT = new RegExp('^\\s*,\\s*' + LIT), ARRAY_PAIR_NEXT = new RegExp('^\\s*,\\s*' + LIT + '\\s*\\]'), OBJ_PAIR_NEXT = new RegExp('^\\s*,\\s*en\\s*:\\s*' + LIT);
 function jsStrings(src) {
-  const out = []; let i = 0;
+  const out = [], enStarts = new Set(); let i = 0;
+  const bilingual = (start, end) => {
+    if (enStarts.has(start)) return true;   // texte anglais d'une paire
+    const before = src.slice(Math.max(0, start - 12), start), after = src.slice(end, end + 3000);
+    const obj = /\bfr\s*:\s*$/.test(before) && OBJ_PAIR_NEXT.test(after);
+    const pair = obj || (/\b[a-z]{0,3}L\(\s*$/.test(before) && PAIR_NEXT.test(after)) || (/\[\s*$/.test(before) && ARRAY_PAIR_NEXT.test(after));
+    if (pair) enStarts.add(end + after.match(obj ? /^\s*,\s*en\s*:\s*/ : /^\s*,\s*/)[0].length);
+    return pair;
+  };
+  // Expression régulière (/…/g) : sautée en bloc, sinon un guillemet qu'elle contient (/"/g) ouvrirait une fausse chaîne
+  // et décalerait toute la lecture qui suit (du code lu comme du texte, des paires bilingues manquées).
+  const regexAt = () => {
+    let j = i - 1; while (j >= 0 && /\s/.test(src[j])) j--;
+    return j < 0 || '(,=:[!&|?{};+-*%<>~^'.includes(src[j]) || /\b(?:return|typeof|case|in|of)$/.test(src.slice(Math.max(0, j - 6), j + 1));
+  };
+  const skipRegex = () => {
+    let cls = false; i++;
+    while (i < src.length && src[i] !== '\n') {
+      const ch = src[i];
+      if (ch === '\\') { i += 2; continue; }
+      if (ch === '[') cls = true; else if (ch === ']') cls = false; else if (ch === '/' && !cls) { i++; break; }
+      i++;
+    }
+    while (i < src.length && /[a-z]/i.test(src[i])) i++;
+  };
+  // inExpr : chaîne écrite dans ${…} — gardée seulement pour repérer les paires bilingues (le reste est un bout de code).
+  const push = (text, start, inExpr) => { const bi = bilingual(start, i); if (bi || !inExpr) out.push({ text, bi }); };
   const readTemplate = () => {   // i est juste après le ` ouvrant
+    const start = i - 1;
     let text = '';
     while (i < src.length && src[i] !== '`') {
       if (src[i] === '\\') { text += src[i + 1]; i += 2; continue; }
@@ -160,7 +193,10 @@ function jsStrings(src) {
         while (i < src.length && depth) {
           const c = src[i];
           if (c === '`') { i++; readTemplate(); continue; }
-          if (c === "'" || c === '"') { const q = c; i++; while (i < src.length && src[i] !== q) { if (src[i] === '\\') i++; i++; } i++; continue; }
+          if (c === '/' && src[i + 1] === '/') { while (i < src.length && src[i] !== '\n') i++; continue; }   // commentaire dans ${…}
+          if (c === '/' && src[i + 1] === '*') { i = src.indexOf('*/', i + 2) + 2; continue; }
+          if (c === '/' && regexAt()) { skipRegex(); continue; }
+          if (c === "'" || c === '"') { const q = c, start = i; let t = ''; i++; while (i < src.length && src[i] !== q) { if (src[i] === '\\') { t += src[i + 1]; i += 2; continue; } t += src[i++]; } i++; push(t, start, true); continue; }   // chaîne dans ${…} (ex. rkL('…', '…'))
           if (c === '{') depth++; else if (c === '}') depth--;
           i++;
         }
@@ -168,24 +204,26 @@ function jsStrings(src) {
       }
       text += src[i++];
     }
-    i++; out.push(text); return text;
+    i++; push(text, start); return text;
   };
   while (i < src.length) {
     const c = src[i];
     if (c === '/' && src[i + 1] === '/') { while (i < src.length && src[i] !== '\n') i++; continue; }
     if (c === '/' && src[i + 1] === '*') { i = src.indexOf('*/', i + 2) + 2; if (i < 2) break; continue; }
-    if (c === "'" || c === '"') { const q = c; let t = ''; i++; while (i < src.length && src[i] !== q && src[i] !== '\n') { if (src[i] === '\\') { t += src[i + 1]; i += 2; continue; } t += src[i++]; } i++; out.push(t); continue; }
+    if (c === '/' && regexAt()) { skipRegex(); continue; }
+    if (c === "'" || c === '"') { const q = c, start = i; let t = ''; i++; while (i < src.length && src[i] !== q && src[i] !== '\n') { if (src[i] === '\\') { t += src[i + 1]; i += 2; continue; } t += src[i++]; } i++; push(t, start); continue; }
     if (c === '`') { i++; readTemplate(); continue; }
     i++;
   }
   return out;
 }
-for (const str of jsStrings(JS)) {
+const biKeys = new Set();   // textes français déjà traduits dans le code : rien à ajouter au dictionnaire
+for (const { text: str, bi } of jsStrings(JS)) {
   // Morceaux de gabarit html`…` : on garde le texte hors balises ; une expression devient {n}.
   str.split(/<[^>]*>|^[^<]*>|<[^>]*$/).forEach(part => {
     part = part.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
     if (part.replace(/\u0000/g, '').trim().length < 3 || !/\p{L}{2}/u.test(part) || !FR_HINT.test(part) || /^[\w.$#-]+$/.test(part) || /[{};=]|=>|\(\)|function\b/.test(part)) return;
-    lits.add(part);
+    if (bi) biKeys.add(norm(part)); else lits.add(part);
   });
 }
 
@@ -200,6 +238,26 @@ writeFileSync(join(OUT, 'strings-fr.json'), JSON.stringify(list, null, 1));
 // Textes pas encore dans le dictionnaire anglais.
 let en = {};
 try { en = JSON.parse(readFileSync(join(OUT, 'en.json'), 'utf8')); } catch (e) {}
-const missing = list.filter(k => !(k in en));
+let ignored = [];   // textes identiques dans les deux langues (noms, sigles…)
+try { ignored = JSON.parse(readFileSync(join(OUT, 'ignore.json'), 'utf8')); } catch (e) {}
+const candidates = list.filter(k => !(k in en) && !biKeys.has(k) && !ignored.includes(k));
+// Un texte absent tel quel du dictionnaire peut quand même être traduit : modèle générique (« Ouvrir {s} {0} »),
+// phrase découpée en morceaux (« A · B », « Libellé : valeur »). On le soumet au moteur de l'application
+// (trCore / trParts, dictionnaire anglais intégré) ; il reste « manquant » seulement si le résultat est encore en français
+// (un texte sans mot français — sigle, couleur, nom propre — n'a rien à traduire).
+const FR_LEFT = /[àâçéèêëîïôûùüœ]|\b(le|la|les|des|du|une|tes|ton|ta|ce|cette|pas|pour|avec|sur|dans|est|aucun|aucune|jour|jours|semaine|perte|pertes|règle|compte|fichier|sans|et|de|au|par)\b/i;
+const page = await (await b.newContext()).newPage();
+await page.goto(URL);
+await page.waitForFunction(() => document.documentElement.classList.contains('app-ready'));
+const stillFr = await page.evaluate(([keys, re]) => {
+  const rx = new RegExp(re, 'i'), dict = I18N_TEXT.en;
+  return keys.filter(k => {
+    let n = 0; const sample = k.replace(/\{\d+\}/g, () => String(++n));   // exemple concret : {0} → 1, {1} → 2…
+    const out = trCore(sample, dict) ?? trParts(sample, dict);
+    return rx.test(out ?? sample);
+  });
+}, [candidates, FR_LEFT.source]);
+await b.close();
+const missing = candidates.filter(k => stillFr.includes(k));
 writeFileSync(join(OUT, 'missing-en.json'), JSON.stringify(missing, null, 1));
-console.log(`${raw.size} textes affichés, ${lits.size} textes du code → ${list.length} clés, ${missing.length} sans traduction anglaise`);
+console.log(`${raw.size} textes affichés, ${lits.size} textes du code → ${list.length} clés, ${missing.length} à vérifier (tools/i18n/missing-en.json : surtout des morceaux de phrases\nassemblées ou la version française de textes bilingues ; le contrôle qui fait foi est --check en, sur les textes réellement affichés)`);

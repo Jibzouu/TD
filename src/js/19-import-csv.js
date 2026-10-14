@@ -407,7 +407,7 @@ function refreshAssetDropdowns() {
     const existingExtra = fAsset.querySelector('optgroup[data-discovered]');
     if (existingExtra) existingExtra.remove();
     const og = document.createElement('optgroup');
-    og.label = "Découverts à l'import";
+    og.label = tr("Découverts à l'import");   // attribut label : pas traduit automatiquement
     og.setAttribute('data-discovered', '1');
     mount(og, html`${discovered.map(a => html`<option>${a}</option>`)}`);
     fAsset.appendChild(og);

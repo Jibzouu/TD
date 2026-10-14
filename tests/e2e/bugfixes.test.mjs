@@ -316,6 +316,9 @@ test('perte max du jour : % du palier du Scaling atteint en début de journée, 
   const r = await page.evaluate(() => [dayLossLimit('2026-06-10').amount, dayLossLimit('2026-06-17').amount, rkGuard().lim.day, document.getElementById('dd-limit-label').textContent]);
   assert.deepEqual(r, [200, 220, 220, 'limite 220 € (2 %)'], 'départ 10 000 € → 200 € ; palier P1 (11 000 €) → 220 €');
   assert.match(await page.locator('#dd-limit-label').getAttribute('title'), /palier P1/);
+  // Discipline : un trade pris après avoir dépassé la perte max du jour casse « Limites du jour respectées ».
+  const lim = await page.evaluate(() => [[-150, 50], [-250, 50]].map(p => rkDayChecks(p.map((v, i) => ({ id: 90 + i, date: '2026-06-17', time: '1' + i + ':00', res: v < 0 ? 'SL' : 'TP', pnlEur: v, pnl: v / 100 })), rkCfg()).find(c => /Limites du jour/.test(c[0]))[1]));
+  assert.deepEqual(lim, [true, false]);
   // Sans plan de Scaling : % du solde en début de journée.
   assert.equal(await page.evaluate(() => { DB.removeItem(JP + 'scaling'); scalingState = null; invalidateViews(); return dayLossLimit('2026-06-17').amount; }), 230);
   assert.deepEqual(errors, []);

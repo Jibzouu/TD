@@ -39,7 +39,7 @@ const STATES = [
   ['visionneuse', `(() => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const x = c.getContext('2d'); x.fillStyle = '#123'; x.fillRect(0, 0, 640, 360); x.fillStyle = '#4c8dff'; x.fillRect(100, 100, 200, 120); const d = c.toDataURL('image/png'); trades[0].caps = [d, d]; trades[0].cap = d; openLightboxById(trades[0].id, 0); startAnnotation(); })()`, false],
   ['alertes', `window.__su = storageUsage; storageUsage = () => Object.assign(__su(), { pct: 95 }); showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); renderStorageWarning(); setRMode('strict'); reportStorageError(new Error('test')); storageUsage = __su;`, false],
 ];
-const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'plan', 'playbooks', 'watchlist', 'export', 'parametres'];
+const PAGES = ['dashboard', 'trades', 'stats:overview', 'stats:timing', 'stats:analyses', 'calendrier', 'calendrier:year', 'bilan', 'revue', 'scaling', 'risque', 'plan', 'playbooks', 'watchlist', 'export', 'parametres'];
 const b = await chromium.launch();
 async function run(journal, pages, vp, tag, data = tr) {
   const ctx = await b.newContext({ viewport: vp, timezoneId: 'Europe/Paris', reducedMotion: 'reduce' });
@@ -76,6 +76,7 @@ async function run(journal, pages, vp, tag, data = tr) {
 await run('tj', PAGES.concat(STATES), { width: 1400, height: 900 }, 'desk');
 await run('tj', PAGES.concat(STATES), { width: 390, height: 844 }, 'mob');
 await run('pf', ['propfirm', 'dashboard'], { width: 1400, height: 900 }, 'pf');
+await run('bt', ['replay'], { width: 1400, height: 900 }, 'bt');   // le Backtest replay n'existe que dans un compte Backtest
 await run('tj', PAGES.concat([['bienvenue', `DB.removeItem(JP + 'welcome_dismissed'); showPage('dashboard', document.querySelector('.nav-item[data-page="dashboard"]')); renderWelcomeCard()`, false]]), { width: 1400, height: 900 }, 'vide', []);   // états vides
 await b.close();
 console.log('ok', OUT);

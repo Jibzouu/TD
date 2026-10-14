@@ -14,6 +14,8 @@ function calNext() {
   calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendrier();
 }
 function calToday() { const now = new Date(); calMonth = now.getMonth(); calYear = now.getFullYear(); renderCalendrier(); }
+// Vue annuelle → clic sur un mois : ouvre ce mois en vue mensuelle.
+function openCalMonth(m) { calMonth = m; if (calViewMode === 'year') toggleCalView(); else renderCalendrier(); }
 function toggleCalView() {
   calViewMode = calViewMode === 'month' ? 'year' : 'month';
   const gridEl = document.getElementById('cal-grid');
@@ -222,12 +224,15 @@ function renderCalendrier() {
       days.push(html`<div class="${cls}"${raw(vars ? ` style="${vars}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}>
         ${hasBestWorst && dateStr === bestDate && bestVal > 0 ? html`<span class="cal-badge" title="Meilleur jour du mois">🏆</span>` : ''}${hasBestWorst && dateStr === worstDate && worstVal < 0 ? html`<span class="cal-badge" title="Jour le plus coûteux">⚠️</span>` : ''}${streak ? html`<span class="cal-badge streak" title="${streak.length} jours ${streak.type === 'win' ? 'gagnants' : 'perdants'} d'affilée">${streak.type === 'win' ? '🔥' : '❄️'}${streak.length}</span>` : ''}
         <div class="cal-dnum">${d}</div>
-        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗${data.be ? html` <span class="cal-be" title="${raw(data.be + ' break-even')}">${data.be} BE</span>` : ''}${data.tp + data.sl ? ' · ' + data.winPct + ' %' : ''}</div>` : ''}
+        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗${data.be ? html` <span class="cal-be" title="${raw(data.be + ' break-even')}">${data.be} BE</span>` : ''}${data.tp + data.sl ? html` <span class="cal-wr">· ${data.winPct}\u00a0%</span>` : ''}</div>` : ''}
       </div>`);
     }
+    // Semaine à venir : rien à totaliser, on n'affiche que son numéro (et rien du tout sur téléphone).
     const week = weekDays > 0
       ? html`<div class="cal-week"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-${raw(weekEur > 0 ? 'green' : weekEur < 0 ? 'red' : 'txt2')}">${fmtTot(weekEur)}</div><div class="cal-week-sub">${weekDays} jour(s)</div></div>`
-      : html`<div class="cal-week empty"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-muted">${monthEur ? '0 €' : '0R'}</div><div class="cal-week-sub">0 jour</div></div>`;
+      : rowDate && rowDate > todayStr
+        ? html`<div class="cal-week empty future"><div class="cal-week-lbl">${wkLbl}</div></div>`
+        : html`<div class="cal-week empty"><div class="cal-week-lbl">${wkLbl}</div><div class="cal-week-val tone-muted">${monthEur ? '0 €' : '0R'}</div><div class="cal-week-sub">0 jour</div></div>`;
     weeks.push(html`<div class="cal-row">${days}${week}</div>`);
   }
   mount('cal-grid', html`<div class="cal-row">${DAYS_FR.map(d => html`<div class="cal-dow">${d}</div>`)}<div></div></div>${weeks}`);
@@ -272,6 +277,7 @@ function renderYearlyCalendar() {
     let startDow = new Date(calYear, m, 1).getDay(); startDow = startDow === 0 ? 6 : startDow - 1;
     const last = new Date(calYear, m + 1, 0).getDate();
     const sq = [];
+    let mEur = 0, mR = 0, mDays = 0, mHasEur = false;
     for (let i = 0; i < startDow; i++) sq.push(html`<div></div>`);
     for (let d = 1; d <= last; d++) {
       const dateStr = calYear + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -280,11 +286,17 @@ function renderYearlyCalendar() {
       let bg = '';
       if (has) {
         yearTotal += yearEur ? data.pnlEurSum : data.pnlSum; yearDays++;
+        mEur += data.pnlEurSum; mR += data.pnlSum; mDays++; if (data.hasEur) mHasEur = true;
         bg = heatColors(data.net, data.hasEur ? yearMaxAbs : yearMaxAbsR).bg;
       }
       sq.push(html`<div class="cal-year-sq${raw(has ? ' has' : '')}"${raw(bg ? ` style="background:${bg}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}></div>`);
     }
-    return html`<div><div class="cal-year-month-label">${name}</div><div class="cal-year-days">${sq}</div></div>`;
+    // Total du mois en € (en R si aucun montant en € ce mois-là) ; le nom du mois ouvre sa vue mensuelle.
+    const mNet = mHasEur ? mEur : mR;
+    const sum = mDays
+      ? html`<span class="tone-${raw(mNet > 0 ? 'green' : mNet < 0 ? 'red' : 'amber')}">${mHasEur ? fmtEUR(mEur, true, 0) : fmtR(mR, 1)}</span><span class="tone-muted">${mDays} j.</span>`
+      : html`<span class="tone-muted">—</span>`;
+    return html`<div><button type="button" class="cal-year-month-label" onclick="openCalMonth(${raw(m)})" title="Ouvrir ${name} ${calYear}">${name}</button><div class="cal-year-month-sum">${sum}</div><div class="cal-year-days">${sq}</div></div>`;
   });
   mount(cont, html`<div class="cal-year-months">${months}</div>`);
 
@@ -330,7 +342,7 @@ function renderRRTables() {
 
   const weekKeys = Object.keys(weekMap).sort().reverse();
   const monthKeys = Object.keys(monthMap).sort().reverse();
-  const counts = v => html`${v.n} <span class="tone-muted">(${v.tp}✓ ${v.sl}✗${v.be ? html` <span class="cal-be">${v.be} BE</span>` : ''})</span>`;
+  const counts = v => html`${v.n} <span class="tone-muted rr-sub">(${v.tp}✓ ${v.sl}✗${v.be ? html` <span class="cal-be">${v.be} BE</span>` : ''})</span>`;
   const rrCell = v => html`<td class="r strong tone-${raw(v.rr > 0 ? 'green' : v.rr < 0 ? 'red' : 'txt2')}">${fmtR(v.rr, 2)}</td>`;
   const table = (el, first, keys, label, map) => {
     if (!el) return;
@@ -338,7 +350,7 @@ function renderRRTables() {
       ? html`<tr><td class="rr-empty">Aucun trade daté pour le moment.</td></tr>`
       : html`<thead><tr><th>${first}</th><th class="r">Trades</th><th class="r">R total</th></tr></thead><tbody>${keys.map(k => html`<tr><td>${label(k, map[k])}</td><td class="r c2">${counts(map[k])}</td>${rrCell(map[k])}</tr>`)}</tbody>`);
   };
-  table(document.getElementById('rr-week-table'), 'Semaine', weekKeys, (k, v) => html`S${k.split('-W')[1]} <span class="tone-muted">· dès le ${fmtDateFR(v.monday)}</span>`, weekMap);
+  table(document.getElementById('rr-week-table'), 'Semaine', weekKeys, (k, v) => html`S${k.split('-W')[1]}<span class="tone-muted rr-sep"> · </span><span class="tone-muted rr-sub">dès le ${fmtDateFR(v.monday)}</span>`, weekMap);
   table(document.getElementById('rr-month-table'), 'Mois', monthKeys, k => { const [y, m] = k.split('-'); return MONTHS_FR[parseInt(m, 10) - 1] + ' ' + y; }, monthMap);
 }
 

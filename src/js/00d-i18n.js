@@ -139,7 +139,7 @@ function trCore(t, dict) {
     const parts = {};
     p.groups.forEach((g, gi) => {
       if (/\d/.test(g)) parts[g] = fill(m[gi + 1]);
-      else { const inner = fill(m[gi + 1]); parts[g] = trCore(inner, dict) ?? inner; }
+      else { const inner = fill(m[gi + 1]); parts[g] = trCore(inner, dict) ?? trParts(inner, dict) ?? inner; }   // texte libre composé (« A · B ») : traduit morceau par morceau
     });
     return p.val.replace(/\{([stu]|\d+)\}/g, (x, g) => parts[g] ?? x);
   }
