@@ -56,7 +56,8 @@ function plannedR(t) {
 
 // Nombre lu dans un CSV : virgule décimale (12,5), milliers (1 234,56 · 1,234.56 · 1.234,56), symboles monétaires,
 // moins typographique et parenthèses comptables. NaN si ce n'est pas un nombre.
-function parseNumCSV(raw) {
+// thousandsComma : le fichier est au format américain (« 1,234.50 », « 12.5 ») → « 1,234 » vaut 1 234, pas 1,234.
+function parseNumCSV(raw, thousandsComma) {
   if (raw === null || raw === undefined) return NaN;
   let s = String(raw).trim().replace(/[\s  ']/g, '').replace(/−/g, '-').replace(/[€$£%]/g, '').replace(/^(USD|EUR|GBP|CHF)|(USD|EUR|GBP|CHF)$/i, '');
   if (s === '') return NaN;
@@ -64,10 +65,22 @@ function parseNumCSV(raw) {
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
   const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
   if (lc > -1 && ld > -1) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
-  else if (lc > -1) s = s.split(',').length > 2 ? s.replace(/,/g, '') : s.replace(',', '.');
+  else if (lc > -1) s = s.split(',').length > 2 || (thousandsComma && /^[+-]?\d{1,3},\d{3}$/.test(s)) ? s.replace(/,/g, '') : s.replace(',', '.');
   if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return NaN;
   const v = Number(s);
   return neg ? -v : v;
+}
+// Format des nombres d'un fichier, d'après ses autres valeurs : un point décimal (« 12.50 », « 1.08523 ») ou « 1,234.56 »
+// → virgule des milliers (format américain) ; une virgule décimale (« 12,50 ») ou « 1.234,56 » → format français.
+function detectThousandsComma(values) {
+  let us = 0, eu = 0;
+  values.forEach(v => {
+    const s = String(v == null ? '' : v).trim().replace(/[\s\u00a0\u202f'€$£%]/g, '');
+    if (!/^[+-]?[\d.,]+$/.test(s)) return;
+    if (/\d,\d{3}\.\d/.test(s) || (/^[+-]?\d+\.(\d{1,2}|\d{4,})$/.test(s))) us++;
+    if (/\d\.\d{3},\d/.test(s) || (/^[+-]?\d+,(\d{1,2}|\d{4,})$/.test(s))) eu++;
+  });
+  return us > eu;
 }
 // Séparateur détecté sur la ligne d'en-tête (hors guillemets) : « , » (TradingView), « ; » (Excel FR) ou tabulation.
 function detectCSVDelimiter(text) {

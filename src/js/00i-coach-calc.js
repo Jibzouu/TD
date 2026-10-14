@@ -77,6 +77,7 @@ function coachInsights(list, opts) {
   // 7) Bilan positif : période propre.
   if (!out.some(x => x.tone === 'warn')) {
     if (net > 0) add('clean', 'good', 30, o.period === 'day' ? 'Journée propre : ' + all.length + ' trade(s), ' + coR(net) + ', aucun signal d’alerte.' : 'Semaine propre : ' + coR(net) + ' sur ' + all.length + ' trades, aucun signal d’alerte.', o.period === 'day' ? 'Clean day: ' + all.length + ' trade(s), ' + coRen(net) + ', no warning sign.' : 'Clean week: ' + coRen(net) + ' over ' + all.length + ' trades, no warning sign.');
+    else if (net === 0) add('clean-flat', 'info', 25, 'Résultat à l’équilibre (' + coR(net) + '), sans erreur de comportement repérée : garde ton plan.', 'Break-even result (' + coRen(net) + '), no behavior mistake spotted: stick to your plan.');
     else add('clean-loss', 'info', 25, 'Résultat négatif (' + coR(net) + ') mais sans erreur de comportement repérée : c’est le jeu, garde ton plan.', 'Negative result (' + coRen(net) + ') but no behavior mistake spotted: that is the game, stick to your plan.');
   }
   return out.sort((a, b) => b.score - a.score);

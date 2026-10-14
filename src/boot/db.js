@@ -15,6 +15,35 @@ const DB = (() => {
   let lockKey = null, lockMeta = null, flushChain = Promise.resolve(), inFlight = 0;
   const isBox = v => !!(v && typeof v === 'object' && typeof v.ct === 'string' && typeof v.iv === 'string');
   const listeners = [];
+  // Journal ouvert dans deux onglets : chaque onglet garde sa copie en mémoire, et le dernier à enregistrer effaçait ce que
+  // l'autre venait d'ajouter. Dès qu'un autre onglet écrit, celui-ci n'écrit plus rien et demande d'être rechargé.
+  let stale = false;
+  const chan = (() => { try { return typeof BroadcastChannel === 'function' ? new BroadcastChannel('journal-trading-db') : null; } catch (e) { return null; } })();
+  function markStale() {
+    if (stale) return;
+    stale = true; pending.clear();
+    const en = mem.get('g_lang') === 'en';
+    const show = () => {
+      if (document.getElementById('db-stale')) return;
+      const d = document.createElement('div');
+      d.id = 'db-stale'; d.setAttribute('role', 'alertdialog'); d.setAttribute('aria-modal', 'true');
+      d.style.cssText = 'position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,7,12,.82);font-family:var(--sans,system-ui,sans-serif)';
+      const box = document.createElement('div');
+      box.style.cssText = 'max-width:420px;background:var(--bg2,#10131a);color:var(--txt,#e8eaf0);border:1px solid var(--border2,#2e3545);border-radius:14px;padding:22px;text-align:center;line-height:1.5';
+      const p = document.createElement('p');
+      p.style.margin = '0 0 16px';
+      p.textContent = en ? 'The journal was changed in another tab or window. Reload this page to continue here without overwriting those changes.'
+        : 'Le journal a été modifié dans un autre onglet ou une autre fenêtre. Recharge cette page pour continuer ici sans écraser ces modifications.';
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn-primary'; b.textContent = en ? 'Reload' : 'Recharger';
+      b.onclick = () => location.reload();
+      box.append(p, b); d.appendChild(box); document.body.appendChild(d);
+      setTimeout(() => b.focus(), 30);
+    };
+    if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
+  }
+  if (chan) chan.onmessage = e => { if (e.data && e.data.t === 'write') markStale(); };
+  window.addEventListener('storage', e => { if (mode === 'localstorage' && e.storageArea === localStorage) markStale(); });
 
   function openIDB() {
     return new Promise((resolve, reject) => {
@@ -96,12 +125,13 @@ const DB = (() => {
       try { tx = idb.transaction(STORE, 'readwrite'); } catch (e) { onError(e); return resolve(); }
       const st = tx.objectStore(STORE);
       rows.forEach(([k, v]) => { if (v === null) st.delete(k); else st.put(v, k); });
-      tx.oncomplete = () => { lastError = null; resolve(); };
+      tx.oncomplete = () => { lastError = null; if (chan) try { chan.postMessage({ t: 'write' }); } catch (e) {} resolve(); };
       tx.onerror = tx.onabort = () => { onError(tx.error || new Error('Écriture IndexedDB refusée')); resolve(); };
     });
   }
   // Réécrit tout le contenu (chiffré ou en clair selon le verrou), plus la fiche du verrou.
   async function rewriteAll() {
+    if (stale) throw new Error('Journal modifié dans un autre onglet : recharge la page');
     await flush();
     const batch = new Map(mem);
     batch.set(MIGRATED, mem.get(MIGRATED) || String(Date.now()));
@@ -185,14 +215,18 @@ const DB = (() => {
     get lastError() { return lastError; },
     onError(fn) { listeners.push(fn); },
     getItem(k) { k = String(k); return mem.has(k) ? mem.get(k) : null; },
+    get stale() { return stale; },
     setItem(k, v) {
       k = String(k); v = String(v);
+      if (stale) { mem.set(k, v); return; }   // un autre onglet a écrit : on n'écrase pas ses données
+      if (mem.get(k) === v) return;           // valeur inchangée : rien à écrire (ni à signaler aux autres onglets)
       if (mode === 'localstorage') localStorage.setItem(k, v);   // peut lever QuotaExceededError : l'appelant la gère
       mem.set(k, v);
       if (mode === 'indexeddb') { pending.set(k, v); scheduleFlush(); }
     },
     removeItem(k) {
       k = String(k);
+      if (stale) { mem.delete(k); return; }
       if (mode === 'localstorage') lsSafe(() => localStorage.removeItem(k));
       mem.delete(k);
       if (mode === 'indexeddb') { pending.set(k, null); scheduleFlush(); }

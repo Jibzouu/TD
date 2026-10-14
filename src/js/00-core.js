@@ -138,6 +138,7 @@ function sanitizeTrades(arr) { return (Array.isArray(arr) ? arr : []).map(saniti
 // ── DATA ────────────────────────────────────────────────────────────
 let _atCache = null;   // cache de la vue « analyse » (déclaré ici : sortTradesChrono() est appelée dès le chargement)
 let _viewCache = null; // cache de la vue filtrée (filtre global) — voir 03b-state.js
+let _dayLimitCache = null;   // perte max du jour par date (voir dayLossLimit, 20-scaling.js)
 let trades = sanitizeTrades(loadJSON(JP + 'trades', []));
 sortTradesChrono();
 let watchData = loadJSON(JP + 'watch', null);
@@ -152,9 +153,12 @@ function saveTZOffset() {
   DB.setItem((JP + 'tz_offset_hours'), TZ_OFFSET_HOURS);
 }
 // Recalcule la session de tous les trades importés (dont l'heure d'entrée est connue) avec le décalage courant.
+// Les trades saisis à la main ou venus du Replay sont en heure locale : le décalage d'export ne les concerne pas
+// (et la session choisie dans le formulaire ne doit pas être écrasée).
+function isFileImportedTrade(t) { return !!((t.tvKey && !/^replay:/.test(t.tvKey)) || (t.importSource && t.importSource !== 'Replay')); }
 function recalcSessions() {
   const touched = TradeStore.mutate(list => list.filter(t => {
-    if (!t.entry) return false;
+    if (!t.entry || !isFileImportedTrade(t)) return false;
     const h = parseInt(t.entry.split(':')[0], 10);
     if (isNaN(h)) return false;
     const ns = sessionFromHour(h);
@@ -192,7 +196,7 @@ function fxForCcy(ccy) { return ccy && ccy !== 'EUR' ? IMPORT_FX_RATE : 1; }
 function reconvertImportedTrades() {
   const rate = IMPORT_FX_RATE;
   const known = trades.filter(t => t.ccy && t.ccy !== 'EUR' && t.pnlEur != null);
-  const legacy = trades.filter(t => !t.ccy && t.tvKey && t.pnlEur != null);
+  const legacy = trades.filter(t => !t.ccy && t.tvKey && !/^replay:/.test(t.tvKey) && t.pnlEur != null);   // le Replay convertit lui-même
   if (!known.length && !legacy.length) { showToast('Aucun trade importé en devise étrangère'); return; }
   const msg = known.length + ' trade(s) importé(s) en devise étrangère' + (legacy.length ? ' et ' + legacy.length + ' ancien(s) import(s) TradingView (devise non enregistrée, supposée USD)' : '') + ' seront recalculés avec 1 = ' + rate + ' €.';
   openModal('Appliquer le taux de conversion ?', msg, () => {
