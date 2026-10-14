@@ -205,6 +205,11 @@ select.fb-select.on{background-color:var(--accent-d);border-color:var(--accent);
 
 /* ── Rythme et lisibilité ── */
 .dash-grid,.charts-row,.export-grid,.plan-grid,.stats-grid{gap:16px}
+/* Largeurs des widgets calculées à partir de l'écart réel : avec une largeur fixe (50 % − 6 px) et un écart de 16 px,
+   deux demi-largeurs dépassaient la ligne et passaient l'une sous l'autre. */
+.dash-grid{--dash-gap:16px;gap:var(--dash-gap)}
+.dash-widget.w-third{width:calc((100% - 2 * var(--dash-gap)) / 3)}
+.dash-widget.w-half{width:calc((100% - var(--dash-gap)) / 2)}
 .mb-20{margin-bottom:16px}
 .ui-hint,.ui-muted,.export-desc,.panel-sub,.page-hdr-left p{max-width:78ch}
 
@@ -860,8 +865,9 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
    performance au lieu de chevaucher le montant ; taille du montant fluide. */
 .hero-metric-value{font-size:clamp(34px,3.3vw,48px)}
 @media (min-width:1101px) and (max-width:1440px){.hero-metric{grid-template-columns:auto minmax(0,1fr)}.hero-side{grid-column:1/-1;justify-self:start;border-left:0;padding-left:0;border-top:1px solid var(--border);padding-top:14px}}
-/* Mini-leçon : en haut à droite sur ordinateur, pour ne pas être cachée par les notifications (en bas). */
-@media (min-width:601px){.lesson-pop{top:84px;bottom:auto}}
+/* Mini-leçon : en bas à droite sur ordinateur, juste au-dessus de la zone des notifications (pour ne pas être cachée
+   par elles). En haut, elle masquait les boutons d'en-tête des pages (navigation du calendrier, export de la revue…). */
+@media (min-width:601px){.lesson-pop{bottom:84px}}
 
 /* ── Téléphone : calendrier compact (7 colonnes sans défilement) et discipline en cartes ── */
 @media (max-width:600px){
@@ -877,6 +883,7 @@ html.rp-fs-on,html.rp-fs-on body{overflow:hidden}
   .cal-badge{font-size:9px;top:1px;right:2px}
   .cal-week{grid-column:1/-1;flex-direction:row;align-items:baseline;gap:10px;padding:5px 10px;margin-bottom:6px}
   .cal-week-val{margin:0;font-size:13.5px}.cal-week-sub{margin:0 0 0 auto}
+  .cal-week.future{display:none}
   .rk-table thead{display:none}
   .rk-table,.rk-table tbody{display:block}
   .rk-table tr{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg)}

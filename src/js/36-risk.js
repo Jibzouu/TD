@@ -114,13 +114,17 @@ function rkSentence(g) {
 }
 
 // ── Discipline ──
+// Chaque règle du jour : [libellé, tenue ?, ce qu'il faut corriger quand elle ne l'est pas, définition].
 function rkDayChecks(dayTrades, cfg) {
   const l = rkSortT(dayTrades), checks = [];
   const withStop = l.every(t => t.slPrice != null || t.rr != null || t.rSrc === 'prix');
-  checks.push([rkL('Stop prévu sur chaque trade', 'Stop planned on every trade'), withStop]);
+  checks.push([rkL('Stop prévu sur chaque trade', 'Stop planned on every trade'), withStop, rkL('Trade sans stop prévu', 'Trade without a planned stop'),
+    rkL('Chaque trade du jour a un stop (prix du stop, RR ou R calculé depuis les prix).', 'Every trade of the day has a stop (stop price, RR or R computed from prices).')]);
   const ck = l.filter(t => typeof tradeHasChecklist === 'function' && tradeHasChecklist(t));
-  if (ck.length) checks.push([rkL('Checklist respectée', 'Checklist followed'), ck.every(tradeChecklistComplete)]);
-  checks.push([rkL('Aucune erreur notée', 'No mistake logged'), l.every(t => !(t.mistakes || []).length)]);
+  if (ck.length) checks.push([rkL('Checklist respectée', 'Checklist followed'), ck.every(tradeChecklistComplete), rkL('Checklist incomplète', 'Checklist incomplete'),
+    rkL('Tous les critères de ta checklist d’entrée cochés sur les trades saisis ce jour-là.', 'All entry checklist items ticked on the trades logged that day.')]);
+  checks.push([rkL('Aucune erreur notée', 'No mistake logged'), l.every(t => !(t.mistakes || []).length), rkL('Erreur notée', 'Mistake logged'),
+    rkL('Aucune erreur taguée sur les trades du jour.', 'No mistake tagged on the day’s trades.')]);
   // Règles du jour : pas de trade après avoir atteint la limite de pertes d'affilée, de SL, de trades ou de perte.
   let run = 0, sl = 0, tp = 0, pnl = 0, broke = false;
   const maxSL = planData && planData.maxSL > 0 ? planData.maxSL : null, maxTP = planData && planData.maxTP > 0 ? planData.maxTP : null;
@@ -129,7 +133,8 @@ function rkDayChecks(dayTrades, cfg) {
     if (t.res === 'SL') { run++; sl++; } else if (t.res === 'TP') { run = 0; tp++; }
     pnl += rkEur(t);
   });
-  checks.push([rkL('Limites du jour respectées', 'Daily limits respected'), !broke]);
+  checks.push([rkL('Limites du jour respectées', 'Daily limits respected'), !broke, rkL('Limites du jour dépassées', 'Daily limits broken'),
+    rkL('Pas de trade après avoir atteint tes pertes d’affilée max, ton nombre max de trades, de TP ou de SL du jour.', 'No trade after reaching your max losses in a row, max trades, TP or SL for the day.')]);
   return checks;
 }
 function rkDiscipline(list) {
@@ -138,7 +143,8 @@ function rkDiscipline(list) {
   const days = Object.keys(byDay).sort().map(d => {
     const checks = rkDayChecks(byDay[d], cfg);
     const fl = flags.filter(f => f.t.date === d);
-    checks.push([rkL('Taille dans le plan, pas de revanche', 'Size within plan, no revenge'), !fl.length]);
+    checks.push([rkL('Taille dans le plan, pas de revanche', 'Size within plan, no revenge'), !fl.length, rkL('Taille anormale ou revanche', 'Unusual size or revenge'),
+      rkL('Aucun trade au risque anormalement gros, ni repris juste après une perte (revanche).', 'No trade with an unusually large risk, nor taken right after a loss (revenge).')]);
     const ok = checks.filter(c => c[1]).length;
     return { date: d, n: byDay[d].length, checks, score: ok / checks.length, clean: ok / checks.length >= 0.8 };
   });
@@ -366,7 +372,7 @@ function renderRiskPage() {
       <div class="rk-kpi"><span>${rkL('Série de jours propres', 'Clean-day streak')}</span><b>🔥 ${d.streak}</b><small>${rkL('jours d’affilée — c’est ça qui compte, pas le P&L', 'days in a row — this is what matters, not P&L')}</small></div>
       <div class="rk-kpi"><span>${rkL('Repères à surveiller', 'Warning signs')}</span><b class="tone-${raw(d.flags.length ? 'amber' : 'green')}">${d.flags.length}</b><small>${rkL('tailles anormales et trades de revanche', 'unusual sizes and revenge trades')}</small></div>
     </div>
-    ${lastDays.length ? html`<table class="rk-table"><thead><tr><th>${rkL('Jour', 'Day')}</th><th>${rkL('Trades', 'Trades')}</th><th>Score</th><th>${rkL('À corriger', 'To fix')}</th></tr></thead><tbody>${lastDays.map(x => html`<tr><td class="rk-td-day">${fmtDateFR(x.date, true)}</td><td class="rk-td-n" data-l="${rkL('trade(s)', 'trade(s)')}">${x.n}</td><td class="rk-td-score"><b class="tone-${raw(x.clean ? 'green' : x.score >= 0.6 ? 'amber' : 'red')}">${Math.round(x.score * 100)} %</b></td><td class="tone-muted rk-td-fix" data-l="${rkL('À corriger : ', 'To fix: ')}">${x.checks.filter(c => !c[1]).map(c => c[0]).join(' · ') || '✓'}</td></tr>`)}</tbody></table>`
+    ${lastDays.length ? html`<table class="rk-table"><thead><tr><th>${rkL('Jour', 'Day')}</th><th>${rkL('Trades', 'Trades')}</th><th>Score</th><th>${rkL('À corriger', 'To fix')}</th></tr></thead><tbody>${lastDays.map(x => html`<tr><td class="rk-td-day">${fmtDateFR(x.date, true)}</td><td class="rk-td-n" data-l="${rkL('trade(s)', 'trade(s)')}">${x.n}</td><td class="rk-td-score"><b class="tone-${raw(x.clean ? 'green' : x.score >= 0.6 ? 'amber' : 'red')}">${Math.round(x.score * 100)} %</b></td><td class="tone-muted rk-td-fix" data-l="${rkL('À corriger : ', 'To fix: ')}">${x.checks.filter(c => !c[1]).map(c => c[2]).join(' · ') || '✓'}</td></tr>`)}</tbody></table>`
       : html`<p class="empty-note">${rkL('Ton score de discipline apparaîtra dès tes premiers trades.', 'Your discipline score will appear with your first trades.')}</p>`}
     ${d.flags.length ? html`<div class="rk-flags">${d.flags.slice(-6).reverse().map(f => html`<button class="rk-flag" onclick="${raw('openTradeDetail(' + f.t.id + ')')}">${f.kind === 'revenge' ? '😤 ' + rkL('Revanche', 'Revenge') : '📏 ' + rkL('Taille anormale', 'Unusual size')} · ${fmtDateNum(f.t.date)} ${f.t.entry || ''} · ${f.t.asset || ''} · ${rkL('risque', 'risk')} ${fmtEUR(f.risk, false, 0)} (${rkL('habituel', 'usual')} ${fmtEUR(f.ref, false, 0)})</button>`)}</div>` : ''}`);
   // 6) Plan de l'étape (ou résumé de mes règles en « Personnalisé »)
