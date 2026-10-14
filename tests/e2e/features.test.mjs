@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openJournal, closeBrowser, getBrowser, goto, T } from './helpers.mjs';
+import { openJournal, closeBrowser, getBrowser, goto, T, replayPaneBox } from './helpers.mjs';
 
 after(closeBrowser);
 const NOW = new Date('2026-06-17T14:00:00Z');   // mercredi 17 juin 2026 (semaine ISO 25)
@@ -1041,11 +1041,15 @@ test('backtest replay : bougies sans futur, calculateur de position, ordre au ma
   assert.equal(await page.locator("#rp-go").innerText(), "Acheter " + expQty.toLocaleString("fr-FR", { maximumFractionDigits: 6 }) + " BTC");
   // Le stop se déplace à la souris sur le graphique : le calculateur suit.
   const before = await page.evaluate(() => +RP_TICKET.sl);
-  const box = await page.locator('#rp-chart').boundingBox();
-  const y = await page.evaluate(() => RP_SERIES.priceToCoordinate(rpTicketCalc().sl));
-  const x = box.x + box.width * 0.5;
-  await page.mouse.move(x, box.y + y); await page.mouse.down();
-  await page.mouse.move(x, box.y + y + 40, { steps: 6 }); await page.mouse.up();
+  const box = await replayPaneBox(page);
+  // Un point de la ligne du stop qui n'est pas sur son étiquette (l'étiquette a ses propres boutons).
+  const { x, y } = await page.evaluate(() => {
+    const y = rpdY(rpTicketCalc().sl), w = rpdPane().width;
+    const f = [0.5, 0.35, 0.65, 0.2, 0.8].find(f => rpdLineHit(y) && !rpdOlHit(w * f, y));
+    return { x: w * (f ?? 0.5), y };
+  });
+  await page.mouse.move(box.x + x, box.y + y); await page.mouse.down();
+  await page.mouse.move(box.x + x, box.y + y + 40, { steps: 6 }); await page.mouse.up();
   const after = await page.evaluate(() => +RP_TICKET.sl);
   assert.ok(after < before, 'stop descendu : ' + before + ' → ' + after);
   await page.click('#rp-ticket >> text=proposer');
@@ -1161,17 +1165,7 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   await page.evaluate(v => rpSetStart(v), '2026-06-01T09:00');
   await page.click('text=Lancer le replay');
   await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
-  // Zone de dessin mesurée une fois la mise en page stable (le graphique peut encore changer de taille juste après son affichage).
-  const chartBox = async () => {
-    let prev = null;
-    for (let i = 0; i < 20; i++) {
-      const b = await page.evaluate(() => { const r = RPD.el.getBoundingClientRect(), s = rpdPane(); return { x: r.left, y: r.top, width: s.width, height: s.height }; });
-      if (prev && JSON.stringify(b) === JSON.stringify(prev)) return b;
-      prev = b; await page.waitForTimeout(100);
-    }
-    return prev;
-  };
-  let box = await chartBox();
+  let box = await replayPaneBox(page);
   const at = (fx, fy) => [box.x + box.width * fx, box.y + box.height * fy];
   // Ligne de tendance (glisser-déposer)
   await page.click('.rp-tool[data-tool=trend]');
@@ -1184,7 +1178,7 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   // Ligne horizontale au raccourci Alt+H
   await page.keyboard.press('Alt+KeyH');
   assert.equal(await page.evaluate(() => RPD.tool), 'hline');
-  box = await chartBox();
+  box = await replayPaneBox(page);
   [x1, y1] = at(0.3, 0.85); await page.mouse.click(x1, y1);
   let d = await page.evaluate(() => RP.drawings.map(x => x.type));
   assert.deepEqual(d, ['trend', 'rect', 'hline']);
@@ -1199,7 +1193,7 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   assert.equal(await page.evaluate(() => RP.drawings.length), 3);
   // Déplacer la ligne de tendance (glisser son corps)
   const before = await page.evaluate(() => RP.drawings[0].pts[0].p);
-  box = await chartBox();
+  box = await replayPaneBox(page);
   const mid = await page.evaluate(() => { const d = RP.drawings[0], a = rpdXY(d.pts[0]), b = rpdXY(d.pts[1]); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; });
   await page.mouse.move(box.x + mid.x, box.y + mid.y); await page.mouse.down(); await page.mouse.move(box.x + mid.x, box.y + mid.y + 50, { steps: 5 }); await page.mouse.up();
   assert.ok(await page.evaluate(() => RP.drawings[0].pts[0].p) < before, 'ligne déplacée vers le bas');
@@ -1265,7 +1259,7 @@ test('backtest replay : graphique façon TradingView (légende, types, indicateu
   await page.click('#rp-quick .rp-q.buy');
   const id = await page.evaluate(() => RP.positions[0].id);
   const hit = async (key, part) => page.evaluate(([k, p]) => { rpdRefresh(); return null; }, [key, part]).then(() => page.waitForTimeout(50)).then(() => page.evaluate(([k, p]) => { const h = RPD.olHits.find(x => x.key === k && x.part === p); return h && { x: h.x + h.w / 2, y: h.y + h.h / 2 }; }, [key, part]));
-  const box = await page.locator('#rp-chart').boundingBox();
+  const box = await replayPaneBox(page);
   let h = await hit(id + '-tp', 'close');
   assert.ok(h, 'étiquette TP avec ×');
   await page.mouse.click(box.x + h.x, box.y + h.y);
@@ -1350,7 +1344,7 @@ test('backtest replay : panneaux d\'indicateurs (RSI, MACD) modifiables, 2 graph
   assert.equal(await page.evaluate(() => RP_SERIES.options().upColor), '#00ff00');
   // Modèle de dessin : style par défaut pour les prochaines lignes horizontales.
   await page.evaluate(() => { RPD.tool = 'hline'; });
-  const box = await page.locator('#rp-chart').boundingBox();
+  const box = await replayPaneBox(page);
   await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.5);
   await page.click('#rp-stylebar .rp-sw >> nth=4');
   await page.click('#rp-stylebar .rp-sb-tpl');
