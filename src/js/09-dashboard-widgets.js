@@ -406,44 +406,31 @@ function renderHeatmapDH() {
   });
 }
 
-// ── RADAR ────────────────────────────────────────────────────────────
-// Chaque critère mesure un comportement (pas un résultat). Un critère non suivi est affiché comme tel et exclu de la moyenne.
+// ── DISCIPLINE ───────────────────────────────────────────────────────
+// Un seul score de discipline dans tout le journal : celui de la Gestion du risque et du garde-fou (rkDiscipline),
+// moyenne des 20 dernières journées tradées notées sur les règles du jour. Le détail donne, règle par règle,
+// la part de ces journées où elle a été tenue. Le bloc suit le filtre global, comme le reste du Dashboard.
 function computeDiscipline() {
-  const trades = viewTrades();   // vue filtrée (filtre global)
-  const closed = trades.filter(t => ['TP', 'SL', 'BE'].includes(t.res));
-  const items = [];
-  const entryCount = getEntryItems().length;
-  const mine = closed.filter(tradeHasChecklist);                                      // trades saisis avec le formulaire
-  items.push(mine.length >= 3
-    ? { label: "Checklist d'entrée complète", pct: mine.filter(tradeChecklistComplete).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis où tous les critères de ta checklist sont cochés.' }
-    : { label: "Checklist d'entrée complète", pct: null, hint: 'Non suivi : coche ta checklist en saisissant un trade (3 trades minimum).' });
-  const tagUsed = closed.some(t => Array.isArray(t.mistakes) && t.mistakes.length);
-  items.push(tagUsed && mine.length >= 3
-    ? { label: 'Trades sans erreur taguée', pct: mine.filter(t => !(Array.isArray(t.mistakes) && t.mistakes.length)).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis sans aucune erreur cochée.' }
-    : { label: 'Trades sans erreur taguée', pct: null, hint: 'Non suivi : tague tes erreurs dans le formulaire pour activer ce critère.' });
-  const dn = Object.values(dayNet(closed.filter(t => t.pnlEur !== null && t.pnlEur !== undefined)));
-  const limitEur = (accountSize || 0) * loadDDLimitPct() / 100;
-  items.push(dn.length >= 3 && limitEur > 0
-    ? { label: 'Perte journalière sous la limite', pct: dn.filter(v => v >= -limitEur).length / dn.length * 100, n: dn.length, hint: 'Part des journées dont la perte nette reste sous ta limite (' + loadDDLimitPct() + ' % = ' + Math.round(limitEur) + ' €).' }
-    : { label: 'Perte journalière sous la limite', pct: null, hint: 'Non suivi : 3 journées avec des montants en € minimum.' });
-  const tilt = computeTiltTrades();
-  items.push(tilt.lossesWithFollowup >= 3
-    ? { label: 'Pas de ré-entrée impulsive', pct: (1 - tilt.flagged.length / tilt.lossesWithFollowup) * 100, n: tilt.lossesWithFollowup, hint: 'Part des ré-entrées après un SL qui ne sont ni précipitées (≤ 10 min après la sortie du SL) ni gonflées en taille.' }
-    : { label: 'Pas de ré-entrée impulsive', pct: null, hint: 'Non suivi : 3 SL suivis d\'un nouveau trade le même jour minimum.' });
-  const tracked = items.filter(i => i.pct !== null);
-  return { items, tracked: tracked.length, total: items.length, score: tracked.length >= 2 ? Math.round(tracked.reduce((s, i) => s + i.pct, 0) / tracked.length) : null };
+  const d = rkDiscipline(viewTrades()), recent = d.days.slice(-20), byLabel = new Map();
+  recent.forEach(day => day.checks.forEach(([label, ok, , hint]) => {
+    const g = byLabel.get(label) || { label, hint, ok: 0, n: 0 };
+    g.n++; if (ok) g.ok++;
+    byLabel.set(label, g);
+  }));
+  const items = [...byLabel.values()].map(g => ({ label: g.label, pct: g.ok / g.n * 100, ok: g.ok, n: g.n, hint: g.hint }));
+  return { items, days: recent.length, streak: d.streak, score: d.avg == null ? null : Math.round(d.avg * 100) };
 }
 function renderRadar() {
   const d = computeDiscipline();
   const list = document.getElementById('discipline-list');
-  const sev = p => p === null ? 'muted' : (p >= 85 ? 'green' : p >= 60 ? 'amber' : 'red');
-  if (list) mount(list, html`${d.items.map(i => html`<div class="dc-item${raw(i.pct === null ? ' off' : '')}" title="${i.hint}">
-      <div class="dc-top"><span class="dc-label">${i.label}</span><span class="dc-val">${i.pct === null ? html`<span class="tone-muted">non suivi</span>` : Math.round(i.pct) + ' %'}${i.n ? html` <span class="tone-muted">· n=${i.n}</span>` : ''}</span></div>
-      <div class="meter thin"><div class="meter-fill fill-${raw(sev(i.pct))}" style="${raw('width:' + (i.pct === null ? 0 : Math.round(i.pct)) + '%')}"></div></div></div>`)}`);
+  const sev = p => p === null ? 'muted' : (p >= 80 ? 'green' : p >= 60 ? 'amber' : 'red');   // mêmes seuils que Gestion du risque
+  if (list) mount(list, d.items.length ? html`${d.items.map(i => html`<div class="dc-item" title="${i.hint}">
+      <div class="dc-top"><span class="dc-label">${i.label}</span><span class="dc-val">${Math.round(i.pct)} % <span class="tone-muted">· ${i.ok}/${i.n} j.</span></span></div>
+      <div class="meter thin"><div class="meter-fill fill-${raw(sev(i.pct))}" style="${raw('width:' + Math.round(i.pct) + '%')}"></div></div></div>`)}` : html`<p class="empty-note">Apparaîtra dès ton premier trade.</p>`);
   const scoreEl = document.getElementById('discipline-score-val'), bar = document.getElementById('discipline-score-marker'), note = document.getElementById('discipline-note');
-  if (scoreEl) { scoreEl.textContent = d.score === null ? '—' : d.score; scoreEl.classList.toggle('tone-muted', d.score === null); scoreEl.classList.toggle('tone-txt', d.score !== null); }
+  if (scoreEl) { scoreEl.textContent = d.score === null ? '—' : d.score + ' %'; scoreEl.classList.toggle('tone-muted', d.score === null); scoreEl.classList.toggle('tone-txt', d.score !== null); }
   if (bar) { bar.style.width = (d.score === null ? 0 : d.score) + '%'; bar.className = bar.className.replace(/\s*fill-\w+/g, '') + ' fill-' + sev(d.score); }
-  if (note) note.textContent = d.score === null ? 'Il faut au moins 2 critères suivis pour calculer un score sur 100.' : 'Score sur 100 · ' + d.tracked + ' critère(s) suivi(s) sur ' + d.total + '. Survole un critère pour sa définition.';
+  if (note) note.textContent = d.score === null ? '' : 'Moyenne de tes ' + d.days + ' dernière(s) journée(s) tradée(s) · journée « propre » = 80 % des règles tenues · même score que dans Gestion du risque. Survole une règle pour sa définition.';
 }
 
 // ── PERFORMANCE PAR ACTIF ────────────────────────────────────────────

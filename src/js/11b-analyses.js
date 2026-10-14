@@ -90,18 +90,23 @@ function renderRealizedVsPlanned() {
   const reached = pts.filter(o => o.r >= o.p - 1e-9).length;
   const left = winners.reduce((s, o) => s + Math.max(0, o.p - o.r), 0);
   const tk = chartTokens();
+  // Catégorie d'un point : objectif atteint, sorti en gain avant l'objectif, break-even (≈ 0R), perte.
+  const isBE = o => o.t.res === 'BE' || Math.abs(o.r) < 0.05;
+  const kind = o => o.r >= o.p ? 'hit' : isBE(o) ? 'be' : o.r > 0 ? 'early' : 'loss';
+  const KIND_COLOR = { hit: tk.green, early: tk.accent, be: tk.amber, loss: tk.red };
+  const KIND_LABEL = { hit: 'objectif atteint', early: 'sorti avant l\'objectif', be: 'break-even', loss: 'perte' };
   mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? 'amber' : null)}${stat2('R laissés sur la table', fmtR(left, 1, true))}`);
   if (!chartsAvailable('rvrChart')) return;
   const maxP = Math.ceil(Math.max(...pts.map(o => o.p), 1) * 1.1 * 2) / 2;   // borne ronde (2,5R plutôt que 2,2R)
   rvrChartInst = new Chart(canvas.getContext('2d'), {
     type: 'scatter',
     data: { datasets: [
-      { label: 'Trades', data: pts.map(o => ({ x: o.p, y: o.r, t: o.t })), backgroundColor: pts.map(o => withAlpha(o.r >= o.p ? tk.green : o.r > 0 ? tk.accent : tk.red, .8)), borderColor: tk.bg2, borderWidth: 1.5, pointRadius: 4.5, pointHoverRadius: 6, pointHitRadius: 10 },
+      { label: 'Trades', data: pts.map(o => ({ x: o.p, y: o.r, t: o.t })), backgroundColor: pts.map(o => withAlpha(KIND_COLOR[kind(o)], .8)), borderColor: tk.bg2, borderWidth: 1.5, pointRadius: 4.5, pointHoverRadius: 6, pointHitRadius: 10 },
       { type: 'line', label: 'Objectif atteint (réalisé = visé)', data: [{ x: 0, y: 0 }, { x: maxP, y: maxP }], borderColor: tk.txt3, borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false }
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { tooltip: proTooltip({ filter: i => i.datasetIndex === 0, callbacks: { title: it => { const t = it[0].raw.t; return t ? (t.asset || '—') + ' · ' + fmtDateFR(t.date, true) : ''; }, label: c => 'Visé ' + fmtR(c.raw.x, 2, true) + ' · réalisé ' + fmtR(c.raw.y, 2) } }) },
+      plugins: { tooltip: proTooltip({ filter: i => i.datasetIndex === 0, callbacks: { title: it => { const t = it[0].raw.t; return t ? (t.asset || '—') + ' · ' + fmtDateFR(t.date, true) : ''; }, label: c => 'Visé ' + fmtR(c.raw.x, 2, true) + ' · réalisé ' + fmtR(c.raw.y, 2) + ' · ' + KIND_LABEL[kind(pts[c.dataIndex])] } }) },
       scales: proScales({ yWidth: 48, x: { type: 'linear', min: 0, max: maxP, grid: { display: true, color: tk.border }, title: { display: true, text: 'R visé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: fmtRTick } }, y: { title: { display: true, text: 'R réalisé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: fmtRTick } } })
     },
     plugins: [refLinePlugin('rvrZero', 0, '')]

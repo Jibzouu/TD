@@ -195,7 +195,7 @@ function renderScaling(opts) {
     : (accountSize > 0 ? 'même solde que le journal (Paramètres)' : ''));
   const hint = document.getElementById('sc-cushion-hint');
   if (hint) hint.textContent = model.error || !(model.N > 0) ? 'aucun : tu augmentes dès le palier'
-    : `= ${scNum1(model.N)} pertes à ${fmtEUR(model.pts[1].risk, false, 2)} au 1er palier`;
+    : `= ${scNum1(model.N)} pertes à ${fmtEUR(model.pts[1].risk, false, 2)} au premier palier`;   // « 1er » serait lu comme un nombre par la traduction
   const hintN = document.getElementById('sc-cushion-n-hint');
   if (hintN) hintN.textContent = model.error ? '' : !(model.N > 0) ? 'aucun coussin : tu augmentes dès le palier' : 'le même à chaque palier : le coussin en € grandit avec le risque';
   const L = model.error ? 0 : scalingLevel(st, model, current);
