@@ -9,8 +9,8 @@ const PF_PRESETS = [
   { id: 'the5ers2', firm: 'The5ers', name: ['High Stakes (étape 2)', 'High Stakes (step 2)'], target: 5, daily: 5, maxdd: 10, dd: 'static', days: 3, cons: 0 },
   { id: 'fn1', firm: 'FundedNext', name: ['Stellar 2 étapes (étape 1)', 'Stellar 2-Step (step 1)'], target: 8, daily: 5, maxdd: 10, dd: 'static', days: 5, cons: 0 },
   { id: 'fn2', firm: 'FundedNext', name: ['Stellar 2 étapes (étape 2)', 'Stellar 2-Step (step 2)'], target: 5, daily: 5, maxdd: 10, dd: 'static', days: 5, cons: 0 },
-  { id: 'topstep50', firm: 'Topstep', name: ['Trading Combine 50K', 'Trading Combine 50K'], target: 6, daily: 2, maxdd: 4, dd: 'trailing_eod', days: 2, cons: 50 },
-  { id: 'apex50', firm: 'Apex', name: ['Évaluation 50K', 'Evaluation 50K'], target: 6, daily: 0, maxdd: 5, dd: 'trailing_intraday', days: 1, cons: 0 }
+  { id: 'topstep50', firm: 'Topstep', name: ['Trading Combine 50K', 'Trading Combine 50K'], target: 6, daily: 2, maxdd: 4, dd: 'trailing_eod', days: 2, cons: 50, lock: true },
+  { id: 'apex50', firm: 'Apex', name: ['Évaluation 50K', 'Evaluation 50K'], target: 6, daily: 0, maxdd: 5, dd: 'trailing_intraday', days: 1, cons: 0, lock: true }
 ];
 const pfL = (fr, en) => LANG === 'en' ? en : fr;
 function renderPfPresets() {
@@ -33,7 +33,8 @@ function applyPfPreset(id) {
   savePfSetting('enabled', 1); savePfSetting('target_pct', p.target); savePfSetting('maxdd_pct', p.maxdd);
   savePfSetting('dd_type', p.dd); savePfSetting('min_days', p.days);
   savePfSetting('consistency_on', p.cons ? 1 : 0); if (p.cons) savePfSetting('consistency_pct', p.cons);
-  savePfSetting('daily_on', p.daily > 0 ? 1 : 0);   // pas de perte max journalière chez cette prop firm : la règle ne fait pas échouer le challenge
+  savePfSetting('daily_on', p.daily > 0 ? 1 : 0);
+  savePfSetting('dd_lock', p.lock ? 1 : 0);   // seuil trailing qui s'arrête au capital de départ   // pas de perte max journalière chez cette prop firm : la règle ne fait pas échouer le challenge
   // Pas de limite journalière chez cette prop firm : on garde la tienne (le garde-fou reste utile).
   if (p.daily > 0) { DB.setItem(JP + 'dd_limit_pct', String(p.daily)); const dd = document.getElementById('dd-limit-pct'); if (dd) dd.value = p.daily; }
   DB.setItem(JP + 'pf_preset', id);

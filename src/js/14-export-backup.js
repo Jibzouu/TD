@@ -3,7 +3,7 @@ const BACKUP_SETTINGS_KEYS = [
   (GP + 'theme'), (GP + 'custom_themes'), (GP + 'lang'), (JP + 'nav_order'), (JP + 'account'), (JP + 'calc'),
   (JP + 'dd_limit_pct'), (JP + 'dd_manual'),
   (GP + 'cal_heat_intensity'), (GP + 'chart_intensity'), (GP + 'theme_texture'), (GP + 'theme_autosystem'), (JP + 'stats_subtab'),
-  (JP + 'pf_enabled'), (JP + 'pf_daily_on'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
+  (JP + 'pf_enabled'), (JP + 'pf_daily_on'), (JP + 'pf_dd_lock'), (JP + 'pf_target_pct'), (JP + 'pf_maxdd_pct'), (JP + 'pf_dd_type'), (JP + 'pf_min_days'), (JP + 'pf_consistency_on'), (JP + 'pf_consistency_pct'),
   (JP + 'last_csv_import'), (JP + 'dash_layout_v2'), (JP + 'scaling'), (JP + 'r_mode'), (JP + 'tz_offset_hours'), (JP + 'import_fx_rate'), (JP + 'daily'),
   (JP + 'guard'), (JP + 'guard_custom'), (JP + 'prog'),
   // Réponses de la revue hebdo, défi 30 jours, médailles, règles prop firm choisies, mode simple : ils manquaient au backup.
@@ -277,12 +277,23 @@ function mergeSettingsMeta(meta) {
     const name = m[2], global = SYNCED_SETTINGS.global.includes(name);
     if (!global && !SYNCED_SETTINGS.journal.includes(name)) return;
     const key = (global ? GP : JP) + name;
-    if (name === 'journals') {   // comptes : on réunit les deux listes plutôt que d'en perdre un
+    if (name === 'journals_deleted') {   // traces de suppression des comptes : réunies
       let mine = [], theirs = [];
       try { mine = JSON.parse(DB.getItem(key) || '[]'); theirs = JSON.parse(e.v); } catch (x) { return; }
       if (!Array.isArray(mine) || !Array.isArray(theirs)) return;
+      const ids = new Set(mine.map(x => x && x.id));
+      const extra = theirs.filter(x => x && typeof x.id === 'string' && !ids.has(x.id));
+      if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra).slice(-200)), Math.max(+e.t, mt[key] || 0)); n++; }
+      return;
+    }
+    if (name === 'journals') {   // comptes : on réunit les deux listes plutôt que d'en perdre un (sauf ceux supprimés d'un côté)
+      let mine = [], theirs = [];
+      try { mine = JSON.parse(DB.getItem(key) || '[]'); theirs = JSON.parse(e.v); } catch (x) { return; }
+      if (!Array.isArray(mine) || !Array.isArray(theirs)) return;
+      const deleted = new Set();
+      [DB.getItem('g_journals_deleted'), meta.g_journals_deleted && meta.g_journals_deleted.v].forEach(v => { try { (JSON.parse(v || '[]') || []).forEach(x => x && deleted.add(x.id)); } catch (x) {} });
       const ids = new Set(mine.map(a => a && a.id));
-      const extra = theirs.filter(a => a && typeof a.id === 'string' && !ids.has(a.id));
+      const extra = theirs.filter(a => a && typeof a.id === 'string' && !ids.has(a.id) && !deleted.has(a.id));
       if (extra.length) { DB.setItemAt(key, JSON.stringify(mine.concat(extra)), Math.max(+e.t, mt[key] || 0)); n++; }
       return;
     }

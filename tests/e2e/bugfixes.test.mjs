@@ -305,3 +305,110 @@ test('menu sur téléphone : glisser une page fait défiler le menu (seule la po
   assert.deepEqual(ta, ['pan-y', 'none']);
   await ctx.close();
 });
+
+// ── Troisième passe ─────────────────────────────────────────────────────────────────────────────────
+
+const SCALING = { version: 4, start: 10000, riskPct: 1, step: 1000, cushionN: 0, cushion1: 0, goal: 100000, current: 10000, auto: true, riskSteps: [] };
+test('perte max du jour : % du palier du Scaling atteint en début de journée, partout la même', async () => {
+  const seed = { tj_account: '10000', tj_dd_limit_pct: '2', tj_scaling: SCALING,
+    tj_trades: [T({ id: 1, date: '2026-06-10', pnlEur: 1500 }), T({ id: 2, date: '2026-06-17', res: 'SL', pnlEur: -100 })] };
+  const { page, ctx, errors } = await openJournal({ seed, time: new Date('2026-06-17T14:00:00') });
+  const r = await page.evaluate(() => [dayLossLimit('2026-06-10').amount, dayLossLimit('2026-06-17').amount, rkGuard().lim.day, document.getElementById('dd-limit-label').textContent]);
+  assert.deepEqual(r, [200, 220, 220, 'limite 220 € (2 %)'], 'départ 10 000 € → 200 € ; palier P1 (11 000 €) → 220 €');
+  assert.match(await page.locator('#dd-limit-label').getAttribute('title'), /palier P1/);
+  // Sans plan de Scaling : % du solde en début de journée.
+  assert.equal(await page.evaluate(() => { DB.removeItem(JP + 'scaling'); scalingState = null; invalidateViews(); return dayLossLimit('2026-06-17').amount; }), 230);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('prop firm : seuil trailing plafonné au capital de départ (Topstep, Apex)', async () => {
+  const seed = { g_journals: [{ id: 'tj', name: 'Live', type: 'live' }, { id: 'pf', name: 'PF', type: 'propfirm' }], pf_account: '50000', pf_pf_maxdd_pct: '4', pf_pf_dd_type: 'trailing_eod',
+    pf_trades: [T({ id: 1, date: '2026-06-10', pnlEur: 4000 }), T({ id: 2, date: '2026-06-11', res: 'SL', pnlEur: -1500 })] };
+  const { page, ctx, errors } = await openJournal({ journal: 'pf', seed });
+  assert.equal(await page.evaluate(() => computePropFirmStatus().floor), 52000, 'sans plafond : plus haut 54 000 − 2 000');
+  await page.evaluate(() => { window.confirm = () => true; applyPfPreset('topstep50'); });
+  const s = await page.evaluate(() => { const s = computePropFirmStatus(); return [s.ddLock, s.floor]; });
+  assert.deepEqual(s, [true, 50000]);
+  assert.equal(await page.locator('#pf-dd-lock').isChecked(), true);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('import : « 1,234 » vaut 1 234 dans un export américain, 1,234 dans un export français', async () => {
+  const { page, ctx, errors } = await openJournal();
+  const us = 'Date,Symbol,Side,PnL EUR\n2026-09-01,EURUSD,Buy,"1,234"\n2026-09-02,EURUSD,Sell,-12.50\n';
+  await page.setInputFiles('#csv-import-file', { name: 'us.csv', mimeType: 'text/csv', buffer: Buffer.from(us) });
+  await page.waitForFunction(() => trades.length === 2);
+  assert.deepEqual(await page.evaluate(() => trades.map(t => t.pnlEur).sort((a, b) => a - b)), [-12.5, 1234]);
+  await page.evaluate(() => TradeStore.replaceAll([]));
+  const fr = 'Date;Symbole;Sens;PnL EUR\n01/09/2026;EURUSD;Achat;1,234\n02/09/2026;EURUSD;Vente;-12,50\n';
+  await page.setInputFiles('#csv-import-file', { name: 'fr.csv', mimeType: 'text/csv', buffer: Buffer.from(fr) });
+  await page.waitForFunction(() => trades.length === 2);
+  assert.deepEqual(await page.evaluate(() => trades.map(t => t.pnlEur).sort((a, b) => a - b)), [-12.5, 1.23]);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('synchro : un compte supprimé ne revient pas', async () => {
+  const seed = { g_journals: [{ id: 'tj', name: 'Live', type: 'live' }], g_journals_deleted: [{ id: 'a1b2c', at: 5 }] };
+  const { page, ctx, errors } = await openJournal({ seed });
+  const n = await page.evaluate(() => mergeSettingsMeta({ g_journals: { v: JSON.stringify([{ id: 'tj', name: 'Live', type: 'live' }, { id: 'a1b2c', name: 'Supprimé', type: 'live' }, { id: 'zz9', name: 'Nouveau', type: 'backtest' }]), t: 9 } }));
+  assert.equal(n, 1);
+  assert.deepEqual(await page.evaluate(() => JSON.parse(DB.getItem('g_journals')).map(a => a.id)), ['tj', 'zz9']);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+const BT = { g_journals: [{ id: 'tj', name: 'Live', type: 'live' }, { id: 'bt', name: 'BT', type: 'backtest' }] };
+const candles = (start, n, price) => { let csv = 'time,open,high,low,close,volume\n', t = start; for (let i = 0; i < n; i++, t += 900) { const p = price(i); csv += t + ',' + p + ',' + (p + price(0) * 0.0003) + ',' + (p - price(0) * 0.0003) + ',' + p + ',10\n'; } return csv; };
+test('replay : le graphique tient au passage à l’heure d’hiver', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: BT });
+  await goto(page, 'replay');
+  const csv = candles(Date.UTC(2025, 9, 25, 12) / 1000, 97, () => 1.1);
+  await page.evaluate(async c => { document.getElementById('rp-start').value = '2025-10-26T03:00'; await rpImportFile({ files: [new File([c], 'EURUSD_M15.csv')], value: '' }); }, csv);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => { for (let i = 0; i < 20; i++) rpStep(1); });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('replay USD/JPY : compte en dollars, montant en € juste dans le journal', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: Object.assign({ bt_import_fx_rate: '0.9' }, BT) });
+  await goto(page, 'replay');
+  const csv = candles(Date.UTC(2025, 5, 2) / 1000, 400, i => 150 + (i > 320 ? (i - 320) * 0.05 : 0));
+  const r = await page.evaluate(async c => {
+    document.getElementById('rp-balance').value = '10000'; document.getElementById('rp-start').value = '2025-06-05T08:00';
+    await rpImportFile({ files: [new File([c], 'USDJPY_M15.csv')], value: '' });
+    await new Promise(r => setTimeout(r, 400));
+    RP_TICKET.riskMode = 'pct'; RP_TICKET.riskValue = 1;
+    const c0 = rpCur().close;
+    rpSubmit({ side: 'long', type: 'market', sl: c0 - 0.5, tp: c0 + 1 });
+    const risk = RP.positions[0].risk0 / c0;
+    for (let i = 0; i < 120 && RP.positions.length; i++) rpStep(1);
+    return { acc: rpAccCcy(), risk, t: { pnl: trades[0].pnl, eur: trades[0].pnlEur, ccy: trades[0].ccy } };
+  }, csv);
+  assert.equal(r.acc, 'USD');
+  assert.ok(Math.abs(r.risk - 100) < 1, '1 % de 10 000 $ = 100 $ de risque (et non 100 ¥)');
+  assert.ok(r.t.eur > 100 && r.t.eur < 200, 'environ +1,8R × 100 $ × 0,9 : ' + r.t.eur);
+  assert.equal(r.t.ccy, 'USD');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('replay : annuler après un simple clic ou une nouvelle séance ne ramène rien d’étranger', async () => {
+  const { page, ctx, errors } = await openJournal({ journal: 'bt', seed: BT });
+  await goto(page, 'replay');
+  const csv = candles(Date.UTC(2025, 5, 2) / 1000, 400, () => 1.1);
+  const n = await page.evaluate(async c => {
+    await rpImportFile({ files: [new File([c], 'EURUSD_M15.csv')], value: '' });
+    await new Promise(r => setTimeout(r, 300));
+    RP.drawings.push(rpdNew('hline', [{ t: rpCur().time, p: 1.1 }])); rpdPush();
+    await rpImportFile({ files: [new File([c], 'EURUSD_M15.csv')], value: '' });
+    await new Promise(r => setTimeout(r, 300));
+    rpdUndo();
+    return RP.drawings.length;
+  }, csv);
+  assert.equal(n, 0, 'les dessins de l’ancienne séance ne reviennent pas');
+  await ctx.close();
+});

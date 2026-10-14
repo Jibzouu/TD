@@ -52,7 +52,7 @@ function rkGuard(day) {
   const balBefore = d => accountSize + all.filter(t => t.date && t.date < d).reduce((s, t) => s + rkEur(t), 0);
   const pnlFrom = d => all.filter(t => t.date && t.date >= d && t.date <= today).reduce((s, t) => s + rkEur(t), 0);
   const wk = rkMonday(today), mo = today.slice(0, 8) + '01';
-  const lim = { day: balBefore(today) * loadDDLimitPct() / 100, week: balBefore(wk) * cfg.weekPct / 100, month: balBefore(mo) * cfg.monthPct / 100 };
+  const lim = { day: dayLossLimit(today).amount, week: balBefore(wk) * cfg.weekPct / 100, month: balBefore(mo) * cfg.monthPct / 100 };
   const pnl = { day: pnlFrom(today), week: pnlFrom(wk), month: pnlFrom(mo) };
   const left = k => lim[k] > 0 ? Math.max(0, lim[k] + Math.min(0, pnl[k])) : Infinity;   // limite à 0 = désactivée
   const floor = accountSize * cfg.floorPct / 100, marginFloor = eqI.eq - floor;
@@ -330,7 +330,7 @@ function renderRiskPage() {
       ${num('pauseMin', rkL('Pause après une perte', 'Break after a loss'), rkL('pour éviter le trade de revanche', 'to avoid revenge trading'), 'min')}
       ${num('weekPct', rkL('Perte max de la semaine', 'Weekly max loss'), rkL('du solde du lundi', 'of Monday’s balance'), '%', 0.5)}
       ${num('monthPct', rkL('Perte max du mois', 'Monthly max loss'), rkL('du solde du 1er du mois', 'of the 1st-of-month balance'), '%', 0.5)}
-      <label class="rk-f"><span>${rkL('Perte max du jour', 'Daily max loss')}<small>${rkL('du solde en début de journée (aussi dans Paramètres)', 'of the start-of-day balance (also in Settings)')}</small></span><span class="rk-in"><input type="number" id="rk-dd-day" min="0.1" step="0.1" value="${loadDDLimitPct()}" onchange="rkSetDayLimit(this.value)"><em>%</em></span></label>
+      <label class="rk-f"><span>${rkL('Perte max du jour', 'Daily max loss')}<small>${rkL('du palier du Scaling atteint en début de journée (aussi dans Paramètres)', 'of the Scaling level reached at the start of the day (also in Settings)')}</small></span><span class="rk-in"><input type="number" id="rk-dd-day" min="0.1" step="0.1" value="${loadDDLimitPct()}" onchange="rkSetDayLimit(this.value)"><em>%</em></span></label>
       <label class="rk-f"><span>${rkL('TP max par jour', 'Max TP per day')}<small>${rkL('objectif atteint : la journée s’arrête (aussi dans le Plan)', 'target hit: the day stops (also in the Plan)')}</small></span><span class="rk-in"><input type="number" id="rk-max-tp" min="0" step="1" value="${(planData && planData.maxTP) || ''}" placeholder="—" onchange="rkSetPlanMax('maxTP', this.value)"><em>TP</em></span></label>
       <label class="rk-f"><span>${rkL('SL max par jour', 'Max SL per day')}<small>${rkL('limite atteinte : stop pour aujourd’hui (aussi dans le Plan)', 'limit hit: stop for today (also in the Plan)')}</small></span><span class="rk-in"><input type="number" id="rk-max-sl" min="0" step="1" value="${(planData && planData.maxSL) || ''}" placeholder="—" onchange="rkSetPlanMax('maxSL', this.value)"><em>SL</em></span></label>
     </div>`);

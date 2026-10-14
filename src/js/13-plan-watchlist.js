@@ -180,7 +180,7 @@ function renderRiskRules() {
   const num = (key, label, hint) => html`<div class="risk-row tight linked"><span class="grow-13">${label}<small>${hint}</small></span><input type="number" class="watch-input rule-val" min="0" step="1" value="${planData[key] > 0 ? planData[key] : ''}" placeholder="—" aria-label="${label}" onchange="setPlanNumber('${raw(key)}', this.value)"></div>`;
   mount(cont, html`<div class="ui-subtitle">Règles reliées <span class="tone-muted">· vérifiées par le journal</span></div>
     <div class="risk-row tight linked"><span class="grow-13">Risque par trade<small>taille de ton palier, depuis le Scaling</small></span><button class="link-btn rule-val" onclick="${raw(go('scaling'))}">${plan ? fmtEUR(plan.risk, false, 2) + ' · ' + plan.label.split(' · ')[0] : 'à régler'}</button></div>
-    <div class="risk-row tight linked"><span class="grow-13">Perte max du jour<small>du solde en début de journée, depuis Paramètres</small></span><button class="link-btn rule-val" onclick="${raw(go('parametres'))}">${fmtRate(ddPct, ddPct % 1 ? 1 : 0)}</button></div>
+    <div class="risk-row tight linked"><span class="grow-13">Perte max du jour<small>du palier du Scaling atteint en début de journée, depuis Paramètres</small></span><button class="link-btn rule-val" onclick="${raw(go('parametres'))}">${fmtRate(ddPct, ddPct % 1 ? 1 : 0) + ' · ' + fmtEUR(dayLossLimit().amount, false, 0)}</button></div>
     ${num('maxTP', 'TP max par jour', 'objectif atteint : la journée s’arrête')}
     ${num('maxSL', 'SL max par jour', 'limite atteinte : stop pour aujourd’hui')}
     <div class="ui-subtitle mt-10">Autres règles</div>

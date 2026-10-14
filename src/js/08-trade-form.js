@@ -340,8 +340,7 @@ function renderDDBanner() {
   const dayPnlEur = isManual ? manualMap[date] : dayTrades.reduce((s, t) => s + t.pnlEur, 0);
   const hasData = isManual || dayTrades.length > 0;
   // Limite calculée sur le solde en DÉBUT de journée (solde de départ + tous les trades des jours précédents).
-  const dayStartBal = accountSize + trades.reduce((sum, t) => sum + (t.date && t.date < date && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
-  const ddLimit = Math.max(0, dayStartBal) * (limitPct / 100);
+  const lim = dayLossLimit(date), ddLimit = lim.amount;   // % du palier du Scaling en début de journée (voir dayLossLimit)
   const ddLoss = dayPnlEur < 0 ? Math.abs(dayPnlEur) : 0;
   const ddPct = ddLimit > 0 ? (ddLoss / ddLimit * 100) : 0;
   const level = !hasData ? 'none' : ddPct >= 100 ? 'crit' : ddPct >= 75 ? 'warn' : 'ok';
@@ -361,7 +360,7 @@ function renderDDBanner() {
   set('dd-bar', el => { el.style.width = Math.min(ddPct, 100) + '%'; el.className = 'fill-' + ({ none: 'muted', ok: 'green', warn: 'amber', crit: 'red' })[level]; });
   set('dd-bar-wrap', el => el.setAttribute('aria-label', 'Perte du jour : ' + Math.round(ddPct) + ' % de la limite de ' + fmtEUR(ddLimit)));
   set('dd-pct-label', el => { el.textContent = !hasData ? '—' : dayPnlEur >= 0 ? 'Aucune perte' : fmtRate(ddPct, 0) + ' de la limite utilisée'; });
-  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; el.title = limitPct + ' % du solde en début de journée (' + fmtEUR(dayStartBal) + ')'; });
+  set('dd-limit-label', el => { el.textContent = 'limite ' + fmtEUR(ddLimit) + ' (' + limitPct + ' %)'; el.title = limitPct + ' % du ' + lim.label + ' (' + fmtEUR(lim.base) + ')'; });
   set('dd-status-badge', el => {
     el.textContent = ({ none: 'Pas de trade', ok: '✓ Dans les clous', warn: '⚡ Attention', crit: '🚨 Limite dépassée' })[level];
     el.className = 'st-chip ' + level;

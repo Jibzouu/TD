@@ -7,7 +7,7 @@ import { runInNewContext } from 'node:vm';
 
 const SRC = readFileSync(new URL('../../src/js/00a-calc.js', import.meta.url), 'utf8');
 const NAMES = ['localDateStr', 'getISOWeek', 'wilsonCI', 'winStats', 'breakevenFromLists', 'computeDistanceR', 'plannedR', 'parseNumCSV',
-  'detectCSVDelimiter', 'parseCSVGeneric', 'maxDrawdown', 'mulberry32', 'percentile', 'monteCarlo'];
+  'detectCSVDelimiter', 'detectThousandsComma', 'parseCSVGeneric', 'maxDrawdown', 'mulberry32', 'percentile', 'monteCarlo'];
 const ctx = {};
 runInNewContext(SRC + `\n;__out = { ${NAMES.join(', ')} };`, ctx);
 const C = ctx.__out;
@@ -101,4 +101,15 @@ test('monteCarlo : reproductible, bandes ordonnées, cas limites', () => {
   // Que des pertes de 100 sur 1 000 : le seuil de 10 % est touché à chaque fois.
   assert.equal(C.monteCarlo([-100], 5, 10, 1000, 0.1, 1).hitDD, 1);
   assert.deepEqual([...C.monteCarlo([], 10, 10, 0, 0, 1).finals], []);
+});
+
+test('nombres « 1,234 » : milliers dans un fichier américain, décimale dans un fichier français', () => {
+  assert.equal(C.detectThousandsComma(['12.50', '1,234', '-3.5', 'EURUSD']), true);
+  assert.equal(C.detectThousandsComma(['12,50', '1,234', '-3,5']), false);
+  assert.equal(C.detectThousandsComma(['1.08523', '1,234.56']), true);
+  assert.equal(C.detectThousandsComma(['1.234,56', '12,5']), false);
+  assert.equal(C.parseNumCSV('1,234', true), 1234);
+  assert.equal(C.parseNumCSV('-1,234', true), -1234);
+  assert.equal(C.parseNumCSV('1,234', false), 1.234);
+  assert.equal(C.parseNumCSV('12,5', true), 12.5);   // pas un groupe de milliers : reste décimal
 });

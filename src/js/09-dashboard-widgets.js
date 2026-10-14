@@ -424,10 +424,10 @@ function computeDiscipline() {
   items.push(tagUsed && mine.length >= 3
     ? { label: 'Trades sans erreur taguée', pct: mine.filter(t => !(Array.isArray(t.mistakes) && t.mistakes.length)).length / mine.length * 100, n: mine.length, hint: 'Part des trades saisis sans aucune erreur cochée.' }
     : { label: 'Trades sans erreur taguée', pct: null, hint: 'Non suivi : tague tes erreurs dans le formulaire pour activer ce critère.' });
-  const dn = Object.values(dayNet(closed.filter(t => t.pnlEur !== null && t.pnlEur !== undefined)));
-  const limitEur = (accountSize || 0) * loadDDLimitPct() / 100;
+  const dn = Object.entries(dayNet(closed.filter(t => t.pnlEur !== null && t.pnlEur !== undefined)));
+  const limitEur = dayLossLimit().amount;   // limite du jour : % du palier du Scaling de CE jour-là (voir dayLossLimit)
   items.push(dn.length >= 3 && limitEur > 0
-    ? { label: 'Perte journalière sous la limite', pct: dn.filter(v => v >= -limitEur).length / dn.length * 100, n: dn.length, hint: 'Part des journées dont la perte nette reste sous ta limite (' + loadDDLimitPct() + ' % = ' + Math.round(limitEur) + ' €).' }
+    ? { label: 'Perte journalière sous la limite', pct: dn.filter(([d, v]) => v >= -dayLossLimit(d).amount).length / dn.length * 100, n: dn.length, hint: 'Part des journées dont la perte nette reste sous ta limite du jour (' + loadDDLimitPct() + ' % du ' + dayLossLimit().label + ', soit ' + Math.round(limitEur) + ' € aujourd’hui).' }
     : { label: 'Perte journalière sous la limite', pct: null, hint: 'Non suivi : 3 journées avec des montants en € minimum.' });
   const tilt = computeTiltTrades();
   items.push(tilt.lossesWithFollowup >= 3

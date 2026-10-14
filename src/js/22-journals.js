@@ -114,6 +114,8 @@ function deleteAccount(id) {
   openModal('Supprimer le compte « ' + a.name + ' » ?', (n ? n + ' trade(s), leurs captures, ' : '') + 'son plan, son scaling et ses réglages seront supprimés définitivement. Pense à exporter un backup avant.', () => {
     DB.keys().filter(k => k.indexOf(id + '_') === 0).forEach(k => DB.removeItem(k));
     saveAccounts(ACCOUNTS.filter(x => x.id !== id));
+    // Trace de suppression : une synchro avec un autre appareil ne fait pas revenir ce compte.
+    try { const del = loadJSON('g_journals_deleted', []); DB.setItem('g_journals_deleted', JSON.stringify((Array.isArray(del) ? del : []).filter(x => x && x.id !== id).concat({ id, at: Date.now() }).slice(-200))); } catch (e) {}
     if (id === JOURNAL_ID) DB.setItem('journal_active', ACCOUNTS.find(x => x.id !== id).id);
     DB.flush().then(() => location.reload());
   }, { destructive: true, confirmLabel: 'Supprimer' });

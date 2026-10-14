@@ -16,6 +16,8 @@ function initPropFirmSettings() {
   const consOn = loadPfSetting('consistency_on', '1');
   document.getElementById('pf-consistency-on').checked = consOn === '1' || consOn === 1;
   document.getElementById('pf-consistency-pct').value = loadPfSetting('consistency_pct', '50');
+  const ddLock = document.getElementById('pf-dd-lock');
+  if (ddLock) { ddLock.checked = String(loadPfSetting('dd_lock', '0')) === '1'; ddLock.disabled = document.getElementById('pf-dd-type').value === 'static'; }
   const dailyOn = document.getElementById('pf-daily-on');
   if (dailyOn) dailyOn.checked = String(loadPfSetting('daily_on', '1')) === '1';
 }
@@ -45,6 +47,9 @@ function computePropFirmStatus() {
 
   const { points, eodSeries, currentEquity } = computeEquitySeries();
   const ddAmount = startBalance * (maxDDPct/100);
+  // Plafond du trailing (Topstep, Apex…) : le seuil suit le plus haut, mais s'arrête au capital de départ.
+  const ddLock = ddType !== 'static' && String(loadPfSetting('dd_lock', '0')) === '1';
+  const capFloor = f => ddLock ? Math.min(f, startBalance) : f;
 
   let floor;
   if (ddType === 'static') {
@@ -52,11 +57,11 @@ function computePropFirmStatus() {
   } else if (ddType === 'trailing_intraday') {
     let peak = startBalance;
     points.forEach(p => { if (p.equity > peak) peak = p.equity; });
-    floor = peak - ddAmount;
+    floor = capFloor(peak - ddAmount);
   } else {
     let peak = startBalance;
     eodSeries.forEach(p => { if (p.equity > peak) peak = p.equity; });
-    floor = peak - ddAmount;
+    floor = capFloor(peak - ddAmount);
   }
   const distanceToFloor = currentEquity - floor;
   // Le challenge est perdu dès que l'équité touche le seuil, même si elle est remontée depuis : on rejoue l'historique
@@ -65,7 +70,7 @@ function computePropFirmStatus() {
   points.forEach(p => {
     if (p.date !== curDay) { eodPeak = Math.max(eodPeak, dayEnd); curDay = p.date; }
     runPeak = Math.max(runPeak, p.equity);
-    const f = ddType === 'static' ? startBalance - ddAmount : (ddType === 'trailing_intraday' ? runPeak : eodPeak) - ddAmount;
+    const f = ddType === 'static' ? startBalance - ddAmount : capFloor((ddType === 'trailing_intraday' ? runPeak : eodPeak) - ddAmount);
     if (breachDate === null && p.equity <= f) breachDate = p.date;
     dayEnd = p.equity;
   });
@@ -100,7 +105,7 @@ function computePropFirmStatus() {
   const worstDay = dailyEntries.reduce((w, e) => (w === null || e[1] < w[1]) ? e : w, null);
   const dailyOk = dailyBreaches.length === 0;
 
-  return { startBalance, maxDDPct, ddType, profitTargetPct, minDays, consistencyOn, consistencyPct, dailyLimitPct, dailyOn,
+  return { startBalance, maxDDPct, ddType, ddLock, profitTargetPct, minDays, consistencyOn, consistencyPct, dailyLimitPct, dailyOn,
     currentEquity, floor, distanceToFloor, breached, breachDate, totalPnl, targetAmount, targetProgress, targetReached,
     tradingDays, daysOk, bestDayPnl, bestDayPct, consistencyOk,
     dailyLimitAmount, dailyBreaches, dailyOk, worstDayDate: worstDay ? worstDay[0] : null, worstDayPnl: worstDay ? worstDay[1] : 0 };
@@ -144,7 +149,7 @@ function renderPropFirm() {
     </div>
     <div class="charts-row cols-2">
       <div class="panel">
-        <div class="panel-hdr">Drawdown — ${PF_DD_TYPE_LABELS[s.ddType]}</div>
+        <div class="panel-hdr">Drawdown — ${PF_DD_TYPE_LABELS[s.ddType]}${s.ddLock ? ' · plafonné au capital de départ' : ''}</div>
         <div class="pf-block">
           <div class="pf-head"><span class="pf-big tone-${raw(ddTone)}">${s.distanceToFloor >= 0 ? '' : '-'}${fmtEUR(Math.abs(s.distanceToFloor))}</span><span class="pf-small">marge avant seuil</span></div>
           ${bar(ddPct, ddTone)}
@@ -195,7 +200,7 @@ function renderPfEquityChart(st) {
   eodSeries.forEach(p => {
     if (st.ddType === 'trailing_intraday') points.filter(q => q.date === p.date).forEach(q => { peak = Math.max(peak, q.equity); });
     else if (st.ddType === 'trailing_eod') peak = Math.max(peak, p.equity);
-    floors.push(st.ddType === 'static' ? start - dd : peak - dd);
+    floors.push(st.ddType === 'static' ? start - dd : st.ddLock ? Math.min(peak - dd, start) : peak - dd);
   });
   const labels = ['Départ', ...eodSeries.map(p => p.date)], eq = [start, ...eodSeries.map(p => +p.equity.toFixed(2))];
   pfEquityChartInst = new Chart(canvas.getContext('2d'), {

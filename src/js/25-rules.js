@@ -8,8 +8,7 @@ function todayRuleStatus() {
   const maxSL = planData && planData.maxSL > 0 ? planData.maxSL : null;
   const tp = list.filter(t => t.res === 'TP').length, sl = list.filter(t => t.res === 'SL').length;
   const pnl = list.reduce((s, t) => s + (typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
-  const startBal = accountSize + trades.reduce((s, t) => s + (t.date && t.date < today && typeof t.pnlEur === 'number' && !isNaN(t.pnlEur) ? t.pnlEur : 0), 0);
-  const ddLimit = Math.max(0, startBal) * loadDDLimitPct() / 100;
+  const ddLimit = dayLossLimit(today).amount;
   const alerts = [];
   // Limite atteinte = journée terminée (orange) ; dépassée = hors plan (rouge).
   if (maxTP && tp > maxTP) alerts.push({ lvl: 'crit', txt: `${tp} TP aujourd'hui pour un maximum de ${maxTP} : tu as continué après ton objectif.` });

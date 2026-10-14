@@ -276,10 +276,10 @@ function trashImageIds() { const s = new Set(); try { (JSON.parse(DB.getItem(JP 
 // note sa date (g_settings_mtime) pour savoir, entre deux appareils, quelle valeur est la plus récente.
 const SYNCED_SETTINGS = {
   journal: ['account', 'calc', 'dd_limit_pct', 'dd_manual', 'nav_order', 'stats_subtab', 'pf_enabled', 'pf_target_pct', 'pf_maxdd_pct',
-    'pf_dd_type', 'pf_min_days', 'pf_consistency_on', 'pf_consistency_pct', 'pf_daily_on', 'dash_layout_v2', 'scaling', 'scaling_seen', 'r_mode',
+    'pf_dd_type', 'pf_min_days', 'pf_consistency_on', 'pf_consistency_pct', 'pf_daily_on', 'pf_dd_lock', 'dash_layout_v2', 'scaling', 'scaling_seen', 'r_mode',
     'tz_offset_hours', 'import_fx_rate', 'plan', 'watch', 'daily', 'guard', 'guard_custom', 'prog',
     'weekly_reviews', 'challenge', 'medals', 'pf_preset', 'simple'],
-  global: ['theme', 'custom_themes', 'cal_heat_intensity', 'chart_intensity', 'theme_texture', 'theme_autosystem', 'journals', 'lang']
+  global: ['theme', 'custom_themes', 'cal_heat_intensity', 'chart_intensity', 'theme_texture', 'theme_autosystem', 'journals', 'journals_deleted', 'lang']
 };
 const SETTINGS_MTIME_KEY = 'g_settings_mtime';
 function settingNameOf(key) {

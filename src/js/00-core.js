@@ -138,6 +138,7 @@ function sanitizeTrades(arr) { return (Array.isArray(arr) ? arr : []).map(saniti
 // ── DATA ────────────────────────────────────────────────────────────
 let _atCache = null;   // cache de la vue « analyse » (déclaré ici : sortTradesChrono() est appelée dès le chargement)
 let _viewCache = null; // cache de la vue filtrée (filtre global) — voir 03b-state.js
+let _dayLimitCache = null;   // perte max du jour par date (voir dayLossLimit, 20-scaling.js)
 let trades = sanitizeTrades(loadJSON(JP + 'trades', []));
 sortTradesChrono();
 let watchData = loadJSON(JP + 'watch', null);
@@ -195,7 +196,7 @@ function fxForCcy(ccy) { return ccy && ccy !== 'EUR' ? IMPORT_FX_RATE : 1; }
 function reconvertImportedTrades() {
   const rate = IMPORT_FX_RATE;
   const known = trades.filter(t => t.ccy && t.ccy !== 'EUR' && t.pnlEur != null);
-  const legacy = trades.filter(t => !t.ccy && t.tvKey && t.pnlEur != null);
+  const legacy = trades.filter(t => !t.ccy && t.tvKey && !/^replay:/.test(t.tvKey) && t.pnlEur != null);   // le Replay convertit lui-même
   if (!known.length && !legacy.length) { showToast('Aucun trade importé en devise étrangère'); return; }
   const msg = known.length + ' trade(s) importé(s) en devise étrangère' + (legacy.length ? ' et ' + legacy.length + ' ancien(s) import(s) TradingView (devise non enregistrée, supposée USD)' : '') + ' seront recalculés avec 1 = ' + rate + ' €.';
   openModal('Appliquer le taux de conversion ?', msg, () => {
