@@ -44,7 +44,7 @@ function renderMonteCarlo() {
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: { tooltip: proTooltip({ itemSort: (a, b) => b.raw - a.raw, filter: i => [0, 2, 4, 3, 1].includes(i.datasetIndex), callbacks: { title: it => 'Après ' + it[0].label + ' trade(s)', label: c => c.dataset.label + '  ' + f(c.raw) } }) },
-      scales: proScales({ xTicks: 6, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + ' tr.'; } } }, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } })
+      scales: proScales({ xTicks: 6, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + ' tr.'; } } }, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
     },
     plugins: [refLinePlugin('mcStart', start, useEur ? 'Aujourd\'hui ' + fmtEUR(start) : '0R')].concat(useEur ? [refLinePlugin('mcDD', start * (1 - ddPct / 100), '−' + ddPct + ' %')] : [])
   });
@@ -90,9 +90,9 @@ function renderRealizedVsPlanned() {
   const reached = pts.filter(o => o.r >= o.p - 1e-9).length;
   const left = winners.reduce((s, o) => s + Math.max(0, o.p - o.r), 0);
   const tk = chartTokens();
-  mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? 'amber' : null)}${stat2('R laissés sur la table', left.toFixed(1) + 'R')}`);
+  mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? 'amber' : null)}${stat2('R laissés sur la table', fmtR(left, 1, true))}`);
   if (!chartsAvailable('rvrChart')) return;
-  const maxP = Math.max(...pts.map(o => o.p), 1) * 1.1;
+  const maxP = Math.ceil(Math.max(...pts.map(o => o.p), 1) * 1.1 * 2) / 2;   // borne ronde (2,5R plutôt que 2,2R)
   rvrChartInst = new Chart(canvas.getContext('2d'), {
     type: 'scatter',
     data: { datasets: [
@@ -101,8 +101,8 @@ function renderRealizedVsPlanned() {
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { tooltip: proTooltip({ filter: i => i.datasetIndex === 0, callbacks: { title: it => { const t = it[0].raw.t; return t ? (t.asset || '—') + ' · ' + fmtDateFR(t.date, true) : ''; }, label: c => 'Visé ' + c.raw.x.toFixed(2) + 'R · réalisé ' + (c.raw.y >= 0 ? '+' : '') + c.raw.y.toFixed(2) + 'R' } }) },
-      scales: proScales({ yWidth: 48, x: { type: 'linear', min: 0, max: +maxP.toFixed(1), grid: { display: true, color: tk.border }, title: { display: true, text: 'R visé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: v => v + 'R' } }, y: { title: { display: true, text: 'R réalisé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: v => v + 'R' } } })
+      plugins: { tooltip: proTooltip({ filter: i => i.datasetIndex === 0, callbacks: { title: it => { const t = it[0].raw.t; return t ? (t.asset || '—') + ' · ' + fmtDateFR(t.date, true) : ''; }, label: c => 'Visé ' + fmtR(c.raw.x, 2, true) + ' · réalisé ' + fmtR(c.raw.y, 2) } }) },
+      scales: proScales({ yWidth: 48, x: { type: 'linear', min: 0, max: maxP, grid: { display: true, color: tk.border }, title: { display: true, text: 'R visé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: fmtRTick } }, y: { title: { display: true, text: 'R réalisé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: fmtRTick } } })
     },
     plugins: [refLinePlugin('rvrZero', 0, '')]
   });
@@ -124,7 +124,7 @@ function renderSmallMultiples() {
   if (!top.length) { mount(cont, UI.empty('📈', 'Pas encore assez de trades par groupe', 'Il faut au moins 2 trades dans un setup (ou un actif) pour tracer sa courbe.', null)); return; }
   const series = top.map(([k, g]) => { let c = 0; return { k, n: g.length, w: g.filter(t => t.res === 'TP').length, l: g.filter(t => t.res === 'SL').length, pts: [0].concat(g.map(t => (c += useEur ? (t.pnlEur || 0) : (t.pnl || 0)))) }; });
   const all = series.flatMap(s => s.pts), yMin = Math.min(0, ...all), yMax = Math.max(0, ...all), xMax = Math.max(...series.map(s => s.pts.length - 1));
-  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades${s.w + s.l ? ' · ' + Math.round(s.w / (s.w + s.l) * 100) + ' %' : ''}</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : (s.pts[s.pts.length - 1] >= 0 ? '+' : '') + s.pts[s.pts.length - 1].toFixed(1) + 'R'}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
+  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades${s.w + s.l ? ' · ' + Math.round(s.w / (s.w + s.l) * 100) + ' %' : ''}</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : fmtR(s.pts[s.pts.length - 1], 1)}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
   if (typeof Chart === 'undefined') return;
   const tk = chartTokens();
   series.forEach((s, i) => {
@@ -132,7 +132,7 @@ function renderSmallMultiples() {
       type: 'line',
       data: { datasets: [{ data: s.pts.map((v, j) => ({ x: j, y: +v.toFixed(2) })), borderColor: tk.accent, borderWidth: 1.75, tension: 0, pointRadius: 0, pointHoverRadius: 3, fill: { target: { value: 0 }, above: withAlpha(tk.green, .12), below: withAlpha(tk.red, .14) } }] },
       options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
-        plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: it => 'Après ' + it[0].raw.x + ' trade(s)', label: c => (useEur ? fmtEUR(c.raw.y, true) : c.raw.y + 'R') } }) },
+        plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: it => 'Après ' + it[0].raw.x + ' trade(s)', label: c => (useEur ? fmtEUR(c.raw.y, true) : fmtR(c.raw.y, 2)) } }) },
         scales: { x: { display: false, min: 0, max: xMax, type: 'linear' }, y: { display: false, min: yMin, max: yMax } } },
       plugins: [refLinePlugin('smZero' + i, 0, '')]
     }));

@@ -1121,6 +1121,8 @@ tr.trade-row:focus-visible td{background:var(--accent-d)}
 .cal-r{font-size:12.5px;margin-top:2px;font-family:var(--mono);color:var(--c-tx,var(--txt3))}
 .cal-win{font-size:12.5px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
 .cal-day.strong .cal-win{color:var(--c-on);opacity:.8}
+/* Les groupes de la ligne (« 1 BE », « · 100 % ») passent à la ligne d'un bloc, jamais au milieu (« 100 » puis « % »). */
+.cal-win .cal-be,.cal-win .cal-wr{white-space:nowrap}
 .cal-badge{position:absolute;top:4px;right:5px;font-size:12.5px}
 .cal-badge.streak{top:auto;bottom:4px;font-family:var(--mono);color:var(--txt3)}
 .cal-week{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;justify-content:center}
@@ -1937,6 +1939,11 @@ select.fb-select.on{background-color:var(--accent-d);border-color:var(--accent);
 
 /* ── Rythme et lisibilité ── */
 .dash-grid,.charts-row,.export-grid,.plan-grid,.stats-grid{gap:16px}
+/* Largeurs des widgets calculées à partir de l'écart réel : avec une largeur fixe (50 % − 6 px) et un écart de 16 px,
+   deux demi-largeurs dépassaient la ligne et passaient l'une sous l'autre. */
+.dash-grid{--dash-gap:16px;gap:var(--dash-gap)}
+.dash-widget.w-third{width:calc((100% - 2 * var(--dash-gap)) / 3)}
+.dash-widget.w-half{width:calc((100% - var(--dash-gap)) / 2)}
 .mb-20{margin-bottom:16px}
 .ui-hint,.ui-muted,.export-desc,.panel-sub,.page-hdr-left p{max-width:78ch}
 
@@ -7940,6 +7947,10 @@ function wrBarCell(rate, thr, n) {
 // Formats FR uniques : virgule décimale, espace avant % (« 53,3 % »), R signé (« +1,80R »).
 function fmtNum(v, d) { return Number(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
 function fmtR(v, d, noSign) { if (v === null || v === undefined || isNaN(v)) return '—'; return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R'; }
+// Graduations d'axe : virgule décimale et juste ce qu'il faut de décimales (« 0,5R », « −1R », « −1,5 % »).
+function tickDecimals(v) { const a = Math.abs(v); return Math.abs(a - Math.round(a)) < 1e-9 ? 0 : Math.abs(a * 10 - Math.round(a * 10)) < 1e-6 ? 1 : 2; }
+function fmtRTick(v) { return fmtR(v, tickDecimals(v), true); }
+function fmtPctTick(v) { return fmtNum(v, tickDecimals(v)) + ' %'; }
 // Date numérique FR : « 15/06/2026 ».
 function fmtDateNum(iso) { const d = new Date(String(iso) + 'T00:00:00'); return isNaN(d) ? String(iso || '—') : d.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' }); }
 function fmtRate(v, d) { return (v === null || v === undefined || isNaN(v)) ? '—' : fmtNum(v, d ?? 0) + ' %'; }
@@ -8696,7 +8707,7 @@ function renderYearProgress() {
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
         plugins: { tooltip: proTooltip({ callbacks: { title: titleCb, label: c => 'P&L du jour  ' + E.fmtS(c.raw), afterLabel: c => { const p = ptOf(c.dataIndex); return p ? [p.n + ' trade(s)', 'Solde  ' + E.fmt(p.bal)] : []; } } }) },
-        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : v + 'R' } } })
+        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
       },
       plugins: [refLinePlugin('zeroLine', 0, '')]
     });
@@ -8718,7 +8729,7 @@ function renderYearProgress() {
           label: c => (E.useEur ? 'Solde  ' : 'R cumulé  ') + E.fmt(c.raw),
           afterLabel: c => { const p = ptOf(c.dataIndex); if (!p) return []; const dd = E.useEur ? p.ddPct : p.ddAbs; return ['Jour  ' + E.fmtS(p.day) + ' · ' + p.n + ' trade(s)', 'Drawdown  ' + (dd ? (E.useEur ? fmtPct(dd) : fmtR(dd, 2)) : '—')]; }
         } }) },
-        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : v + 'R' } } })
+        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
       },
       plugins: [refLinePlugin('startLine', E.start, E.useEur ? (filterDateRange().from ? 'Début de période ' : 'Départ ') + fmtEUR(E.start) : '0R'), {
         id: 'peakLabel', afterDatasetsDraw(ch) { if (peakI > 0) drawPointLabel(ch, 0, peakI, 'Plus haut ' + E.fmt(data[peakI]), t.accent, true); }
@@ -8743,8 +8754,8 @@ function renderUnderwater(E, daily) {
     data: { labels, datasets: [{ data, borderColor: t.red, borderWidth: chartBorderW(1.5), tension: 0, fill: 'origin', backgroundColor: withAlpha(t.red, chartFillAlpha(.16)), pointRadius: data.map((_, i) => i === troughI ? 3.5 : 0), pointBackgroundColor: t.red, pointBorderColor: t.bg2, pointBorderWidth: 2, pointHoverRadius: 4, pointHitRadius: 10 }] },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { tooltip: proTooltip({ callbacks: { title: items => { const l = items[0] ? items[0].label : ''; return l === 'Départ' ? 'Départ' : fmtDateFR(l, true); }, label: c => 'Drawdown  ' + (E.useEur ? fmtPct(c.raw) : c.raw + 'R') } }) },
-      scales: proScales({ x: { display: false }, y: { max: 0, ticks: { maxTicksLimit: 3, callback: v => E.useEur ? Math.round(v * 10) / 10 + ' %' : v + 'R' } } })
+      plugins: { tooltip: proTooltip({ callbacks: { title: items => { const l = items[0] ? items[0].label : ''; return l === 'Départ' ? 'Départ' : fmtDateFR(l, true); }, label: c => 'Drawdown  ' + (E.useEur ? fmtPct(c.raw) : fmtR(c.raw, 2)) } }) },
+      scales: proScales({ x: { display: false }, y: { max: 0, ticks: { maxTicksLimit: 3, callback: v => E.useEur ? fmtPctTick(Math.round(v * 10) / 10) : fmtRTick(v) } } })
     }
   });
 }
@@ -8826,7 +8837,7 @@ function renderRDistribution() {
   const exp = rValues.reduce((a, b) => a + b, 0) / rValues.length;
   // Les trois repères verticaux du graphique sont nommés ici (légende), plus au-dessus des barres où ils se chevauchaient.
   const mark = (cls, label, v) => html`<div class="es-item"><span class="es-label"><i class="rd-key ${raw(cls)}" aria-hidden="true"></i>${label}</span><span class="es-val">${v}</span></div>`;
-  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + 'R / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
+  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + ' / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) : '—')}${esItem('Trades', String(closed.length))}`);
   if (!chartsAvailable('rDistChart')) return;
   const idxOf = v => Math.max(0, Math.min(nb - 1, (v - b0) / bw - .5));   // position continue (au centre des classes)
   rDistChartInst = new Chart(canvas.getContext('2d'), {
@@ -9646,7 +9657,7 @@ function renderMonteCarlo() {
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: { tooltip: proTooltip({ itemSort: (a, b) => b.raw - a.raw, filter: i => [0, 2, 4, 3, 1].includes(i.datasetIndex), callbacks: { title: it => 'Après ' + it[0].label + ' trade(s)', label: c => c.dataset.label + '  ' + f(c.raw) } }) },
-      scales: proScales({ xTicks: 6, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + ' tr.'; } } }, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } })
+      scales: proScales({ xTicks: 6, x: { ticks: { callback: function (v) { return this.getLabelForValue(v) + ' tr.'; } } }, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
     },
     plugins: [refLinePlugin('mcStart', start, useEur ? 'Aujourd\'hui ' + fmtEUR(start) : '0R')].concat(useEur ? [refLinePlugin('mcDD', start * (1 - ddPct / 100), '−' + ddPct + ' %')] : [])
   });
@@ -9692,9 +9703,9 @@ function renderRealizedVsPlanned() {
   const reached = pts.filter(o => o.r >= o.p - 1e-9).length;
   const left = winners.reduce((s, o) => s + Math.max(0, o.p - o.r), 0);
   const tk = chartTokens();
-  mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? 'amber' : null)}${stat2('R laissés sur la table', left.toFixed(1) + 'R')}`);
+  mount(statsEl, html`${stat2('Objectif atteint', Math.round(reached / pts.length * 100) + ' % des trades')}${stat2('Part de l\'objectif capturée', capture === null ? '—' : Math.round(capture * 100) + ' %', capture !== null && capture < .7 ? 'amber' : null)}${stat2('R laissés sur la table', fmtR(left, 1, true))}`);
   if (!chartsAvailable('rvrChart')) return;
-  const maxP = Math.max(...pts.map(o => o.p), 1) * 1.1;
+  const maxP = Math.ceil(Math.max(...pts.map(o => o.p), 1) * 1.1 * 2) / 2;   // borne ronde (2,5R plutôt que 2,2R)
   rvrChartInst = new Chart(canvas.getContext('2d'), {
     type: 'scatter',
     data: { datasets: [
@@ -9703,8 +9714,8 @@ function renderRealizedVsPlanned() {
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { tooltip: proTooltip({ filter: i => i.datasetIndex === 0, callbacks: { title: it => { const t = it[0].raw.t; return t ? (t.asset || '—') + ' · ' + fmtDateFR(t.date, true) : ''; }, label: c => 'Visé ' + c.raw.x.toFixed(2) + 'R · réalisé ' + (c.raw.y >= 0 ? '+' : '') + c.raw.y.toFixed(2) + 'R' } }) },
-      scales: proScales({ yWidth: 48, x: { type: 'linear', min: 0, max: +maxP.toFixed(1), grid: { display: true, color: tk.border }, title: { display: true, text: 'R visé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: v => v + 'R' } }, y: { title: { display: true, text: 'R réalisé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: v => v + 'R' } } })
+      plugins: { tooltip: proTooltip({ filter: i => i.datasetIndex === 0, callbacks: { title: it => { const t = it[0].raw.t; return t ? (t.asset || '—') + ' · ' + fmtDateFR(t.date, true) : ''; }, label: c => 'Visé ' + fmtR(c.raw.x, 2, true) + ' · réalisé ' + fmtR(c.raw.y, 2) } }) },
+      scales: proScales({ yWidth: 48, x: { type: 'linear', min: 0, max: maxP, grid: { display: true, color: tk.border }, title: { display: true, text: 'R visé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: fmtRTick } }, y: { title: { display: true, text: 'R réalisé', color: tk.txt3, font: { size: 11 } }, ticks: { callback: fmtRTick } } })
     },
     plugins: [refLinePlugin('rvrZero', 0, '')]
   });
@@ -9726,7 +9737,7 @@ function renderSmallMultiples() {
   if (!top.length) { mount(cont, UI.empty('📈', 'Pas encore assez de trades par groupe', 'Il faut au moins 2 trades dans un setup (ou un actif) pour tracer sa courbe.', null)); return; }
   const series = top.map(([k, g]) => { let c = 0; return { k, n: g.length, w: g.filter(t => t.res === 'TP').length, l: g.filter(t => t.res === 'SL').length, pts: [0].concat(g.map(t => (c += useEur ? (t.pnlEur || 0) : (t.pnl || 0)))) }; });
   const all = series.flatMap(s => s.pts), yMin = Math.min(0, ...all), yMax = Math.max(0, ...all), xMax = Math.max(...series.map(s => s.pts.length - 1));
-  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades${s.w + s.l ? ' · ' + Math.round(s.w / (s.w + s.l) * 100) + ' %' : ''}</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : (s.pts[s.pts.length - 1] >= 0 ? '+' : '') + s.pts[s.pts.length - 1].toFixed(1) + 'R'}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
+  mount(cont, html`${series.map((s, i) => html`<div class="sm-cell"><div class="sm-head"><b>${s.k}</b><span>${s.n} trades${s.w + s.l ? ' · ' + Math.round(s.w / (s.w + s.l) * 100) + ' %' : ''}</span></div><div class="sm-val tone-${raw(s.pts[s.pts.length - 1] >= 0 ? 'green' : 'red')}">${useEur ? fmtEUR(s.pts[s.pts.length - 1], true) : fmtR(s.pts[s.pts.length - 1], 1)}</div><div class="chart-wrap h-90"><canvas id="sm-${raw(i)}"></canvas></div></div>`)}`);
   if (typeof Chart === 'undefined') return;
   const tk = chartTokens();
   series.forEach((s, i) => {
@@ -9734,7 +9745,7 @@ function renderSmallMultiples() {
       type: 'line',
       data: { datasets: [{ data: s.pts.map((v, j) => ({ x: j, y: +v.toFixed(2) })), borderColor: tk.accent, borderWidth: 1.75, tension: 0, pointRadius: 0, pointHoverRadius: 3, fill: { target: { value: 0 }, above: withAlpha(tk.green, .12), below: withAlpha(tk.red, .14) } }] },
       options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
-        plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: it => 'Après ' + it[0].raw.x + ' trade(s)', label: c => (useEur ? fmtEUR(c.raw.y, true) : c.raw.y + 'R') } }) },
+        plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { title: it => 'Après ' + it[0].raw.x + ' trade(s)', label: c => (useEur ? fmtEUR(c.raw.y, true) : fmtR(c.raw.y, 2)) } }) },
         scales: { x: { display: false, min: 0, max: xMax, type: 'linear' }, y: { display: false, min: yMin, max: yMax } } },
       plugins: [refLinePlugin('smZero' + i, 0, '')]
     }));
@@ -11155,7 +11166,7 @@ function renderCalendrier() {
       days.push(html`<div class="${cls}"${raw(vars ? ` style="${vars}"` : '')} onmouseenter="showCalTooltip(event,'${dateStr}')" onmousemove="positionCalTooltip(event)" onmouseleave="hideCalTooltip()"${raw(has ? ` onclick="selectBilanDate('${dateStr}')"` : '')}>
         ${hasBestWorst && dateStr === bestDate && bestVal > 0 ? html`<span class="cal-badge" title="Meilleur jour du mois">🏆</span>` : ''}${hasBestWorst && dateStr === worstDate && worstVal < 0 ? html`<span class="cal-badge" title="Jour le plus coûteux">⚠️</span>` : ''}${streak ? html`<span class="cal-badge streak" title="${streak.length} jours ${streak.type === 'win' ? 'gagnants' : 'perdants'} d'affilée">${streak.type === 'win' ? '🔥' : '❄️'}${streak.length}</span>` : ''}
         <div class="cal-dnum">${d}</div>
-        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗${data.be ? html` <span class="cal-be" title="${raw(data.be + ' break-even')}">${data.be} BE</span>` : ''}${data.tp + data.sl ? ' · ' + data.winPct + ' %' : ''}</div>` : ''}
+        ${eur.length ? html`<div class="cal-eur">${eur.reduce((a, e, i) => html`${a}${i ? ' ' : ''}${e}`, html``)}</div>` : ''}${has && data.pnlSum !== 0 ? html`<div class="cal-r">${fmtR(data.pnlSum, 1)}</div>` : ''}${has ? html`<div class="cal-win">${data.tp}✓ ${data.sl}✗${data.be ? html` <span class="cal-be" title="${raw(data.be + ' break-even')}">${data.be} BE</span>` : ''}${data.tp + data.sl ? html` <span class="cal-wr">· ${data.winPct}\u00a0%</span>` : ''}</div>` : ''}
       </div>`);
     }
     const week = weekDays > 0
@@ -11391,7 +11402,7 @@ function renderHeatmap() {
         label: c => 'Résultat net  ' + fmtV(c.raw),
         afterLabel: c => { const g = hMap[hours[c.dataIndex]]; return g ? [g.n + ' trade(s)' + (g.w + g.l ? ' · win rate ' + Math.round(g.w / (g.w + g.l) * 100) + ' %' : '')] : ['aucun trade']; }
       } }) },
-      scales: proScales({ xTicks: 24, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } })
+      scales: proScales({ xTicks: 24, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
     },
     plugins: [refLinePlugin('hourZero', 0, '')]
   });
@@ -12846,7 +12857,7 @@ function renderGlobalSearchResults(query) {
   }
 
   const idx = pred => searchCurrentItems.findIndex(pred);
-  mount(cont, html`${pageMatches.length ? html`<div class="search-group-label">Pages</div>${pageMatches.map(p => searchItemHtml(idx(x => x.type === 'page' && x.page === p.page), p.icon, p.label, ''))}` : ''}${actionMatches.length ? html`<div class="search-group-label">Actions</div>${actionMatches.map(a => searchItemHtml(idx(x => x.type === 'action' && x.label === a.label), a.icon, a.label, ''))}` : ''}${tradeMatches.length ? html`<div class="search-group-label">Trades</div>${tradeMatches.map(t => searchItemHtml(idx(x => x.type === 'trade' && x.trade.id === t.id), '📈', t.asset || '—', `${t.date || ''} · ${t.res || ''} ${t.pnl != null ? (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(1) + 'R' : ''}`))}` : ''}`);
+  mount(cont, html`${pageMatches.length ? html`<div class="search-group-label">Pages</div>${pageMatches.map(p => searchItemHtml(idx(x => x.type === 'page' && x.page === p.page), p.icon, p.label, ''))}` : ''}${actionMatches.length ? html`<div class="search-group-label">Actions</div>${actionMatches.map(a => searchItemHtml(idx(x => x.type === 'action' && x.label === a.label), a.icon, a.label, ''))}` : ''}${tradeMatches.length ? html`<div class="search-group-label">Trades</div>${tradeMatches.map(t => searchItemHtml(idx(x => x.type === 'trade' && x.trade.id === t.id), '📈', t.asset || '—', `${t.date || ''} · ${t.res || ''} ${t.pnl != null ? fmtR(t.pnl, 1) : ''}`))}` : ''}`);
   updateSearchSelection();
 }
 function searchItemHtml(index, icon, label, sub) {
@@ -13264,10 +13275,10 @@ function renderWeeklyReview() {
 
   mount(cont, html`
     <div class="rv-kpis">
-      ${UI.stat('Résultat de la semaine', M.hasEur ? fmtEUR(M.pnl, true) : fmtR(M.r, 2), { tone: (M.hasEur ? M.pnl : M.r) >= 0 ? 'green' : 'red', sub: deltaChip(M.hasEur ? M.pnl : M.r, prevList.length ? (M.hasEur ? P.pnl : P.r) : null, v => M.hasEur ? fmtE(v) : v.toFixed(2) + 'R') })}
+      ${UI.stat('Résultat de la semaine', M.hasEur ? fmtEUR(M.pnl, true) : fmtR(M.r, 2), { tone: (M.hasEur ? M.pnl : M.r) >= 0 ? 'green' : 'red', sub: deltaChip(M.hasEur ? M.pnl : M.r, prevList.length ? (M.hasEur ? P.pnl : P.r) : null, v => M.hasEur ? fmtE(v) : fmtR(v, 2, true)) })}
       ${UI.stat('Trades', String(M.n), { sub: deltaChip(M.n, prevList.length ? P.n : null, v => String(v), false) })}
       ${UI.stat('Win rate', M.W.n ? fmtRate(M.W.rate * 100, 0) : '—', { tone: M.W.n && be !== null ? (M.W.rate >= be ? 'green' : 'red') : null, sub: be !== null ? 'seuil de rentabilité ' + Math.round(be * 100) + ' %' : '' })}
-      ${UI.stat('Profit factor', M.pf === null ? '—' : (M.pf === Infinity ? '∞' : fmtNum(M.pf, 2)), { sub: deltaChip(M.pf === Infinity ? null : M.pf, prevList.length && P.pf !== Infinity ? P.pf : null, v => v.toFixed(2)) })}
+      ${UI.stat('Profit factor', M.pf === null ? '—' : (M.pf === Infinity ? '∞' : fmtNum(M.pf, 2)), { sub: deltaChip(M.pf === Infinity ? null : M.pf, prevList.length && P.pf !== Infinity ? P.pf : null, v => fmtNum(v, 2)) })}
       ${UI.stat('Checklist complète', M.checklistOk === null ? 'non suivie' : Math.round(M.checklistOk * 100) + ' %', { sub: deltaChip(M.checklistOk === null ? null : M.checklistOk * 100, prevList.length && P.checklistOk !== null ? P.checklistOk * 100 : null, v => Math.round(v) + ' pts') })}
       ${UI.stat('Erreurs taguées', String(M.mistakes), { tone: M.mistakes ? 'amber' : null, sub: deltaChip(M.mistakes, prevList.length ? P.mistakes : null, v => String(v), false) })}
     </div>
@@ -13293,7 +13304,7 @@ function renderWeeklyReview() {
       type: 'bar',
       data: { labels: days.map(d => d.toLocaleDateString(UI_LOCALE, { weekday: 'short', day: 'numeric' })), datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 0 ? t.green : t.red), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 32 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: proTooltip({ displayColors: false, callbacks: { label: c => (useEur ? fmtEUR(c.raw, true) : (c.raw >= 0 ? '+' : '') + c.raw + 'R') + ' · ' + counts[c.dataIndex] + ' trade(s)' } }) },
-        scales: proScales({ yWidth: 64, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : v + 'R' } } }) },
+        scales: proScales({ yWidth: 64, y: { ticks: { callback: v => useEur ? fmtEURCompact(v) : fmtRTick(v) } } }) },
       plugins: [refLinePlugin('rvZero', 0, '')]
     });
   }
@@ -14511,7 +14522,7 @@ function rpEndSession() {
     RP.orders = [];
     rpSave();
     const st = rpSessionStats();
-    showToast('Séance terminée — ' + st.n + ' trade(s), ' + (st.r >= 0 ? '+' : '') + st.r.toFixed(2) + 'R', 'success');
+    showToast('Séance terminée — ' + st.n + ' trade(s), ' + fmtR(st.r, 2), 'success');
     DB.removeItem(RP_KEY()); RP = null; RPC = []; if (RP_CHART) { RP_CHART.remove(); RP_CHART = null; RP_SERIES = null; }
     renderReplay();
   }, { confirmLabel: 'Terminer' });

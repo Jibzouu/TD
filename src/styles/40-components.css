@@ -71,6 +71,8 @@
 .cal-r{font-size:12.5px;margin-top:2px;font-family:var(--mono);color:var(--c-tx,var(--txt3))}
 .cal-win{font-size:12.5px;color:var(--txt3);font-family:var(--mono);margin-top:2px}
 .cal-day.strong .cal-win{color:var(--c-on);opacity:.8}
+/* Les groupes de la ligne (« 1 BE », « · 100 % ») passent à la ligne d'un bloc, jamais au milieu (« 100 » puis « % »). */
+.cal-win .cal-be,.cal-win .cal-wr{white-space:nowrap}
 .cal-badge{position:absolute;top:4px;right:5px;font-size:12.5px}
 .cal-badge.streak{top:auto;bottom:4px;font-family:var(--mono);color:var(--txt3)}
 .cal-week{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;justify-content:center}

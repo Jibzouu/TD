@@ -205,6 +205,11 @@ select.fb-select.on{background-color:var(--accent-d);border-color:var(--accent);
 
 /* ── Rythme et lisibilité ── */
 .dash-grid,.charts-row,.export-grid,.plan-grid,.stats-grid{gap:16px}
+/* Largeurs des widgets calculées à partir de l'écart réel : avec une largeur fixe (50 % − 6 px) et un écart de 16 px,
+   deux demi-largeurs dépassaient la ligne et passaient l'une sous l'autre. */
+.dash-grid{--dash-gap:16px;gap:var(--dash-gap)}
+.dash-widget.w-third{width:calc((100% - 2 * var(--dash-gap)) / 3)}
+.dash-widget.w-half{width:calc((100% - var(--dash-gap)) / 2)}
 .mb-20{margin-bottom:16px}
 .ui-hint,.ui-muted,.export-desc,.panel-sub,.page-hdr-left p{max-width:78ch}
 

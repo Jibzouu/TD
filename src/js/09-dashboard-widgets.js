@@ -161,7 +161,7 @@ function renderYearProgress() {
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
         plugins: { tooltip: proTooltip({ callbacks: { title: titleCb, label: c => 'P&L du jour  ' + E.fmtS(c.raw), afterLabel: c => { const p = ptOf(c.dataIndex); return p ? [p.n + ' trade(s)', 'Solde  ' + E.fmt(p.bal)] : []; } } }) },
-        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : v + 'R' } } })
+        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
       },
       plugins: [refLinePlugin('zeroLine', 0, '')]
     });
@@ -183,7 +183,7 @@ function renderYearProgress() {
           label: c => (E.useEur ? 'Solde  ' : 'R cumulé  ') + E.fmt(c.raw),
           afterLabel: c => { const p = ptOf(c.dataIndex); if (!p) return []; const dd = E.useEur ? p.ddPct : p.ddAbs; return ['Jour  ' + E.fmtS(p.day) + ' · ' + p.n + ' trade(s)', 'Drawdown  ' + (dd ? (E.useEur ? fmtPct(dd) : fmtR(dd, 2)) : '—')]; }
         } }) },
-        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : v + 'R' } } })
+        scales: proScales({ x: { ticks: { callback: xFmt } }, y: { ticks: { callback: v => E.useEur ? fmtEURCompact(v) : fmtRTick(v) } } })
       },
       plugins: [refLinePlugin('startLine', E.start, E.useEur ? (filterDateRange().from ? 'Début de période ' : 'Départ ') + fmtEUR(E.start) : '0R'), {
         id: 'peakLabel', afterDatasetsDraw(ch) { if (peakI > 0) drawPointLabel(ch, 0, peakI, 'Plus haut ' + E.fmt(data[peakI]), t.accent, true); }
@@ -208,8 +208,8 @@ function renderUnderwater(E, daily) {
     data: { labels, datasets: [{ data, borderColor: t.red, borderWidth: chartBorderW(1.5), tension: 0, fill: 'origin', backgroundColor: withAlpha(t.red, chartFillAlpha(.16)), pointRadius: data.map((_, i) => i === troughI ? 3.5 : 0), pointBackgroundColor: t.red, pointBorderColor: t.bg2, pointBorderWidth: 2, pointHoverRadius: 4, pointHitRadius: 10 }] },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { tooltip: proTooltip({ callbacks: { title: items => { const l = items[0] ? items[0].label : ''; return l === 'Départ' ? 'Départ' : fmtDateFR(l, true); }, label: c => 'Drawdown  ' + (E.useEur ? fmtPct(c.raw) : c.raw + 'R') } }) },
-      scales: proScales({ x: { display: false }, y: { max: 0, ticks: { maxTicksLimit: 3, callback: v => E.useEur ? Math.round(v * 10) / 10 + ' %' : v + 'R' } } })
+      plugins: { tooltip: proTooltip({ callbacks: { title: items => { const l = items[0] ? items[0].label : ''; return l === 'Départ' ? 'Départ' : fmtDateFR(l, true); }, label: c => 'Drawdown  ' + (E.useEur ? fmtPct(c.raw) : fmtR(c.raw, 2)) } }) },
+      scales: proScales({ x: { display: false }, y: { max: 0, ticks: { maxTicksLimit: 3, callback: v => E.useEur ? fmtPctTick(Math.round(v * 10) / 10) : fmtRTick(v) } } })
     }
   });
 }
@@ -291,7 +291,7 @@ function renderRDistribution() {
   const exp = rValues.reduce((a, b) => a + b, 0) / rValues.length;
   // Les trois repères verticaux du graphique sont nommés ici (légende), plus au-dessus des barres où ils se chevauchaient.
   const mark = (cls, label, v) => html`<div class="es-item"><span class="es-label"><i class="rd-key ${raw(cls)}" aria-hidden="true"></i>${label}</span><span class="es-val">${v}</span></div>`;
-  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + 'R / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) + 'R' : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) + 'R' : '—')}${esItem('Trades', String(closed.length))}`);
+  if (statsEl) mount(statsEl, html`${mark('acc', 'Espérance', fmtR(exp) + ' / trade')}${mark('grn', 'Gain moyen', avgW !== null ? fmtR(avgW) : '—')}${mark('red', 'Perte moyenne', avgL !== null ? fmtR(avgL) : '—')}${esItem('Trades', String(closed.length))}`);
   if (!chartsAvailable('rDistChart')) return;
   const idxOf = v => Math.max(0, Math.min(nb - 1, (v - b0) / bw - .5));   // position continue (au centre des classes)
   rDistChartInst = new Chart(canvas.getContext('2d'), {

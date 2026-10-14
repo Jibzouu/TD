@@ -202,6 +202,10 @@ function wrBarCell(rate, thr, n) {
 // Formats FR uniques : virgule décimale, espace avant % (« 53,3 % »), R signé (« +1,80R »).
 function fmtNum(v, d) { return Number(v).toLocaleString(UI_LOCALE, { minimumFractionDigits: d ?? 0, maximumFractionDigits: d ?? 0 }); }
 function fmtR(v, d, noSign) { if (v === null || v === undefined || isNaN(v)) return '—'; return (!noSign && v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v), d ?? 2) + 'R'; }
+// Graduations d'axe : virgule décimale et juste ce qu'il faut de décimales (« 0,5R », « −1R », « −1,5 % »).
+function tickDecimals(v) { const a = Math.abs(v); return Math.abs(a - Math.round(a)) < 1e-9 ? 0 : Math.abs(a * 10 - Math.round(a * 10)) < 1e-6 ? 1 : 2; }
+function fmtRTick(v) { return fmtR(v, tickDecimals(v), true); }
+function fmtPctTick(v) { return fmtNum(v, tickDecimals(v)) + ' %'; }
 // Date numérique FR : « 15/06/2026 ».
 function fmtDateNum(iso) { const d = new Date(String(iso) + 'T00:00:00'); return isNaN(d) ? String(iso || '—') : d.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' }); }
 function fmtRate(v, d) { return (v === null || v === undefined || isNaN(v)) ? '—' : fmtNum(v, d ?? 0) + ' %'; }
