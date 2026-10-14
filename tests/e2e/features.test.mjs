@@ -1161,7 +1161,17 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   await page.evaluate(v => rpSetStart(v), '2026-06-01T09:00');
   await page.click('text=Lancer le replay');
   await page.waitForSelector('#rp-app:not([hidden]) #rp-chart canvas');
-  const box = await page.locator('#rp-chart').boundingBox();
+  // Zone de dessin mesurée une fois la mise en page stable (le graphique peut encore changer de taille juste après son affichage).
+  const chartBox = async () => {
+    let prev = null;
+    for (let i = 0; i < 20; i++) {
+      const b = await page.evaluate(() => { const r = RPD.el.getBoundingClientRect(), s = rpdPane(); return { x: r.left, y: r.top, width: s.width, height: s.height }; });
+      if (prev && JSON.stringify(b) === JSON.stringify(prev)) return b;
+      prev = b; await page.waitForTimeout(100);
+    }
+    return prev;
+  };
+  let box = await chartBox();
   const at = (fx, fy) => [box.x + box.width * fx, box.y + box.height * fy];
   // Ligne de tendance (glisser-déposer)
   await page.click('.rp-tool[data-tool=trend]');
@@ -1174,6 +1184,7 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   // Ligne horizontale au raccourci Alt+H
   await page.keyboard.press('Alt+KeyH');
   assert.equal(await page.evaluate(() => RPD.tool), 'hline');
+  box = await chartBox();
   [x1, y1] = at(0.3, 0.85); await page.mouse.click(x1, y1);
   let d = await page.evaluate(() => RP.drawings.map(x => x.type));
   assert.deepEqual(d, ['trend', 'rect', 'hline']);
@@ -1188,6 +1199,7 @@ test('backtest replay : outils de dessin façon TradingView, positions longue / 
   assert.equal(await page.evaluate(() => RP.drawings.length), 3);
   // Déplacer la ligne de tendance (glisser son corps)
   const before = await page.evaluate(() => RP.drawings[0].pts[0].p);
+  box = await chartBox();
   const mid = await page.evaluate(() => { const d = RP.drawings[0], a = rpdXY(d.pts[0]), b = rpdXY(d.pts[1]); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; });
   await page.mouse.move(box.x + mid.x, box.y + mid.y); await page.mouse.down(); await page.mouse.move(box.x + mid.x, box.y + mid.y + 50, { steps: 5 }); await page.mouse.up();
   assert.ok(await page.evaluate(() => RP.drawings[0].pts[0].p) < before, 'ligne déplacée vers le bas');

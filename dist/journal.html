@@ -15288,6 +15288,7 @@ function rpdClearAll() {
 }
 function rpdSetTool(id) {
   RPD.tool = RPD.tool === id && id !== 'cursor' ? 'cursor' : id;
+  if (RPD.draft) { RP.drawings = RP.drawings.filter(x => x !== RPD.draft.d); RPD.undo.pop(); rpdRelease(); }   // dessin en cours abandonné, comme avec Échap
   RPD.draft = null;
   if (RPD.tool !== 'cursor') { RPD.sel = null; renderRpStylebar(); }
   renderRpTools(); rpdRefresh();
