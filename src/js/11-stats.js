@@ -184,7 +184,7 @@ function renderEdgeFinder() {
   const ranked = all.slice().sort((a,b) => b.score - a.score);
   // Classement par R moyen par trade, pondéré par √n (score) : un segment très tradé n'écrase pas les autres par son seul volume.
   // Le « point faible » et les « segments perdants » ne contiennent QUE des segments qui perdent de l'argent (R moyen < 0).
-  const best = rankedReliable[0] || ranked[0];
+  const bestRaw = rankedReliable[0] || ranked[0], best = bestRaw && bestRaw.avgR > 0 ? bestRaw : null;
   const losing = all.filter(s => s.avgR < 0).sort((a, b) => a.score - b.score);
   const worst = losing.find(s => s.reliable) || losing[0] || null;
   const signedR = v => fmtR(v, 1);
@@ -193,11 +193,12 @@ function renderEdgeFinder() {
     html`${label}${!seg.reliable ? html` <span class="tone-amber">(provisoire, n&lt;10)</span>` : ''}`, seg.key,
     { tone: isGood ? 'green' : 'red', accent: true, dim: !seg.reliable, sub: segSub(seg) });
   const noWeak = UI.tile('✅ Aucun point faible', 'Aucun segment perdant', { tone: 'green', accent: true, sub: 'tous tes segments d\'au moins 3 trades ont un R moyen positif' });
+  const noEdge = UI.tile('💪 Ton edge le plus fort', 'Aucun segment gagnant', { tone: 'red', accent: true, sub: 'aucun segment d\'au moins 3 trades n\'a un R moyen positif pour l\'instant' });
   const miniTable = (title, list, empty) => html`<div><div class="ui-subtitle">${title}</div>
     ${list.length ? UI.rows(list.map(s => html`<span>${s.key} <span class="sub">· ${s.dimension} · ${s.n} tr.</span></span><span class="${s.avgR >= 0 ? 'tone-green' : 'tone-red'}">${fmtR(s.avgR, 2)}/trade</span>`)) : UI.hint(empty)}</div>`;
 
   mount(cont, html`
-    ${UI.grid([heroCard('💪 Ton edge le plus fort', best, true), worst ? heroCard('⚠️ Ton plus gros point faible', worst, false) : noWeak], 2)}
+    ${UI.grid([best ? heroCard('💪 Ton edge le plus fort', best, true) : noEdge, worst ? heroCard('⚠️ Ton plus gros point faible', worst, false) : noWeak], 2)}
     ${reliableAll.length === 0 ? UI.note('⚠️ Aucun segment n\'atteint 10 trades : tout ce qui suit est provisoire, à confirmer avec plus de données.', 'warn') : ''}
     ${UI.grid([miniTable('Top 5 segments les plus solides (R moyen et nombre de trades)', ranked.slice(0, 5), ''), miniTable('Segments perdants', losing.slice(0, 5), 'Aucun segment perdant : rien ne te coûte de l\'argent de façon régulière.')], 2)}
     ${UI.hint(`Ce scan teste ${all.length} segments à la fois sur 6 dimensions : avec autant de comparaisons, un résultat qui a l'air fort peut être dû au hasard (« data dredging »). Un segment avec n < 10 est provisoire ; vérifie surtout qu'un edge se reproduit dans le temps avant d'en faire une règle.`)}`);

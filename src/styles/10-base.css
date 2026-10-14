@@ -82,17 +82,18 @@ body.sidebar-open .sidebar{transform:translateX(0)}
 .logo h1{font-size:14.5px;font-weight:600;letter-spacing:-.2px;color:var(--txt);line-height:1.25}
 .logo p{font-size:12.5px;font-family:var(--mono);color:var(--txt3);margin-top:3px}
 .nav{padding:14px 10px;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:grab;transition:background .15s,color .15s;margin-bottom:2px;font-size:13px;color:var(--nav-text-color);font-weight:400;border:none;background:none;width:100%;text-align:left;position:relative;touch-action:none}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:grab;transition:background .15s,color .15s;margin-bottom:2px;font-size:13px;color:var(--nav-text-color);font-weight:400;border:none;background:none;width:100%;text-align:left;position:relative;touch-action:pan-y}
 .nav-item:active{cursor:grabbing}
 .nav-item.dragging{opacity:.4;background:var(--bg3);cursor:grabbing}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;color:var(--nav-icon-color);opacity:.85;transition:opacity .15s}
-.nav-grip{width:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--txt3);opacity:.35;transition:opacity .15s;margin-left:-4px}
+.nav-grip{width:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--txt3);opacity:.35;transition:opacity .15s;margin-left:-4px;touch-action:none}
+@media (pointer:coarse){.nav-grip{width:22px;align-self:stretch;margin-left:-8px;opacity:.6}}
 .nav-item:hover .nav-grip{opacity:.8}
 .nav-item:hover{background:var(--bg3);color:var(--txt)}
 .nav-item.active{background:color-mix(in srgb, var(--green) 10%, var(--bg2));color:var(--txt);font-weight:500}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:16px;border-radius:0 calc(var(--r) * .3) calc(var(--r) * .3) 0;background:var(--green)}
 .nav-item.active svg{opacity:1;color:var(--green)}
-.nav-sep{height:1px;background:var(--border);margin:8px 0;position:relative;cursor:grab;touch-action:none}
+.nav-sep{height:1px;background:var(--border);margin:8px 0;position:relative;cursor:grab;touch-action:pan-y}
 .nav-sep::after{content:'';position:absolute;left:0;right:0;top:-7px;bottom:-7px}
 .nav-sep:hover{background:var(--nav-icon-color)}
 .dragging{opacity:.4 !important}

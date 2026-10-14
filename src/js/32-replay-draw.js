@@ -195,6 +195,7 @@ function rpdClearAll() {
 }
 function rpdSetTool(id) {
   RPD.tool = RPD.tool === id && id !== 'cursor' ? 'cursor' : id;
+  if (RPD.draft) { RP.drawings = RP.drawings.filter(x => x !== RPD.draft.d); RPD.undo.pop(); rpdRelease(); }   // dessin en cours abandonné, comme avec Échap
   RPD.draft = null;
   if (RPD.tool !== 'cursor') { RPD.sel = null; renderRpStylebar(); }
   renderRpTools(); rpdRefresh();
@@ -284,7 +285,7 @@ function rpdOrderLines() {
   const c = rpCur(), out = [], BUY = '#2962ff', SELL = '#f23645', TPC = '#089981', SLC = '#f23645';
   const ov = RPD.drag && RPD.drag.ol ? { [RPD.drag.ol]: RPD.drag.price } : {};
   const P = (key, def) => ov[key] != null ? ov[key] : def;
-  const money = v => (v >= 0 ? '+' : '−') + rpMoney(Math.abs(v)).replace(/^−/, '');
+  const money = v => (v >= 0 ? '+' : '−') + rpMoney(Math.abs(v) / rpK(c ? c.close : 0)).replace(/^−/, '');   // montants convertis dans la devise du compte
   const side = s => s === 'short' ? tr('VENTE') : tr('ACHAT');
   // Aperçu du ticket
   const T = RP_TICKET, r = rpTicketCalc();
@@ -423,7 +424,7 @@ function rpdDown(e) {
   }
   const line = rpdLineHit(loc.y);
   if (line) { RPD.drag = { ol: line.key, line, price: line.price }; rpdGrab(e); return; }
-  if (h) { rpdPush(); RPD.sel = h.d.id; RPD.drag = { id: h.d.id, part: 'body', start: rpdPoint(loc.x, loc.y, true), orig: JSON.parse(JSON.stringify(h.d)) }; rpdGrab(e); renderRpStylebar(); rpdRefresh(); return; }
+  if (h) { rpdPush(); RPD.sel = h.d.id; RPD.drag = { id: h.d.id, part: 'body', start: rpdPoint(loc.x, loc.y, true), orig: JSON.parse(JSON.stringify(h.d)), moved: false }; rpdGrab(e); renderRpStylebar(); rpdRefresh(); return; }
   if (RPD.sel) { RPD.sel = null; renderRpStylebar(); rpdRefresh(); }
 }
 function rpdMove(e) {
@@ -455,7 +456,7 @@ function rpdUp() {
   if (RPD.drag) {
     const dr = RPD.drag; RPD.drag = null;
     if (dr.line) rpDragApply(dr.line.drag, dr.price, true);
-    else rpSave();
+    else { if (!dr.moved) RPD.undo.pop(); rpSave(); }   // simple clic (sélection) : pas d'étape vide dans « Annuler »
     rpdRelease(); rpdRefresh();
     return;
   }
@@ -608,7 +609,7 @@ function rpdPillFit(ctx, x, y, variants, maxW, bg, fg, v, border) {
 }
 function rpdPct(a, b) { return fmtNum((b - a) / a * 100, 2) + ' %'; }
 function rpdDistTxt(dist, ref) { return rpIsFx() ? fmtNum(dist / rpPip(), 1) + ' pips' : rpPrice(dist, ref); }
-function rpdRiskAmt() { return RP_TICKET.riskMode === 'amount' ? +RP_TICKET.riskValue || 0 : rpBalance() * (+RP_TICKET.riskValue || 0) / 100; }
+function rpdRiskAmt() { return RP_TICKET.riskMode === 'amount' ? +RP_TICKET.riskValue || 0 : rpBalance() * (+RP_TICKET.riskValue || 0) / 100; }   // dans la devise du compte
 
 function rpdRender(ctx, size) {
   if (!RP || !RPC.length) return;
@@ -732,14 +733,14 @@ function rpdDrawPosTool(ctx, d, k) {
   // bloc central sur deux lignes posé sur la ligne d'entrée. Distance en prix, en %, en pips (forex) ou en ticks, montant en $.
   // Partie visible de la boîte (elle peut dépasser le bord droit du graphique) : les textes s'y centrent et s'y ajustent.
   const vx1 = Math.max(b.x1, 0), vx2 = Math.min(b.x2, RPD.paneW || b.x2), vw = Math.max(0, vx2 - vx1);
-  const qty = dist > 0 ? rpFloorStep(rpdRiskAmt() / dist, rpQtyStep(e)) : 0, mx = (vx1 + vx2) / 2;
+  const qty = dist > 0 ? rpFloorStep(rpdRiskAmt() * rpK(e) / dist, rpQtyStep(e)) : 0, mx = (vx1 + vx2) / 2, kE = rpK(e);
   const num = (v, d) => (+v).toLocaleString(UI_LOCALE, { maximumFractionDigits: d ?? 2 });
   const ticks = dd => rpIsFx() ? num(dd / rpPip(), 1) : num(dd * Math.pow(10, rpDecimals(e)), 0);
   const lvl = (name, dd) => [
-    tr(name) + ': ' + rpPrice(dd, e) + ' (' + num(dd / e * 100, 3) + '%) ' + ticks(dd) + ', ' + tr('Montant') + ': ' + num(qty * dd, 2),
-    tr(name) + ': ' + rpPrice(dd, e) + ' (' + num(dd / e * 100, 2) + '%), ' + tr('Montant') + ': ' + num(qty * dd, 2),
-    tr(name) + ': ' + num(dd / e * 100, 2) + '%, ' + num(qty * dd, 0),
-    num(qty * dd, 0)];
+    tr(name) + ': ' + rpPrice(dd, e) + ' (' + num(dd / e * 100, 3) + '%) ' + ticks(dd) + ', ' + tr('Montant') + ': ' + num(qty * dd / kE, 2),
+    tr(name) + ': ' + rpPrice(dd, e) + ' (' + num(dd / e * 100, 2) + '%), ' + tr('Montant') + ': ' + num(qty * dd / kE, 2),
+    tr(name) + ': ' + num(dd / e * 100, 2) + '%, ' + num(qty * dd / kE, 0),
+    num(qty * dd / kE, 0)];
   const top = long ? b.yT : b.yS, bot = long ? b.yS : b.yT, maxW = Math.max(30, vw - 2);
   rpdPillFit(ctx, mx, top, lvl(long ? 'Cible' : 'Stop', long ? Math.abs(d.tp - e) : dist), maxW, long ? G : R, '#fff', -1);
   rpdPillFit(ctx, mx, bot, lvl(long ? 'Stop' : 'Cible', long ? dist : Math.abs(d.tp - e)), maxW, long ? R : G, '#fff', 1);
@@ -880,7 +881,7 @@ function rpdEditText(d, fresh) {
   inp.focus(); inp.select();
   const done = keep => {
     inp.onkeydown = inp.onblur = null; inp.hidden = true;
-    if (!keep) { if (fresh) { RP.drawings = RP.drawings.filter(x => x !== d); RPD.sel = null; renderRpStylebar(); rpdSave(); } return; }
+    if (!keep) { if (fresh) { RP.drawings = RP.drawings.filter(x => x !== d); RPD.sel = null; RPD.undo.pop(); renderRpStylebar(); rpdSave(); } return; }
     const v = inp.value.trim();
     if (!v) { RP.drawings = RP.drawings.filter(x => x !== d); RPD.sel = null; renderRpStylebar(); }
     else d.text = v;
@@ -966,7 +967,7 @@ document.addEventListener('keydown', e => {
   if (!page || !page.classList.contains('active') || !RP || !RP_CHART) return;
   if (/^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || '')) return;
   if (e.key === 'Escape') {
-    if (RPD.draft) { RP.drawings = RP.drawings.filter(x => x !== RPD.draft.d); RPD.draft = null; rpdRelease(); }
+    if (RPD.draft) { RP.drawings = RP.drawings.filter(x => x !== RPD.draft.d); RPD.draft = null; RPD.undo.pop(); rpdRelease(); }   // dessin abandonné : son étape d'annulation aussi
     rpdCloseMenu(); RPD.tool = 'cursor'; RPD.sel = null; renderRpTools(); renderRpStylebar(); rpdRefresh();
     return;
   }

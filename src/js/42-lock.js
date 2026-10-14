@@ -34,8 +34,10 @@ function lockEnable() {
 function lockDisable() {
   let old = '';
   openModal(lkL('Désactiver le code ?', 'Turn the code off?'), lkL('Tes données seront de nouveau enregistrées en clair sur cet appareil.', 'Your data will be stored unencrypted on this device again.'), async () => {
-    if (await DB.disableLock(old)) showToast(lkL('Code désactivé', 'Code turned off'), 'success');
-    else showToast(lkL('Code incorrect', 'Wrong code'), 'error');
+    try {
+      if (await DB.disableLock(old)) showToast(lkL('Code désactivé', 'Code turned off'), 'success');
+      else showToast(lkL('Code incorrect', 'Wrong code'), 'error');
+    } catch (e) { showToast(lkL('Impossible de désactiver le code : ', 'Could not turn the code off: ') + e.message, 'error'); }
     renderLockSettings();
   }, { body: html`<label class="field"><span>${lkL('Code actuel', 'Current code')}</span><input type="password" id="lk-old" inputmode="numeric" autocomplete="off"></label>`, confirmLabel: lkL('Désactiver', 'Turn off'),
     validate: () => (old = (document.getElementById('lk-old') || {}).value || '').length > 0 });
@@ -43,9 +45,11 @@ function lockDisable() {
 function lockChange() {
   let old = '', code = null;
   openModal(lkL('Changer le code', 'Change the code'), lkL('Les données sont rechiffrées avec le nouveau code.', 'Data is re-encrypted with the new code.'), async () => {
-    if (!(await DB.disableLock(old))) { showToast(lkL('Code actuel incorrect', 'Current code is wrong'), 'error'); return; }
-    await DB.enableLock(code);
-    showToast(lkL('Nouveau code enregistré ✓', 'New code saved ✓'), 'success');
+    try {
+      if (!(await DB.disableLock(old))) { showToast(lkL('Code actuel incorrect', 'Current code is wrong'), 'error'); return; }
+      await DB.enableLock(code);
+      showToast(lkL('Nouveau code enregistré ✓', 'New code saved ✓'), 'success');
+    } catch (e) { showToast(lkL('Impossible de changer le code : ', 'Could not change the code: ') + e.message, 'error'); }
     renderLockSettings();
   }, { body: lockCodeForm(true), confirmLabel: lkL('Changer', 'Change'),
     validate: () => { old = (document.getElementById('lk-old') || {}).value || ''; return old.length > 0 && !!(code = readNewCode()); } });

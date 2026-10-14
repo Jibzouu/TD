@@ -76,5 +76,5 @@ function weekLessonsCard(mon) {
   return UI.card('Journal de séance', 'tes leçons et le respect du plan, jour par jour', UI.rows(rows.map(([d, e]) => html`
     <span class="dj-rv-day">${fmtDateFR(d)}</span>
     <span class="dj-rv-txt">${e.lesson || e.recap || '—'}</span>
-    ${e.discipline ? html`<span class="chip tone-${raw(disc[e.discipline][1])}">${disc[e.discipline][0]}</span>` : html`<span></span>`}`)));
+    ${disc[e.discipline] ? html`<span class="chip tone-${raw(disc[e.discipline][1])}">${disc[e.discipline][0]}</span>` : html`<span></span>`}`)));
 }

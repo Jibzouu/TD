@@ -180,7 +180,7 @@ function renderRiskRules() {
   const num = (key, label, hint) => html`<div class="risk-row tight linked"><span class="grow-13">${label}<small>${hint}</small></span><input type="number" class="watch-input rule-val" min="0" step="1" value="${planData[key] > 0 ? planData[key] : ''}" placeholder="—" aria-label="${label}" onchange="setPlanNumber('${raw(key)}', this.value)"></div>`;
   mount(cont, html`<div class="ui-subtitle">Règles reliées <span class="tone-muted">· vérifiées par le journal</span></div>
     <div class="risk-row tight linked"><span class="grow-13">Risque par trade<small>taille de ton palier, depuis le Scaling</small></span><button class="link-btn rule-val" onclick="${raw(go('scaling'))}">${plan ? fmtEUR(plan.risk, false, 2) + ' · ' + plan.label.split(' · ')[0] : 'à régler'}</button></div>
-    <div class="risk-row tight linked"><span class="grow-13">Perte max du jour<small>du solde en début de journée, depuis Paramètres</small></span><button class="link-btn rule-val" onclick="${raw(go('parametres'))}">${fmtRate(ddPct, ddPct % 1 ? 1 : 0)}</button></div>
+    <div class="risk-row tight linked"><span class="grow-13">Perte max du jour<small>du palier du Scaling atteint en début de journée, depuis Paramètres</small></span><button class="link-btn rule-val" onclick="${raw(go('parametres'))}">${fmtRate(ddPct, ddPct % 1 ? 1 : 0) + ' · ' + fmtEUR(dayLossLimit().amount, false, 0)}</button></div>
     ${num('maxTP', 'TP max par jour', 'objectif atteint : la journée s’arrête')}
     ${num('maxSL', 'SL max par jour', 'limite atteinte : stop pour aujourd’hui')}
     <div class="ui-subtitle mt-10">Autres règles</div>
@@ -226,6 +226,8 @@ function savePlanNotes() {
   DB.setItem((JP + 'plan'), JSON.stringify(planData));
 }
 
+// Texte placé dans une chaîne JS entre apostrophes d'un attribut onclick : « L'Oréal » cassait le gestionnaire.
+function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 // ── WATCHLIST ────────────────────────────────────────────────────────
 // Biais du jour par actif (+ niveaux, notes). Chaque biais est daté et historisé jour par jour : on peut ensuite
 // mesurer les trades pris AVEC ou CONTRE le biais du jour (Long + Bullish, Short + Bearish).
@@ -286,7 +288,7 @@ function renderWatchlist() {
           const d = watchData.entries[a.name] || {}, ago = watchAgo(d.updated);
           const bCls = d.biais === 'Bullish' ? 'biais-bull' : d.biais === 'Bearish' ? 'biais-bear' : 'biais-neu';
           const sel = v => raw(d.biais === v ? ' selected' : '');
-          const key = esc(a.name).replace(/'/g, '&#39;');
+          const key = esc(jsStr(a.name));
           return html`<tr>
             <td class="fw-500">${a.name}<div class="watch-ago tone-${raw(d.biais ? ago.tone : 'muted')}">${d.biais ? 'biais ' + ago.txt : 'pas de biais'}</div></td>
             <td><select class="watch-select ${raw(bCls)}" aria-label="Biais du jour ${a.name}" onchange="saveWatch('${raw(key)}','biais',this.value)">
@@ -301,7 +303,7 @@ function renderWatchlist() {
     <div class="watch-section watch-add">
       <div class="watch-section-hdr">Ajouter un actif</div>
       <div class="watch-add-row"><input class="filter-select" id="watch-new-name" placeholder="ex. BTC/USD" aria-label="Nom de l'actif"><select class="filter-select" id="watch-new-group" aria-label="Catégorie">${WATCH_GROUPS.map(g => html`<option>${g}</option>`)}</select><button class="btn-primary" onclick="addWatchAsset()">Ajouter</button></div>
-      ${traded.length ? html`<div class="watch-sugg">Actifs de tes trades : ${traded.map(n => html`<button class="link-btn" onclick="addWatchAsset('${raw(esc(n).replace(/'/g, '&#39;'))}')">+ ${n}</button> `)}</div>` : ''}
+      ${traded.length ? html`<div class="watch-sugg">Actifs de tes trades : ${traded.map(n => html`<button class="link-btn" onclick="addWatchAsset('${raw(esc(jsStr(n)))}')">+ ${n}</button> `)}</div>` : ''}
     </div>`);
   renderWatchStats();
 }

@@ -39,7 +39,7 @@ function viewTrades() {
   if (!_viewCache) _viewCache = filterActive() ? trades.filter(t => tradeMatchesFilter(t)) : trades;
   return _viewCache;
 }
-function invalidateViews() { _viewCache = null; _atCache = null; }
+function invalidateViews() { _viewCache = null; _atCache = null; _dayLimitCache = null; }
 // Solde au début de la période filtrée : solde de départ + P&L de tous les trades antérieurs.
 function balanceBeforeFilter() {
   const r = filterDateRange();

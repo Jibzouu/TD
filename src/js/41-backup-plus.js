@@ -45,9 +45,12 @@ function restoreFullBackup(d) {
   openModal(bkL('Restaurer la sauvegarde complète ?', 'Restore the full backup?'), bkL('Sauvegarde du ', 'Backup from ') + (d.exportedAt ? fmtDateTime(Date.parse(d.exportedAt)) : '?') + ' : ' + accts + bkL(' compte(s), tous les réglages. TOUTES tes données actuelles (tous les comptes) seront remplacées ; une copie de sécurité du compte ouvert est gardée.', ' account(s), all settings. ALL your current data (every account) will be replaced; a safety copy of the open account is kept.'), async () => {
     createSafetySnapshot('avant restauration de la sauvegarde complète');
     const snap = DB.getItem(JP + 'safety_snapshot');
+    // Les captures des trades de la copie de sécurité sont gardées : « Annuler » doit les retrouver.
+    const snapImgs = [...snapshotImageIds()].map(id => [ImageStore.key(id), DB.getItem(ImageStore.key(id))]).filter(([, v]) => v);
     DB.keys().forEach(k => DB.removeItem(k));
     keys.forEach(k => DB.setItem(k, d.data[k]));
     if (snap) DB.setItem(JP + 'safety_snapshot', snap);
+    snapImgs.forEach(([k, v]) => { if (DB.getItem(k) === null) DB.setItem(k, v); });
     await DB.flush();
     showToast(bkL('Sauvegarde restaurée ✓ — rechargement…', 'Backup restored ✓ — reloading…'), 'success');
     setTimeout(() => location.reload(), 600);

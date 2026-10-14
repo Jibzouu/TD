@@ -48,3 +48,15 @@ export async function openJournal({ journal = 'tj', seed = {}, time = null, view
   return { page, ctx, errors };
 }
 export const goto = (page, id) => page.evaluate(p => showPage(p, document.querySelector('.nav-item[data-page="' + p + '"]')), id);
+
+// Zone de dessin du Replay (repère des coordonnées rpdX / rpdY), mesurée une fois la mise en page stable :
+// juste après son affichage, le graphique peut encore changer de taille ou de place.
+export async function replayPaneBox(page) {
+  let prev = null;
+  for (let i = 0; i < 20; i++) {
+    const b = await page.evaluate(() => { const r = RPD.el.getBoundingClientRect(), s = rpdPane(); return { x: r.left, y: r.top, width: s.width, height: s.height }; });
+    if (prev && JSON.stringify(b) === JSON.stringify(prev)) return b;
+    prev = b; await page.waitForTimeout(100);
+  }
+  return prev;
+}

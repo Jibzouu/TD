@@ -114,7 +114,7 @@ async function buildMentorReport(opts) {
     ${S.checklist != null ? html`<li><b>${fmtRate(S.checklist * 100, 0)}</b> des trades avec la checklist d'entrée complète</li>` : ''}
     ${S.mistakes.length ? S.mistakes.map(([m, g]) => html`<li>${m} : <b>${g.n}×</b>${hide || !g.cost ? '' : html` <span class="neg">(${fmtEUR(g.cost, true, 0)})</span>`}</li>`) : html`<li>Aucune erreur taguée sur la période.</li>`}
   </ul></section>
-  ${lessons.length ? html`<section><h2>Journal de séance</h2><ul class="lessons">${lessons.map(d => html`<li><span class="d">${fmtDateFR(d)}</span> ${daily[d].lesson || daily[d].recap}${daily[d].discipline ? html` <em>— ${disc[daily[d].discipline]}</em>` : ''}</li>`)}</ul></section>` : ''}
+  ${lessons.length ? html`<section><h2>Journal de séance</h2><ul class="lessons">${lessons.map(d => html`<li><span class="d">${fmtDateFR(d)}</span> ${daily[d].lesson || daily[d].recap}${disc[daily[d].discipline] ? html` <em>— ${disc[daily[d].discipline]}</em>` : ''}</li>`)}</ul></section>` : ''}
   <section><h2>Trades</h2>${tbl(['Date', 'Actif', 'Sens', 'Setup', 'Rés.', 'Résultat', 'Notes'], list.map(t => [
     fmtDateNum(t.date) + (t.entry ? ' ' + t.entry : ''), t.asset || '—', t.dir || '—', t.setup || '—', t.res || '—', cell(hide ? null : t.pnlEur, S.rOf(t)),
     html`${t.desc || ''}${t.review ? html`<div class="rev">↳ ${t.review}</div>` : ''}${(t.mistakes || []).length ? html`<div class="mis">${t.mistakes.join(' · ')}</div>` : ''}${caps[t.id] ? html`<img src="${raw(safeImgSrc(caps[t.id]))}" alt="Capture">` : ''}`]), [5])}</section>
